@@ -6,7 +6,7 @@ export const categories: Category[] = [
     name: 'Хвойні',
     slug: 'conifers',
     description: 'Вічнозелені хвойні дерева та чагарники для вашого саду',
-    image: '/images/categories/conifers.jpg',
+    image: '/images/conifer-category.jpg',
     plantCount: 45,
   },
   {
@@ -14,7 +14,7 @@ export const categories: Category[] = [
     name: 'Листяні',
     slug: 'deciduous',
     description: 'Декоративні листяні дерева та чагарники',
-    image: '/images/categories/deciduous.jpg',
+    image: '/images/deciduous-category.jpg',
     plantCount: 38,
   },
   {
@@ -22,7 +22,7 @@ export const categories: Category[] = [
     name: 'Багаторічники',
     slug: 'perennials',
     description: 'Квітучі багаторічні рослини для клумб та бордюрів',
-    image: '/images/categories/perennials.jpg',
+    image: '/images/perennial-category.jpg',
     plantCount: 62,
   },
   {
@@ -30,7 +30,7 @@ export const categories: Category[] = [
     name: 'Чагарники',
     slug: 'shrubs',
     description: 'Декоративні чагарники для живоплотів та композицій',
-    image: '/images/categories/shrubs.jpg',
+    image: '/images/plant-2.jpg',
     plantCount: 29,
   },
 ]
@@ -46,9 +46,9 @@ export const plants: Plant[] = [
     originalPrice: 520,
     sku: 'TH-SM-C5-001',
     images: [
-      '/images/plants/thuja-smaragd-1.jpg',
-      '/images/plants/thuja-smaragd-2.jpg',
-      '/images/plants/thuja-smaragd-3.jpg',
+      '/images/plant-1.jpg',
+      '/images/conifer-category.jpg',
+      '/images/plant-3.jpg',
     ],
     description: 'Туя західна Смарагд - один з найпопулярніших сортів туї. Має вузьку конусоподібну форму крони та яскраво-зелене забарвлення хвої, яке зберігається протягом всього року. Ідеально підходить для створення живоплотів та солітерних посадок.',
     shortDescription: 'Вузька конусоподібна туя з яскраво-зеленою хвоєю',
@@ -73,10 +73,11 @@ export const plants: Plant[] = [
     slug: 'picea-pungens-glauca',
     category: 'conifers',
     price: 890,
-    sku: 'PC-GL-C7-001',
+    sku: 'SP-GL-C7-001',
     images: [
-      '/images/plants/picea-glauca-1.jpg',
-      '/images/plants/picea-glauca-2.jpg',
+      '/images/conifer-category.jpg',
+      '/images/plant-1.jpg',
+      '/images/plant-3.jpg',
     ],
     description: 'Ялина блакитна Глаука - величний хвойник із срібласто-блакитною хвоєю. Рослина має правильну конічну форму та повільний ріст. Чудово виглядає як солітер на газоні.',
     shortDescription: 'Величний хвойник зі срібласто-блакитною хвоєю',
@@ -102,8 +103,8 @@ export const plants: Plant[] = [
     price: 1250,
     sku: 'AC-DR-C10-001',
     images: [
-      '/images/plants/acer-drummondii-1.jpg',
-      '/images/plants/acer-drummondii-2.jpg',
+      '/images/deciduous-category.jpg',
+      '/images/plant-2.jpg',
     ],
     description: 'Клен гостролистий Друммонда - декоративне листяне дерево з ефектним строкатим листям. Листки мають широку білу облямівку, що надає дереву святкового вигляду протягом всього сезону.',
     shortDescription: 'Декоративний клен з білоокаймленим листям',
@@ -130,8 +131,8 @@ export const plants: Plant[] = [
     originalPrice: 420,
     sku: 'HY-LL-C3-001',
     images: [
-      '/images/plants/hydrangea-limelight-1.jpg',
-      '/images/plants/hydrangea-limelight-2.jpg',
+      '/images/plant-2.jpg',
+      '/images/perennial-category.jpg',
     ],
     description: 'Гортензія волотиста Лаймлайт - один з найкращих сортів волотистих гортензій. Великі конусоподібні суцвіття спочатку мають лаймово-зелений колір, згодом біліють, а восени набувають рожевого відтінку.',
     shortDescription: 'Розкішна гортензія з лаймово-білими суцвіттями',
@@ -157,8 +158,8 @@ export const plants: Plant[] = [
     price: 180,
     sku: 'HO-HA-P9-001',
     images: [
-      '/images/plants/hosta-halcyon-1.jpg',
-      '/images/plants/hosta-halcyon-2.jpg',
+      '/images/perennial-category.jpg',
+      '/images/plant-2.jpg',
     ],
     description: 'Хоста Халціон - один з найкращих блакитнолистих сортів хости. Має щільне серцеподібне листя інтенсивного блакитного кольору з восковим нальотом. Чудово виглядає у тінистих куточках саду.',
     shortDescription: 'Блакитнолиста хоста для тінистих куточків',
@@ -183,7 +184,7 @@ export const plants: Plant[] = [
     price: 320,
     sku: 'JN-BC-C2-001',
     images: [
-      '/images/plants/juniperus-blue-carpet-1.jpg',
+      '/images/plant-1.jpg',
     ],
     description: 'Ялівець лускатий Блю Карпет - ґрунтопокривний хвойник з розпростертою формою крони та срібласто-блакитною хвоєю. Ідеальний для альпійських гірок, схилів та переднього плану композицій.',
     shortDescription: 'Ґрунтопокривний ялівець з блакитною хвоєю',
@@ -209,7 +210,7 @@ export const plants: Plant[] = [
     price: 450,
     sku: 'SY-SN-C5-001',
     images: [
-      '/images/plants/syringa-sensation-1.jpg',
+      '/images/plant-2.jpg',
     ],
     description: 'Бузок звичайний Сенсація - унікальний сорт з двоколірними квітками. Пурпурово-червоні пелюстки мають білу облямівку, що створює ефектний контраст. Інтенсивний солодкий аромат.',
     shortDescription: 'Ефектний бузок з двоколірними квітками',
@@ -235,7 +236,7 @@ export const plants: Plant[] = [
     price: 145,
     sku: 'EC-MG-P9-001',
     images: [
-      '/images/plants/echinacea-magnus-1.jpg',
+      '/images/perennial-category.jpg',
     ],
     description: 'Ехінацея пурпурова Магнус - великоквіткова ехінацея з рожево-пурпуровими пелюстками та помаранчевим центром. Цвіте з липня по вересень, приваблює метеликів та бджіл.',
     shortDescription: 'Яскрава ехінацея для сонячних клумб',
@@ -260,7 +261,7 @@ export const orders: Order[] = [
     customerName: 'Олена Коваленко',
     customerEmail: 'olena.kovalenko@email.com',
     customerPhone: '+380 67 123 4567',
-    shippingAddress: 'м. Київ, вул. Хрещатик, 22, кв. 15',
+    shippingAddress: 'м. Київ, вул. Хрещати��, 22, кв. 15',
     items: [
       { plant: plants[0], quantity: 10 },
       { plant: plants[3], quantity: 5 },

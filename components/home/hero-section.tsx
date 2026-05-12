@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, Truck, Shield, Leaf } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -47,15 +48,14 @@ export function HeroSection() {
 
           {/* Image placeholder */}
           <div className="relative hidden lg:block">
-            <div className="aspect-square max-w-lg mx-auto relative">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 to-primary/5" />
-              <div className="absolute inset-8 rounded-full bg-gradient-to-br from-secondary to-accent flex items-center justify-center">
-                <div className="text-center space-y-2">
-                  <Leaf className="h-24 w-24 text-primary mx-auto" />
-                  <p className="font-serif text-2xl font-semibold text-foreground">170+ сортів</p>
-                  <p className="text-muted-foreground">рослин у каталозі</p>
-                </div>
-              </div>
+            <div className="aspect-square max-w-lg mx-auto relative overflow-hidden rounded-2xl">
+              <Image
+                src="/images/hero-plants.jpg"
+                alt="植物花園"
+                fill
+                className="object-cover"
+                priority
+              />
             </div>
           </div>
         </div>

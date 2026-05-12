@@ -1,16 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Leaf, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirect') || '/'
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -26,11 +28,11 @@ export default function LoginPage() {
     // Simulate login - in real app, this would call an API
     await new Promise(resolve => setTimeout(resolve, 1000))
     
-    // Redirect to home or admin based on email
+    // Redirect to specified page or admin based on email
     if (formData.email.includes('admin')) {
       router.push('/admin')
     } else {
-      router.push('/')
+      router.push(redirectTo)
     }
     
     setIsLoading(false)
@@ -119,7 +121,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-muted-foreground mt-8">
             Ще немає акаунту?{' '}
-            <Link href="/auth/register" className="text-primary hover:underline font-medium">
+            <Link href={`/auth/register${redirectTo !== '/' ? `?redirect=${redirectTo}` : ''}`} className="text-primary hover:underline font-medium">
               Зареєструватися
             </Link>
           </p>
@@ -154,5 +156,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Leaf className="h-12 w-12 text-primary animate-pulse" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

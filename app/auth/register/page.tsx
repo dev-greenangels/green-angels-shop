@@ -1,16 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Leaf, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirect') || '/'
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -40,7 +42,8 @@ export default function RegisterPage() {
     // Simulate registration - in real app, this would call an API
     await new Promise(resolve => setTimeout(resolve, 1000))
     
-    router.push('/auth/login')
+    // Redirect to specified page after registration
+    router.push(redirectTo)
     
     setIsLoading(false)
   }
@@ -181,7 +184,7 @@ export default function RegisterPage() {
                 </Link>
                 {' '}та{' '}
                 <Link href="/terms" className="text-primary hover:underline">
-                  політикою конфіденційності
+                  політикою конфіде��ційності
                 </Link>
               </Label>
             </div>
@@ -193,12 +196,24 @@ export default function RegisterPage() {
 
           <p className="text-center text-sm text-muted-foreground mt-8">
             Вже маєте акаунт?{' '}
-            <Link href="/auth/login" className="text-primary hover:underline font-medium">
+            <Link href={`/auth/login${redirectTo !== '/' ? `?redirect=${redirectTo}` : ''}`} className="text-primary hover:underline font-medium">
               Увійти
             </Link>
           </p>
         </div>
       </div>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Leaf className="h-12 w-12 text-primary animate-pulse" />
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   )
 }

@@ -1,33 +1,50 @@
 import type { Metadata } from 'next'
-import { Inter, Playfair_Display } from 'next/font/google'
+import { Source_Sans_3 } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { getLocale, getMessages, getTranslations, setRequestLocale } from 'next-intl/server'
+
+import { AppProviders } from '@/components/providers/app-providers'
+import { getSession } from '@/lib/auth/get-session'
+import { defaultLocale } from '@/i18n/routing'
+
 import './globals.css'
 
-const inter = Inter({ 
-  subsets: ['latin', 'cyrillic'],
-  variable: '--font-inter',
+const sourceSans = Source_Sans_3({
+  subsets: ['latin', 'latin-ext', 'cyrillic', 'cyrillic-ext'],
+  variable: '--font-source',
+  display: 'swap',
 })
 
-const playfair = Playfair_Display({ 
-  subsets: ['latin', 'cyrillic'],
-  variable: '--font-playfair',
-})
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations({ locale: defaultLocale, namespace: 'metadata' })
+  const keywords = t('keywords')
+    .split(',')
+    .map((k) => k.trim())
+    .filter(Boolean)
 
-export const metadata: Metadata = {
-  title: 'Зелені Янголи | Професійний розсадник рослин',
-  description: 'Професійний розсадник рослин. Хвойні, листяні дерева, багаторічники та декоративні рослини найвищої якості.',
-  keywords: ['розсадник', 'рослини', 'хвойні', 'листяні', 'багаторічники', 'садові рослини', 'Україна'],
+  return {
+    title: t('title'),
+    description: t('description'),
+    keywords,
+  }
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const locale = await getLocale()
+  setRequestLocale(locale)
+  const messages = await getMessages()
+  const session = await getSession()
+
   return (
-    <html lang="uk" className={`${inter.variable} ${playfair.variable} bg-background`}>
+    <html lang={locale} className={`${sourceSans.variable} bg-background`}>
       <body className="font-sans antialiased">
-        {children}
+        <AppProviders locale={locale} messages={messages} initialSession={session}>
+          {children}
+        </AppProviders>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

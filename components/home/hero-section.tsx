@@ -18,7 +18,7 @@ export function HeroSection() {
           <div className="space-y-6 text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
               <Leaf className="h-4 w-4" />
-              Професійний розсадник з 2010 року
+              Професійний розсадник з 2016 року
             </div>
             
             <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-balance">
@@ -27,7 +27,7 @@ export function HeroSection() {
             </h1>
             
             <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              Понад 170 сортів хвойних, листяних дерев та багаторічників. 
+              Понад 500 видів хвойних, листяних дерев та багаторічників. 
               Якісний посадковий матеріал для професіоналів та любителів.
             </p>
             
@@ -62,27 +62,27 @@ export function HeroSection() {
 
         {/* Features */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 pt-16 border-t border-border/50">
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-card/50">
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-card/50 border border-gray-500/15">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary">
               <Truck className="h-6 w-6" />
             </div>
             <div>
               <h3 className="font-semibold text-foreground">Доставка по Україні</h3>
-              <p className="text-sm text-muted-foreground">Нова Пошта, Укрпошта</p>
+              <p className="text-sm text-muted-foreground">Нова Пошта</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-card/50">
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-card/50 border border-gray-500/15">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary">
               <Shield className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground">Гарантія якості</h3>
-              <p className="text-sm text-muted-foreground">Заміна протягом 14 днів</p>
+              <h3 className="font-semibold text-foreground">Якісні вкорінені саджанці</h3>
+              <p className="text-sm text-muted-foreground">Контейнер, викопні з грунту</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-card/50">
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-card/50 border border-gray-500/15">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary">
               <Leaf className="h-6 w-6" />
             </div>

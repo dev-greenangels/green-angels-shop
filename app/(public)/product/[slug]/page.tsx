@@ -4,15 +4,22 @@ import { useState } from 'react'
 import { useParams, notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ChevronRight, Minus, Plus, ShoppingCart, Sun, Droplets, Mountain, Thermometer, Check } from 'lucide-react'
+import { ChevronRight, Sun, Droplets, Mountain, Thermometer } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ProductCard } from '@/components/product-card'
+import { ProductVariantsTable } from '@/components/product/product-variants-table'
 import { useCartStore } from '@/lib/cart-store'
 import { plants, categories } from '@/lib/data'
+import {
+  getPlantVariants,
+  isPlantFullyUnavailable,
+  isPlantOrderable,
+} from '@/lib/plant-variants'
+import { formatPrice, getMinVariantPrice } from '@/lib/product-pricing'
+import type { ProductVariant } from '@/lib/types'
 
 const sunLabels = {
   'full-sun': 'Повне сонце',
@@ -43,14 +50,17 @@ export default function ProductPage() {
   }
 
   const [selectedImage, setSelectedImage] = useState(0)
-  const [quantity, setQuantity] = useState(1)
   const { addItem, openCart } = useCartStore()
 
   const category = categories.find(c => c.slug === plant.category)
   const relatedPlants = plants.filter(p => p.category === plant.category && p.id !== plant.id).slice(0, 4)
+  const variants = getPlantVariants(plant)
+  const canOrder = isPlantOrderable(variants)
+  const fullyUnavailable = isPlantFullyUnavailable(variants)
+  const priceFrom = Math.min(...variants.map(getMinVariantPrice))
 
-  const handleAddToCart = () => {
-    addItem(plant, quantity)
+  const handleBuy = (variant: ProductVariant, quantity: number, unitPrice: number) => {
+    addItem(plant, quantity, { variant, unitPrice })
     openCart()
   }
 
@@ -139,16 +149,15 @@ export default function ProductPage() {
                 </p>
               </div>
 
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl font-bold text-foreground">
-                  {plant.price.toLocaleString('uk-UA')} ₴
-                </span>
-                {plant.originalPrice && (
-                  <span className="text-xl text-muted-foreground line-through">
-                    {plant.originalPrice.toLocaleString('uk-UA')} ₴
-                  </span>
-                )}
-              </div>
+              {canOrder ? (
+                <p className="text-muted-foreground">
+                  від{' '}
+                  <span className="text-3xl font-bold text-foreground">{formatPrice(priceFrom)}</span>
+                  {variants.length > 1 && <span> · {variants.length} розмірів</span>}
+                </p>
+              ) : (
+                <p className="text-lg font-semibold text-muted-foreground">Немає в наявності</p>
+              )}
 
               <p className="text-muted-foreground leading-relaxed">
                 {plant.description}
@@ -194,53 +203,21 @@ export default function ProductPage() {
                 </div>
               </div>
 
-              {/* Container and height */}
-              <div className="flex items-center gap-6 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Контейнер: </span>
-                  <span className="font-medium">{plant.containerSize}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Висота: </span>
-                  <span className="font-medium">{plant.height}</span>
-                </div>
-              </div>
-
-              {/* Add to cart */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex items-center border border-border rounded-lg">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    disabled={quantity <= 1}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="w-12 text-center font-medium">{quantity}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setQuantity(Math.min(plant.stock, quantity + 1))}
-                    disabled={quantity >= plant.stock}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <Button size="lg" className="flex-1" onClick={handleAddToCart}>
-                  <ShoppingCart className="h-5 w-5 mr-2" />
-                  Додати до кошика
-                </Button>
-              </div>
-
-              {/* Stock info */}
-              <div className="flex items-center gap-2 text-sm">
-                <Check className="h-4 w-4 text-primary" />
-                <span className="text-muted-foreground">
-                  В наявності: {plant.stock} шт.
-                </span>
+              <div className="text-sm">
+                <span className="text-muted-foreground">Висота: </span>
+                <span className="font-medium">{plant.height}</span>
               </div>
             </div>
+          </div>
+
+          <div className="mb-16">
+            <ProductVariantsTable
+              variants={variants}
+              plantId={plant.id}
+              plantName={plant.name}
+              fullyOutOfStock={fullyUnavailable}
+              onBuy={handleBuy}
+            />
           </div>
 
           {/* Care tabs */}

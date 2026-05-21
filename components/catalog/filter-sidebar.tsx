@@ -5,7 +5,14 @@ import { Filter, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { containerSizes, sunRequirements, soilTypes, hardinessZones } from '@/lib/data'
 
@@ -170,6 +177,9 @@ export function FilterSidebar({ filters, onFilterChange }: FilterSidebarProps) {
           <SheetContent side="left" className="w-80 overflow-y-auto">
             <SheetHeader>
               <SheetTitle>Фільтри</SheetTitle>
+              <SheetDescription className="sr-only">
+                Налаштування фільтрів для підбору рослин у каталозі
+              </SheetDescription>
             </SheetHeader>
             <div className="mt-6">
               <FilterContent filters={filters} onFilterChange={onFilterChange} />

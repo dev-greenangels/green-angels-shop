@@ -4,7 +4,6 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { 
-  Leaf, 
   CheckCircle2, 
   Package, 
   Mail, 
@@ -16,6 +15,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { BrandLogo } from '@/components/brand-logo'
 
 function SuccessContent() {
   const searchParams = useSearchParams()
@@ -27,12 +27,7 @@ function SuccessContent() {
       <header className="bg-background border-b">
         <div className="container mx-auto px-4 py-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground">
-              <Leaf className="h-5 w-5" />
-            </div>
-            <span className="font-serif text-xl font-semibold text-foreground">
-              Зелені Янголи
-            </span>
+            <BrandLogo alt="Зелені Янголи" />
           </Link>
         </div>
       </header>
@@ -220,7 +215,7 @@ export default function CheckoutSuccessPage() {
     <Suspense fallback={
       <div className="min-h-screen bg-muted/30 flex items-center justify-center">
         <div className="text-center">
-          <Leaf className="h-12 w-12 text-primary mx-auto mb-4 animate-pulse" />
+          <BrandLogo alt="Зелені Янголи" className="mx-auto mb-4 animate-pulse" imgClassName="opacity-70" />
           <p className="text-muted-foreground">Завантаження...</p>
         </div>
       </div>

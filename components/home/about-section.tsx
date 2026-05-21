@@ -23,8 +23,8 @@ export function AboutSection() {
             
             <p className="text-lg text-muted-foreground leading-relaxed">
               Наш розсадник спеціалізується на вирощуванні якісного посадкового матеріалу 
-              вже понад 14 років. Ми пишаємося тим, що кожна рослина вирощується з любов&apos;ю 
-              та турботою в екологічно чистому регіоні Київської області.
+              вже понад 10 років. Ми пишаємося тим, що кожна рослина вирощується з любов&apos;ю 
+              та турботою в екологічно чистому регіоні Закарпатської області.
             </p>
             
             <div className="grid sm:grid-cols-2 gap-3">
@@ -40,12 +40,12 @@ export function AboutSection() {
           {/* Stats */}
           <div className="grid grid-cols-2 gap-6">
             <div className="p-6 rounded-2xl bg-secondary text-center">
-              <p className="font-serif text-4xl md:text-5xl font-bold text-primary mb-2">14+</p>
+              <p className="font-serif text-4xl md:text-5xl font-bold text-primary mb-2">20+</p>
               <p className="text-muted-foreground">років досвіду</p>
             </div>
             <div className="p-6 rounded-2xl bg-secondary text-center">
-              <p className="font-serif text-4xl md:text-5xl font-bold text-primary mb-2">170+</p>
-              <p className="text-muted-foreground">сортів рослин</p>
+              <p className="font-serif text-4xl md:text-5xl font-bold text-primary mb-2">500+</p>
+              <p className="text-muted-foreground">видів рослин</p>
             </div>
             <div className="p-6 rounded-2xl bg-secondary text-center">
               <p className="font-serif text-4xl md:text-5xl font-bold text-primary mb-2">5000+</p>

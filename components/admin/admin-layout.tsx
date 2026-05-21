@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Leaf,
   LayoutDashboard,
   Package,
   ShoppingCart,
@@ -14,7 +13,15 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
+import { BrandLogo } from '@/components/brand-logo'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -51,16 +58,9 @@ function Sidebar({ className }: { className?: string }) {
     <div className={cn('flex flex-col h-full bg-sidebar text-sidebar-foreground', className)}>
       {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
-        <Link href="/admin" className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-sidebar-primary text-sidebar-primary-foreground">
-            <Leaf className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="font-serif text-lg font-semibold block">
-              Зелені Янголи
-            </span>
-            <span className="text-xs text-sidebar-foreground/60">Адмін панель</span>
-          </div>
+        <Link href="/admin" className="flex flex-col gap-2">
+          <BrandLogo alt="Зелені Янголи" variant="onDark" imgClassName="max-h-8 md:max-h-9" />
+          <span className="text-xs text-sidebar-foreground/60">Адмін панель</span>
         </Link>
       </div>
 
@@ -87,14 +87,20 @@ function Sidebar({ className }: { className?: string }) {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="space-y-1 border-t border-sidebar-border p-4">
         <Link
           href="/"
-          className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors"
+          className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
         >
-          <LogOut className="h-5 w-5" />
           На сайт
         </Link>
+        <a
+          href="/api/auth/logout"
+          className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+        >
+          <LogOut className="h-5 w-5" />
+          Вийти
+        </a>
       </div>
     </div>
   )
@@ -140,6 +146,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       {/* Mobile Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="w-64 p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Меню адмін-панелі</SheetTitle>
+            <SheetDescription>Навігація по розділах адмін-панелі</SheetDescription>
+          </SheetHeader>
           <Sidebar />
         </SheetContent>
       </Sheet>

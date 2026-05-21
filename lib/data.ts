@@ -1,4 +1,13 @@
-import type { Plant, Category, Order } from './types'
+import { DEFAULT_TIER_THRESHOLDS } from './product-pricing'
+import type { Plant, Category, Order, PriceTier } from './types'
+
+function makePriceTiers(basePrice: number): PriceTier[] {
+  const discounts = [0.95, 0.9, 0.85, 0.8, 0.75, 0.7]
+  return DEFAULT_TIER_THRESHOLDS.map((minQuantity, i) => ({
+    minQuantity,
+    pricePerUnit: Math.round(basePrice * discounts[i]),
+  }))
+}
 
 export const categories: Category[] = [
   {
@@ -65,6 +74,37 @@ export const plants: Plant[] = [
     isNew: true,
     isFeatured: true,
     createdAt: '2024-01-15',
+    variants: [
+      {
+        id: '1-c2',
+        label: 'C2',
+        stock: 420,
+        basePrice: 320,
+        priceTiers: makePriceTiers(320),
+      },
+      {
+        id: '1-c5',
+        label: 'C5',
+        stock: 125,
+        basePrice: 450,
+        priceTiers: makePriceTiers(450),
+      },
+      {
+        id: '1-c7',
+        label: 'C7',
+        stock: 68,
+        basePrice: 620,
+        priceTiers: makePriceTiers(620),
+      },
+      {
+        id: '1-cvr',
+        label: 'СВРБ, ТГ22-24, Н300-400, РА180-200',
+        stock: 0,
+        availableFrom: '25.05.2026',
+        basePrice: 780,
+        priceTiers: makePriceTiers(780),
+      },
+    ],
   },
   {
     id: '2',

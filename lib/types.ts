@@ -1,3 +1,23 @@
+/** Градація ціни: від minQuantity шт. — pricePerUnit за одиницю */
+export interface PriceTier {
+  minQuantity: number
+  pricePerUnit: number
+}
+
+/** Варіант товару (розмір / маркування) */
+export interface ProductVariant {
+  id: string
+  /** Маркування, напр. C2, C5, СВРБ, ТГ22-24… */
+  label: string
+  stock: number
+  /** Орієнтовна дата відвантаження (напр. "25.05.2026"); дозволяє бронювання навіть при stock 0 */
+  availableFrom?: string
+  basePrice: number
+  priceTiers: PriceTier[]
+  /** Показувати кнопку «Свіжі фото» лише якщо true */
+  freshPhotos?: boolean
+}
+
 export interface Plant {
   id: string
   name: string
@@ -11,6 +31,8 @@ export interface Plant {
   description: string
   shortDescription: string
   stock: number
+  /** Розміри / варіанти з цінами та наявністю; якщо порожньо — використовується containerSize + price */
+  variants?: ProductVariant[]
   containerSize: 'P9' | 'C2' | 'C3' | 'C5' | 'C7' | 'C10' | 'C20' | 'C30'
   height: string
   sunRequirement: 'full-sun' | 'partial-shade' | 'full-shade'
@@ -28,6 +50,11 @@ export interface Plant {
 export interface CartItem {
   plant: Plant
   quantity: number
+  /** id варіанту з ProductVariant */
+  variantId?: string
+  variantLabel?: string
+  /** Ціна за од. на момент додавання (з урахуванням градації) */
+  unitPrice?: number
 }
 
 export interface Category {

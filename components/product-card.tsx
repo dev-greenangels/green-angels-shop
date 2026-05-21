@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { useCartStore } from '@/lib/cart-store'
+import { getPlantDisplayPrice } from '@/lib/plant-variants'
 import type { Plant } from '@/lib/types'
 
 interface ProductCardProps {
@@ -27,6 +28,8 @@ const waterLabels = {
 
 export function ProductCard({ plant }: ProductCardProps) {
   const { addItem, openCart } = useCartStore()
+  const displayPrice = getPlantDisplayPrice(plant)
+  const hasVariants = (plant.variants?.length ?? 0) > 1
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -86,7 +89,8 @@ export function ProductCard({ plant }: ProductCardProps) {
             <div className="flex items-center justify-between pt-2">
               <div className="flex items-baseline gap-2">
                 <span className="text-lg font-bold text-foreground">
-                  {plant.price.toLocaleString('uk-UA')} ₴
+                  {hasVariants && <span className="text-sm font-normal text-muted-foreground">від </span>}
+                  {displayPrice.toLocaleString('uk-UA')} ₴
                 </span>
                 {plant.originalPrice && (
                   <span className="text-sm text-muted-foreground line-through">

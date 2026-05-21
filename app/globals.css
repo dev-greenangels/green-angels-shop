@@ -9,7 +9,7 @@
   --foreground: #1a1a1a;
   
   /* Forest Green #2D5A27 */
-  --primary: #2D5A27;
+  --primary: #5b9438;
   --primary-foreground: #FFFFFF;
   
   /* Soft Sage */
@@ -97,9 +97,10 @@
 }
 
 @theme inline {
-  --font-sans: 'Inter', 'Geist', sans-serif;
-  --font-serif: 'Playfair Display', 'Georgia', serif;
-  --font-mono: 'Geist Mono', monospace;
+  /* Source Sans 3: людистий гротеск, м’якший за Inter+Playfair, добре для укр. тексту */
+  --font-sans: var(--font-source), system-ui, sans-serif;
+  --font-serif: var(--font-source), system-ui, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -142,7 +143,14 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
+  /* 112.5% ≈ 18px замість 16px — усі text-* (rem) стають трохи більшими */
+  html {
+    font-size: 112.5%;
   }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'kern' 1, 'liga' 1;
+    line-height: 1.6;
+  }
+
 }

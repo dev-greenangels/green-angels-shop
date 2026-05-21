@@ -4,21 +4,21 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { 
-  Leaf, 
-  ShoppingBag, 
-  Truck, 
-  CreditCard, 
-  User, 
-  Mail, 
-  Phone, 
+import {
+  ArrowLeft,
+  ShoppingBag,
+  Truck,
+  CreditCard,
+  User,
+  Mail,
+  Phone,
   MapPin,
   ChevronRight,
   Shield,
   Clock,
   LogIn,
   UserPlus,
-  X
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,9 +26,62 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Separator } from '@/components/ui/separator'
-import { useCartStore } from '@/lib/cart-store'
+import { BrandLogo } from '@/components/brand-logo'
+import { cartLineKey, useCartStore } from '@/lib/cart-store'
+import type { CartItem } from '@/lib/types'
 
 type CheckoutStep = 'contact' | 'shipping' | 'payment'
+
+function checkoutItemKey(item: CartItem) {
+  return cartLineKey(item.plant.slug, item.variantId)
+}
+
+function CheckoutHeader({
+  onBack,
+  rightSlot,
+  sticky = false,
+}: {
+  onBack?: () => void
+  rightSlot?: React.ReactNode
+  sticky?: boolean
+}) {
+  const router = useRouter()
+
+  return (
+    <header
+      className={`border-b bg-background ${sticky ? 'sticky top-0 z-40' : ''}`}
+    >
+      <div className="container mx-auto px-4 py-3">
+        <div className="grid h-14 grid-cols-[auto_1fr_auto] items-center">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="-ml-1 justify-self-start"
+            aria-label="Назад"
+            onClick={onBack ?? (() => router.back())}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+
+          <Link
+            href="/"
+            className="col-start-2 row-start-1 flex items-center justify-center justify-self-center px-1"
+          >
+            <BrandLogo
+              alt="Зелені Янголи"
+              imgClassName="max-h-9 max-w-[min(148px,44vw)] object-contain object-center"
+            />
+          </Link>
+
+          <div className="flex min-h-9 min-w-9 items-center justify-end justify-self-end">
+            {rightSlot ?? <span className="sr-only"> </span>}
+          </div>
+        </div>
+      </div>
+    </header>
+  )
+}
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -94,19 +147,7 @@ export default function CheckoutPage() {
   if (isGuest === null) {
     return (
       <div className="min-h-screen bg-muted/30">
-        {/* Header */}
-        <header className="bg-background border-b">
-          <div className="container mx-auto px-4 py-4">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground">
-                <Leaf className="h-5 w-5" />
-              </div>
-              <span className="font-serif text-xl font-semibold text-foreground">
-                Зелені Янголи
-              </span>
-            </Link>
-          </div>
-        </header>
+        <CheckoutHeader />
 
         <div className="container mx-auto px-4 py-8 lg:py-16">
           <div className="max-w-4xl mx-auto">
@@ -234,8 +275,8 @@ export default function CheckoutPage() {
                 <div className="flex items-center gap-4">
                   <div className="flex -space-x-2">
                     {items.slice(0, 3).map((item, index) => (
-                      <div 
-                        key={item.plant.id}
+                      <div
+                        key={checkoutItemKey(item)}
                         className="w-12 h-12 rounded-lg border-2 border-background overflow-hidden bg-muted"
                         style={{ zIndex: 3 - index }}
                       >
@@ -303,26 +344,15 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* Header */}
-      <header className="bg-background border-b sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground">
-                <Leaf className="h-5 w-5" />
-              </div>
-              <span className="font-serif text-xl font-semibold text-foreground">
-                Зелені Янголи
-              </span>
-            </Link>
-            
-            <Button variant="ghost" size="sm" onClick={() => setIsGuest(null)}>
-              <X className="h-4 w-4 mr-2" />
-              Скасувати
-            </Button>
-          </div>
-        </div>
-      </header>
+      <CheckoutHeader
+        sticky
+        rightSlot={
+          <Button variant="ghost" size="sm" onClick={() => setIsGuest(null)}>
+            <X className="mr-2 h-4 w-4" />
+            Скасувати
+          </Button>
+        }
+      />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
@@ -655,7 +685,10 @@ export default function CheckoutPage() {
 
                 <div className="space-y-4 mb-6 max-h-64 overflow-y-auto">
                   {items.map((item) => (
-                    <div key={item.plant.id} className="flex gap-3">
+                    <div
+                      key={checkoutItemKey(item)}
+                      className="flex gap-3"
+                    >
                       <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                         <Image
                           src={item.plant.images[0]}

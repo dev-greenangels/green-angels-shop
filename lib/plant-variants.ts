@@ -70,6 +70,13 @@ export function getVariantMaxQuantity(variant: ProductVariant): number {
   return 0
 }
 
+/** Для відображення в колонці «Наявність»: при бронюванні — ліміт, а не 0 */
+export function getVariantDisplayStock(variant: ProductVariant): number {
+  if (variant.stock > 0) return variant.stock
+  if (variantHasAvailableFrom(variant)) return getVariantMaxQuantity(variant)
+  return 0
+}
+
 export function isVariantPreorder(variant: ProductVariant): boolean {
   return variant.stock <= 0 && variantHasAvailableFrom(variant)
 }

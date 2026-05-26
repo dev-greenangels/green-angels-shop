@@ -35,6 +35,7 @@ export interface Plant {
   variants?: ProductVariant[]
   containerSize: 'P9' | 'C2' | 'C3' | 'C5' | 'C7' | 'C10' | 'C20' | 'C30'
   height: string
+  width: string
   sunRequirement: 'full-sun' | 'partial-shade' | 'full-shade'
   soilType: 'acidic' | 'neutral' | 'alkaline' | 'any'
   hardinessZone: string

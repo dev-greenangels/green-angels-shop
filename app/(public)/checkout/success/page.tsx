@@ -39,11 +39,11 @@ function SuccessContent() {
             <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
               <CheckCircle2 className="h-10 w-10 text-primary" />
             </div>
-            <h1 className="font-serif text-3xl lg:text-4xl font-bold text-foreground mb-3">
+            <h1 className="font-serif text-2xl lg:text-4xl font-bold text-foreground mb-3">
               Замовлення оформлено!
             </h1>
             <p className="text-lg text-muted-foreground">
-              Дякуємо за ваше замовлення. Ми вже почали його обробку.
+              Дякуємо за ваше замовлення. Очікуйте на відвантаження.
             </p>
           </div>
 
@@ -74,7 +74,7 @@ function SuccessContent() {
                 <div>
                   <p className="font-medium text-foreground">Підтвердження</p>
                   <p className="text-sm text-muted-foreground">
-                    Найближчим часом ви отримаєте email та SMS з підтвердженням замовлення
+                    Найближчим часом ви отримаєте email або SMS з підтвердженням та планованою датою відвантаження.
                   </p>
                 </div>
               </div>
@@ -84,9 +84,9 @@ function SuccessContent() {
                   2
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">Обробка</p>
+                  <p className="font-medium text-foreground">Обробка та Відправка</p>
                   <p className="text-sm text-muted-foreground">
-                    Наші спеціалісти підготують ваші рослини до відправки (1-2 робочі дні)
+                    Наші спеціалісти підготують ваші рослини до відправки. В день відправки ви отримаєте SMS з ТТН для відстеження посилки.
                   </p>
                 </div>
               </div>
@@ -94,18 +94,6 @@ function SuccessContent() {
               <div className="flex gap-4">
                 <div className="w-10 h-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center flex-shrink-0 text-sm font-bold">
                   3
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Відправка</p>
-                  <p className="text-sm text-muted-foreground">
-                    Ви отримаєте ТТН для відстеження посилки
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex gap-4">
-                <div className="w-10 h-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center flex-shrink-0 text-sm font-bold">
-                  4
                 </div>
                 <div>
                   <p className="font-medium text-foreground">Отримання</p>
@@ -118,7 +106,7 @@ function SuccessContent() {
           </div>
 
           {/* Contact Info */}
-          <div className="bg-secondary/30 rounded-xl p-6 mb-8">
+          {/* <div className="bg-secondary/30 rounded-xl p-6 mb-8">
             <h3 className="font-medium text-foreground mb-4">Потрібна допомога?</h3>
             <div className="grid sm:grid-cols-2 gap-4">
               <a 
@@ -146,7 +134,7 @@ function SuccessContent() {
                 </div>
               </a>
             </div>
-          </div>
+          </div> */}
 
           {/* Delivery Info */}
           <div className="bg-background rounded-xl border p-6 mb-8">
@@ -157,11 +145,11 @@ function SuccessContent() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
                 <ArrowRight className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                Рослини ретельно пакуються для безпечної доставки
+                Рослини ретельно пакуються для безпечної доставки у картонні коробки з маркуванням верх / низ / крихке або палети чи обрешетування.
               </li>
               <li className="flex items-start gap-2">
                 <ArrowRight className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                Доставка здійснюється у спеціальних коробках з вентиляцією
+                Доставка здійснюється Новою Поштою.
               </li>
               <li className="flex items-start gap-2">
                 <ArrowRight className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />

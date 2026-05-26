@@ -24,3 +24,18 @@ export function getMinVariantPrice(variant: ProductVariant): number {
   if (!variant.priceTiers.length) return variant.basePrice
   return Math.min(variant.basePrice, ...variant.priceTiers.map((t) => t.pricePerUnit))
 }
+
+export function getMaxVariantPrice(variant: ProductVariant): number {
+  if (!variant.priceTiers.length) return variant.basePrice
+  return Math.max(variant.basePrice, ...variant.priceTiers.map((t) => t.pricePerUnit))
+}
+
+export function getVariantPriceRange(variants: ProductVariant[]): {
+  min: number
+  max: number
+} {
+  if (!variants.length) return { min: 0, max: 0 }
+  const mins = variants.map(getMinVariantPrice)
+  const maxes = variants.map(getMaxVariantPrice)
+  return { min: Math.min(...mins), max: Math.max(...maxes) }
+}

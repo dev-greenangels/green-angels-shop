@@ -4,21 +4,21 @@ import { useState } from 'react'
 import { useParams, notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ChevronRight, Sun, Droplets, Mountain, Thermometer } from 'lucide-react'
+import { ChevronRight, Sun, ArrowUpDown, MoveHorizontal, Mountain, Thermometer } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ProductCard } from '@/components/product-card'
 import { ProductVariantsTable } from '@/components/product/product-variants-table'
-import { useCartStore } from '@/lib/cart-store'
+import { getCartLineQuantity } from '@/lib/cart-limits'
+import { useCartActions, useCartItems } from '@/lib/cart-store'
 import { plants, categories } from '@/lib/data'
 import {
   getPlantVariants,
   isPlantFullyUnavailable,
   isPlantOrderable,
 } from '@/lib/plant-variants'
-import { formatPrice, getMinVariantPrice } from '@/lib/product-pricing'
 import type { ProductVariant } from '@/lib/types'
 
 const sunLabels = {
@@ -34,12 +34,6 @@ const soilLabels = {
   any: 'Будь-який',
 }
 
-const waterLabels = {
-  low: 'Низькі',
-  moderate: 'Помірні',
-  high: 'Високі',
-}
-
 export default function ProductPage() {
   const params = useParams()
   const slug = params.slug as string
@@ -50,17 +44,24 @@ export default function ProductPage() {
   }
 
   const [selectedImage, setSelectedImage] = useState(0)
-  const { addItem, openCart } = useCartStore()
+  const cartItems = useCartItems()
+  const { addItem, openCart, updateQuantity } = useCartActions()
 
   const category = categories.find(c => c.slug === plant.category)
   const relatedPlants = plants.filter(p => p.category === plant.category && p.id !== plant.id).slice(0, 4)
   const variants = getPlantVariants(plant)
   const canOrder = isPlantOrderable(variants)
   const fullyUnavailable = isPlantFullyUnavailable(variants)
-  const priceFrom = Math.min(...variants.map(getMinVariantPrice))
 
-  const handleBuy = (variant: ProductVariant, quantity: number, unitPrice: number) => {
-    addItem(plant, quantity, { variant, unitPrice })
+  const handleBuy = (variant: ProductVariant, targetQuantity: number, unitPrice: number) => {
+    const inCart = getCartLineQuantity(cartItems, plant.id, variant.id)
+
+    if (targetQuantity < inCart) {
+      updateQuantity(plant.id, targetQuantity, variant.id)
+    } else if (targetQuantity > inCart) {
+      addItem(plant, targetQuantity - inCart, { variant, unitPrice })
+    }
+
     openCart()
   }
 
@@ -138,9 +139,6 @@ export default function ProductPage() {
             {/* Info */}
             <div className="space-y-6">
               <div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Артикул: {plant.sku}
-                </p>
                 <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-2">
                   {plant.name}
                 </h1>
@@ -149,19 +147,9 @@ export default function ProductPage() {
                 </p>
               </div>
 
-              {canOrder ? (
-                <p className="text-muted-foreground">
-                  від{' '}
-                  <span className="text-3xl font-bold text-foreground">{formatPrice(priceFrom)}</span>
-                  {variants.length > 1 && <span> · {variants.length} розмірів</span>}
-                </p>
-              ) : (
+              {!canOrder && (
                 <p className="text-lg font-semibold text-muted-foreground">Немає в наявності</p>
               )}
-
-              <p className="text-muted-foreground leading-relaxed">
-                {plant.description}
-              </p>
 
               {/* Quick specs */}
               <div className="grid grid-cols-2 gap-4 py-4 border-y border-border">
@@ -176,11 +164,20 @@ export default function ProductPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                    <Droplets className="h-5 w-5 text-primary" />
+                    <ArrowUpDown className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Полив</p>
-                    <p className="text-sm font-medium">{waterLabels[plant.wateringNeeds]}</p>
+                    <p className="text-xs text-muted-foreground">Висота</p>
+                    <p className="text-sm font-medium">{plant.height}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                    <MoveHorizontal className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Ширина</p>
+                    <p className="text-sm font-medium">{plant.width}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -202,15 +199,10 @@ export default function ProductPage() {
                   </div>
                 </div>
               </div>
-
-              <div className="text-sm">
-                <span className="text-muted-foreground">Висота: </span>
-                <span className="font-medium">{plant.height}</span>
-              </div>
             </div>
           </div>
 
-          <div className="mb-16">
+          <div className="mb-16 space-y-6">
             <ProductVariantsTable
               variants={variants}
               plantId={plant.id}
@@ -218,6 +210,7 @@ export default function ProductPage() {
               fullyOutOfStock={fullyUnavailable}
               onBuy={handleBuy}
             />
+            <p className="text-muted-foreground leading-relaxed">{plant.description}</p>
           </div>
 
           {/* Care tabs */}

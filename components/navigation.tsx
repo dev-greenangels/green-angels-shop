@@ -18,7 +18,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { clearBodyScrollLock } from '@/lib/clear-body-scroll-lock'
-import { useCartStore } from '@/lib/cart-store'
+import { useCartActions, useCartTotalItems } from '@/lib/cart-store'
 
 import { CartDrawer } from './cart-drawer'
 
@@ -29,10 +29,8 @@ export function Navigation() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const openCart = useCartStore((s) => s.openCart)
-  const totalItems = useCartStore((s) =>
-    s.items.reduce((sum, item) => sum + item.quantity, 0)
-  )
+  const { openCart } = useCartActions()
+  const totalItems = useCartTotalItems()
 
   useEffect(() => {
     setMounted(true)
@@ -142,7 +140,7 @@ export function Navigation() {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="relative"
+                    className="relative overflow-visible"
                     aria-label={tc('cart')}
                     onClick={() => openCart()}
                   >
@@ -222,7 +220,7 @@ export function Navigation() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="relative"
+                className="relative overflow-visible"
                 aria-label={tc('cart')}
                 onClick={() => openCart()}
               >

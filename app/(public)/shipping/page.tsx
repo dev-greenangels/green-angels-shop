@@ -57,30 +57,6 @@ export default function ShippingPage() {
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Package className="h-6 w-6 text-primary" />
-                      </div>
-                      Укрпошта
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3 text-muted-foreground">
-                    <p>Економна доставка у відділення по всій Україні.</p>
-                    <ul className="space-y-2">
-                      <li className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-primary" />
-                        Термін: 3-7 днів
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4 text-primary" />
-                        Найнижча вартість
-                      </li>
-                    </ul>
-                  </CardContent>
-                </Card>
-
                 <Card className="md:col-span-2">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-3">
@@ -125,20 +101,12 @@ export default function ShippingPage() {
                   </thead>
                   <tbody className="text-muted-foreground">
                     <tr className="border-b border-border">
-                      <td className="py-4 px-4">До 1000 грн</td>
+                      <td className="py-4 px-4">Нова Пошта</td>
                       <td className="py-4 px-4">За тарифами перевізника</td>
                     </tr>
                     <tr className="border-b border-border">
-                      <td className="py-4 px-4">1000 - 3000 грн</td>
-                      <td className="py-4 px-4">За тарифами перевізника (знижка 30%)</td>
-                    </tr>
-                    <tr className="border-b border-border bg-secondary/30">
-                      <td className="py-4 px-4 font-medium text-foreground">Від 3000 грн</td>
-                      <td className="py-4 px-4 font-medium text-primary">Безкоштовно</td>
-                    </tr>
-                    <tr className="border-b border-border">
                       <td className="py-4 px-4">Самовивіз</td>
-                      <td className="py-4 px-4 font-medium text-primary">Безкоштовно</td>
+                      <td className="py-4 px-4">Без додаткової плати за доставку</td>
                     </tr>
                   </tbody>
                 </table>
@@ -150,19 +118,12 @@ export default function ShippingPage() {
               <h2 className="font-serif text-2xl font-semibold text-foreground mb-8">
                 Способи оплати
               </h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid sm:grid-cols-2 gap-6">
                 <div className="p-6 bg-secondary/30 rounded-xl">
                   <CreditCard className="h-8 w-8 text-primary mb-4" />
                   <h3 className="font-semibold mb-2">Карткою онлайн</h3>
                   <p className="text-sm text-muted-foreground">
-                    Visa, Mastercard через захищену платіжну систему
-                  </p>
-                </div>
-                <div className="p-6 bg-secondary/30 rounded-xl">
-                  <Package className="h-8 w-8 text-primary mb-4" />
-                  <h3 className="font-semibold mb-2">Накладний платіж</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Оплата при отриманні у відділенні перевізника
+                    Visa, Mastercard, Apple Pay, Google Pay через захищену платіжну систему
                   </p>
                 </div>
                 <div className="p-6 bg-secondary/30 rounded-xl">

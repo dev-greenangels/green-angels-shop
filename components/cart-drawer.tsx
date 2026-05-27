@@ -261,11 +261,11 @@ export function CartDrawer() {
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent
         className={cn(
-          'flex w-full flex-col border-border/40 p-2 sm:max-w-lg',
+          'flex gap-0 w-full flex-col border-border/40 p-0 sm:max-w-lg',
           'bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70'
         )}
       >
-        <SheetHeader>
+        <SheetHeader className='pt-2 pb-2.5 shadow-sm'>
           <SheetTitle className="font-serif text-xl">Кошик</SheetTitle>
           <SheetDescription className="sr-only">
             Перегляд товарів у кошику та оформлення замовлення
@@ -285,7 +285,7 @@ export function CartDrawer() {
           </div>
         ) : (
           <>
-            <div className="flex-1 overflow-y-auto py-4 pt-0">
+            <div className="flex-1 overflow-y-auto py-4 px-2">
               <div className="space-y-4">
                 {displayItems.map((item) => {
                   const lineKey = item.variantId
@@ -305,7 +305,7 @@ export function CartDrawer() {
               </div>
             </div>
 
-            <div className="space-y-4 border-t border-border pt-4">
+            <div className="space-y-4 px-2 pt-2 pb-4 border-t border-border shadow-sm flex flex-col">
               <div className="flex items-center justify-between text-lg font-semibold">
                 <span>Разом:</span>
                 <span>{totalPrice.toLocaleString('uk-UA')} ₴</span>
@@ -314,12 +314,12 @@ export function CartDrawer() {
                 Доставка розраховується при оформленні замовлення
               </p>
              
-              <Button className="w-[80%] flex justify-center justify-self-center" size="lg" asChild>
+              <Button className="w-[80%] flex justify-center justify-self-center self-center" size="lg" asChild>
                 <Link href="/checkout" onClick={closeCart}>
                   Оформити замовлення
                 </Link>
               </Button>
-              <Button type="button" variant="outline" className="w-[80%] flex justify-center justify-self-center" onClick={closeCart}>
+              <Button type="button" variant="outline" className="w-[80%] flex justify-center justify-self-center self-center" onClick={closeCart}>
                 Продовжити покупки
               </Button>
             </div>

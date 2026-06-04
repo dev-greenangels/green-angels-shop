@@ -10,14 +10,11 @@ export function CheckoutGuestChoice({ onContinueAsGuest }: { onContinueAsGuest: 
   return (
     <div className="mx-auto min-w-0 w-full max-w-4xl">
       <div className="mb-10 text-center">
-        <h1 className="mb-3 font-serif text-3xl font-bold text-foreground lg:text-4xl">
-          Оформлення замовлення
-        </h1>
         <p className="text-lg text-muted-foreground">Оберіть зручний спосіб оформлення</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="relative rounded-xl border-2 border-primary bg-background p-6 lg:p-8">
+        <div className="relative rounded-xl border-2 border-primary/80 bg-card/95 p-6 shadow-sm lg:p-8">
           <div className="absolute -top-3 left-6 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
             Рекомендовано
           </div>
@@ -62,7 +59,7 @@ export function CheckoutGuestChoice({ onContinueAsGuest }: { onContinueAsGuest: 
           </p>
         </div>
 
-        <div className="rounded-xl border bg-background p-6 lg:p-8">
+        <div className="rounded-xl border border-border/80 bg-card/95 p-6 shadow-sm lg:p-8">
           <div className="mb-6 flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
               <UserPlus className="h-7 w-7 text-muted-foreground" />

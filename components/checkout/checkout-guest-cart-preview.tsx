@@ -17,7 +17,7 @@ export const CheckoutGuestCartPreview = memo(function CheckoutGuestCartPreview()
   const totalPrice = useCartTotalPrice()
 
   return (
-    <section className="mt-10 rounded-xl border bg-background p-5 sm:p-6">
+    <section className="mt-10 rounded-xl border border-border/80 bg-card/95 p-5 shadow-sm sm:p-6">
       <h3 className="mb-5 font-serif text-lg font-semibold text-foreground">У кошику</h3>
       <p className="text-base text-foreground">
         <span className="font-medium">{itemsCountLabel(items.length)}</span>

@@ -6,32 +6,50 @@ import { useRouter } from 'next/navigation'
 import { ShoppingBag } from 'lucide-react'
 
 import { CheckoutContactStep } from '@/components/checkout/checkout-contact-step'
-import { CheckoutGuestChoice } from '@/components/checkout/checkout-guest-choice'
 import { CheckoutHeader } from '@/components/checkout/checkout-header'
 import { CheckoutOrderSummary } from '@/components/checkout/checkout-order-summary'
 import { CheckoutPaymentStep } from '@/components/checkout/checkout-payment-step'
-import { CheckoutProgress } from '@/components/checkout/checkout-progress'
 import { CheckoutShippingStep } from '@/components/checkout/checkout-shipping-step'
-import type { CheckoutStep } from '@/components/checkout/checkout-utils'
+import { CartDrawer } from '@/components/cart-drawer'
+import {
+  checkoutPageContentClassName,
+  checkoutPageGradientClassName,
+  checkoutPageShellClassName,
+  checkoutPanelClassName,
+  type CheckoutStep,
+} from '@/components/checkout/checkout-utils'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { useCartActions, useCartItems } from '@/lib/cart-store'
+import { cn } from '@/lib/utils'
 import {
   isContactStepValid,
   isShippingStepValid,
   type CheckoutContactFieldKey,
   type CheckoutFormValues,
+  type CheckoutIdentificationState,
+  type CheckoutRecipientFieldKey,
   type CheckoutShippingFieldKey,
 } from '@/lib/validation/checkout-form'
 
 const initialFormData: CheckoutFormValues = {
   firstName: '',
   lastName: '',
+  patronymic: '',
   email: '',
   phone: '',
+  deliveryPhone: '',
+  isOtherRecipient: false,
+  recipientFirstName: '',
+  recipientLastName: '',
+  recipientPatronymic: '',
+  recipientPhone: '',
+  deliveryMethod: 'nova-poshta-branch',
   city: '',
-  address: '',
   postOffice: '',
-  deliveryMethod: 'nova-poshta',
+  street: '',
+  houseNumber: '',
   paymentMethod: 'card-online',
   comment: '',
 }
@@ -39,10 +57,16 @@ const initialFormData: CheckoutFormValues = {
 export default function CheckoutPage() {
   const router = useRouter()
   const items = useCartItems()
-  const { clearCart } = useCartActions()
+  const { clearCart, setPersonalDiscountPercent } = useCartActions()
+  const [identification, setIdentification] = useState<CheckoutIdentificationState>({
+    lookupDone: false,
+    customerFound: null,
+    returningVerified: false,
+    skippedReturningLogin: false,
+    attemptingReturningLogin: false,
+  })
   const [mounted, setMounted] = useState(false)
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('contact')
-  const [isGuest, setIsGuest] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState(initialFormData)
   const [contactTouched, setContactTouched] = useState<
@@ -51,7 +75,11 @@ export default function CheckoutPage() {
   const [shippingTouched, setShippingTouched] = useState<
     Partial<Record<CheckoutShippingFieldKey, boolean>>
   >({})
+  const [recipientTouched, setRecipientTouched] = useState<
+    Partial<Record<CheckoutRecipientFieldKey, boolean>>
+  >({})
   const phoneInputRef = useRef<HTMLInputElement>(null)
+  const deliveryPhoneInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -60,27 +88,30 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!mounted) return
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
-  }, [mounted, isGuest, currentStep])
+  }, [mounted, currentStep])
 
   const patchForm = useCallback((patch: Partial<CheckoutFormValues>) => {
     setFormData((prev) => ({ ...prev, ...patch }))
   }, [])
 
-  const movePhoneCursorToEnd = useCallback(() => {
+  const moveDeliveryPhoneCursorToEnd = useCallback(() => {
     requestAnimationFrame(() => {
-      const el = phoneInputRef.current
+      const el = deliveryPhoneInputRef.current
       if (!el) return
       const end = el.value.length
       el.setSelectionRange(end, end)
     })
   }, [])
 
-  const canProceedToShipping = useMemo(() => isContactStepValid(formData), [formData])
+  const canProceedToShipping = useMemo(
+    () => isContactStepValid(formData, identification),
+    [formData, identification]
+  )
   const canProceedToPayment = useMemo(() => isShippingStepValid(formData), [formData])
 
   const handleCheckoutBack = useCallback(() => {
     if (currentStep === 'contact') {
-      setIsGuest(null)
+      router.back()
       return
     }
     if (currentStep === 'shipping') {
@@ -88,25 +119,56 @@ export default function CheckoutPage() {
       return
     }
     setCurrentStep('shipping')
-  }, [currentStep])
+  }, [currentStep, router])
 
   const tryGoToShipping = useCallback(() => {
     setContactTouched({
       firstName: true,
       lastName: true,
-      email: true,
       phone: true,
     })
-    if (!isContactStepValid(formData)) return
+    if (!isContactStepValid(formData, identification)) return
     setCurrentStep('shipping')
-  }, [formData])
+  }, [formData, identification])
+
+  const goToShippingAfterAuth = useCallback(() => {
+    setContactTouched({
+      firstName: true,
+      lastName: true,
+      phone: true,
+    })
+    setCurrentStep('shipping')
+  }, [])
+
+  const handleContactLogout = useCallback(() => {
+    setPersonalDiscountPercent(0)
+    setIdentification({
+      lookupDone: false,
+      customerFound: null,
+      returningVerified: false,
+      skippedReturningLogin: false,
+      attemptingReturningLogin: false,
+    })
+    patchForm({ firstName: '', lastName: '', phone: '' })
+  }, [patchForm, setPersonalDiscountPercent])
 
   const tryGoToPayment = useCallback(() => {
     setShippingTouched({
       city: true,
       postOffice: true,
-      address: true,
+      street: true,
+      houseNumber: true,
+      deliveryPhone: true,
+      patronymic: true,
     })
+    if (formData.isOtherRecipient) {
+      setRecipientTouched({
+        recipientFirstName: true,
+        recipientLastName: true,
+        recipientPatronymic: true,
+        recipientPhone: true,
+      })
+    }
     if (!isShippingStepValid(formData)) return
     setCurrentStep('payment')
   }, [formData])
@@ -129,8 +191,9 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-muted/30">
-        <div className="container mx-auto px-4 py-16">
+      <div className={checkoutPageShellClassName}>
+        <div className={checkoutPageGradientClassName} aria-hidden />
+        <div className={cn(checkoutPageContentClassName, 'container mx-auto px-4 py-16')}>
           <div className="mx-auto max-w-md text-center">
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
               <ShoppingBag className="h-10 w-10 text-muted-foreground" />
@@ -148,25 +211,28 @@ export default function CheckoutPage() {
     )
   }
 
-  if (isGuest === null) {
-    return (
-      <div className="min-h-screen bg-muted/30">
-        <CheckoutHeader onBack={() => router.back()} />
-        <div className="container mx-auto w-full max-w-4xl px-3 py-8 sm:px-4 lg:py-16">
-          <CheckoutGuestChoice onContinueAsGuest={() => setIsGuest(true)} />
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen overflow-x-hidden bg-muted/30">
-      <CheckoutHeader sticky onBack={handleCheckoutBack} />
+    <div className={checkoutPageShellClassName}>
+      <div className={checkoutPageGradientClassName} aria-hidden />
+      <div className="pointer-events-none absolute inset-0 opacity-5" aria-hidden>
+        <div className="absolute top-16 left-6 h-48 w-48 rounded-full bg-primary blur-3xl sm:left-10 sm:h-64 sm:w-64" />
+        <div className="absolute right-6 bottom-16 h-56 w-56 rounded-full bg-primary blur-3xl sm:right-10 sm:h-80 sm:w-80" />
+      </div>
 
-      <div className="container mx-auto w-full max-w-6xl px-3 py-6 sm:px-4 sm:py-8">
+      <CheckoutHeader
+        sticky
+        onBack={handleCheckoutBack}
+        currentStep={currentStep}
+        onGoToStep={setCurrentStep}
+      />
+
+      <div
+        className={cn(
+          checkoutPageContentClassName,
+          'container mx-auto w-full max-w-6xl px-3 pt-[calc(3.5rem+env(safe-area-inset-top))] pb-6 sm:px-4 sm:pt-[calc(4rem+env(safe-area-inset-top))] sm:pb-8'
+        )}
+      >
         <div className="mx-auto min-w-0 w-full max-w-6xl">
-          <CheckoutProgress currentStep={currentStep} onGoToStep={setCurrentStep} />
-
           <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
             <div className="min-w-0 lg:col-span-2">
               <form onSubmit={handleSubmit} className="min-w-0 space-y-6" noValidate>
@@ -174,14 +240,22 @@ export default function CheckoutPage() {
                   <CheckoutContactStep
                     formData={formData}
                     contactTouched={contactTouched}
+                    identification={identification}
                     canProceed={canProceedToShipping}
                     phoneInputRef={phoneInputRef}
                     onBlurField={(field) =>
                       setContactTouched((p) => ({ ...p, [field]: true }))
                     }
                     onPatchForm={patchForm}
+                    onIdentificationChange={(patch) =>
+                      setIdentification((prev) => ({ ...prev, ...patch }))
+                    }
+                    onReturningCustomerVerified={(percent) =>
+                      setPersonalDiscountPercent(percent)
+                    }
                     onContinue={tryGoToShipping}
-                    movePhoneCursorToEnd={movePhoneCursorToEnd}
+                    onAuthenticated={goToShippingAfterAuth}
+                    onLogout={handleContactLogout}
                   />
                 )}
 
@@ -189,13 +263,19 @@ export default function CheckoutPage() {
                   <CheckoutShippingStep
                     formData={formData}
                     shippingTouched={shippingTouched}
+                    recipientTouched={recipientTouched}
                     canProceed={canProceedToPayment}
                     onBlurField={(field) =>
                       setShippingTouched((p) => ({ ...p, [field]: true }))
                     }
+                    onBlurRecipientField={(field) =>
+                      setRecipientTouched((p) => ({ ...p, [field]: true }))
+                    }
                     onPatchForm={patchForm}
                     onBack={() => setCurrentStep('contact')}
                     onContinue={tryGoToPayment}
+                    moveDeliveryPhoneCursorToEnd={moveDeliveryPhoneCursorToEnd}
+                    deliveryPhoneInputRef={deliveryPhoneInputRef}
                   />
                 )}
 
@@ -207,6 +287,19 @@ export default function CheckoutPage() {
                     onBack={() => setCurrentStep('shipping')}
                   />
                 )}
+
+                <div className={checkoutPanelClassName}>
+                  <div className="space-y-2">
+                    <Label htmlFor="checkout-comment">Коментар до замовлення</Label>
+                    <Textarea
+                      id="checkout-comment"
+                      placeholder="Додаткова інформація щодо замовлення..."
+                      rows={3}
+                      value={formData.comment}
+                      onChange={(e) => patchForm({ comment: e.target.value })}
+                    />
+                  </div>
+                </div>
               </form>
             </div>
 
@@ -216,6 +309,7 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+      <CartDrawer />
     </div>
   )
 }

@@ -98,16 +98,14 @@ function CartLineRow({
       )}
       {!limitHint && atCartMax && (
         <p className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs font-medium text-primary">
-          <span>Вже додано макс. {maxQty} шт. в</span>
           <ShoppingCart className="h-3.5 w-3.5 shrink-0" aria-label="Кошик" />
+          <span>Додано всі наявні {maxQty} шт</span>
         </p>
       )}
       {!limitHint && hasPartialInCart && (
         <p className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs font-medium text-primary">
-          <span>У кошику {inCart} шт.</span>
-          <ShoppingCart className="h-3.5 w-3.5 shrink-0" aria-label="Кошик" />
           {maxAddable > 0 && (
-            <span className="text-muted-foreground">· ще можна {maxAddable}</span>
+            <span className="text-muted-foreground"> Ще в наявності {maxAddable} шт</span>
           )}
         </p>
       )}
@@ -117,32 +115,61 @@ function CartLineRow({
   const unitPrice = item.unitPrice ?? item.plant.price
 
   return (
-    <div className="flex gap-4 border-b border-[#d6d5d5] pb-[15px]">
-      <Link
-        href={productHref}
-        className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-muted"
-        aria-label={`Перейти до товару: ${item.plant.name}`}
-        onClick={onNavigate}
-      >
-        <Image
-          src={item.plant.images[0] || '/images/placeholder-plant.jpg'}
-          alt={item.plant.name}
-          fill
-          className="object-cover"
-        />
-      </Link>
-
-      <div className="min-w-0 flex-1">
-        <Link href={productHref} className="block" onClick={onNavigate}>
-          <h4 className="truncate text-sm font-medium">{item.plant.name}</h4>
-          <p className="truncate text-xs italic text-muted-foreground">{item.plant.latinName}</p>
+    <div className="flex flex-col border-b border-[#d6d5d5] pb-2">
+      <div className="flex gap-4 ">
+        <Link
+          href={productHref}
+          className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-muted"
+          aria-label={`Перейти до товару: ${item.plant.name}`}
+          onClick={onNavigate}
+        >
+          <Image
+            src={item.plant.images[0] || '/images/placeholder-plant.jpg'}
+            alt={item.plant.name}
+            fill
+            className="object-cover"
+          />
         </Link>
 
-        {item.variantLabel && (
-          <p className="mt-1 text-sm font-medium text-primary">{item.variantLabel}</p>
-        )}
+        <div className="min-w-0 flex flex-1 flex-col gap-1">
+          <div className="flex items-start justify-between gap-3">
+            <Link href={productHref} className="block min-w-0 flex-1" onClick={onNavigate}>
+              <h4 className="truncate text-sm font-medium">{item.plant.name}</h4>
+              <p className="truncate text-xs italic text-muted-foreground">{item.plant.latinName}</p>
+            </Link>
 
-        <div className="mt-0">
+            <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
+          onClick={() => removeItem(item.plant.id, variantId)}
+          aria-label="Видалити"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+
+            {/* <div className="shrink-0 text-right">
+              <p className="text-sm font-semibold">
+                {(unitPrice * item.quantity).toLocaleString('uk-UA')} ₴
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {unitPrice.toLocaleString('uk-UA')} ₴/шт
+              </p>
+            </div> */}
+          </div>
+
+          {item.variantLabel && (
+            <div className="flex items-start justify-between gap-3">
+              <p className="min-w-0 flex-1 text-sm font-medium text-primary">{item.variantLabel}</p>
+            </div>
+          )}
+
+
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-3 mt-2">
+        <div className="min-w-0 flex flex-1 gap-2 items-center">
           {/* Візуал як раніше: - [кількість] +, але з функціоналом інпуту і підказками */}
           <div className="flex items-center gap-2">
             <Button
@@ -178,12 +205,12 @@ function CartLineRow({
                 if (e.key === 'Enter') {
                   e.preventDefault()
                   commitQuantityInput()
-                  ;(e.target as HTMLInputElement).blur()
+                    ; (e.target as HTMLInputElement).blur()
                 }
               }}
               className={cn(
                 'w-8 border-0 bg-transparent px-0 text-center text-sm font-medium tabular-nums shadow-none',
-                'text-primary focus-visible:ring-0 focus-visible:ring-offset-0'
+                'focus-visible:ring-0 focus-visible:ring-offset-0'
               )}
             />
 
@@ -199,32 +226,28 @@ function CartLineRow({
               <Plus className="h-3 w-3" />
             </Button>
           </div>
-
-          {/* Фіксуємо висоту, щоб не "пригало" при появі підказок */}
-          <div className="mt-0 min-h-[36px]">{cartHints}</div>
-        </div>
-      </div>
-
-      <div className="text-right flex flex-col justify-between items-end">
-        <div>
-          <p className="text-sm font-semibold">
-            {(unitPrice * item.quantity).toLocaleString('uk-UA')} ₴
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {unitPrice.toLocaleString('uk-UA')} ₴/шт
-          </p>
+          <div className="self-end">{cartHints}</div>
         </div>
 
-        <Button
+        
+        <div className="shrink-0 text-right">
+              <p className="text-sm font-semibold">
+                {(unitPrice * item.quantity).toLocaleString('uk-UA')} ₴
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {unitPrice.toLocaleString('uk-UA')} ₴/шт
+              </p>
+            </div>
+        {/* <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-destructive hover:text-destructive"
+          className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
           onClick={() => removeItem(item.plant.id, variantId)}
           aria-label="Видалити"
         >
           <Trash2 className="h-4 w-4" />
-        </Button>
+        </Button> */}
       </div>
     </div>
   )
@@ -305,7 +328,7 @@ export function CartDrawer() {
               </div>
             </div>
 
-            <div className="space-y-4 px-2 pt-2 pb-4 border-t border-border shadow-sm flex flex-col">
+            <div className="space-y-4 px-2 pt-2 pb-4 flex flex-col shadow-[0_-1px_3px_0_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1)]">
               <div className="flex items-center justify-between text-lg font-semibold">
                 <span>Разом:</span>
                 <span>{totalPrice.toLocaleString('uk-UA')} ₴</span>
@@ -313,7 +336,7 @@ export function CartDrawer() {
               <p className="text-xs text-muted-foreground">
                 Доставка розраховується при оформленні замовлення
               </p>
-             
+
               <Button className="w-[80%] flex justify-center justify-self-center self-center" size="lg" asChild>
                 <Link href="/checkout" onClick={closeCart}>
                   Оформити замовлення

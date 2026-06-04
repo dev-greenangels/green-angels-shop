@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { getLocale, getMessages, getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { AppProviders } from '@/components/providers/app-providers'
+import { Toaster } from '@/components/ui/sonner'
 import { getSession } from '@/lib/auth/get-session'
 import { defaultLocale } from '@/i18n/routing'
 
@@ -45,6 +46,7 @@ export default async function RootLayout({
         <AppProviders locale={locale} messages={messages} initialSession={session}>
           {children}
         </AppProviders>
+        <Toaster richColors />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

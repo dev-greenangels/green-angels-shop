@@ -1,17 +1,12 @@
-/** Українські літери та апостроф, мінімум 2 літери, без крапок і ком */
-const CYRILLIC_LETTER = 'А-Яа-яІіЇїЄєҐґ'
-const NAME_APOSTROPHE = "''ʼ"
-export const CYRILLIC_NAME_REGEX = new RegExp(
-  `^[${CYRILLIC_LETTER}${NAME_APOSTROPHE}]+$`
-)
+/** Українські літери (апостроф дозволений), мінімум 2 символи */
+export const CYRILLIC_NAME_REGEX = /^[А-Яа-яІіЇїЄєҐґ'ʼ]{2,}$/
 
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
-const CYRILLIC_NAME_FILTER = new RegExp(`[^${CYRILLIC_LETTER}${NAME_APOSTROPHE}]`, 'g')
+const CYRILLIC_NAME_FILTER = /[^А-Яа-яІіЇїЄєҐґ'ʼ]/g
 const EMAIL_FILTER = /[^\w.@+-]/g
 
 const PLUS_COUNTRY_PREFIX = '380'
-/** +380 + 9 цифр абонента */
 const PLUS_MAX_DIGITS_AFTER_PLUS = 12
 
 export function sanitizeCyrillicName(value: string): string {
@@ -19,10 +14,7 @@ export function sanitizeCyrillicName(value: string): string {
 }
 
 export function isValidCyrillicName(value: string): boolean {
-  const trimmed = value.trim()
-  if (!CYRILLIC_NAME_REGEX.test(trimmed)) return false
-  const letterCount = (trimmed.match(new RegExp(`[${CYRILLIC_LETTER}]`, 'g')) ?? []).length
-  return letterCount >= 2
+  return CYRILLIC_NAME_REGEX.test(value.trim())
 }
 
 export function sanitizeEmail(value: string): string {
@@ -36,17 +28,12 @@ export function isValidEmail(value: string): boolean {
 }
 
 /**
- * Початок лише з «+» або «0».
- * «+»: далі лише префікс 380, потім до 9 цифр (без автодоповнення).
- * «0»: національний формат, до 10 цифр (0 + 9).
+ * + на початку: лише префікс 380, потім до 9 цифр (без автодоповнення).
+ * 0 на початку: національний формат, до 10 цифр (0 + 9).
  */
 export function sanitizePhoneInput(value: string): string {
   const compact = value.replace(/\s/g, '')
   if (!compact) return ''
-
-  if (compact[0] !== '+' && compact[0] !== '0') {
-    return ''
-  }
 
   if (compact.startsWith('+')) {
     const digitsAfter = compact.slice(1).replace(/\D/g, '')
@@ -64,11 +51,26 @@ export function sanitizePhoneInput(value: string): string {
     return built
   }
 
-  if (compact.startsWith('0')) {
-    return compact.replace(/\D/g, '').slice(0, 10)
+  const digits = compact.replace(/\D/g, '')
+  if (digits.startsWith('0')) {
+    return digits.slice(0, 10)
   }
 
-  return ''
+  if (/^\d+$/.test(compact)) {
+    return digits.slice(0, 10)
+  }
+
+  return digits.slice(0, 10)
+}
+
+/** E.164 для чекауту: лише + на початку та цифри, без зміни формату (макс. 15 цифр). */
+export const MAX_INTERNATIONAL_PHONE_DIGITS = 15
+
+export function sanitizeCheckoutPhoneInput(value: string): string {
+  const startsWithPlus = value.trimStart().startsWith('+')
+  const digits = value.replace(/\D/g, '').slice(0, MAX_INTERNATIONAL_PHONE_DIGITS)
+  if (!digits) return startsWithPlus ? '+' : ''
+  return startsWithPlus ? `+${digits}` : digits
 }
 
 export function formatPhoneDisplay(value: string): string {
@@ -77,7 +79,7 @@ export function formatPhoneDisplay(value: string): string {
   if (value.startsWith('+')) {
     const allDigits = value.slice(1)
     if (allDigits.length <= PLUS_COUNTRY_PREFIX.length) {
-      return '+' + allDigits
+      return `+${allDigits}`
     }
 
     const local = allDigits.slice(PLUS_COUNTRY_PREFIX.length)
@@ -99,11 +101,79 @@ export function formatPhoneDisplay(value: string): string {
   return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6, 8)} ${d.slice(8)}`
 }
 
+/** Лише для підсумку замовлення — не змінює цифри, лише пробіли для читабельності. */
+export function formatCheckoutPhoneDisplay(value: string): string {
+  if (!value) return ''
+  if (isValidUkrPhone(value)) {
+    const digits = value.replace(/\D/g, '')
+    if (value.startsWith('+') || digits.startsWith('380')) {
+      const normalized = digits.startsWith('380') ? `+${digits}` : value
+      return formatPhoneDisplay(normalized)
+    }
+    return formatPhoneDisplay(value)
+  }
+  return value
+}
+
 export function isValidUkrPhone(value: string): boolean {
   const digits = value.replace(/\D/g, '')
   if (/^380\d{9}$/.test(digits)) return true
   if (/^0\d{9}$/.test(digits)) return true
   return false
+}
+
+export const MIN_INTERNATIONAL_PHONE_DIGITS = 10
+
+export type CheckoutPhoneLookupKind = 'none' | 'ukrainian' | 'international'
+
+/** Чи достатньо цифр для запиту на сервер (до повної валідації форми). */
+export function getCheckoutPhoneLookupKind(value: string): CheckoutPhoneLookupKind {
+  const trimmed = value.trim()
+  if (!trimmed) return 'none'
+
+  const allDigits = trimmed.replace(/\D/g, '')
+
+  if (trimmed.startsWith('+')) {
+    const afterPlus = trimmed.slice(1).replace(/\D/g, '')
+    if (afterPlus.startsWith('380')) {
+      return afterPlus.length >= 12 ? 'ukrainian' : 'none'
+    }
+    return afterPlus.length >= MIN_INTERNATIONAL_PHONE_DIGITS ? 'international' : 'none'
+  }
+
+  if (allDigits.startsWith('0')) {
+    return allDigits.length >= 10 ? 'ukrainian' : 'none'
+  }
+
+  if (allDigits.startsWith('380') && allDigits.length >= 12) {
+    return 'ukrainian'
+  }
+
+  return allDigits.length >= MIN_INTERNATIONAL_PHONE_DIGITS ? 'international' : 'none'
+}
+
+export function getCheckoutPhoneLookupDelayMs(kind: CheckoutPhoneLookupKind): number {
+  if (kind === 'ukrainian') return 2000
+  if (kind === 'international') return 3000
+  return 0
+}
+
+export function isCheckoutPhoneReadyForLookup(value: string): boolean {
+  return getCheckoutPhoneLookupKind(value) !== 'none'
+}
+
+export function isValidInternationalPhone(value: string): boolean {
+  const trimmed = value.trim()
+  if (!trimmed) return false
+
+  if (trimmed.startsWith('+')) {
+    const digits = trimmed.slice(1).replace(/\D/g, '')
+    return digits.length >= 10 && digits.length <= 15
+  }
+
+  const digits = trimmed.replace(/\D/g, '')
+  if (isValidUkrPhone(trimmed)) return true
+  return digits.length >= 10 && digits.length <= 15
 }
 
 export type RegisterFormValues = {
@@ -126,13 +196,13 @@ export function getRegisterFieldError(
     case 'firstName':
       if (!values.firstName.trim()) return 'Обовʼязкове поле'
       if (!isValidCyrillicName(values.firstName)) {
-        return 'Від 2 українських літер'
+        return 'Від 2 українських літер, апостроф дозволений'
       }
       return null
     case 'lastName':
       if (!values.lastName.trim()) return 'Обовʼязкове поле'
       if (!isValidCyrillicName(values.lastName)) {
-        return 'Від 2 українських літер'
+        return 'Від 2 українських літер, апостроф дозволений'
       }
       return null
     case 'email':
@@ -143,7 +213,7 @@ export function getRegisterFieldError(
     case 'phone':
       if (!values.phone.trim()) return 'Обовʼязкове поле'
       if (!isValidUkrPhone(values.phone)) {
-        return 'Почніть з + або 0. Формат: +380 XX XXX XX XX або 0XX XXX XX XX'
+        return 'Формат: +380 XX XXX XX XX або 0XX XXX XX XX'
       }
       return null
     case 'password':

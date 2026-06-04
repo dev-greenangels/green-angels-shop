@@ -5,6 +5,7 @@ import { useParams, notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronRight, Sun, ArrowUpDown, MoveHorizontal, Mountain, Thermometer } from 'lucide-react'
+import { toast } from 'sonner'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { Badge } from '@/components/ui/badge'
@@ -45,7 +46,7 @@ export default function ProductPage() {
 
   const [selectedImage, setSelectedImage] = useState(0)
   const cartItems = useCartItems()
-  const { addItem, openCart, updateQuantity } = useCartActions()
+  const { addItem, updateQuantity } = useCartActions()
 
   const category = categories.find(c => c.slug === plant.category)
   const relatedPlants = plants.filter(p => p.category === plant.category && p.id !== plant.id).slice(0, 4)
@@ -55,14 +56,18 @@ export default function ProductPage() {
 
   const handleBuy = (variant: ProductVariant, targetQuantity: number, unitPrice: number) => {
     const inCart = getCartLineQuantity(cartItems, plant.id, variant.id)
+    let addedCount = 0
 
     if (targetQuantity < inCart) {
       updateQuantity(plant.id, targetQuantity, variant.id)
     } else if (targetQuantity > inCart) {
-      addItem(plant, targetQuantity - inCart, { variant, unitPrice })
+      const result = addItem(plant, targetQuantity - inCart, { variant, unitPrice })
+      addedCount = result.added
     }
 
-    openCart()
+    if (addedCount > 0) {
+      toast.success(`Додано ${addedCount} шт. у кошик`)
+    }
   }
 
   return (

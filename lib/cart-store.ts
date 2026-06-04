@@ -35,6 +35,9 @@ export const CART_STORAGE_VERSION = 1
 interface CartStore {
   items: CartItem[]
   isOpen: boolean
+  /** Персональна знижка після ідентифікації постійного клієнта (не зберігається). */
+  personalDiscountPercent: number
+  setPersonalDiscountPercent: (percent: number) => void
   addItem: (plant: Plant, quantity: number | undefined, options: AddToCartOptions) => AddToCartResult
   removeItem: (plantId: string, variantId: string) => void
   updateQuantity: (plantId: string, quantity: number, variantId: string) => void
@@ -47,11 +50,20 @@ interface CartStore {
   getTotalPrice: () => number
 }
 
-export function computeCartTotalPrice(items: CartItem[]): number {
+export function computeCartSubtotal(items: CartItem[]): number {
   return items.reduce((total, item) => {
     const price = item.unitPrice ?? item.plant.price
     return total + price * item.quantity
   }, 0)
+}
+
+export function computeCartTotalPrice(
+  items: CartItem[],
+  personalDiscountPercent = 0
+): number {
+  const subtotal = computeCartSubtotal(items)
+  if (personalDiscountPercent <= 0) return subtotal
+  return Math.round(subtotal * (1 - personalDiscountPercent / 100))
 }
 
 export function computeCartTotalItems(items: CartItem[]): number {
@@ -68,6 +80,10 @@ export const useCartStore = create<CartStore>()(
     (set, get) => ({
       items: [],
       isOpen: false,
+      personalDiscountPercent: 0,
+
+      setPersonalDiscountPercent: (percent) =>
+        set({ personalDiscountPercent: Math.max(0, Math.min(100, percent)) }),
 
       addItem: (plant, quantity = 1, options) => {
         const variant = options.variant
@@ -159,7 +175,8 @@ export const useCartStore = create<CartStore>()(
       toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
 
       getTotalItems: () => computeCartTotalItems(get().items),
-      getTotalPrice: () => computeCartTotalPrice(get().items),
+      getTotalPrice: () =>
+        computeCartTotalPrice(get().items, get().personalDiscountPercent),
     }),
     {
       name: 'zeleni-yanholy-cart',
@@ -188,8 +205,18 @@ export function useCartIsOpen() {
   return useCartStore((s) => s.isOpen)
 }
 
+export function useCartSubtotal() {
+  return useCartStore((s) => computeCartSubtotal(s.items))
+}
+
+export function useCartPersonalDiscountPercent() {
+  return useCartStore((s) => s.personalDiscountPercent)
+}
+
 export function useCartTotalPrice() {
-  return useCartStore((s) => computeCartTotalPrice(s.items))
+  return useCartStore((s) =>
+    computeCartTotalPrice(s.items, s.personalDiscountPercent)
+  )
 }
 
 export function useCartTotalItems() {
@@ -211,6 +238,7 @@ export function useCartActions() {
       closeCart: s.closeCart,
       setCartOpen: s.setCartOpen,
       toggleCart: s.toggleCart,
+      setPersonalDiscountPercent: s.setPersonalDiscountPercent,
     }))
   )
 }

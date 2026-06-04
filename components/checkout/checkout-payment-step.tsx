@@ -3,11 +3,11 @@
 import { memo } from 'react'
 import { Clock, CreditCard, Shield } from 'lucide-react'
 
+import { checkoutPanelClassName } from '@/components/checkout/checkout-utils'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Separator } from '@/components/ui/separator'
-import { Textarea } from '@/components/ui/textarea'
 import type { CheckoutFormValues } from '@/lib/validation/checkout-form'
 
 export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
@@ -22,7 +22,7 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
   onBack: () => void
 }) {
   return (
-    <div className="w-full min-w-0 rounded-xl border bg-background p-4 sm:p-6">
+    <div className={checkoutPanelClassName}>
       <h2 className="mb-6 flex items-center gap-2 font-serif text-xl font-semibold text-foreground">
         <CreditCard className="h-5 w-5 text-primary" />
         Оплата
@@ -67,16 +67,6 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
           </RadioGroup>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="comment">Коментар до замовлення</Label>
-          <Textarea
-            id="comment"
-            placeholder="Додаткова інформація щодо замовлення..."
-            rows={3}
-            value={formData.comment}
-            onChange={(e) => onPatchForm({ comment: e.target.value })}
-          />
-        </div>
       </div>
 
       <Separator className="my-6" />
@@ -100,7 +90,7 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
           type="submit"
           size="lg"
           disabled={isLoading}
-          className="w-full sm:min-w-[200px]"
+          className="w-full sm:w-auto sm:min-w-[248px]"
         >
           {isLoading ? 'Оформлення...' : 'Оформити замовлення'}
         </Button>

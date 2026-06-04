@@ -207,10 +207,14 @@ function VariantTierPrices({
 
   return (
     <ul className={cn('space-y-1.5 text-sm', className)}>
-      {tiers.map((tier) => (
+      {tiers.map((tier, index) => (
         <li
           key={tier.minQuantity}
-          className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 sm:justify-start sm:gap-x-1.5"
+          className={cn(
+            'flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 rounded-md px-2 py-1',
+            'sm:justify-start sm:gap-x-1.5 mb-0',
+            index % 2 === 0 ? 'bg-muted/45' : 'bg-transparent'
+          )}
         >
           <span className="text-muted-foreground">від {tier.minQuantity} шт.</span>
           <span className="font-medium text-primary">{formatPrice(tier.pricePerUnit)}</span>
@@ -302,27 +306,49 @@ function VariantActions({
   const [quantityInput, setQuantityInput] = useState('1')
   const [limitHint, setLimitHint] = useState(false)
 
-  /** У полі — загальна кількість (у т.ч. уже в кошику) */
+  /** У полі — кількість, яку додаємо поверх уже наявної в кошику. */
   useEffect(() => {
-    const next = Math.min(maxQty, Math.max(1, inCart > 0 ? inCart : 1))
-    setQuantity(next)
-    setQuantityInput(String(next))
+    setQuantity(1)
+    setQuantityInput('1')
     setLimitHint(false)
-  }, [variant.id, inCart, maxQty])
+  }, [variant.id])
 
-  const clampTotal = (value: number) => Math.min(maxQty, Math.max(1, value))
+  useEffect(() => {
+    if (maxAddable <= 0) {
+      setQuantity(1)
+      setQuantityInput('1')
+      setLimitHint(false)
+      return
+    }
+    if (quantity > maxAddable) {
+      setQuantity(maxAddable)
+      setQuantityInput(String(maxAddable))
+      setLimitHint(false)
+    }
+  }, [maxAddable, quantity])
+
+  const clampAddable = (value: number) => {
+    if (maxAddable <= 0) return 1
+    return Math.min(maxAddable, Math.max(1, value))
+  }
 
   const applyQuantity = (next: number, showHintIfCapped = false) => {
     const parsed = Math.max(1, next)
-    if (parsed > maxQty) {
+    if (maxAddable <= 0) {
+      setQuantity(1)
+      setQuantityInput('1')
+      setLimitHint(false)
+      return
+    }
+    if (parsed > maxAddable) {
       if (showHintIfCapped) setLimitHint(true)
-      const clamped = maxQty
+      const clamped = maxAddable
       setQuantity(clamped)
       setQuantityInput(String(clamped))
       return
     }
     setLimitHint(false)
-    const clamped = clampTotal(parsed)
+    const clamped = clampAddable(parsed)
     setQuantity(clamped)
     setQuantityInput(String(clamped))
   }
@@ -336,7 +362,8 @@ function VariantActions({
     applyQuantity(parsed, true)
   }
 
-  const unitPrice = getUnitPriceForQuantity(variant, quantity)
+  const targetQuantity = inCart + quantity
+  const unitPrice = getUnitPriceForQuantity(variant, targetQuantity)
   const controlHeight = size === 'lg' ? 'h-10' : 'h-9'
   const iconSize = size === 'lg' ? 'h-10 w-10' : 'h-9 w-9'
 
@@ -351,7 +378,7 @@ function VariantActions({
     <>
       {limitHint && (
         <p className="text-xs text-destructive" role="alert">
-          Не більше {maxQty} шт. доступно (у кошику {inCart})
+          Можна додати не більше {maxAddable} шт. (у кошику {inCart})
         </p>
       )}
       {!limitHint && atCartMax && (
@@ -409,12 +436,12 @@ function VariantActions({
           }
           const parsed = parseInt(digits, 10)
           if (!Number.isNaN(parsed)) {
-            if (parsed > maxQty) {
+            if (parsed > maxAddable) {
               setLimitHint(true)
-              setQuantity(maxQty)
+              setQuantity(clampAddable(parsed))
             } else {
               setLimitHint(false)
-              setQuantity(clampTotal(parsed))
+              setQuantity(clampAddable(parsed))
             }
           }
         }}
@@ -438,7 +465,7 @@ function VariantActions({
         size="icon"
         className={iconSize}
         onClick={inc}
-        disabled={quantity >= maxQty}
+        disabled={atCartMax || quantity >= maxAddable}
         aria-label="Збільшити кількість"
       >
         <Plus className="h-4 w-4" />
@@ -454,8 +481,8 @@ function VariantActions({
         'gap-2',
         isMobileLayout ? 'w-full' : variantBuyButtonClassName
       )}
-      disabled={atCartMax && quantity === inCart}
-      onClick={() => onBuy(variant, quantity, unitPrice)}
+      disabled={atCartMax}
+      onClick={() => onBuy(variant, targetQuantity, unitPrice)}
     >
       <ShoppingCart className="h-4 w-4 shrink-0" />
       {preorder ? 'Забронювати' : 'Купити'}

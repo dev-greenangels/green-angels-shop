@@ -4,13 +4,13 @@ import type { CSSProperties } from 'react'
 import { useTheme } from 'next-themes'
 import { Toaster as Sonner, ToasterProps } from 'sonner'
 
-/** Під основний/чекаут-хедер (h-16 + safe-area + невеликий відступ). */
-const TOAST_OFFSET_TOP = 'calc(4.5rem + env(safe-area-inset-top, 0px))'
+const TOAST_OFFSET_BOTTOM = 'calc(1.25rem + env(safe-area-inset-bottom, 0px))'
+const TOAST_OFFSET_LEFT = 'calc(1rem + env(safe-area-inset-left, 0px))'
 
 const Toaster = ({
-  position = 'top-center',
-  offset = { top: TOAST_OFFSET_TOP },
-  mobileOffset = { top: TOAST_OFFSET_TOP },
+  position = 'bottom-left',
+  offset = { bottom: TOAST_OFFSET_BOTTOM, left: TOAST_OFFSET_LEFT },
+  mobileOffset = { bottom: TOAST_OFFSET_BOTTOM, left: TOAST_OFFSET_LEFT },
   ...props
 }: ToasterProps) => {
   const { theme = 'system' } = useTheme()
@@ -30,9 +30,9 @@ const Toaster = ({
           '--success-bg': 'var(--card)',
           '--success-text': 'var(--foreground)',
           '--success-border': 'var(--border)',
-          '--error-bg': 'var(--card)',
-          '--error-text': 'var(--foreground)',
-          '--error-border': 'var(--border)',
+          '--error-bg': '#fef2f2',
+          '--error-text': '#7f1d1d',
+          '--error-border': '#fecaca',
         } as CSSProperties
       }
       toastOptions={{
@@ -49,7 +49,8 @@ const Toaster = ({
             'bg-background text-foreground border border-border hover:bg-muted',
           success:
             '!bg-primary/10 !border-primary/35 !text-primary [&_[data-title]]:!text-primary [&_[data-description]]:!text-primary/85',
-          error: '!bg-destructive/10 !border-destructive/30 !text-foreground',
+          error:
+            '!bg-red-50/95 !border-red-200/90 !text-red-950 !shadow-md !backdrop-blur-sm [&_[data-title]]:!text-red-900 [&_[data-description]]:!text-red-800/90 [&_[data-button]]:!border-red-200/80 [&_[data-button]]:!bg-white/70',
         },
       }}
       {...props}

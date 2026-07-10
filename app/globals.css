@@ -4,6 +4,8 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --site-header-offset: 2.75rem;
+
   /* Forest Green Primary Palette */
   --background: #FFFFFF;
   --foreground: #1a1a1a;
@@ -48,7 +50,7 @@
   --chart-4: #8ABE6B;
   --chart-5: #AAD98D;
   
-  --radius: 0.5rem;
+  --radius: 5px;
   
   /* Sidebar */
   --sidebar: #2D5A27;
@@ -59,6 +61,10 @@
   --sidebar-accent-foreground: #FFFFFF;
   --sidebar-border: #4A7A3E;
   --sidebar-ring: #6A9B55;
+
+  /* Оболонка контенту: хедер, футер, секції, сторінки */
+  --site-shell-max-width: 80rem;
+  --site-shell-padding-x: 1.25rem;
 }
 
 .dark {
@@ -97,9 +103,9 @@
 }
 
 @theme inline {
-  /* Source Sans 3: людистий гротеск, м’якший за Inter+Playfair, добре для укр. тексту */
+  /* Source Sans 3 — UI та основний текст; Cormorant Garamond — назви, заголовки, бренд */
   --font-sans: var(--font-source), system-ui, sans-serif;
-  --font-serif: var(--font-source), system-ui, sans-serif;
+  --font-serif: var(--font-display), 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
   --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -125,10 +131,12 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 5px;
+  --radius-xl: 5px;
+  --radius-2xl: 6px;
+  --radius-3xl: 7px;
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -139,6 +147,156 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+@media (min-width: 640px) {
+  :root {
+    --site-shell-padding-x: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --site-shell-padding-x: 2.5rem;
+  }
+}
+
+@layer components {
+  .site-shell {
+    position: relative;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: var(--site-shell-max-width);
+    margin-inline: auto;
+    padding-inline: var(--site-shell-padding-x);
+  }
+
+  .site-shell--narrow {
+    max-width: min(var(--site-shell-max-width), 48rem);
+  }
+
+  .site-shell--compact {
+    max-width: min(var(--site-shell-max-width), 42rem);
+  }
+
+  .backstage-glass {
+    @apply border-border/60 bg-background/20 shadow-sm backdrop-blur-md;
+  }
+
+  [data-backstage-panel] [data-slot='card'] {
+    @apply !border-border/60 !bg-background/20 shadow-sm backdrop-blur-md;
+  }
+
+  /* Бекстейдж: градієнт на всю висоту вікна, без scroll anchoring при акордеонах */
+  html:has([data-backstage-panel]),
+  body:has([data-backstage-panel]) {
+    min-height: 100%;
+    overflow-anchor: none;
+  }
+
+  [data-backstage-panel],
+  [data-backstage-panel] main,
+  [data-backstage-form] {
+    overflow-anchor: none;
+  }
+}
+
+@layer components {
+  .catalog-sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.22) transparent;
+  }
+
+  .catalog-sidebar-scroll::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  .catalog-sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .catalog-sidebar-scroll::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.22);
+    border-radius: 9999px;
+  }
+
+  .catalog-sidebar-scroll:hover::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.35);
+  }
+
+  /*
+   * Ефект натиску: лише :active, без змін до кліку.
+   * Виключення: data-no-press, .prose a
+   */
+  :where(
+    .pressable,
+    [data-pressable],
+    [data-slot='button']:not(:disabled),
+    [data-slot='tabs-trigger']:not(:disabled),
+    [data-slot='accordion-trigger']:not(:disabled),
+    [data-slot='select-trigger']:not(:disabled),
+    [data-slot='dropdown-menu-trigger'],
+    [data-slot='dropdown-menu-item']:not([data-disabled]),
+    [data-slot='dropdown-menu-sub-trigger']:not([data-disabled]),
+    [data-slot='dropdown-menu-checkbox-item']:not([data-disabled]),
+    [data-slot='dropdown-menu-radio-item']:not([data-disabled]),
+    [data-slot='popover-trigger'],
+    [data-slot='sheet-trigger'],
+    [data-slot='command-item'],
+    button:not(:disabled):not([data-no-press]),
+    [role='button']:not([aria-disabled='true']):not([data-no-press]),
+    [role='menuitem']:not([data-disabled]):not([data-no-press]),
+    [role='tab']:not([aria-disabled='true']):not([data-no-press]),
+    [role='link'][tabindex]:not([data-no-press]),
+    header a[href]:not([data-no-press]):not(:has([data-slot='button'], button)),
+    footer a[href]:not([data-no-press]):not(:has([data-slot='button'], button)),
+    nav a[href]:not([data-no-press]):not(:has([data-slot='button'], button)),
+    main a.pressable:not([data-no-press]),
+    main a.block:not([data-no-press])
+  ) {
+    transform: translateZ(0);
+    transition:
+      transform 100ms ease-out,
+      opacity 100ms ease-out;
+  }
+
+  :where(
+    .pressable:active,
+    [data-pressable]:active,
+    [data-slot='button']:not(:disabled):active,
+    [data-slot='tabs-trigger']:not(:disabled):active,
+    [data-slot='accordion-trigger']:not(:disabled):active,
+    [data-slot='select-trigger']:not(:disabled):active,
+    [data-slot='dropdown-menu-trigger']:active,
+    [data-slot='dropdown-menu-item']:not([data-disabled]):active,
+    [data-slot='dropdown-menu-sub-trigger']:not([data-disabled]):active,
+    [data-slot='dropdown-menu-checkbox-item']:not([data-disabled]):active,
+    [data-slot='dropdown-menu-radio-item']:not([data-disabled]):active,
+    [data-slot='popover-trigger']:active,
+    [data-slot='sheet-trigger']:active,
+    [data-slot='command-item']:active,
+    button:not(:disabled):not([data-no-press]):active,
+    [role='button']:not([aria-disabled='true']):not([data-no-press]):active,
+    [role='menuitem']:not([data-disabled]):not([data-no-press]):active,
+    [role='tab']:not([aria-disabled='true']):not([data-no-press]):active,
+    [role='link'][tabindex]:not([data-no-press]):active,
+    header a[href]:not([data-no-press]):not(:has([data-slot='button'], button)):active,
+    footer a[href]:not([data-no-press]):not(:has([data-slot='button'], button)):active,
+    nav a[href]:not([data-no-press]):not(:has([data-slot='button'], button)):active,
+    main a.pressable:not([data-no-press]):active,
+    main a.block:not([data-no-press]):active
+  ) {
+    transform: scale(0.97);
+    opacity: 0.93;
+  }
+
+  [data-no-press],
+  [data-no-press]:active,
+  .prose a,
+  .prose a:active {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -146,11 +304,25 @@
   /* 112.5% ≈ 18px замість 16px — усі text-* (rem) стають трохи більшими */
   html {
     font-size: 112.5%;
+    scrollbar-gutter: stable;
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: 'kern' 1, 'liga' 1;
     line-height: 1.6;
+    text-shadow: 0 0.02rem 0 rgb(101 101 101 / 0.38);
+  }
+
+  :where(
+    input,
+    textarea,
+    select,
+    button,
+    [role='button'],
+    [data-backstage-panel],
+    [data-backstage-panel] *
+  ) {
+    text-shadow: none;
   }
 
 }

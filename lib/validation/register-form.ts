@@ -17,6 +17,12 @@ export function isValidCyrillicName(value: string): boolean {
   return CYRILLIC_NAME_REGEX.test(value.trim())
 }
 
+const LATIN_LETTER_REGEX = /[A-Za-z]/
+
+export function containsLatinLetters(value: string): boolean {
+  return LATIN_LETTER_REGEX.test(value)
+}
+
 export function sanitizeEmail(value: string): string {
   return value.replace(EMAIL_FILTER, '')
 }
@@ -61,6 +67,38 @@ export function sanitizePhoneInput(value: string): string {
   }
 
   return digits.slice(0, 10)
+}
+
+/**
+ * Телефон іншого отримувача: лише +380 (до 9 цифр після коду) або 0 (до 10 цифр).
+ * Інші префікси (наприклад, 50… без 0) не приймаються.
+ */
+export function sanitizeRecipientPhoneInput(value: string): string {
+  const compact = value.replace(/\s/g, '')
+  if (!compact) return ''
+
+  if (compact.startsWith('+')) {
+    const digitsAfter = compact.slice(1).replace(/\D/g, '')
+    let built = '+'
+
+    for (const d of digitsAfter) {
+      const n = built.length - 1
+      if (n < PLUS_COUNTRY_PREFIX.length) {
+        if (d === PLUS_COUNTRY_PREFIX[n]) built += d
+      } else if (n < PLUS_MAX_DIGITS_AFTER_PLUS) {
+        built += d
+      }
+    }
+
+    return built
+  }
+
+  const digits = compact.replace(/\D/g, '')
+  if (digits.startsWith('0')) {
+    return digits.slice(0, 10)
+  }
+
+  return ''
 }
 
 /** E.164 для чекауту: лише + на початку та цифри, без зміни формату (макс. 15 цифр). */
@@ -120,6 +158,57 @@ export function isValidUkrPhone(value: string): boolean {
   if (/^380\d{9}$/.test(digits)) return true
   if (/^0\d{9}$/.test(digits)) return true
   return false
+}
+
+export const RECIPIENT_UKR_PHONE_ERROR =
+  'Номер має починатися з +380 (ще 9 цифр) або з 0 (ще 9 цифр, разом 10)'
+
+/** Телефон іншого отримувача: повний UA-номер і дозволений лише префікс +380 або 0. */
+export function isValidRecipientUkrPhone(value: string): boolean {
+  const trimmed = value.trim()
+  if (!trimmed || !isValidUkrPhone(trimmed)) return false
+
+  const compact = trimmed.replace(/\s/g, '')
+  if (compact.startsWith('+')) {
+    const digits = compact.slice(1).replace(/\D/g, '')
+    return digits.startsWith('380') && digits.length === 12
+  }
+
+  const digits = compact.replace(/\D/g, '')
+  return compact.startsWith('0') && digits.length === 10
+}
+
+export function getRecipientUkrPhoneError(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) return 'Обовʼязкове поле'
+
+  const compact = trimmed.replace(/\s/g, '')
+
+  if (compact.startsWith('+')) {
+    const digits = compact.slice(1).replace(/\D/g, '')
+    if (digits.length > 0 && !digits.startsWith('380')) {
+      return RECIPIENT_UKR_PHONE_ERROR
+    }
+    if (isValidRecipientUkrPhone(trimmed)) return null
+    if (!digits.length || digits === '3' || digits === '38') {
+      return 'Почніть з +380'
+    }
+    if (digits.startsWith('380') && digits.length < 12) {
+      return 'Після +380 потрібно ще 9 цифр'
+    }
+    return RECIPIENT_UKR_PHONE_ERROR
+  }
+
+  if (compact.startsWith('0')) {
+    const digits = compact.replace(/\D/g, '')
+    if (isValidRecipientUkrPhone(trimmed)) return null
+    if (digits.length < 10) {
+      return 'Після 0 потрібно ще 9 цифр (10 цифр загалом)'
+    }
+    return RECIPIENT_UKR_PHONE_ERROR
+  }
+
+  return RECIPIENT_UKR_PHONE_ERROR
 }
 
 export const MIN_INTERNATIONAL_PHONE_DIGITS = 10

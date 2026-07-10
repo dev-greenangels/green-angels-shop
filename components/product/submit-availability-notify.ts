@@ -6,13 +6,66 @@ export type AvailabilityNotifyPayload = {
   contact: string
 }
 
-/** Заглушка: збереження підписки «повідомити про наявність» (розсилку підключимо пізніше). */
+export type AvailabilityNotifyDefaults = {
+  submitFailed: string
+  success: string
+}
+
+function extractErrorMessage(data: unknown, fallback: string): string {
+  if (!data || typeof data !== 'object') return fallback
+  const record = data as Record<string, unknown>
+  if (typeof record.message === 'string') return record.message
+  if (Array.isArray(record.message)) return record.message.join(', ')
+  if (typeof record.error === 'string') return record.error
+  return fallback
+}
+
+export type AvailabilityNotifyResult = {
+  ok: true
+  alreadySubscribed: boolean
+  message: string
+}
+
 export async function submitAvailabilityNotify(
-  payload: AvailabilityNotifyPayload
-): Promise<{ ok: true }> {
-  if (process.env.NODE_ENV === 'development') {
-    console.info('[submitAvailabilityNotify]', payload)
+  payload: AvailabilityNotifyPayload,
+  defaults?: AvailabilityNotifyDefaults,
+): Promise<AvailabilityNotifyResult> {
+  const submitFailed =
+    defaults?.submitFailed ?? 'Could not submit. Please try again later.'
+  const success =
+    defaults?.success ??
+    'Thank you! Your request is saved. We will notify you when the item is in stock.'
+
+  const body = {
+    productId: payload.plantId,
+    name: payload.name,
+    ...(payload.contactType === 'email'
+      ? { email: payload.contact.trim() }
+      : { phone: payload.contact.trim() }),
   }
-  await new Promise((r) => setTimeout(r, 400))
-  return { ok: true }
+
+  const res = await fetch('/api/stock-notifications', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new Error(extractErrorMessage(data, submitFailed))
+  }
+
+  const record = data as {
+    alreadySubscribed?: boolean
+    message?: string
+  }
+
+  return {
+    ok: true,
+    alreadySubscribed: Boolean(record.alreadySubscribed),
+    message:
+      typeof record.message === 'string' && record.message.trim()
+        ? record.message
+        : success,
+  }
 }

@@ -1,12 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { Check, ChevronsUpDown } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronsUpDown } from 'lucide-react'
 
 import { InputClearButton } from '@/components/ui/input-with-clear'
 
 import {
-  authInputClassName,
   FieldHint,
   RequiredLabel,
 } from '@/components/auth/auth-form-ui'
@@ -19,7 +18,8 @@ import {
 } from '@/components/ui/command'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
-import type { NpOption } from '@/lib/checkout-np-mock'
+import type { NpOption } from '@/lib/nova-poshta/types'
+import { NP_COMBOBOX_ITEM_CLASS } from '@/components/checkout/np-combobox-styles'
 import { cn } from '@/lib/utils'
 
 export function NpSearchCombobox({
@@ -51,6 +51,7 @@ export function NpSearchCombobox({
 }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const anchorRef = useRef<HTMLDivElement>(null)
 
   const inputPlaceholder = searchPlaceholder ?? placeholder
 
@@ -60,10 +61,10 @@ export function NpSearchCombobox({
   )
 
   useEffect(() => {
-    if (!open) {
+    if (!open && value) {
       setQuery(selectedLabel ?? '')
     }
-  }, [open, selectedLabel])
+  }, [open, value, selectedLabel])
 
   const filteredOptions = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -74,7 +75,9 @@ export function NpSearchCombobox({
   const handleOpenChange = (next: boolean) => {
     setOpen(next)
     if (!next) {
-      setQuery(selectedLabel ?? '')
+      if (value) {
+        setQuery(selectedLabel ?? '')
+      }
       onBlur?.()
     }
   }
@@ -97,9 +100,9 @@ export function NpSearchCombobox({
   return (
     <div className="space-y-2">
       <RequiredLabel htmlFor={id}>{label}</RequiredLabel>
-      <Popover open={open} onOpenChange={handleOpenChange}>
+      <Popover open={open} onOpenChange={handleOpenChange} modal={false}>
         <PopoverAnchor asChild>
-          <div className="relative">
+          <div ref={anchorRef} className="relative">
             <Input
               id={id}
               role="combobox"
@@ -118,9 +121,8 @@ export function NpSearchCombobox({
                 if (!disabled) setOpen(true)
               }}
               className={cn(
-                authInputClassName,
                 showClear ? 'pr-16' : 'pr-9',
-                touched && error && 'border-destructive/80 ring-destructive/30'
+                touched && error && 'border-destructive/80 ring-destructive/30',
               )}
             />
             {showClear && (
@@ -136,24 +138,24 @@ export function NpSearchCombobox({
           className="w-[var(--radix-popover-trigger-width)] p-0"
           align="start"
           onOpenAutoFocus={(e) => e.preventDefault()}
+          onInteractOutside={(e) => {
+            if (anchorRef.current?.contains(e.target as Node)) {
+              e.preventDefault()
+            }
+          }}
         >
           <Command shouldFilter={false}>
             <CommandList id={`${id}-listbox`}>
               <CommandEmpty>{emptyText}</CommandEmpty>
-              <CommandGroup>
+              <CommandGroup className="p-0">
                 {filteredOptions.map((opt) => (
                   <CommandItem
                     key={opt.id}
                     value={opt.id}
                     onSelect={() => handleSelect(opt)}
+                    className={NP_COMBOBOX_ITEM_CLASS}
                   >
-                    <Check
-                      className={cn(
-                        'mr-2 size-4 shrink-0',
-                        value === opt.id ? 'opacity-100' : 'opacity-0'
-                      )}
-                    />
-                    <span className="line-clamp-2">{opt.label}</span>
+                    <span className="line-clamp-2 text-sm leading-snug">{opt.label}</span>
                   </CommandItem>
                 ))}
               </CommandGroup>

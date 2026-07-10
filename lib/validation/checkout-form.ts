@@ -1,8 +1,11 @@
 import {
+  containsLatinLetters,
+  getRecipientUkrPhoneError,
   isCheckoutPhoneReadyForLookup,
   isValidCyrillicName,
   isValidEmail,
   isValidInternationalPhone,
+  isValidRecipientUkrPhone,
   isValidUkrPhone,
 } from '@/lib/validation/register-form'
 
@@ -10,6 +13,11 @@ export type CheckoutDeliveryMethod =
   | 'nova-poshta-branch'
   | 'nova-poshta-address'
   | 'pickup'
+
+export type CheckoutPaymentMethod =
+  | 'card-online'
+  | 'bank-transfer'
+  | 'bank-transfer-legal'
 
 export type CheckoutFormValues = {
   firstName: string
@@ -25,11 +33,21 @@ export type CheckoutFormValues = {
   recipientPhone: string
   deliveryMethod: CheckoutDeliveryMethod
   city: string
+  cityLabel: string
   postOffice: string
+  postOfficeLabel: string
   street: string
+  streetLabel: string
   houseNumber: string
-  paymentMethod: string
+  paymentMethod: CheckoutPaymentMethod
+  companyEdrpou: string
+  companyLegalName: string
   comment: string
+  promoCode: string
+  promoCodes?: string[]
+  splitShipments?: import('@/lib/checkout/shipment-slice').CheckoutSplitShipments
+  /** Коли true, доставка для другого split-замовлення копіюється з першого */
+  datedDeliverySynced?: boolean
 }
 
 export type CheckoutContactFieldKey =
@@ -53,6 +71,23 @@ export type CheckoutShippingFieldKey =
   | 'deliveryPhone'
   | 'patronymic'
 
+export type CheckoutPaymentFieldKey = 'companyEdrpou' | 'companyLegalName'
+
+const EDRPOU_LENGTH = 8
+
+export function sanitizeEdrpouInput(value: string): string {
+  return value.replace(/\D/g, '').slice(0, EDRPOU_LENGTH)
+}
+
+export function isValidEdrpou(value: string): boolean {
+  return new RegExp(`^\\d{${EDRPOU_LENGTH}}$`).test(value.trim())
+}
+
+export function isValidLegalEntityName(value: string): boolean {
+  const trimmed = value.trim()
+  return trimmed.length >= 3 && trimmed.length <= 256
+}
+
 export {
   formatCheckoutPhoneDisplay,
   formatPhoneDisplay,
@@ -60,16 +95,40 @@ export {
   getCheckoutPhoneLookupKind,
   isCheckoutPhoneReadyForLookup,
   isValidInternationalPhone,
+  isValidRecipientUkrPhone,
   isValidUkrPhone,
+  getRecipientUkrPhoneError,
   sanitizeCheckoutPhoneInput,
   sanitizeCyrillicName,
   sanitizeEmail,
   sanitizePhoneInput,
+  sanitizeRecipientPhoneInput,
   type CheckoutPhoneLookupKind,
 } from '@/lib/validation/register-form'
 
 function isNonEmpty(value: string, min = 2): boolean {
   return value.trim().length >= min
+}
+
+function hasValue(value: string): boolean {
+  return value.trim().length > 0
+}
+
+function isRecipientSectionValid(values: CheckoutFormValues): boolean {
+  if (!values.isOtherRecipient) return true
+
+  if (!isValidCyrillicName(values.recipientFirstName)) return false
+  if (!isValidCyrillicName(values.recipientLastName)) return false
+
+  if (recipientPatronymicRequired(values)) {
+    const patronymic = values.recipientPatronymic.trim()
+    if (!patronymic || !isValidCyrillicName(patronymic)) return false
+  } else if (!isOptionalCyrillicNameValid(values.recipientPatronymic)) {
+    return false
+  }
+
+  if (!isValidRecipientUkrPhone(values.recipientPhone)) return false
+  return true
 }
 
 function isOptionalCyrillicNameValid(value: string): boolean {
@@ -92,9 +151,37 @@ function contactEmailValid(values: CheckoutFormValues): boolean {
   return isValidEmail(email)
 }
 
-function needsDeliveryPhone(phone: string): boolean {
-  return Boolean(phone.trim()) && !isValidUkrPhone(phone)
+/** UA-телефон замовника на кроці 2 — немає валідного українського номера. */
+function ordererDeliveryPhoneRequired(
+  values: CheckoutFormValues,
+  identification?: CheckoutIdentificationState,
+): boolean {
+  if (values.isOtherRecipient) return false
+  return !isValidUkrPhone(values.phone)
 }
+
+export function showOrdererDeliveryPhoneField(
+  values: CheckoutFormValues,
+  identification?: CheckoutIdentificationState,
+): boolean {
+  return ordererDeliveryPhoneRequired(values, identification)
+}
+
+/** По батькові замовника для адресної НП — не потрібне, якщо отримувач інша людина */
+function shippingPatronymicRequired(values: CheckoutFormValues): boolean {
+  return (
+    values.deliveryMethod === 'nova-poshta-address' && !values.isOtherRecipient
+  )
+}
+
+/** По батькові іншого отримувача — обовʼязкове для адресної НП */
+function recipientPatronymicRequired(values: CheckoutFormValues): boolean {
+  return (
+    values.isOtherRecipient && values.deliveryMethod === 'nova-poshta-address'
+  )
+}
+
+export type CheckoutAuthMethod = 'google' | 'sms' | 'email' | null
 
 export type CheckoutIdentificationState = {
   lookupDone: boolean
@@ -104,57 +191,169 @@ export type CheckoutIdentificationState = {
   skippedReturningLogin: boolean
   /** Користувач обрав «Увійти?» і ще не пройшов SMS / не пропустив */
   attemptingReturningLogin: boolean
+  authMethod: CheckoutAuthMethod
+}
+
+/** ПІБ латиницею, порожнє або невалідне кириличне — доповнити на кроці доставки. */
+export function customerNeedsCheckoutNameEntry(
+  values: CheckoutFormValues,
+  identification: CheckoutIdentificationState,
+): boolean {
+  if (!identification.returningVerified) return false
+
+  const first = values.firstName.trim()
+  const last = values.lastName.trim()
+  if (!first || !last) return true
+  if (containsLatinLetters(first) || containsLatinLetters(last)) return true
+  if (!isValidCyrillicName(first) || !isValidCyrillicName(last)) return true
+  return false
+}
+
+/** @deprecated використовуйте customerNeedsCheckoutNameEntry */
+export function showGoogleCheckoutNamesOnShipping(
+  values: CheckoutFormValues,
+  identification: CheckoutIdentificationState,
+): boolean {
+  return customerNeedsCheckoutNameEntry(values, identification)
+}
+
+export function isGoogleCheckoutProfileComplete(
+  values: CheckoutFormValues,
+  identification: CheckoutIdentificationState,
+): boolean {
+  if (!identification.returningVerified) return true
+  return isValidCyrillicName(values.firstName) && isValidCyrillicName(values.lastName)
 }
 
 export function isContactStepValid(
   values: CheckoutFormValues,
   identification: CheckoutIdentificationState
 ): boolean {
-  if (!values.phone.trim() || !isValidInternationalPhone(values.phone)) return false
-  if (!isValidCyrillicName(values.firstName)) return false
-  if (!isValidCyrillicName(values.lastName)) return false
+  if (!identification.returningVerified) return false
 
-  if (identification.returningVerified) return true
+  const hasPhone = Boolean(values.phone.trim()) && isValidInternationalPhone(values.phone)
+  const hasEmail = Boolean(values.email.trim()) && isValidEmail(values.email)
+  if (!hasPhone && !hasEmail) return false
 
-  if (
-    identification.customerFound &&
-    identification.attemptingReturningLogin &&
-    !identification.skippedReturningLogin
-  ) {
+  if (!isValidCyrillicName(values.firstName) || !isValidCyrillicName(values.lastName)) {
+    if (identification.authMethod === 'google' && (hasPhone || hasEmail)) {
+      return true
+    }
     return false
   }
 
   return true
 }
 
-export function isShippingStepValid(values: CheckoutFormValues): boolean {
-  if (needsDeliveryPhone(values.phone) && !isValidUkrPhone(values.deliveryPhone)) {
+export function isShippingStepValid(
+  values: CheckoutFormValues,
+  identification?: CheckoutIdentificationState,
+  options?: { shipmentSplit?: boolean },
+): boolean {
+  if (identification && !isGoogleCheckoutProfileComplete(values, identification)) {
     return false
   }
 
-  if (values.isOtherRecipient) {
-    if (!isValidCyrillicName(values.recipientFirstName)) return false
-    if (!isValidCyrillicName(values.recipientLastName)) return false
-    if (!isOptionalCyrillicNameValid(values.recipientPatronymic)) return false
-    if (!isValidUkrPhone(values.recipientPhone)) return false
+  if (options?.shipmentSplit && values.splitShipments) {
+    const { immediate, dated } = values.splitShipments
+    return (
+      isSingleShipmentDeliveryValid(values, immediate, identification) &&
+      isSingleShipmentDeliveryValid(values, dated, identification)
+    )
   }
 
-  if (values.deliveryMethod === 'pickup') return true
+  return isSingleShipmentDeliveryValid(values, values, identification)
+}
 
-  if (!isNonEmpty(values.city)) return false
+function isSingleShipmentDeliveryValid(
+  orderer: CheckoutFormValues,
+  delivery: Pick<
+    CheckoutFormValues,
+    | 'deliveryMethod'
+    | 'city'
+    | 'postOffice'
+    | 'street'
+    | 'houseNumber'
+    | 'deliveryPhone'
+    | 'patronymic'
+    | 'isOtherRecipient'
+    | 'recipientFirstName'
+    | 'recipientLastName'
+    | 'recipientPatronymic'
+    | 'recipientPhone'
+  >,
+  identification?: CheckoutIdentificationState,
+): boolean {
+  const merged = { ...orderer, ...delivery }
 
-  if (values.deliveryMethod === 'nova-poshta-branch') {
-    return isNonEmpty(values.postOffice)
+  if (
+    ordererDeliveryPhoneRequired(merged, identification) &&
+    !isValidRecipientUkrPhone(merged.deliveryPhone)
+  ) {
+    return false
   }
 
-  if (values.deliveryMethod === 'nova-poshta-address') {
-    if (!isNonEmpty(values.street) || !isNonEmpty(values.houseNumber)) return false
-    const patronymic = values.patronymic.trim()
-    if (!patronymic || !isValidCyrillicName(patronymic)) return false
+  if (!isRecipientSectionValid(merged)) {
+    return false
+  }
+
+  if (merged.deliveryMethod === 'pickup') {
+    return true
+  }
+
+  if (!hasValue(merged.city)) {
+    return false
+  }
+
+  if (merged.deliveryMethod === 'nova-poshta-branch') {
+    return hasValue(merged.postOffice)
+  }
+
+  if (merged.deliveryMethod === 'nova-poshta-address') {
+    if (!hasValue(merged.street) || !hasValue(merged.houseNumber)) {
+      return false
+    }
+
+    if (!merged.isOtherRecipient) {
+      const patronymic = merged.patronymic.trim()
+      if (!patronymic || !isValidCyrillicName(patronymic)) {
+        return false
+      }
+    }
+
     return true
   }
 
   return false
+}
+
+export function isPaymentStepValid(values: CheckoutFormValues): boolean {
+  if (values.paymentMethod !== 'bank-transfer-legal') return true
+  return isValidEdrpou(values.companyEdrpou) && isValidLegalEntityName(values.companyLegalName)
+}
+
+export function getCheckoutPaymentFieldError(
+  field: CheckoutPaymentFieldKey,
+  values: CheckoutFormValues,
+): string | null {
+  if (values.paymentMethod !== 'bank-transfer-legal') return null
+
+  switch (field) {
+    case 'companyEdrpou':
+      if (!values.companyEdrpou.trim()) return 'Обовʼязкове поле'
+      if (!isValidEdrpou(values.companyEdrpou)) {
+        return `ЄДРПОУ має містити ${EDRPOU_LENGTH} цифр`
+      }
+      return null
+    case 'companyLegalName':
+      if (!values.companyLegalName.trim()) return 'Обовʼязкове поле'
+      if (!isValidLegalEntityName(values.companyLegalName)) {
+        return 'Вкажіть повну назву юридичної особи (мін. 3 символи)'
+      }
+      return null
+    default:
+      return null
+  }
 }
 
 export function getCheckoutContactFieldError(
@@ -164,14 +363,26 @@ export function getCheckoutContactFieldError(
   switch (field) {
     case 'firstName':
       if (!values.firstName.trim()) return 'Обовʼязкове поле'
+      if (containsLatinLetters(values.firstName)) {
+        return 'Вкажіть імʼя українською мовою (кирилицею)'
+      }
       if (!isValidCyrillicName(values.firstName)) {
         return 'Від 2 українських літер, апостроф дозволений'
       }
       return null
     case 'lastName':
       if (!values.lastName.trim()) return 'Обовʼязкове поле'
+      if (containsLatinLetters(values.lastName)) {
+        return 'Вкажіть прізвище українською мовою (кирилицею)'
+      }
       if (!isValidCyrillicName(values.lastName)) {
         return 'Від 2 українських літер, апостроф дозволений'
+      }
+      return null
+    case 'phone':
+      if (!values.phone.trim()) return 'Обовʼязкове поле'
+      if (!isValidInternationalPhone(values.phone)) {
+        return 'Введіть коректний номер телефону'
       }
       return null
     case 'patronymic':
@@ -185,12 +396,6 @@ export function getCheckoutContactFieldError(
       }
       if (values.email.trim() && !isValidEmail(values.email)) {
         return 'Невірний формат email'
-      }
-      return null
-    case 'phone':
-      if (!values.phone.trim()) return 'Обовʼязкове поле'
-      if (!isValidInternationalPhone(values.phone)) {
-        return 'Введіть коректний номер телефону'
       }
       return null
     default:
@@ -218,16 +423,19 @@ export function getCheckoutRecipientFieldError(
       }
       return null
     case 'recipientPatronymic':
+      if (recipientPatronymicRequired(values)) {
+        if (!values.recipientPatronymic.trim()) return 'Обовʼязкове для адресної доставки'
+        if (!isValidCyrillicName(values.recipientPatronymic)) {
+          return 'Від 2 українських літер, апостроф дозволений'
+        }
+        return null
+      }
       if (!isOptionalCyrillicNameValid(values.recipientPatronymic)) {
         return 'Від 2 українських літер, апостроф дозволений'
       }
       return null
     case 'recipientPhone':
-      if (!values.recipientPhone.trim()) return 'Обовʼязкове поле'
-      if (!isValidUkrPhone(values.recipientPhone)) {
-        return 'Формат: +380 XX XXX XX XX або 0XX XXX XX XX'
-      }
-      return null
+      return getRecipientUkrPhoneError(values.recipientPhone)
     default:
       return null
   }
@@ -235,19 +443,16 @@ export function getCheckoutRecipientFieldError(
 
 export function getCheckoutShippingFieldError(
   field: CheckoutShippingFieldKey,
-  values: CheckoutFormValues
+  values: CheckoutFormValues,
+  identification?: CheckoutIdentificationState,
 ): string | null {
   if (field === 'deliveryPhone') {
-    if (!needsDeliveryPhone(values.phone)) return null
-    if (!values.deliveryPhone.trim()) return 'Обовʼязкове поле'
-    if (!isValidUkrPhone(values.deliveryPhone)) {
-      return 'Формат: +380 XX XXX XX XX або 0XX XXX XX XX'
-    }
-    return null
+    if (!ordererDeliveryPhoneRequired(values, identification)) return null
+    return getRecipientUkrPhoneError(values.deliveryPhone)
   }
 
   if (field === 'patronymic') {
-    if (values.deliveryMethod !== 'nova-poshta-address') return null
+    if (!shippingPatronymicRequired(values)) return null
     if (values.patronymic.trim() && isValidCyrillicName(values.patronymic)) return null
     if (!values.patronymic.trim()) return 'Обовʼязкове для адресної доставки'
     return 'Від 2 українських літер, апостроф дозволений'
@@ -270,7 +475,7 @@ export function getCheckoutShippingFieldError(
       return null
     case 'houseNumber':
       if (values.deliveryMethod !== 'nova-poshta-address') return null
-      if (!values.houseNumber.trim()) return 'Обовʼязкове поле'
+      if (!hasValue(values.houseNumber)) return 'Обовʼязкове поле'
       return null
     default:
       return null

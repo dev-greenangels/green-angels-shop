@@ -1,10 +1,16 @@
 'use client'
 
-import { useState } from 'react'
-import { Filter, X } from 'lucide-react'
+import { type CSSProperties } from 'react'
+import { Filter, Loader2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+
+import { CatalogActiveFilters } from '@/components/catalog/catalog-active-filters'
+import { CatalogPriceFilter } from '@/components/catalog/catalog-price-filter'
+import { CatalogContainerFilterValues } from '@/components/catalog/catalog-container-filter-values'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Sheet,
   SheetContent,
@@ -14,187 +20,374 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { containerSizes, sunRequirements, soilTypes, hardinessZones } from '@/lib/data'
+import type { CatalogFilterDefinitions } from '@/lib/backstage/characteristics'
+import {
+  countActiveCatalogFilters,
+  toggleCatalogFilterValue,
+  type CatalogFilters,
+} from '@/lib/catalog/filter-plants'
+import {
+  catalogFilterPanelDefaultMaxHeightClassName,
+  catalogSidebarPanelClassName,
+  catalogSidebarScrollBodyClassName,
+  catalogSidebarScrollClassName,
+  catalogSidebarWidthClassName,
+  plantsSidebarMaxHeightClassName,
+  plantsSidebarStickyTopClassName,
+} from '@/lib/catalog/sidebar-panel-styles'
+import {
+  applyCatalogFiltersVisibility,
+  type CatalogFiltersVisibilitySettings,
+} from '@/lib/catalog/filter-visibility'
+import {
+  useCatalogFilterDefinitions,
+  type CatalogFilterScope,
+} from '@/lib/catalog/use-catalog-filter-definitions'
+import { cn } from '@/lib/utils'
 
-interface FilterSidebarProps {
-  filters: {
-    containerSize: string[]
-    sunRequirement: string[]
-    soilType: string[]
-    hardinessZone: string[]
-  }
-  onFilterChange: (filters: FilterSidebarProps['filters']) => void
-}
+export type CatalogFiltersState = CatalogFilters
 
-function FilterContent({ filters, onFilterChange }: FilterSidebarProps) {
-  const toggleFilter = (category: keyof typeof filters, value: string) => {
-    const current = filters[category]
-    const updated = current.includes(value)
-      ? current.filter(v => v !== value)
-      : [...current, value]
-    onFilterChange({ ...filters, [category]: updated })
-  }
-
-  const clearFilters = () => {
-    onFilterChange({
-      containerSize: [],
-      sunRequirement: [],
-      soilType: [],
-      hardinessZone: [],
-    })
-  }
-
-  const hasActiveFilters = Object.values(filters).some(arr => arr.length > 0)
-
+function FilterSidebarSkeleton() {
   return (
-    <div className="space-y-4">
-      {hasActiveFilters && (
-        <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full">
-          <X className="h-4 w-4 mr-2" />
-          Очистити фільтри
-        </Button>
-      )}
+    <div className="space-y-4" aria-busy="true">
+      <section className="space-y-3 border-b border-border/60 pb-4">
+        <Skeleton className="h-4 w-14" />
+        <div className="flex items-center justify-between gap-3">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-4 w-16" />
+        </div>
+        <Skeleton className="h-5 w-full rounded-full" />
+        <div className="flex justify-between">
+          <Skeleton className="h-3 w-10" />
+          <Skeleton className="h-3 w-10" />
+        </div>
+      </section>
 
-      <Accordion type="multiple" defaultValue={['container', 'sun', 'soil', 'zone']} className="w-full">
-        <AccordionItem value="container">
-          <AccordionTrigger className="text-sm font-semibold">
-            Розмір контейнера
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-3 pt-2">
-              {containerSizes.map((size) => (
-                <div key={size.value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`container-${size.value}`}
-                    checked={filters.containerSize.includes(size.value)}
-                    onCheckedChange={() => toggleFilter('containerSize', size.value)}
-                  />
-                  <Label
-                    htmlFor={`container-${size.value}`}
-                    className="text-sm font-normal cursor-pointer"
-                  >
-                    {size.label}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        <AccordionItem value="sun">
-          <AccordionTrigger className="text-sm font-semibold">
-            Освітлення
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-3 pt-2">
-              {sunRequirements.map((sun) => (
-                <div key={sun.value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`sun-${sun.value}`}
-                    checked={filters.sunRequirement.includes(sun.value)}
-                    onCheckedChange={() => toggleFilter('sunRequirement', sun.value)}
-                  />
-                  <Label
-                    htmlFor={`sun-${sun.value}`}
-                    className="text-sm font-normal cursor-pointer"
-                  >
-                    {sun.label}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        <AccordionItem value="soil">
-          <AccordionTrigger className="text-sm font-semibold">
-            Тип ґрунту
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-3 pt-2">
-              {soilTypes.map((soil) => (
-                <div key={soil.value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`soil-${soil.value}`}
-                    checked={filters.soilType.includes(soil.value)}
-                    onCheckedChange={() => toggleFilter('soilType', soil.value)}
-                  />
-                  <Label
-                    htmlFor={`soil-${soil.value}`}
-                    className="text-sm font-normal cursor-pointer"
-                  >
-                    {soil.label}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        <AccordionItem value="zone">
-          <AccordionTrigger className="text-sm font-semibold">
-            Зона морозостійкості
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-3 pt-2">
-              {hardinessZones.map((zone) => (
-                <div key={zone.value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`zone-${zone.value}`}
-                    checked={filters.hardinessZone.includes(zone.value)}
-                    onCheckedChange={() => toggleFilter('hardinessZone', zone.value)}
-                  />
-                  <Label
-                    htmlFor={`zone-${zone.value}`}
-                    className="text-sm font-normal cursor-pointer"
-                  >
-                    {zone.label}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div key={index} className="space-y-3 border-b border-border/40 pb-3 last:border-0">
+          <Skeleton className="h-4 w-28" />
+          <div className="space-y-2.5">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-[92%]" />
+            <Skeleton className="h-4 w-[84%]" />
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
 
-export function FilterSidebar({ filters, onFilterChange }: FilterSidebarProps) {
-  const [mobileOpen, setMobileOpen] = useState(false)
+interface FilterSidebarProps {
+  filters: CatalogFiltersState
+  onFilterChange: (filters: CatalogFiltersState) => void
+  filterScope?: CatalogFilterScope
+  filterVisibility?: CatalogFiltersVisibilitySettings
+  filterDefinitionsOptions?: {
+    initialDefinitions?: CatalogFilterDefinitions
+    initialFetchKey?: string
+  }
+  /** Липкий сайдбар при скролі (сторінка «Рослини А-Я») */
+  sticky?: boolean
+  /** Висота панелі за вмістом, без зайвого порожнього місця */
+  fitContent?: boolean
+  /** Розгорнути секцію «Контейнер» за замовчуванням */
+  expandContainerByDefault?: boolean
+  /** Згорнути групи типів упаковки всередині «Контейнер» */
+  collapseContainerGroupsByDefault?: boolean
+}
+
+export function FilterSidebarContent({
+  filters,
+  onFilterChange,
+  filterScope,
+  filterVisibility,
+  filterDefinitionsOptions,
+  fitContent = false,
+  expandContainerByDefault = false,
+  collapseContainerGroupsByDefault = false,
+}: FilterSidebarProps) {
+  const t = useTranslations('filter')
+  const { definitions, priceBounds, loading, isRefreshing } = useCatalogFilterDefinitions(
+    filterScope,
+    filters,
+    filterDefinitionsOptions,
+  )
+
+  if (loading || !definitions) {
+    return <FilterSidebarSkeleton />
+  }
+
+  const visibleDefinitions = filterVisibility
+    ? applyCatalogFiltersVisibility(definitions, filterVisibility)
+    : definitions
+  const showPrice = filterVisibility?.price ?? true
+
+  const defaultAccordionValue = expandContainerByDefault
+    ? visibleDefinitions.variantAttributes
+        .filter((attribute) => attribute.valueType === 'CONTAINER' || attribute.slug === 'konteyner')
+        .map((attribute) => `attr-${attribute.slug}`)
+    : []
 
   return (
-    <>
-      {/* Mobile filter button */}
-      <div className="lg:hidden mb-4">
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetTrigger asChild>
-            <Button variant="outline" className="w-full">
-              <Filter className="h-4 w-4 mr-2" />
-              Фільтри
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-80 overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>Фільтри</SheetTitle>
-              <SheetDescription className="sr-only">
-                Налаштування фільтрів для підбору рослин у каталозі
-              </SheetDescription>
-            </SheetHeader>
-            <div className="mt-6">
-              <FilterContent filters={filters} onFilterChange={onFilterChange} />
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-
-      {/* Desktop sidebar */}
-      <aside className="hidden lg:block w-64 flex-shrink-0">
-        <div className="sticky top-24 bg-card rounded-lg border border-border p-4">
-          <h3 className="font-serif text-lg font-semibold mb-4">Фільтри</h3>
-          <FilterContent filters={filters} onFilterChange={onFilterChange} />
+    <div className="relative">
+      {isRefreshing ? (
+        <div
+          className="absolute inset-0 z-10 flex items-start justify-center rounded-lg bg-background/55 pt-10 backdrop-blur-[1px]"
+          aria-hidden
+        >
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
-      </aside>
-    </>
+      ) : null}
+
+      <div
+        className={cn(
+          'space-y-4 transition-opacity duration-200',
+          isRefreshing && 'pointer-events-none opacity-60',
+        )}
+        aria-busy={isRefreshing}
+      >
+      {showPrice ? (
+      <section className="space-y-3 border-b border-border/60 pb-4">
+        <h3 className="text-sm font-semibold">{t('price')}</h3>
+        <CatalogPriceFilter
+          filters={filters}
+          bounds={priceBounds}
+          onFilterChange={onFilterChange}
+        />
+      </section>
+      ) : null}
+
+      <Accordion type="multiple" defaultValue={defaultAccordionValue} className="w-full">
+        {visibleDefinitions.variantAttributes.map((attribute) => {
+          const isContainer =
+            attribute.valueType === 'CONTAINER' || attribute.slug === 'konteyner'
+
+          return (
+          <AccordionItem key={attribute.id} value={`attr-${attribute.slug}`}>
+            <AccordionTrigger className="text-sm font-semibold">{attribute.name}</AccordionTrigger>
+            <AccordionContent>
+              {isContainer ? (
+                <CatalogContainerFilterValues
+                  attribute={attribute}
+                  filters={filters}
+                  onFilterChange={onFilterChange}
+                  collapseGroups={collapseContainerGroupsByDefault}
+                  fitContent={fitContent}
+                />
+              ) : (
+              <div
+                className={cn(
+                  'space-y-3 pt-2',
+                  !fitContent && 'max-h-52 overflow-y-auto overscroll-contain pr-0.5',
+                  !fitContent && catalogSidebarScrollClassName,
+                )}
+              >
+                {attribute.values.map((value) => {
+                  const checked = filters.variantAttributes[attribute.slug]?.includes(value.slug) ?? false
+                  return (
+                    <div key={value.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`attr-${attribute.slug}-${value.slug}`}
+                        checked={checked}
+                        onCheckedChange={() =>
+                          onFilterChange(
+                            toggleCatalogFilterValue(filters, 'variantAttributes', attribute.slug, value.slug),
+                          )
+                        }
+                      />
+                      <Label htmlFor={`attr-${attribute.slug}-${value.slug}`} className="text-sm font-normal">
+                        {value.label}
+                      </Label>
+                    </div>
+                  )
+                })}
+              </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+          )
+        })}
+
+        {visibleDefinitions.characteristics.map((characteristic) => (
+          <AccordionItem key={characteristic.id} value={`char-${characteristic.slug}`}>
+            <AccordionTrigger className="text-sm font-semibold">{characteristic.name}</AccordionTrigger>
+            <AccordionContent>
+              <div
+                className={cn(
+                  'space-y-3 pt-2',
+                  !fitContent && 'max-h-52 overflow-y-auto overscroll-contain pr-0.5',
+                  !fitContent && catalogSidebarScrollClassName,
+                )}
+              >
+                {characteristic.options.map((option) => {
+                  const checked = filters.characteristics[characteristic.slug]?.includes(option.slug) ?? false
+                  return (
+                    <div key={option.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`char-${characteristic.slug}-${option.slug}`}
+                        checked={checked}
+                        onCheckedChange={() =>
+                          onFilterChange(
+                            toggleCatalogFilterValue(filters, 'characteristics', characteristic.slug, option.slug),
+                          )
+                        }
+                      />
+                      <Label htmlFor={`char-${characteristic.slug}-${option.slug}`} className="text-sm font-normal">
+                        {option.label}
+                      </Label>
+                    </div>
+                  )
+                })}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+      </div>
+    </div>
+  )
+}
+
+export { CatalogActiveFilters }
+
+function catalogFilterPanelClassName(maxHeightPx?: number | null) {
+  return cn(
+    catalogSidebarPanelClassName,
+    'flex flex-col overflow-hidden p-3 pl-3.5 pr-0',
+    maxHeightPx == null && catalogFilterPanelDefaultMaxHeightClassName,
+  )
+}
+
+function catalogFilterPanelStyle(maxHeightPx?: number | null): CSSProperties | undefined {
+  return maxHeightPx != null ? { maxHeight: maxHeightPx } : undefined
+}
+
+export function CatalogFilterPanel({
+  maxHeightPx,
+  filterScope,
+  ...props
+}: FilterSidebarProps & { maxHeightPx?: number | null }) {
+  const t = useTranslations('filter')
+  return (
+    <div
+      className={catalogFilterPanelClassName(maxHeightPx)}
+      style={catalogFilterPanelStyle(maxHeightPx)}
+    >
+      <h2 className="mb-4 shrink-0 text-lg font-semibold">{t('title')}</h2>
+      <div className={catalogSidebarScrollBodyClassName}>
+        <FilterSidebarContent {...props} filterScope={filterScope} />
+      </div>
+    </div>
+  )
+}
+
+export const CatalogFilterSheet = FilterSidebarMobile
+
+export function FilterSidebar({
+  maxHeightPx,
+  filterScope,
+  sticky = false,
+  fitContent = false,
+  expandContainerByDefault = false,
+  collapseContainerGroupsByDefault = false,
+  ...props
+}: FilterSidebarProps & { maxHeightPx?: number | null }) {
+  const t = useTranslations('filter')
+  return (
+    <aside
+      className={cn(
+        catalogSidebarPanelClassName,
+        'hidden flex-col overflow-hidden p-3 pl-3.5 pr-0 lg:flex',
+        sticky && catalogSidebarWidthClassName,
+        !fitContent && maxHeightPx == null && catalogFilterPanelDefaultMaxHeightClassName,
+        sticky && 'sticky z-10 self-start',
+        sticky && plantsSidebarStickyTopClassName,
+        sticky && fitContent && plantsSidebarMaxHeightClassName,
+      )}
+      style={maxHeightPx != null ? { maxHeight: maxHeightPx } : undefined}
+    >
+      <h2 className="mb-4 shrink-0 text-lg font-semibold">{t('title')}</h2>
+      <div
+        className={cn(
+          fitContent
+            ? cn(catalogSidebarScrollClassName, 'min-h-0 overflow-y-auto overscroll-contain pr-3')
+            : catalogSidebarScrollBodyClassName,
+        )}
+      >
+        <FilterSidebarContent
+          {...props}
+          filterScope={filterScope}
+          fitContent={fitContent}
+          expandContainerByDefault={expandContainerByDefault}
+          collapseContainerGroupsByDefault={collapseContainerGroupsByDefault}
+        />
+      </div>
+    </aside>
+  )
+}
+
+export function FilterSidebarMobile({
+  filterScope,
+  filters,
+  filterVisibility,
+  filterDefinitionsOptions,
+  onFilterChange,
+  fitContent,
+  expandContainerByDefault,
+  collapseContainerGroupsByDefault,
+  triggerClassName,
+  compact,
+}: FilterSidebarProps & { triggerClassName?: string; compact?: boolean }) {
+  const t = useTranslations('filter')
+  const { priceBounds } = useCatalogFilterDefinitions(filterScope, filters, filterDefinitionsOptions)
+  const activeCount = countActiveCatalogFilters(filters, priceBounds)
+
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            'lg:hidden',
+            compact && 'h-7 gap-1 px-2 text-xs',
+            triggerClassName,
+          )}
+        >
+          <Filter className={cn(compact ? 'mr-1 h-3.5 w-3.5' : 'mr-2 h-4 w-4')} />
+          {t('title')}
+          {activeCount > 0 ? (
+            <span
+              className={cn(
+                'rounded-full bg-primary text-primary-foreground',
+                compact
+                  ? 'ml-1 min-w-[1.125rem] px-1 py-0 text-[10px] leading-none'
+                  : 'ml-2 px-2 py-0.5 text-xs',
+              )}
+            >
+              {activeCount}
+            </span>
+          ) : null}
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-[min(100vw-2rem,320px)]">
+        <SheetHeader>
+          <SheetTitle>{t('title')}</SheetTitle>
+          <SheetDescription>{t('description')}</SheetDescription>
+        </SheetHeader>
+        <div className="mt-6 overflow-y-auto pb-8">
+          <FilterSidebarContent
+            filters={filters}
+            onFilterChange={onFilterChange}
+            filterScope={filterScope}
+            filterVisibility={filterVisibility}
+            filterDefinitionsOptions={filterDefinitionsOptions}
+            fitContent={fitContent}
+            expandContainerByDefault={expandContainerByDefault}
+            collapseContainerGroupsByDefault={collapseContainerGroupsByDefault}
+          />
+        </div>
+      </SheetContent>
+    </Sheet>
   )
 }

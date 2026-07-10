@@ -1,33 +1,47 @@
 import { getCartItemMaxQuantity } from '@/lib/cart-limits'
-import { getPlantVariants, getVariantMaxQuantity } from '@/lib/plant-variants'
+import { isProductVariantUuid } from '@/lib/pricing/quote-line-items'
+import {
+  getPlantVariants,
+  getVariantMaxQuantity,
+  isVariantVisibleOnStorefront,
+} from '@/lib/plant-variants'
 import type { CartItem, Plant, ProductVariant } from '@/lib/types'
 
 export function cartLineKey(plantId: string, variantId: string) {
   return `${plantId}:${variantId}`
 }
 
-/** Канонічний варіант для позиції кошика (у т.ч. legacy без variantId). */
 export function resolveCartLineVariant(
   plant: Plant,
-  variantId?: string
+  variantId?: string,
 ): ProductVariant | null {
   const variants = getPlantVariants(plant)
   if (!variants.length) return null
 
-  if (variantId) {
-    const found = variants.find((v) => v.id === variantId)
-    if (found) return found
+  if (variantId && isProductVariantUuid(variantId)) {
+    return variants.find((variant) => variant.id === variantId) ?? null
   }
 
-  return variants[0] ?? null
+  return variants.length === 1 ? variants[0]! : null
 }
 
 export function normalizeCartItem(item: CartItem): CartItem | null {
   const variant = resolveCartLineVariant(item.plant, item.variantId)
-  if (!variant) return null
+  if (!variant || !isProductVariantUuid(variant.id)) return null
+
+  if (!isVariantVisibleOnStorefront(variant)) {
+    const quantity = Math.max(1, item.quantity)
+    return {
+      plant: item.plant,
+      quantity,
+      variantId: variant.id,
+      variantLabel: variant.label,
+      unitPrice: item.unitPrice ?? variant.basePrice,
+    }
+  }
 
   const maxQty = getVariantMaxQuantity(variant)
-  const quantity = Math.min(Math.max(0, item.quantity), maxQty)
+  const quantity = Math.min(Math.max(1, item.quantity), maxQty)
   if (quantity <= 0) return null
 
   return {
@@ -39,7 +53,6 @@ export function normalizeCartItem(item: CartItem): CartItem | null {
   }
 }
 
-/** Нормалізує позиції та зливає дублікати після міграції legacy-рядків. */
 export function normalizeCartItems(items: CartItem[]): CartItem[] {
   const merged = new Map<string, CartItem>()
 
@@ -47,7 +60,7 @@ export function normalizeCartItems(items: CartItem[]): CartItem[] {
     const item = normalizeCartItem(raw)
     if (!item) continue
 
-    const key = cartLineKey(item.plant.id, item.variantId)
+    const key = cartLineKey(item.plant.id, item.variantId!)
     const existing = merged.get(key)
 
     if (!existing) {

@@ -41,6 +41,8 @@ type InputWithClearProps = React.ComponentProps<typeof Input> & {
   clearButtonClassName?: string
   /** Додатковий відступ справа (наприклад, під інший значок) */
   endPaddingClass?: string
+  /** Іконка зліва (наприклад, телефон) — рендериться поверх поля */
+  leadingIcon?: React.ReactNode
 }
 
 export const InputWithClear = React.forwardRef<HTMLInputElement, InputWithClearProps>(
@@ -54,6 +56,7 @@ export const InputWithClear = React.forwardRef<HTMLInputElement, InputWithClearP
       clearPaddingClass = 'pr-9',
       clearButtonClassName,
       endPaddingClass,
+      leadingIcon,
       ...props
     },
     ref
@@ -74,12 +77,26 @@ export const InputWithClear = React.forwardRef<HTMLInputElement, InputWithClearP
 
     return (
       <div className="relative">
+        {leadingIcon ? (
+          <span
+            className="pointer-events-none absolute top-1/2 left-3 z-10 flex -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          >
+            {leadingIcon}
+          </span>
+        ) : null}
         <Input
           ref={ref}
           value={value}
           onChange={onChange}
           disabled={disabled}
-          className={cn(className, endPaddingClass, showClear && clearPaddingClass)}
+          data-has-value={showClear ? 'true' : 'false'}
+          className={cn(
+            className,
+            leadingIcon && 'pl-10',
+            endPaddingClass,
+            showClear && clearPaddingClass
+          )}
           {...props}
         />
         {showClear && (

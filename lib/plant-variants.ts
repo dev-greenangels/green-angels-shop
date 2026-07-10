@@ -1,34 +1,25 @@
-import { DEFAULT_TIER_THRESHOLDS } from './product-pricing'
-import type { Plant, ProductVariant, PriceTier } from './types'
+import type { Plant, ProductVariant } from './types'
 
 /** Макс. кількість для бронювання, якщо на складі 0, але є дата відвантаження */
 const DEFAULT_PREORDER_MAX_QTY = 99
 
-function buildDefaultTiers(basePrice: number): PriceTier[] {
-  const discounts = [0.95, 0.9, 0.85, 0.8, 0.75, 0.7]
-  return DEFAULT_TIER_THRESHOLDS.map((minQuantity, i) => ({
-    minQuantity,
-    pricePerUnit: Math.round(basePrice * discounts[i]),
-  }))
+export function getPlantVariants(plant: Plant): ProductVariant[] {
+  return plant.variants ?? []
 }
 
-export function getPlantVariants(plant: Plant): ProductVariant[] {
-  if (plant.variants?.length) return plant.variants
+/** Розміри з ненульовим залишком — лише вони показуються на вітрині. */
+export function isVariantVisibleOnStorefront(variant: ProductVariant): boolean {
+  return variant.stock > 0
+}
 
-  return [
-    {
-      id: `${plant.id}-default`,
-      label: plant.containerSize,
-      stock: plant.stock,
-      basePrice: plant.price,
-      priceTiers: buildDefaultTiers(plant.price),
-    },
-  ]
+export function getVisiblePlantVariants(plant: Plant): ProductVariant[] {
+  return getPlantVariants(plant).filter(isVariantVisibleOnStorefront)
 }
 
 export function getPlantDisplayPrice(plant: Plant): number {
   const variants = getPlantVariants(plant)
-  return Math.min(...variants.map((v) => v.basePrice))
+  if (!variants.length) return plant.price
+  return Math.min(...variants.map((variant) => variant.basePrice))
 }
 
 export function variantHasPriceTiers(variant: ProductVariant): boolean {
@@ -49,14 +40,14 @@ export function canOrderVariant(variant: ProductVariant): boolean {
   return variantHasStock(variant) || variantHasAvailableFrom(variant)
 }
 
-/** Хоча б один розмір доступний для замовлення */
+/** Хоча б один розмір доступний для замовлення на вітрині */
 export function isPlantOrderable(variants: ProductVariant[]): boolean {
-  return variants.some(canOrderVariant)
+  return variants.some(isVariantVisibleOnStorefront)
 }
 
-/** Усі розміри недоступні — показуємо «немає в наявності» і підписку */
+/** Усі розміри з нульовим залишком — показуємо «немає в наявності» і підписку */
 export function isPlantFullyUnavailable(variants: ProductVariant[]): boolean {
-  return !isPlantOrderable(variants)
+  return variants.length === 0
 }
 
 /** @deprecated використовуйте isPlantOrderable / variantHasStock */

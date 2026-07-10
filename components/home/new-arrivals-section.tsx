@@ -1,39 +1,34 @@
-import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { ProductCard } from '@/components/product-card'
-import { plants } from '@/lib/data'
+import { getLocale, getTranslations } from 'next-intl/server'
 
-export function NewArrivalsSection() {
-  // Get featured and new plants
-  const featuredPlants = plants.filter(p => p.isFeatured || p.isNew).slice(0, 4)
+import { HomeProductRowSection } from '@/components/home/home-product-row-section'
+import type { FetchResult } from '@/lib/api/fetch-result'
+import { fetchNewArrivalProducts } from '@/lib/catalog/home-products'
+import type { HomePageSettings } from '@/lib/settings/types'
+import type { Plant } from '@/lib/types'
+
+export async function NewArrivalsSection({
+  settings,
+  initialProducts,
+}: {
+  settings: HomePageSettings['newArrivals']
+  initialProducts?: FetchResult<Plant[]>
+}) {
+  const locale = await getLocale()
+  const t = await getTranslations('home')
+  const result =
+    initialProducts != null
+      ? { plants: initialProducts.data, unavailable: initialProducts.unavailable }
+      : await fetchNewArrivalProducts(settings, locale)
 
   return (
-    <section className="py-16 md:py-24 bg-secondary/30">
-      <div className="container mx-auto px-4">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
-          <div>
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Новинки та бестселери
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl">
-              Найпопулярніші рослини цього сезону та нові надходження
-            </p>
-          </div>
-          <Button variant="outline" asChild className="self-start md:self-auto">
-            <Link href="/catalog">
-              Всі рослини
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featuredPlants.map((plant) => (
-            <ProductCard key={plant.id} plant={plant} />
-          ))}
-        </div>
-      </div>
-    </section>
+    <HomeProductRowSection
+      title={settings.title}
+      subtitle={settings.subtitle}
+      plants={result.plants}
+      unavailable={result.unavailable}
+      viewAllHref="/new-arrivals"
+      viewAllLabel={t('viewAllNewArrivals')}
+      className="border-y border-border/50 bg-gradient-to-b from-muted/60 via-muted/30 to-background"
+    />
   )
 }

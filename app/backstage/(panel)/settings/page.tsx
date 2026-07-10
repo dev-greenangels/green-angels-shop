@@ -1,0 +1,966 @@
+'use client'
+
+import { useCallback, useEffect, useState } from 'react'
+import { Loader2, Plus, RefreshCw, Save, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
+
+import { AdminLayout } from '@/components/admin/admin-layout'
+import { CartCheckoutSettingsForm } from '@/components/backstage/cart-checkout-settings-form'
+import { CatalogSettingsForm } from '@/components/backstage/catalog-settings-form'
+import { NovaPoshtaSettingsForm } from '@/components/backstage/nova-poshta-settings-form'
+import { RecentlyViewedSettingsForm } from '@/components/backstage/recently-viewed-settings-form'
+import { clearRecentlyViewedSettingsCache } from '@/components/product/recently-viewed-section'
+import { StoreContactSettingsForm } from '@/components/backstage/store-contact-settings-form'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  fetchBackstageSettings,
+  updateBackstageCartCheckoutSettings,
+  updateBackstageCatalogSettings,
+  updateBackstageHomeSettings,
+  updateBackstageRecentlyViewedSettings,
+  updateBackstageStoreSettings,
+} from '@/lib/backstage/settings'
+import {
+  DEFAULT_CART_CHECKOUT_SETTINGS,
+  DEFAULT_CATALOG_SETTINGS,
+  DEFAULT_HOME_SETTINGS,
+  DEFAULT_RECENTLY_VIEWED_SETTINGS,
+} from '@/lib/settings/defaults'
+import { normalizeCartCheckoutSettings } from '@/lib/settings/cart-checkout.normalize'
+import { normalizeCatalogPageSettings } from '@/lib/settings/catalog.normalize'
+import { normalizeHomeSettings } from '@/lib/settings/home.normalize'
+import { normalizeStoreContactSettings } from '@/lib/settings/store-contact.normalize'
+import type {
+  CartCheckoutSettings,
+  CatalogPageSettings,
+  HomeGalleryImage,
+  HomeHighlight,
+  HomePageSettings,
+  HomeReview,
+  HomeStat,
+  RecentlyViewedSettings,
+  StoreContactSettings,
+} from '@/lib/settings/types'
+
+function linesToList(value: string): string[] {
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
+function listToLines(items: string[]): string {
+  return items.join('\n')
+}
+
+export default function SettingsPage() {
+  const [loading, setLoading] = useState(true)
+  const [savingStore, setSavingStore] = useState(false)
+  const [savingHome, setSavingHome] = useState(false)
+  const [savingCart, setSavingCart] = useState(false)
+  const [savingCatalog, setSavingCatalog] = useState(false)
+  const [savingRecentlyViewed, setSavingRecentlyViewed] = useState(false)
+  const [store, setStore] = useState<StoreContactSettings | null>(null)
+  const [home, setHome] = useState<HomePageSettings | null>(null)
+  const [cart, setCart] = useState<CartCheckoutSettings | null>(null)
+  const [catalog, setCatalog] = useState<CatalogPageSettings | null>(null)
+  const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewedSettings | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await fetchBackstageSettings()
+      setStore(normalizeStoreContactSettings(data.store))
+      setHome(normalizeHomeSettings(data.home))
+      setCart(normalizeCartCheckoutSettings(data.cart ?? DEFAULT_CART_CHECKOUT_SETTINGS))
+      setCatalog(normalizeCatalogPageSettings(data.catalog ?? DEFAULT_CATALOG_SETTINGS))
+      setRecentlyViewed(data.recentlyViewed ?? DEFAULT_RECENTLY_VIEWED_SETTINGS)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Не вдалося завантажити налаштування.')
+      setStore(null)
+      setHome(null)
+      setCart(null)
+      setCatalog(null)
+      setRecentlyViewed(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  const saveStore = async () => {
+    if (!store) return
+    setSavingStore(true)
+    try {
+      const updated = await updateBackstageStoreSettings(store)
+      setStore(updated)
+      toast.success('Контакти магазину збережено.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
+    } finally {
+      setSavingStore(false)
+    }
+  }
+
+  const saveCart = async () => {
+    if (!cart) return
+    setSavingCart(true)
+    try {
+      const updated = await updateBackstageCartCheckoutSettings(cart)
+      setCart(updated)
+      toast.success('Налаштування кошика збережено.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
+    } finally {
+      setSavingCart(false)
+    }
+  }
+
+  const saveCatalog = async () => {
+    if (!catalog) return
+    setSavingCatalog(true)
+    try {
+      const updated = await updateBackstageCatalogSettings(catalog)
+      setCatalog(normalizeCatalogPageSettings(updated))
+      toast.success('Налаштування каталогу збережено.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
+    } finally {
+      setSavingCatalog(false)
+    }
+  }
+
+  const saveRecentlyViewed = async () => {
+    if (!recentlyViewed) return
+    setSavingRecentlyViewed(true)
+    try {
+      const updated = await updateBackstageRecentlyViewedSettings(recentlyViewed)
+      setRecentlyViewed(updated)
+      clearRecentlyViewedSettingsCache()
+      toast.success('Налаштування «Останні переглянуті» збережено.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
+    } finally {
+      setSavingRecentlyViewed(false)
+    }
+  }
+
+  const saveHome = async () => {
+    if (!home) return
+    setSavingHome(true)
+    try {
+      const updated = await updateBackstageHomeSettings(home)
+      setHome(updated)
+      toast.success('Налаштування головної збережено.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
+    } finally {
+      setSavingHome(false)
+    }
+  }
+
+  const updateHeroHighlight = (index: number, patch: Partial<HomeHighlight>) => {
+    if (!home) return
+    const highlights = home.hero.highlights.map((item, i) =>
+      i === index ? { ...item, ...patch } : item,
+    )
+    setHome({ ...home, hero: { ...home.hero, highlights } })
+  }
+
+  const updateStat = (index: number, patch: Partial<HomeStat>) => {
+    if (!home) return
+    const stats = home.whyUs.stats.map((item, i) => (i === index ? { ...item, ...patch } : item))
+    setHome({ ...home, whyUs: { ...home.whyUs, stats } })
+  }
+
+  const updateGalleryImage = (index: number, patch: Partial<HomeGalleryImage>) => {
+    if (!home) return
+    const images = home.nurseryGallery.images.map((item, i) =>
+      i === index ? { ...item, ...patch } : item,
+    )
+    setHome({ ...home, nurseryGallery: { ...home.nurseryGallery, images } })
+  }
+
+  const addGalleryImage = () => {
+    if (!home) return
+    setHome({
+      ...home,
+      nurseryGallery: {
+        ...home.nurseryGallery,
+        images: [...home.nurseryGallery.images, { url: '', caption: '' }],
+      },
+    })
+  }
+
+  const removeGalleryImage = (index: number) => {
+    if (!home) return
+    setHome({
+      ...home,
+      nurseryGallery: {
+        ...home.nurseryGallery,
+        images: home.nurseryGallery.images.filter((_, i) => i !== index),
+      },
+    })
+  }
+
+  const updateReview = (index: number, patch: Partial<HomeReview>) => {
+    if (!home) return
+    const items = home.reviews.items.map((item, i) => (i === index ? { ...item, ...patch } : item))
+    setHome({ ...home, reviews: { ...home.reviews, items } })
+  }
+
+  const addReview = () => {
+    if (!home) return
+    setHome({
+      ...home,
+      reviews: {
+        ...home.reviews,
+        items: [...home.reviews.items, { name: '', text: '', rating: 5 }],
+      },
+    })
+  }
+
+  const removeReview = (index: number) => {
+    if (!home) return
+    setHome({
+      ...home,
+      reviews: {
+        ...home.reviews,
+        items: home.reviews.items.filter((_, i) => i !== index),
+      },
+    })
+  }
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </AdminLayout>
+    )
+  }
+
+  if (!store || !home || !cart) {
+    return (
+      <AdminLayout>
+        <Card>
+          <CardContent className="flex flex-col items-center gap-4 py-12">
+            <p className="text-muted-foreground">Не вдалося завантажити налаштування.</p>
+            <Button type="button" variant="outline" onClick={() => void load()}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Спробувати знову
+            </Button>
+          </CardContent>
+        </Card>
+      </AdminLayout>
+    )
+  }
+
+  return (
+    <AdminLayout>
+      <div className="mx-auto max-w-4xl space-y-6">
+        <div>
+          <h1 className="font-serif text-2xl font-bold text-foreground md:text-3xl">Налаштування</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Контакти магазину та контент сторінок сайту
+          </p>
+        </div>
+
+        <Tabs defaultValue="store">
+          <TabsList>
+            <TabsTrigger value="store">Магазин</TabsTrigger>
+            <TabsTrigger value="home">Головна сторінка</TabsTrigger>
+            <TabsTrigger value="catalog">Каталог</TabsTrigger>
+            <TabsTrigger value="recently-viewed">Останні переглянуті</TabsTrigger>
+            <TabsTrigger value="cart">Кошик</TabsTrigger>
+            <TabsTrigger value="nova-poshta">Нова Пошта</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="store" className="mt-6 space-y-6">
+            {store ? (
+              <StoreContactSettingsForm
+                store={store}
+                onChange={setStore}
+                onSave={() => void saveStore()}
+                saving={savingStore}
+              />
+            ) : null}
+          </TabsContent>
+
+          <TabsContent value="catalog" className="mt-6 space-y-6">
+            {catalog ? (
+              <CatalogSettingsForm
+                catalog={catalog}
+                onChange={setCatalog}
+                onSave={() => void saveCatalog()}
+                saving={savingCatalog}
+              />
+            ) : null}
+          </TabsContent>
+
+          <TabsContent value="recently-viewed" className="mt-6 space-y-6">
+            {recentlyViewed ? (
+              <RecentlyViewedSettingsForm
+                settings={recentlyViewed}
+                onChange={setRecentlyViewed}
+                onSave={() => void saveRecentlyViewed()}
+                saving={savingRecentlyViewed}
+              />
+            ) : null}
+          </TabsContent>
+
+          <TabsContent value="cart" className="mt-6 space-y-6">
+            <CartCheckoutSettingsForm
+              cart={cart}
+              onChange={setCart}
+              onSave={() => void saveCart()}
+              saving={savingCart}
+            />
+          </TabsContent>
+
+          <TabsContent value="nova-poshta" className="mt-6 space-y-6">
+            <NovaPoshtaSettingsForm />
+          </TabsContent>
+
+          <TabsContent value="home" className="mt-6 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Хіро-блок</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Бейдж</Label>
+                  <Input
+                    value={home.hero.badge}
+                    onChange={(e) =>
+                      setHome({ ...home, hero: { ...home.hero, badge: e.target.value } })
+                    }
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Заголовок</Label>
+                    <Input
+                      value={home.hero.title}
+                      onChange={(e) =>
+                        setHome({ ...home, hero: { ...home.hero, title: e.target.value } })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Акцент у заголовку</Label>
+                    <Input
+                      value={home.hero.titleAccent}
+                      onChange={(e) =>
+                        setHome({ ...home, hero: { ...home.hero, titleAccent: e.target.value } })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Підзаголовок</Label>
+                  <Textarea
+                    rows={3}
+                    value={home.hero.subtitle}
+                    onChange={(e) =>
+                      setHome({ ...home, hero: { ...home.hero, subtitle: e.target.value } })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>URL зображення</Label>
+                  <Input
+                    value={home.hero.imageUrl}
+                    onChange={(e) =>
+                      setHome({ ...home, hero: { ...home.hero, imageUrl: e.target.value } })
+                    }
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Кнопка 1 — текст</Label>
+                    <Input
+                      value={home.hero.primaryCtaLabel}
+                      onChange={(e) =>
+                        setHome({ ...home, hero: { ...home.hero, primaryCtaLabel: e.target.value } })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Кнопка 1 — посилання</Label>
+                    <Input
+                      value={home.hero.primaryCtaHref}
+                      onChange={(e) =>
+                        setHome({ ...home, hero: { ...home.hero, primaryCtaHref: e.target.value } })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Кнопка 2 — текст</Label>
+                    <Input
+                      value={home.hero.secondaryCtaLabel}
+                      onChange={(e) =>
+                        setHome({
+                          ...home,
+                          hero: { ...home.hero, secondaryCtaLabel: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Кнопка 2 — посилання</Label>
+                    <Input
+                      value={home.hero.secondaryCtaHref}
+                      onChange={(e) =>
+                        setHome({
+                          ...home,
+                          hero: { ...home.hero, secondaryCtaHref: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <Label>Переваги (3 блоки)</Label>
+                  {home.hero.highlights.map((item, index) => (
+                    <div key={index} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-2">
+                      <Input
+                        placeholder="Заголовок"
+                        value={item.title}
+                        onChange={(e) => updateHeroHighlight(index, { title: e.target.value })}
+                      />
+                      <Input
+                        placeholder="Опис"
+                        value={item.description}
+                        onChange={(e) => updateHeroHighlight(index, { description: e.target.value })}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Категорії на головній</CardTitle>
+                <CardDescription>
+                  Заголовок і підзаголовок блоку категорій. Категорії показуються в горизонтальному скролі.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Заголовок блоку</Label>
+                    <Input
+                      value={home.categories.title}
+                      onChange={(e) =>
+                        setHome({
+                          ...home,
+                          categories: { ...home.categories, title: e.target.value },
+                        })
+                      }
+                      placeholder="Напр. Каталог"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Максимум категорій (якщо slugs порожні)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={24}
+                      value={home.categories.limit}
+                      onChange={(e) =>
+                        setHome({
+                          ...home,
+                          categories: {
+                            ...home.categories,
+                            limit: Number(e.target.value) || DEFAULT_HOME_SETTINGS.categories.limit,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Підзаголовок блоку</Label>
+                  <Textarea
+                    rows={2}
+                    value={home.categories.subtitle}
+                    onChange={(e) =>
+                      setHome({
+                        ...home,
+                        categories: { ...home.categories, subtitle: e.target.value },
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Slugs категорій (по одному в рядку, порядок відображення)</Label>
+                  <Textarea
+                    rows={4}
+                    value={listToLines(home.categories.categorySlugs ?? [])}
+                    onChange={(e) =>
+                      setHome({
+                        ...home,
+                        categories: {
+                          ...home.categories,
+                          categorySlugs: linesToList(e.target.value),
+                        },
+                      })
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Новинки</CardTitle>
+                <CardDescription>
+                  Автоматично: товари, що знову зʼявились у наявності після повного відсутності на складі.
+                  Slugs додаються вручну на початок списку.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Заголовок</Label>
+                    <Input
+                      value={home.newArrivals.title}
+                      onChange={(e) =>
+                        setHome({
+                          ...home,
+                          newArrivals: { ...home.newArrivals, title: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Кількість карток</Label>
+                    <Input
+                      type="number"
+                      min={3}
+                      max={12}
+                      value={home.newArrivals.limit}
+                      onChange={(e) =>
+                        setHome({
+                          ...home,
+                          newArrivals: {
+                            ...home.newArrivals,
+                            limit: Number(e.target.value) || DEFAULT_HOME_SETTINGS.newArrivals.limit,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Підзаголовок</Label>
+                  <Textarea
+                    rows={2}
+                    value={home.newArrivals.subtitle}
+                    onChange={(e) =>
+                      setHome({
+                        ...home,
+                        newArrivals: { ...home.newArrivals, subtitle: e.target.value },
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Slugs товарів (по одному в рядку, пріоритет)</Label>
+                  <Textarea
+                    rows={3}
+                    value={listToLines(home.newArrivals.productSlugs)}
+                    onChange={(e) =>
+                      setHome({
+                        ...home,
+                        newArrivals: {
+                          ...home.newArrivals,
+                          productSlugs: linesToList(e.target.value),
+                        },
+                      })
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Популярний вибір</CardTitle>
+                <CardDescription>
+                  Автоматично: найбільше продано за останні 90 днів (лише в наявності). Slugs — ручний
+                  пріоритет.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Заголовок</Label>
+                    <Input
+                      value={home.bestsellers.title}
+                      onChange={(e) =>
+                        setHome({
+                          ...home,
+                          bestsellers: { ...home.bestsellers, title: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Кількість карток</Label>
+                    <Input
+                      type="number"
+                      min={3}
+                      max={12}
+                      value={home.bestsellers.limit}
+                      onChange={(e) =>
+                        setHome({
+                          ...home,
+                          bestsellers: {
+                            ...home.bestsellers,
+                            limit: Number(e.target.value) || DEFAULT_HOME_SETTINGS.bestsellers.limit,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Підзаголовок</Label>
+                  <Textarea
+                    rows={2}
+                    value={home.bestsellers.subtitle}
+                    onChange={(e) =>
+                      setHome({
+                        ...home,
+                        bestsellers: { ...home.bestsellers, subtitle: e.target.value },
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Slugs товарів (по одному в рядку, пріоритет)</Label>
+                  <Textarea
+                    rows={3}
+                    value={listToLines(home.bestsellers.productSlugs)}
+                    onChange={(e) =>
+                      setHome({
+                        ...home,
+                        bestsellers: {
+                          ...home.bestsellers,
+                          productSlugs: linesToList(e.target.value),
+                        },
+                      })
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Закінчується</CardTitle>
+                <CardDescription>
+                  Автоматично: в наявності, але залишок не більше порогу (сортування від меншого залишку).
+                  Slugs — ручні позиції на початку.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Заголовок</Label>
+                    <Input
+                      value={home.lowStock.title}
+                      onChange={(e) =>
+                        setHome({
+                          ...home,
+                          lowStock: { ...home.lowStock, title: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Кількість карток</Label>
+                    <Input
+                      type="number"
+                      min={3}
+                      max={12}
+                      value={home.lowStock.limit}
+                      onChange={(e) =>
+                        setHome({
+                          ...home,
+                          lowStock: {
+                            ...home.lowStock,
+                            limit: Number(e.target.value) || DEFAULT_HOME_SETTINGS.lowStock.limit,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Підзаголовок</Label>
+                  <Textarea
+                    rows={2}
+                    value={home.lowStock.subtitle}
+                    onChange={(e) =>
+                      setHome({
+                        ...home,
+                        lowStock: { ...home.lowStock, subtitle: e.target.value },
+                      })
+                    }
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Поріг залишку (шт., для авто-відбору)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={500}
+                      value={home.lowStock.stockThreshold}
+                      onChange={(e) =>
+                        setHome({
+                          ...home,
+                          lowStock: {
+                            ...home.lowStock,
+                            stockThreshold:
+                              Number(e.target.value) || DEFAULT_HOME_SETTINGS.lowStock.stockThreshold,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Slugs товарів (по одному в рядку, пріоритет)</Label>
+                  <Textarea
+                    rows={3}
+                    value={listToLines(home.lowStock.productSlugs)}
+                    onChange={(e) =>
+                      setHome({
+                        ...home,
+                        lowStock: {
+                          ...home.lowStock,
+                          productSlugs: linesToList(e.target.value),
+                        },
+                      })
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Чому обирають нас</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Заголовок</Label>
+                  <Input
+                    value={home.whyUs.title}
+                    onChange={(e) =>
+                      setHome({ ...home, whyUs: { ...home.whyUs, title: e.target.value } })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Підзаголовок</Label>
+                  <Textarea
+                    rows={3}
+                    value={home.whyUs.subtitle}
+                    onChange={(e) =>
+                      setHome({ ...home, whyUs: { ...home.whyUs, subtitle: e.target.value } })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Переваги (по одній в рядку)</Label>
+                  <Textarea
+                    rows={6}
+                    value={listToLines(home.whyUs.features)}
+                    onChange={(e) =>
+                      setHome({
+                        ...home,
+                        whyUs: { ...home.whyUs, features: linesToList(e.target.value) },
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label>Статистика</Label>
+                  {home.whyUs.stats.map((stat, index) => (
+                    <div key={index} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-2">
+                      <Input
+                        placeholder="Значення"
+                        value={stat.value}
+                        onChange={(e) => updateStat(index, { value: e.target.value })}
+                      />
+                      <Input
+                        placeholder="Підпис"
+                        value={stat.label}
+                        onChange={(e) => updateStat(index, { label: e.target.value })}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Галерея розсадника</CardTitle>
+                <Button type="button" size="sm" variant="outline" onClick={addGalleryImage}>
+                  <Plus className="mr-1 h-4 w-4" />
+                  Фото
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Заголовок</Label>
+                  <Input
+                    value={home.nurseryGallery.title}
+                    onChange={(e) =>
+                      setHome({
+                        ...home,
+                        nurseryGallery: { ...home.nurseryGallery, title: e.target.value },
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Підзаголовок</Label>
+                  <Textarea
+                    rows={2}
+                    value={home.nurseryGallery.subtitle}
+                    onChange={(e) =>
+                      setHome({
+                        ...home,
+                        nurseryGallery: { ...home.nurseryGallery, subtitle: e.target.value },
+                      })
+                    }
+                  />
+                </div>
+                {home.nurseryGallery.images.map((image, index) => (
+                  <div key={index} className="flex gap-2 rounded-lg border p-3">
+                    <div className="grid flex-1 gap-2 sm:grid-cols-2">
+                      <Input
+                        placeholder="URL зображення"
+                        value={image.url}
+                        onChange={(e) => updateGalleryImage(index, { url: e.target.value })}
+                      />
+                      <Input
+                        placeholder="Підпис"
+                        value={image.caption}
+                        onChange={(e) => updateGalleryImage(index, { caption: e.target.value })}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => removeGalleryImage(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Відгуки</CardTitle>
+                <Button type="button" size="sm" variant="outline" onClick={addReview}>
+                  <Plus className="mr-1 h-4 w-4" />
+                  Відгук
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Заголовок</Label>
+                  <Input
+                    value={home.reviews.title}
+                    onChange={(e) =>
+                      setHome({ ...home, reviews: { ...home.reviews, title: e.target.value } })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Підзаголовок</Label>
+                  <Textarea
+                    rows={2}
+                    value={home.reviews.subtitle}
+                    onChange={(e) =>
+                      setHome({ ...home, reviews: { ...home.reviews, subtitle: e.target.value } })
+                    }
+                  />
+                </div>
+                {home.reviews.items.map((review, index) => (
+                  <div key={index} className="space-y-2 rounded-lg border p-3">
+                    <div className="flex gap-2">
+                      <Input
+                        className="flex-1"
+                        placeholder="Імʼя"
+                        value={review.name}
+                        onChange={(e) => updateReview(index, { name: e.target.value })}
+                      />
+                      <Input
+                        className="w-24"
+                        type="number"
+                        min={1}
+                        max={5}
+                        placeholder="Оцінка"
+                        value={review.rating}
+                        onChange={(e) =>
+                          updateReview(index, {
+                            rating: Math.min(5, Math.max(1, Number(e.target.value) || 5)),
+                          })
+                        }
+                      />
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => removeReview(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Textarea
+                      rows={3}
+                      placeholder="Текст відгуку"
+                      value={review.text}
+                      onChange={(e) => updateReview(index, { text: e.target.value })}
+                    />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Button type="button" onClick={() => void saveHome()} disabled={savingHome}>
+              {savingHome ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Зберегти головну
+            </Button>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </AdminLayout>
+  )
+}

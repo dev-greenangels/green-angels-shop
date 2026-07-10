@@ -1,20 +1,59 @@
 import { NextResponse } from 'next/server'
 
+import { fetchBackend } from '@/lib/api/backend-fetch'
 import { SESSION_COOKIE_NAME } from '@/lib/auth/constants'
+import { resolveLogoutRedirect } from '@/lib/auth/logout-redirect'
+import { localePath } from '@/lib/locale-path'
 
-export async function GET(request: Request) {
-  const url = new URL('/', request.url)
-  const res = NextResponse.redirect(url)
-  res.cookies.set(SESSION_COOKIE_NAME, '', {
+function clearSessionCookie(response: NextResponse) {
+  response.cookies.set(SESSION_COOKIE_NAME, '', {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     path: '/',
     maxAge: 0,
   })
-  return res
+  return response
+}
+
+function resolveFromParam(request: Request): string {
+  const url = new URL(request.url)
+  const from = url.searchParams.get('from')?.trim()
+  if (from && from.startsWith('/') && !from.startsWith('//')) {
+    return resolveLogoutRedirect(from)
+  }
+
+  const referer = request.headers.get('referer')
+  if (referer) {
+    try {
+      const refererUrl = new URL(referer)
+      return resolveLogoutRedirect(refererUrl.pathname + refererUrl.search)
+    } catch {
+      /* ignore invalid referer */
+    }
+  }
+
+  return '/'
+}
+
+export async function GET(request: Request) {
+  try {
+    await fetchBackend('/auth/logout', { method: 'POST', request })
+  } catch {
+    // ignore backend logout errors
+  }
+
+  const target = resolveFromParam(request)
+  const url = new URL(localePath(target), request.url)
+  return clearSessionCookie(NextResponse.redirect(url))
 }
 
 export async function POST(request: Request) {
-  return GET(request)
+  try {
+    await fetchBackend('/auth/logout', { method: 'POST', request })
+  } catch {
+    // ignore backend logout errors
+  }
+
+  return clearSessionCookie(NextResponse.json({ ok: true }))
 }

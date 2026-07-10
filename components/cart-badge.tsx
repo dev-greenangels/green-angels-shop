@@ -21,11 +21,10 @@ export function CartBadge({ count }: { count: number }) {
     <span
       className={cn(
         'pointer-events-none absolute z-10 flex items-center justify-center rounded-full',
-        'bg-primary font-bold leading-none text-primary-foreground tabular-nums',
-        'ring-2 ring-background',
-        digitCount <= 1 && '-top-2 -right-2 h-5 min-w-5 text-xs',
-        digitCount === 2 && '-top-2 -right-2 h-5 min-w-[22px] px-1.5 text-xs',
-        digitCount >= 3 && '-top-2 -right-2 h-5 min-w-[34px] px-1.5 text-xs'
+        'bg-primary text-[12px] font-bold leading-none text-primary-foreground tabular-nums',
+        digitCount <= 1 && '-top-2 -right-2 h-5 min-w-5',
+        digitCount === 2 && '-top-2 -right-2 h-5 min-w-[22px] px-1.5',
+        digitCount >= 3 && '-top-2 -right-2 h-5 min-w-[34px] px-1.5',
       )}
       aria-hidden
     >

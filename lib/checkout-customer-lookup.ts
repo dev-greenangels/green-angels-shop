@@ -1,56 +1,144 @@
 export type CustomerLookupResult = {
   found: boolean
+  needsProfile?: boolean
   firstName?: string
   lastName?: string
+  email?: string
+  phone?: string
   personalDiscountPercent?: number
+  user?: {
+    id?: string
+    email: string
+    role: 'admin' | 'customer'
+    firstName?: string | null
+    lastName?: string | null
+    phone?: string | null
+  }
 }
 
-/** Нормалізація до 9 цифр після коду UA (631768178). */
-function normalizeToLocal9(phone: string): string {
-  const digits = phone.replace(/\D/g, '')
-  if (digits.startsWith('380') && digits.length >= 12) return digits.slice(-9)
-  if (digits.startsWith('0') && digits.length === 10) return digits.slice(1)
-  if (digits.length === 9) return digits
-  return digits.slice(-9)
+type ApiErrorBody = {
+  error?: string
+  message?: string | string[]
 }
 
-/** Мок: лише цей номер — «є в БД». */
-const MOCK_EXISTING_LOCAL = '631768178'
-
-const MOCK_EXISTING_PROFILE = {
-  firstName: 'Олена',
-  lastName: 'Коваленко',
-  personalDiscountPercent: 10,
+function extractApiError(data: ApiErrorBody, fallback: string): string {
+  if (data.error) return data.error
+  if (Array.isArray(data.message)) return data.message.join(', ')
+  if (typeof data.message === 'string') return data.message
+  return fallback
 }
 
-function isMockExistingCustomer(phone: string): boolean {
-  const local = normalizeToLocal9(phone)
-  return local.length === 9 && local === MOCK_EXISTING_LOCAL
+async function readApiError(res: Response, fallback: string): Promise<string> {
+  const data = (await res.json().catch(() => ({}))) as ApiErrorBody
+  return extractApiError(data, fallback)
 }
 
-/** Заглушка: 0631768178 — постійний клієнт, інші — новий. */
 export async function lookupCustomerByPhone(phone: string): Promise<CustomerLookupResult> {
-  await new Promise((r) => setTimeout(r, 400))
+  const res = await fetch(
+    `/api/auth/customer-by-phone?phone=${encodeURIComponent(phone.trim())}`,
+    { cache: 'no-store' },
+  )
 
-  if (!isMockExistingCustomer(phone)) {
-    return { found: false }
+  if (!res.ok) {
+    throw new Error(await readApiError(res, 'Не вдалося перевірити номер.'))
   }
 
-  return {
-    found: true,
-    firstName: MOCK_EXISTING_PROFILE.firstName,
-    lastName: MOCK_EXISTING_PROFILE.lastName,
-    personalDiscountPercent: MOCK_EXISTING_PROFILE.personalDiscountPercent,
+  return (await res.json()) as CustomerLookupResult
+}
+
+export async function sendAuthEmailCode(email: string): Promise<void> {
+  const res = await fetch('/api/auth/otp/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim().toLowerCase(), purpose: 'login' }),
+  })
+
+  if (!res.ok) {
+    throw new Error(await readApiError(res, 'Не вдалося надіслати лист.'))
   }
 }
 
-/** Мок SMS-коду для постійного клієнта. */
-export const MOCK_SMS_CODE = '1234'
+export async function verifyAuthEmailCode(
+  email: string,
+  code: string,
+): Promise<{ verificationToken: string }> {
+  const res = await fetch('/api/auth/otp/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim().toLowerCase(), code }),
+  })
 
-export async function sendCheckoutSmsCode(_phone: string): Promise<void> {
-  await new Promise((r) => setTimeout(r, 600))
+  if (!res.ok) {
+    throw new Error(await readApiError(res, 'Невірний код.'))
+  }
+
+  return (await res.json()) as { verificationToken: string }
 }
 
-export function verifyCheckoutSmsCode(code: string): boolean {
-  return code.replace(/\D/g, '') === MOCK_SMS_CODE
+export async function sendCheckoutSmsCode(phone: string): Promise<void> {
+  const res = await fetch('/api/auth/otp/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone: phone.trim(), purpose: 'checkout' }),
+  })
+
+  if (!res.ok) {
+    throw new Error(await readApiError(res, 'Не вдалося надіслати SMS.'))
+  }
+}
+
+export async function sendCheckoutEmailCode(email: string): Promise<void> {
+  const res = await fetch('/api/auth/otp/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim().toLowerCase(), purpose: 'checkout' }),
+  })
+
+  if (!res.ok) {
+    throw new Error(await readApiError(res, 'Не вдалося надіслати лист.'))
+  }
+}
+
+export async function verifyCheckoutSmsCode(
+  phone: string,
+  code: string,
+): Promise<{ verificationToken: string }> {
+  const res = await fetch('/api/auth/otp/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone: phone.trim(), code }),
+  })
+
+  if (!res.ok) {
+    throw new Error(await readApiError(res, 'Невірний код.'))
+  }
+
+  return (await res.json()) as { verificationToken: string }
+}
+
+export async function resolveCheckoutIdentity(input: {
+  phone?: string
+  email?: string
+  verificationToken: string
+  firstName?: string
+  lastName?: string
+}): Promise<CustomerLookupResult> {
+  const res = await fetch('/api/auth/checkout/identity', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({
+      ...(input.phone?.trim() ? { phone: input.phone.trim() } : {}),
+      ...(input.email?.trim() ? { email: input.email.trim().toLowerCase() } : {}),
+      verificationToken: input.verificationToken,
+      ...(input.firstName?.trim() ? { firstName: input.firstName.trim() } : {}),
+      ...(input.lastName?.trim() ? { lastName: input.lastName.trim() } : {}),
+    }),
+  })
+
+  if (!res.ok) {
+    throw new Error(await readApiError(res, 'Не вдалося підтвердити замовника.'))
+  }
+
+  return (await res.json()) as CustomerLookupResult
 }

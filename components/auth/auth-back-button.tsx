@@ -1,12 +1,12 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { ArrowLeft } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { safeAuthRedirect } from '@/lib/auth/redirect'
 import { cn } from '@/lib/utils'
+import { Link, useRouter } from '@/i18n/navigation'
 
 type AuthBackButtonProps = {
   fallbackHref?: string | null

@@ -1,6 +1,7 @@
 'use client'
 
 import { memo } from 'react'
+import { useTranslations } from 'next-intl'
 import { CreditCard, Truck, User } from 'lucide-react'
 
 import { CHECKOUT_STEP_META, type CheckoutStep } from '@/components/checkout/checkout-utils'
@@ -18,6 +19,7 @@ export const CheckoutProgress = memo(function CheckoutProgress({
   currentStep: CheckoutStep
   onGoToStep: (step: CheckoutStep) => void
 }) {
+  const t = useTranslations('checkout')
   const currentStepIndex = CHECKOUT_STEP_META.findIndex((s) => s.key === currentStep)
 
   return (
@@ -44,7 +46,7 @@ export const CheckoutProgress = memo(function CheckoutProgress({
                 <Icon className="h-4 w-4" />
               </span>
               <span className="text-center text-xs font-medium leading-tight sm:text-sm">
-                {step.label}
+                {t(`steps.${step.key}`)}
               </span>
             </button>
             {index < CHECKOUT_STEP_META.length - 1 && (

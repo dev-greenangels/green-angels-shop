@@ -30,6 +30,7 @@ function SheetPortal({
 
 function SheetOverlay({
   className,
+  children,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Overlay>) {
   return (
@@ -40,7 +41,9 @@ function SheetOverlay({
         className
       )}
       {...props}
-    />
+    >
+      {children}
+    </SheetPrimitive.Overlay>
   )
 }
 
@@ -48,13 +51,24 @@ function SheetContent({
   className,
   children,
   side = 'right',
+  showCloseButton = true,
+  closeOnOverlay = false,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: 'top' | 'right' | 'bottom' | 'left'
+  showCloseButton?: boolean
+  closeOnOverlay?: boolean
 }) {
   return (
     <SheetPortal>
-      <SheetOverlay />
+      <SheetOverlay>
+        {closeOnOverlay && showCloseButton ? (
+          <SheetPrimitive.Close className="ring-offset-background focus:ring-ring absolute top-4 right-[2%] z-[70] flex h-10 w-10 items-center justify-center rounded-full bg-background/95 text-foreground shadow-md opacity-90 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden">
+            <XIcon className="size-5" />
+            <span className="sr-only">Close</span>
+          </SheetPrimitive.Close>
+        ) : null}
+      </SheetOverlay>
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
@@ -73,10 +87,12 @@ function SheetContent({
         {...props}
       >
         {children}
-        <SheetPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
-          <XIcon className="size-4" />
-          <span className="sr-only">Close</span>
-        </SheetPrimitive.Close>
+        {showCloseButton && !closeOnOverlay ? (
+          <SheetPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
+            <XIcon className="size-4" />
+            <span className="sr-only">Close</span>
+          </SheetPrimitive.Close>
+        ) : null}
       </SheetPrimitive.Content>
     </SheetPortal>
   )

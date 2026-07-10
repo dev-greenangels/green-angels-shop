@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, PackageX } from 'lucide-react'
+import { PackageX } from 'lucide-react'
 
+import { NotifyAvailabilityButton } from '@/components/product/notify-availability-button'
 import { NotifyWhenAvailableModal } from '@/components/product/notify-when-available-modal'
-import { Button } from '@/components/ui/button'
 
 type ProductOutOfStockBlockProps = {
   plantId: string
@@ -29,15 +29,11 @@ export function ProductOutOfStockBlock({ plantId, plantName }: ProductOutOfStock
               </p>
             </div>
           </div>
-          <Button
-            type="button"
+          <NotifyAvailabilityButton
             size="lg"
-            className="w-full shrink-0 gap-2 sm:w-auto"
+            className="w-full shrink-0 sm:w-auto"
             onClick={() => setNotifyOpen(true)}
-          >
-            <Bell className="h-5 w-5" />
-            Дізнатись, коли буде
-          </Button>
+          />
         </div>
       </div>
 

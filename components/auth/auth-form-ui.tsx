@@ -1,7 +1,5 @@
 import { Label } from '@/components/ui/label'
-
-export const authInputClassName =
-  'border-border/90 bg-background shadow-sm ring-1 ring-border/70 focus-visible:border-primary focus-visible:ring-primary/25'
+import { Link } from '@/i18n/navigation'
 
 export function RequiredLabel({
   htmlFor,
@@ -18,6 +16,19 @@ export function RequiredLabel({
         *
       </span>
     </Label>
+  )
+}
+
+export function OrDivider() {
+  return (
+    <div className="relative py-1">
+      <div className="absolute inset-0 flex items-center" aria-hidden>
+        <span className="w-full border-t border-border" />
+      </div>
+      <p className="relative mx-auto w-fit bg-background px-3 text-xs text-muted-foreground">
+        або
+      </p>
+    </div>
   )
 }
 

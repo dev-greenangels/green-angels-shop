@@ -9,13 +9,28 @@ export interface ProductVariant {
   id: string
   /** Маркування, напр. C2, C5, СВРБ, ТГ22-24… */
   label: string
+  /** EAN / штрихкод варіанту — для свіжих фото */
+  ean?: string | null
   stock: number
   /** Орієнтовна дата відвантаження (напр. "25.05.2026"); дозволяє бронювання навіть при stock 0 */
   availableFrom?: string
   basePrice: number
   priceTiers: PriceTier[]
+  /** Символ одиниці продажу (шт, кг…) */
+  salesUnitSymbol?: string | null
   /** Показувати кнопку «Свіжі фото» лише якщо true */
   freshPhotos?: boolean
+}
+
+export interface ProductDisplayCharacteristic {
+  id: string
+  slug: string
+  name: string
+  icon: string | null
+  unit: string | null
+  valueType: string
+  displayValue: string
+  sortOrder: number
 }
 
 export interface Plant {
@@ -23,9 +38,9 @@ export interface Plant {
   name: string
   latinName: string
   slug: string
-  category: 'conifers' | 'deciduous' | 'perennials' | 'shrubs'
+  categoryId?: string
+  category: string
   price: number
-  originalPrice?: number
   sku: string
   images: string[]
   description: string
@@ -33,19 +48,21 @@ export interface Plant {
   stock: number
   /** Розміри / варіанти з цінами та наявністю; якщо порожньо — використовується containerSize + price */
   variants?: ProductVariant[]
-  containerSize: 'P9' | 'C2' | 'C3' | 'C5' | 'C7' | 'C10' | 'C20' | 'C30'
+  containerSize?: 'P9' | 'C2' | 'C3' | 'C5' | 'C7' | 'C10' | 'C20' | 'C30' | string
   height: string
-  width: string
-  sunRequirement: 'full-sun' | 'partial-shade' | 'full-shade'
-  soilType: 'acidic' | 'neutral' | 'alkaline' | 'any'
+  width?: string
+  sunRequirement: 'full-sun' | 'partial-shade' | 'full-shade' | string
+  soilType: 'acidic' | 'neutral' | 'alkaline' | 'any' | string
   hardinessZone: string
-  wateringNeeds: 'low' | 'moderate' | 'high'
-  plantingInstructions: string
-  lightRequirements: string
-  careInstructions: string
+  wateringNeeds: 'low' | 'moderate' | 'high' | string
+  plantingInstructions?: string
+  lightRequirements?: string
+  careInstructions?: string
   isNew?: boolean
   isFeatured?: boolean
+  maxDiscountPercent?: number | null
   createdAt: string
+  displayCharacteristics?: ProductDisplayCharacteristic[]
 }
 
 export interface CartItem {
@@ -65,20 +82,6 @@ export interface Category {
   description: string
   image: string
   plantCount: number
-}
-
-export interface Order {
-  id: string
-  orderNumber: string
-  customerName: string
-  customerEmail: string
-  customerPhone: string
-  shippingAddress: string
-  items: CartItem[]
-  total: number
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
-  createdAt: string
-  updatedAt: string
 }
 
 export interface User {

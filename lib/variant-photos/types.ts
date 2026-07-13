@@ -22,6 +22,7 @@ export type CatalogPhotoItem = {
   productSlug?: string | null
   categorySlug?: string | null
   productName?: string | null
+  productImageUrl?: string | null
   variantId?: string | null
   price?: number | null
   stock?: number | null

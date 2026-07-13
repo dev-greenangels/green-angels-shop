@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import type { CategoryOption } from '@/components/backstage/category-combobox'
 import { PromoMultiCategoryPicker } from '@/components/backstage/promo-multi-category-picker'

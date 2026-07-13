@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ExternalLink, Loader2, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { BlogPostFormDialog } from '@/components/backstage/blog-post-form-dialog'

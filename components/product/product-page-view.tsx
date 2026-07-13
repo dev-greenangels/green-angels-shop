@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { toast } from 'sonner'
+import { showAddedToCartToast } from '@/lib/cart-toast'
 
 import { ProductCoverImage } from '@/components/product/product-cover-image'
 import { ProductDisplayCharacteristics } from '@/components/product/product-display-characteristics'
@@ -76,7 +76,7 @@ export function ProductPageView({
     }
 
     if (addedCount > 0) {
-      toast.success(tc('addedToCart', { count: addedCount }))
+      showAddedToCartToast(tc('addedToCart', { count: addedCount }), plant.name, variant.label)
     }
   }
 

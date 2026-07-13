@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Loader2, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { UserEditCard } from '@/components/backstage/user-edit-card'

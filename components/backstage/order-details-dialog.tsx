@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Eye, Loader2, Package } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import { OrderStatusBadge, OrderStatusSelect } from '@/components/backstage/order-status-select'
 import { Button } from '@/components/ui/button'

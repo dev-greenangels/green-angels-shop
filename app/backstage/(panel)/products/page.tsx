@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { ChevronLeft, ChevronRight, Edit, Filter, Loader2, Plus, Search, Trash2, X } from 'lucide-react'
 import Link from 'next/link'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { CategoryThumbnail } from '@/components/backstage/category-thumbnail'

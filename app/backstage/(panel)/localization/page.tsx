@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Loader2, RefreshCw } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 import { useTranslations } from 'next-intl'
 
 import { AdminLayout } from '@/components/admin/admin-layout'

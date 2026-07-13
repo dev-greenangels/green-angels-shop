@@ -2,19 +2,21 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Loader2, Plus, RefreshCw, Save, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { CartCheckoutSettingsForm } from '@/components/backstage/cart-checkout-settings-form'
 import { CatalogSettingsForm } from '@/components/backstage/catalog-settings-form'
 import { NovaPoshtaSettingsForm } from '@/components/backstage/nova-poshta-settings-form'
 import { RecentlyViewedSettingsForm } from '@/components/backstage/recently-viewed-settings-form'
+import { HomeSectionOrderControls } from '@/components/backstage/home-section-order-controls'
 import { clearRecentlyViewedSettingsCache } from '@/components/product/recently-viewed-section'
 import { StoreContactSettingsForm } from '@/components/backstage/store-contact-settings-form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -41,7 +43,6 @@ import type {
   HomeGalleryImage,
   HomeHighlight,
   HomePageSettings,
-  HomeReview,
   HomeStat,
   RecentlyViewedSettings,
   StoreContactSettings,
@@ -211,34 +212,6 @@ export default function SettingsPage() {
     })
   }
 
-  const updateReview = (index: number, patch: Partial<HomeReview>) => {
-    if (!home) return
-    const items = home.reviews.items.map((item, i) => (i === index ? { ...item, ...patch } : item))
-    setHome({ ...home, reviews: { ...home.reviews, items } })
-  }
-
-  const addReview = () => {
-    if (!home) return
-    setHome({
-      ...home,
-      reviews: {
-        ...home.reviews,
-        items: [...home.reviews.items, { name: '', text: '', rating: 5 }],
-      },
-    })
-  }
-
-  const removeReview = (index: number) => {
-    if (!home) return
-    setHome({
-      ...home,
-      reviews: {
-        ...home.reviews,
-        items: home.reviews.items.filter((_, i) => i !== index),
-      },
-    })
-  }
-
   if (loading) {
     return (
       <AdminLayout>
@@ -332,6 +305,11 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="home" className="mt-6 space-y-6">
+            <HomeSectionOrderControls
+              order={home.sectionOrder}
+              onChange={(sectionOrder) => setHome({ ...home, sectionOrder })}
+            />
+
             <Card>
               <CardHeader>
                 <CardTitle>Хіро-блок</CardTitle>
@@ -881,22 +859,133 @@ export default function SettingsPage() {
             </Card>
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Відгуки</CardTitle>
-                <Button type="button" size="sm" variant="outline" onClick={addReview}>
-                  <Plus className="mr-1 h-4 w-4" />
-                  Відгук
-                </Button>
+              <CardHeader>
+                <CardTitle>Актуальні фото рослин</CardTitle>
+                <CardDescription>
+                  Горизонтальна стрічка свіжих фото з розсадника. Дані підтягуються автоматично з
+                  каталогу фото.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Заголовок</Label>
-                  <Input
-                    value={home.reviews.title}
-                    onChange={(e) =>
-                      setHome({ ...home, reviews: { ...home.reviews, title: e.target.value } })
+                <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="fresh-photos-enabled">Показувати блок</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Якщо вимкнено, блок не відображається на головній.
+                    </p>
+                  </div>
+                  <Switch
+                    id="fresh-photos-enabled"
+                    checked={home.freshPlantPhotos.enabled}
+                    onCheckedChange={(enabled) =>
+                      setHome({
+                        ...home,
+                        freshPlantPhotos: { ...home.freshPlantPhotos, enabled },
+                      })
                     }
                   />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Заголовок</Label>
+                    <Input
+                      value={home.freshPlantPhotos.title}
+                      onChange={(e) =>
+                        setHome({
+                          ...home,
+                          freshPlantPhotos: { ...home.freshPlantPhotos, title: e.target.value },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Кількість фото</Label>
+                    <Input
+                      type="number"
+                      min={3}
+                      max={24}
+                      value={home.freshPlantPhotos.limit}
+                      onChange={(e) =>
+                        setHome({
+                          ...home,
+                          freshPlantPhotos: {
+                            ...home.freshPlantPhotos,
+                            limit:
+                              Number(e.target.value) ||
+                              DEFAULT_HOME_SETTINGS.freshPlantPhotos.limit,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Підзаголовок</Label>
+                  <Textarea
+                    rows={2}
+                    value={home.freshPlantPhotos.subtitle}
+                    onChange={(e) =>
+                      setHome({
+                        ...home,
+                        freshPlantPhotos: { ...home.freshPlantPhotos, subtitle: e.target.value },
+                      })
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Відгуки</CardTitle>
+                <CardDescription>
+                  Реальні відгуки клієнтів після модерації. Керування текстами — у розділі «Відгуки».
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="reviews-enabled">Показувати блок</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Блок зникає, якщо немає схвалених відгуків.
+                    </p>
+                  </div>
+                  <Switch
+                    id="reviews-enabled"
+                    checked={home.reviews.enabled}
+                    onCheckedChange={(enabled) =>
+                      setHome({ ...home, reviews: { ...home.reviews, enabled } })
+                    }
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Заголовок</Label>
+                    <Input
+                      value={home.reviews.title}
+                      onChange={(e) =>
+                        setHome({ ...home, reviews: { ...home.reviews, title: e.target.value } })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Кількість відгуків</Label>
+                    <Input
+                      type="number"
+                      min={3}
+                      max={20}
+                      value={home.reviews.limit}
+                      onChange={(e) =>
+                        setHome({
+                          ...home,
+                          reviews: {
+                            ...home.reviews,
+                            limit: Number(e.target.value) || DEFAULT_HOME_SETTINGS.reviews.limit,
+                          },
+                        })
+                      }
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Підзаголовок</Label>
@@ -908,45 +997,27 @@ export default function SettingsPage() {
                     }
                   />
                 </div>
-                {home.reviews.items.map((review, index) => (
-                  <div key={index} className="space-y-2 rounded-lg border p-3">
-                    <div className="flex gap-2">
-                      <Input
-                        className="flex-1"
-                        placeholder="Імʼя"
-                        value={review.name}
-                        onChange={(e) => updateReview(index, { name: e.target.value })}
-                      />
-                      <Input
-                        className="w-24"
-                        type="number"
-                        min={1}
-                        max={5}
-                        placeholder="Оцінка"
-                        value={review.rating}
-                        onChange={(e) =>
-                          updateReview(index, {
-                            rating: Math.min(5, Math.max(1, Number(e.target.value) || 5)),
-                          })
-                        }
-                      />
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => removeReview(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <Textarea
-                      rows={3}
-                      placeholder="Текст відгуку"
-                      value={review.text}
-                      onChange={(e) => updateReview(index, { text: e.target.value })}
-                    />
-                  </div>
-                ))}
+                <div className="space-y-2">
+                  <Label htmlFor="reviews-sort">Сортування</Label>
+                  <select
+                    id="reviews-sort"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={home.reviews.sort}
+                    onChange={(e) =>
+                      setHome({
+                        ...home,
+                        reviews: {
+                          ...home.reviews,
+                          sort: e.target.value as HomePageSettings['reviews']['sort'],
+                        },
+                      })
+                    }
+                  >
+                    <option value="newest">Спочатку нові</option>
+                    <option value="oldest">Спочатку старі</option>
+                    <option value="rating_desc">Спочатку з найвищою оцінкою</option>
+                  </select>
+                </div>
               </CardContent>
             </Card>
 

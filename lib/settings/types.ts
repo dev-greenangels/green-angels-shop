@@ -98,13 +98,11 @@ export type HomeGalleryImage = {
   caption: string
 }
 
-export type HomeReview = {
-  name: string
-  text: string
-  rating: number
-}
+import type { HomeSectionKey } from '@/lib/settings/home-sections'
+import type { ReviewSortOrder } from '@/lib/reviews/types'
 
 export type HomePageSettings = {
+  sectionOrder: HomeSectionKey[]
   hero: {
     badge: string
     title: string
@@ -153,10 +151,18 @@ export type HomePageSettings = {
     subtitle: string
     images: HomeGalleryImage[]
   }
-  reviews: {
+  freshPlantPhotos: {
+    enabled: boolean
     title: string
     subtitle: string
-    items: HomeReview[]
+    limit: number
+  }
+  reviews: {
+    enabled: boolean
+    title: string
+    subtitle: string
+    limit: number
+    sort: ReviewSortOrder
   }
 }
 

@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
-import { ArrowUpDown, Loader2, Plus, RefreshCw, Square, Trash2, Upload } from 'lucide-react'
-import { toast } from 'sonner'
+import { ArrowUpDown, Loader2, Plus, RefreshCw, Square, Trash2, Download } from 'lucide-react'
+import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { Button } from '@/components/ui/button'
@@ -48,16 +48,16 @@ type PhotosPage = {
 
 type ViberRecipient = { id: string; name: string }
 
-type DriveImportStatus = {
+type LegacyPhotoSyncStatus = {
   status: 'idle' | 'running' | 'completed' | 'error' | 'cancelled'
-  folderId: string | null
+  manifestUrl: string | null
   total: number
   imported: number
   skipped: number
   startedAt: string | null
   finishedAt: string | null
   cancelRequested?: boolean
-  errors: Array<{ fileId: string; error: string }>
+  errors: Array<{ sourceId: string; error: string }>
 }
 
 const SORT_OPTIONS = [
@@ -122,14 +122,16 @@ export default function BackstagePhotosPage() {
   const [recipients, setRecipients] = useState<ViberRecipient[]>([])
   const [newRecipientId, setNewRecipientId] = useState('')
   const [newRecipientName, setNewRecipientName] = useState('')
-  const [driveUrl, setDriveUrl] = useState('')
-  const [importStatus, setImportStatus] = useState<DriveImportStatus | null>(null)
-  const [startingImport, setStartingImport] = useState(false)
-  const [cancellingImport, setCancellingImport] = useState(false)
+  const [manifestUrl, setManifestUrl] = useState('')
+  const [legacyApiKey, setLegacyApiKey] = useState('')
+  const [syncStatus, setSyncStatus] = useState<LegacyPhotoSyncStatus | null>(null)
+  const [startingSync, setStartingSync] = useState(false)
+  const [cancellingSync, setCancellingSync] = useState(false)
   const [savingRecipients, setSavingRecipients] = useState(false)
+  const manifestUrlHydratedRef = useRef(false)
 
   const { sortBy, sortDir } = useMemo(() => parseSort(sort), [sort])
-  const importRunning = importStatus?.status === 'running' || startingImport
+  const syncRunning = syncStatus?.status === 'running' || startingSync
 
   const loadPhotos = useCallback(async () => {
     setLoading(true)
@@ -172,15 +174,15 @@ export default function BackstagePhotosPage() {
     }
   }, [])
 
-  const loadImportStatus = useCallback(async () => {
+  const loadSyncStatus = useCallback(async () => {
     try {
-      const res = await fetch('/api/backstage/photos/import-drive/status', {
+      const res = await fetch('/api/backstage/photos/sync-legacy/status', {
         credentials: 'include',
         cache: 'no-store',
       })
-      const json = (await res.json()) as DriveImportStatus
+      const json = (await res.json()) as LegacyPhotoSyncStatus
       if (!res.ok) return
-      setImportStatus(json)
+      setSyncStatus(json)
       return json
     } catch {
       return null
@@ -196,35 +198,47 @@ export default function BackstagePhotosPage() {
   }, [loadRecipients])
 
   useEffect(() => {
-    void loadImportStatus()
-  }, [loadImportStatus])
+    void loadSyncStatus()
+  }, [loadSyncStatus])
 
   useEffect(() => {
-    if (importStatus?.status !== 'running') return
+    if (manifestUrlHydratedRef.current) return
+    const savedUrl = syncStatus?.manifestUrl?.trim()
+    if (!savedUrl) return
+    setManifestUrl(savedUrl)
+    manifestUrlHydratedRef.current = true
+  }, [syncStatus?.manifestUrl])
+
+  useEffect(() => {
+    if (syncStatus?.status !== 'running') return
     const timer = window.setInterval(() => {
-      void loadImportStatus()
+      void loadSyncStatus()
     }, 1500)
     return () => window.clearInterval(timer)
-  }, [importStatus?.status, loadImportStatus])
+  }, [syncStatus?.status, loadSyncStatus])
 
-  const prevImportStatusRef = useRef<DriveImportStatus['status'] | undefined>(undefined)
+  const prevSyncStatusRef = useRef<LegacyPhotoSyncStatus['status'] | undefined>(undefined)
 
   useEffect(() => {
-    const prev = prevImportStatusRef.current
-    const current = importStatus?.status
-    if (prev === 'running' && current === 'completed' && importStatus) {
-      toast.success(`Імпортовано ${importStatus.imported} з ${importStatus.total}`)
+    const prev = prevSyncStatusRef.current
+    const current = syncStatus?.status
+    if (prev === 'running' && current === 'completed' && syncStatus) {
+      toast.success(
+        `Синхронізовано ${syncStatus.imported} нових, пропущено ${syncStatus.skipped} з ${syncStatus.total}`,
+      )
       void loadPhotos()
     }
-    if (prev === 'running' && current === 'cancelled' && importStatus) {
-      toast.info(`Імпорт зупинено: завантажено ${importStatus.imported} з ${importStatus.total}`)
+    if (prev === 'running' && current === 'cancelled' && syncStatus) {
+      toast.info(
+        `Синхронізацію зупинено: завантажено ${syncStatus.imported} нових з ${syncStatus.total}`,
+      )
       void loadPhotos()
     }
-    if (prev === 'running' && current === 'error' && importStatus) {
-      toast.error(importStatus.errors[0]?.error || 'Помилка імпорту')
+    if (prev === 'running' && current === 'error' && syncStatus) {
+      toast.error(syncStatus.errors[0]?.error || 'Помилка синхронізації')
     }
-    prevImportStatusRef.current = current
-  }, [importStatus, loadPhotos])
+    prevSyncStatusRef.current = current
+  }, [syncStatus, loadPhotos])
 
   const deletePhoto = async (id: string) => {
     try {
@@ -281,42 +295,48 @@ export default function BackstagePhotosPage() {
     setNewRecipientName('')
   }
 
-  const cancelImport = async () => {
-    setCancellingImport(true)
+  const cancelSync = async () => {
+    setCancellingSync(true)
     try {
-      const res = await fetch('/api/backstage/photos/import-drive/cancel', {
+      const res = await fetch('/api/backstage/photos/sync-legacy/cancel', {
         method: 'POST',
         credentials: 'include',
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || json.message || 'Не вдалося зупинити')
-      setImportStatus(json)
+      setSyncStatus(json)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Помилка зупинки імпорту')
+      toast.error(err instanceof Error ? err.message : 'Помилка зупинки синхронізації')
     } finally {
-      setCancellingImport(false)
+      setCancellingSync(false)
     }
   }
 
-  const importDrive = async () => {
-    setStartingImport(true)
+  const startLegacySync = async () => {
+    const url = manifestUrl.trim()
+    if (!url) {
+      toast.error('Вкажіть URL маніфесту (…/photos/list-all)')
+      return
+    }
+
+    setStartingSync(true)
     try {
-      const res = await fetch('/api/backstage/photos/import-drive', {
+      const res = await fetch('/api/backstage/photos/sync-legacy', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          folderUrl: driveUrl.trim() || undefined,
-          folderId: driveUrl.trim() || undefined,
+          manifestUrl: url,
+          apiKey: legacyApiKey.trim() || undefined,
         }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || json.message || 'Імпорт не вдався')
-      setImportStatus(json)
+      if (!res.ok) throw new Error(json.error || json.message || 'Синхронізація не вдалася')
+      setSyncStatus(json)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Помилка імпорту')
+      toast.error(err instanceof Error ? err.message : 'Помилка синхронізації')
     } finally {
-      setStartingImport(false)
+      setStartingSync(false)
     }
   }
 
@@ -341,37 +361,55 @@ export default function BackstagePhotosPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Імпорт з Google Drive</CardTitle>
+            <CardTitle>Синхронізація з legacy-сервером</CardTitle>
             <CardDescription>
-              Вкажіть ID папки або URL. Потрібен GOOGLE_CREDENTIALS у .env бекенду.
+              Вкажіть повний URL маніфесту (…/photos/list-all) діючого estimate-photo сервера.
+              Повторний запуск пропускає вже імпортовані фото. API-ключ — у полі нижче або
+              LEGACY_PHOTO_API_KEY у .env бекенду.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            <form autoComplete="off" className="space-y-3" onSubmit={(e) => e.preventDefault()}>
+            <InputWithClear
+              value={manifestUrl}
+              onChange={(e) => setManifestUrl(e.target.value)}
+              onClear={() => setManifestUrl('')}
+              placeholder="https://your-server.example/photos/list-all"
+              name="legacy-photo-manifest-url"
+              autoComplete="off"
+              disabled={syncRunning}
+            />
+            <InputWithClear
+              value={legacyApiKey}
+              onChange={(e) => setLegacyApiKey(e.target.value)}
+              onClear={() => setLegacyApiKey('')}
+              placeholder="x-api-key (опційно, якщо є в .env бекенду)"
+              name="legacy-photo-api-key"
+              type="text"
+              spellCheck={false}
+              autoComplete="off"
+              autoCapitalize="off"
+              autoCorrect="off"
+              className="font-mono text-sm"
+              disabled={syncRunning}
+            />
             <div className="flex flex-col gap-3 sm:flex-row">
-              <InputWithClear
-                value={driveUrl}
-                onChange={(e) => setDriveUrl(e.target.value)}
-                onClear={() => setDriveUrl('')}
-                placeholder="https://drive.google.com/drive/folders/... або folder id"
-                className="flex-1"
-                disabled={importRunning}
-              />
-              <Button type="button" onClick={() => void importDrive()} disabled={importRunning}>
-                {importRunning ? (
+              <Button type="button" onClick={() => void startLegacySync()} disabled={syncRunning}>
+                {syncRunning ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <Upload className="mr-2 h-4 w-4" />
+                  <Download className="mr-2 h-4 w-4" />
                 )}
-                Імпортувати
+                Синхронізувати
               </Button>
-              {importStatus?.status === 'running' ? (
+              {syncStatus?.status === 'running' ? (
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => void cancelImport()}
-                  disabled={cancellingImport}
+                  onClick={() => void cancelSync()}
+                  disabled={cancellingSync}
                 >
-                  {cancellingImport ? (
+                  {cancellingSync ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <Square className="mr-2 h-4 w-4" />
@@ -380,31 +418,34 @@ export default function BackstagePhotosPage() {
                 </Button>
               ) : null}
             </div>
-            {importStatus && importStatus.status !== 'idle' ? (
+            </form>
+            {syncStatus && syncStatus.status !== 'idle' ? (
               <div className="rounded-lg border border-border/80 bg-muted/30 px-4 py-3 text-sm">
-                {importStatus.status === 'running' ? (
+                {syncStatus.status === 'running' ? (
                   <p className="font-medium">
-                    Завантаження: {importStatus.imported + importStatus.skipped} /{' '}
-                    {importStatus.total}
+                    Синхронізація: {syncStatus.imported + syncStatus.skipped} / {syncStatus.total}
+                    {syncStatus.imported > 0 ? ` · нових ${syncStatus.imported}` : ''}
+                    {syncStatus.skipped > 0 ? ` · пропущено ${syncStatus.skipped}` : ''}
                   </p>
                 ) : null}
-                {importStatus.status === 'completed' ? (
+                {syncStatus.status === 'completed' ? (
                   <p className="font-medium text-emerald-700 dark:text-emerald-400">
-                    Завершено: імпортовано {importStatus.imported} з {importStatus.total}
-                    {importStatus.skipped > 0 ? `, пропущено ${importStatus.skipped}` : ''}
+                    Завершено: нових {syncStatus.imported} з {syncStatus.total}
+                    {syncStatus.skipped > 0 ? `, пропущено ${syncStatus.skipped}` : ''}
                   </p>
                 ) : null}
-                {importStatus.status === 'cancelled' ? (
+                {syncStatus.status === 'cancelled' ? (
                   <p className="font-medium text-amber-700 dark:text-amber-400">
-                    Зупинено: завантажено {importStatus.imported} з {importStatus.total}
+                    Зупинено: нових {syncStatus.imported} з {syncStatus.total}
+                    {syncStatus.skipped > 0 ? `, пропущено ${syncStatus.skipped}` : ''}
                   </p>
                 ) : null}
-                {importStatus.status === 'error' ? (
+                {syncStatus.status === 'error' ? (
                   <p className="font-medium text-destructive">
-                    {importStatus.errors[0]?.error || 'Помилка імпорту'}
+                    {syncStatus.errors[0]?.error || 'Помилка синхронізації'}
                   </p>
                 ) : null}
-                {importStatus.status === 'running' && importStatus.total > 0 ? (
+                {syncStatus.status === 'running' && syncStatus.total > 0 ? (
                   <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
                     <div
                       className="h-full bg-primary transition-all duration-300"
@@ -412,8 +453,7 @@ export default function BackstagePhotosPage() {
                         width: `${Math.min(
                           100,
                           Math.round(
-                            ((importStatus.imported + importStatus.skipped) / importStatus.total) *
-                              100,
+                            ((syncStatus.imported + syncStatus.skipped) / syncStatus.total) * 100,
                           ),
                         )}%`,
                       }}
@@ -433,32 +473,48 @@ export default function BackstagePhotosPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+            <form
+              autoComplete="off"
+              className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
+              onSubmit={(e) => {
+                e.preventDefault()
+                void addRecipient()
+              }}
+            >
               <div className="space-y-1.5">
-                <Label>Viber ID</Label>
+                <Label htmlFor="viber-recipient-id">Viber ID</Label>
                 <InputWithClear
+                  id="viber-recipient-id"
                   value={newRecipientId}
                   onChange={(e) => setNewRecipientId(e.target.value)}
                   onClear={() => setNewRecipientId('')}
                   placeholder="user id"
+                  name="viber-recipient-id"
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Імʼя</Label>
+                <Label htmlFor="viber-recipient-name">Імʼя</Label>
                 <InputWithClear
+                  id="viber-recipient-name"
                   value={newRecipientName}
                   onChange={(e) => setNewRecipientName(e.target.value)}
                   onClear={() => setNewRecipientName('')}
                   placeholder="опційно"
+                  name="viber-recipient-name"
+                  autoComplete="off"
                 />
               </div>
               <div className="flex items-end">
-                <Button type="button" onClick={() => void addRecipient()} disabled={savingRecipients}>
+                <Button type="submit" disabled={savingRecipients}>
                   <Plus className="mr-2 h-4 w-4" />
                   Додати
                 </Button>
               </div>
-            </div>
+            </form>
 
             {recipients.length === 0 ? (
               <p className="text-sm text-muted-foreground">Отримувачів ще немає.</p>

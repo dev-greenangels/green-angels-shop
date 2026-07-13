@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import { useSession } from '@/components/providers/session-provider'
 import type { GoogleCheckoutProfile, PublicSession } from '@/lib/auth/types'

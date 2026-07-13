@@ -69,6 +69,7 @@ export function ReviewFiltersFields({
   const sortOptions: Array<{ value: ReviewSortOrder; label: string }> = [
     { value: 'newest', label: t('sort.newest') },
     { value: 'oldest', label: t('sort.oldest') },
+    { value: 'rating_desc', label: t('sort.rating_desc') },
   ]
 
   return (

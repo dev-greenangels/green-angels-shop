@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Loader2, MessageSquareReply, Pencil, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import { ReviewStoreReply } from '@/components/reviews/review-store-reply'
 import { Button } from '@/components/ui/button'

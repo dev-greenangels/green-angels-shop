@@ -384,6 +384,9 @@
     "aboutEyebrow": "Надійний виробник",
     "nurseryEyebrow": "Виробництво",
     "nurseryCaption": "Власні поля та теплиці",
+    "freshPhotosEyebrow": "Свіжі знімки",
+    "viewAllFreshPhotos": "Всі фото",
+    "viewAllReviews": "Всі відгуки",
     "reviewsEyebrow": "Довіра клієнтів"
   },
   "errors": {
@@ -666,7 +669,8 @@
     },
     "sort": {
       "newest": "Спочатку новіші",
-      "oldest": "Спочатку старіші"
+      "oldest": "Спочатку старіші",
+      "rating_desc": "Спочатку з найвищою оцінкою"
     },
     "paginationLabel": "Сторінки відгуків",
     "prevPage": "Попередня сторінка",

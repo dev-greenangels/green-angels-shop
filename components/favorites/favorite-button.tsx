@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Heart } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import { useSession } from '@/components/providers/session-provider'
 import { Button } from '@/components/ui/button'

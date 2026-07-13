@@ -22,6 +22,7 @@ import {
 } from '@/lib/settings/recently-viewed'
 import { DEFAULT_LOCALIZATION_SETTINGS } from '@/lib/i18n/locales'
 import { DEFAULT_NAVIGATION_SETTINGS } from '@/lib/settings/navigation'
+import { HOME_SECTION_KEYS } from '@/lib/settings/home-sections'
 
 export { DEFAULT_LOCALIZATION_SETTINGS, DEFAULT_NAVIGATION_SETTINGS }
 
@@ -126,6 +127,7 @@ export const DEFAULT_STORE_SETTINGS: StoreContactSettings = {
 }
 
 export const DEFAULT_HOME_SETTINGS: HomePageSettings = {
+  sectionOrder: [...HOME_SECTION_KEYS],
   hero: {
     badge: 'Виробник рослин · відома торгова марка',
     title: 'Розсадник «Зелені Янголи»',
@@ -197,31 +199,18 @@ export const DEFAULT_HOME_SETTINGS: HomePageSettings = {
       { url: '/images/nursery/packing.jpg', caption: 'Пакування для відправлення' },
     ],
   },
+  freshPlantPhotos: {
+    enabled: true,
+    title: 'Актуальні фото рослин',
+    subtitle: 'Свіжі знімки з розсадника — подивіться, що зараз у наявності',
+    limit: 12,
+  },
   reviews: {
+    enabled: true,
     title: 'Відгуки клієнтів',
     subtitle: 'Нам довіряють професіонали та садівники з усієї України',
-    items: [
-      {
-        name: 'Олена К.',
-        text: 'Чудовий розсадник! Рослини приїхали в ідеальному стані, добре запаковані. Туї та сосни відмінної якості.',
-        rating: 5,
-      },
-      {
-        name: 'Андрій М.',
-        text: 'Замовляв велике замовлення для ландшафтного проєкту. Якість посадкового матеріалу на висоті, працюємо вже не перший рік.',
-        rating: 5,
-      },
-      {
-        name: 'Марія С.',
-        text: 'Дуже вдячна за швидку доставку Новою Поштою. Рослини здорові, відповідають опису. Обовʼязково замовлятиму ще.',
-        rating: 5,
-      },
-      {
-        name: 'Ігор В.',
-        text: 'Купував декоративні чагарники для ділянки. Усе відповідає каталогу, рослини сильні та добре вкорінені.',
-        rating: 4,
-      },
-    ],
+    limit: 8,
+    sort: 'newest',
   },
 }
 

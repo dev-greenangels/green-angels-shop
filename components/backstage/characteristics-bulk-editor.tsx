@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, Loader2, Save, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'

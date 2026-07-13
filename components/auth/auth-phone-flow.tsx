@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { Loader2, LogOut, Mail, Phone } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import { AuthOAuthButtons } from '@/components/auth/auth-oauth-buttons'
 import { FieldHint, OrDivider, RequiredLabel } from '@/components/auth/auth-form-ui'

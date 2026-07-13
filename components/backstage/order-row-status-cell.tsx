@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import { OrderStatusSelect } from '@/components/backstage/order-status-select'
 import type { OrderStatus } from '@/lib/backstage/order-status'

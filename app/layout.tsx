@@ -4,7 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { AppProviders } from '@/components/providers/app-providers'
-import { Toaster } from '@/components/ui/sonner'
+import { AppToasters } from '@/components/ui/sonner'
 import { getSession } from '@/lib/auth/get-session'
 import { fetchPublicSiteSettings, getCatalogPageSettings, getLocalizationSettings, getNavigationSettings, getStoreSettings } from '@/lib/settings/fetch'
 import { fetchCommerceSettings } from '@/lib/commerce/fetch'
@@ -71,7 +71,7 @@ export default async function RootLayout({
         >
           {children}
         </AppProviders>
-        <Toaster />
+        <AppToasters />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

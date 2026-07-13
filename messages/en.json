@@ -385,6 +385,9 @@
     "aboutEyebrow": "Trusted grower",
     "nurseryEyebrow": "Production",
     "nurseryCaption": "Our own fields and greenhouses",
+    "freshPhotosEyebrow": "Fresh snapshots",
+    "viewAllFreshPhotos": "All photos",
+    "viewAllReviews": "All reviews",
     "reviewsEyebrow": "Customer trust"
   },
   "errors": {
@@ -667,7 +670,8 @@
     },
     "sort": {
       "newest": "Newest first",
-      "oldest": "Oldest first"
+      "oldest": "Oldest first",
+      "rating_desc": "Highest rating first"
     },
     "paginationLabel": "Review pages",
     "prevPage": "Previous page",

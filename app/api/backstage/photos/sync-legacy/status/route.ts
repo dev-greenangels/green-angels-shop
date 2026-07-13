@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   if (error) return error
 
   try {
-    const res = await fetchBackend('/backstage/photos/import-drive/status', {
+    const res = await fetchBackend('/backstage/photos/sync-legacy/status', {
       request,
       cache: 'no-store',
     })

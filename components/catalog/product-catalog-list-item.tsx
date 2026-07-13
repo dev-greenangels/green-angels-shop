@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Minus, Plus, ShoppingCart, ZoomIn } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { toast } from 'sonner'
+import { showAddedToCartToast } from '@/lib/cart-toast'
 
 import { FavoriteButton } from '@/components/favorites/favorite-button'
 import { FormattedPrice } from '@/components/commerce/formatted-price'
@@ -242,7 +242,7 @@ function useVariantBuyHandler(plant: Plant) {
     }
 
     if (addedCount > 0) {
-      toast.success(cartT('addedToCart', { count: addedCount }))
+      showAddedToCartToast(cartT('addedToCart', { count: addedCount }), plant.name, variant.label)
     }
   }
 }

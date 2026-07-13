@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
+import { showAddedToCartToast } from '@/lib/cart-toast'
 
 import { getCartLineQuantity } from '@/lib/cart-limits'
 import { useCartActions, useCartItems } from '@/lib/cart-store'
@@ -94,7 +95,11 @@ export function ProductCardAddToCartDialog({
     }
 
     if (addedCount > 0) {
-      toast.success(tc('addedToCart', { count: addedCount }))
+      showAddedToCartToast(
+        tc('addedToCart', { count: addedCount }),
+        displayPlant.name,
+        variant.label,
+      )
     }
   }
 

@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react'
 import { ImagePlus, Loader2, Star, Trash2 } from 'lucide-react'
 import Image from 'next/image'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import type { ProductImageDraft } from '@/lib/backstage/product-form'
 import { Button } from '@/components/ui/button'

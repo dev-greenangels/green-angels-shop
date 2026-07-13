@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { ImagePlus, Loader2, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import { RequiredLabel } from '@/components/auth/auth-form-ui'
 import { StarRating } from '@/components/reviews/star-rating'

@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { Minus, Plus, Search, ShoppingCart, X } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
+import { showAddedToCartToast } from '@/lib/cart-toast'
 
 import { Navigation } from '@/components/navigation'
 import { ClientPublicPageBreadcrumbs } from '@/components/client-public-page-breadcrumbs'
@@ -35,6 +36,7 @@ import { productHref } from '@/lib/catalog/paths'
 import { getCartLineQuantity, getMaxAddableQuantity } from '@/lib/cart-limits'
 import { useCartActions, useCartItems } from '@/lib/cart-store'
 import { formatNumberForLocale } from '@/lib/i18n/intl-locale'
+import { resolveThumbUrl } from '@/lib/media/paths'
 import {
   siteContentShellClassName,
   siteStickyToolbarControlsClusterClassName,
@@ -50,6 +52,7 @@ import {
 } from '@/lib/product-pricing'
 import type { CatalogPhotoItem, CatalogPhotosPage } from '@/lib/variant-photos/types'
 import type { Plant, PriceTier, ProductVariant } from '@/lib/types'
+import { PRODUCT_PLACEHOLDER_IMAGE } from '@/lib/product-image'
 import { cn } from '@/lib/utils'
 
 type EnrichedPhoto = CatalogPhotoItem & {
@@ -57,6 +60,7 @@ type EnrichedPhoto = CatalogPhotoItem & {
   productSlug: string | null
   categorySlug: string | null
   productName: string | null
+  productImageUrl: string | null
   variantId: string | null
   price: number | null
   stock: number | null
@@ -74,6 +78,12 @@ type EnrichedPhotosPage = {
 }
 
 type QuantityPriceRow = NonNullable<CatalogPhotoItem['quantityPrices']>[number]
+
+const FRESH_PHOTO_PRODUCT_SIDEBAR_WIDTH = '6.75rem'
+
+const FRESH_PHOTOS_GRID_CLASS = cn(
+  'grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
+)
 
 function getPhotoTakenAt(photo: Pick<CatalogPhotoItem, 'appProperties'>): string | null {
   return photo.appProperties.date?.trim() || null
@@ -153,18 +163,24 @@ function PhotoDiscountChips({ variant }: { variant: ProductVariant }) {
 
 function FreshPhotosGridSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+    <div className={FRESH_PHOTOS_GRID_CLASS}>
       {Array.from({ length: 12 }).map((_, index) => (
         <article
           key={index}
-          className="flex h-full flex-col overflow-hidden rounded-xl border border-border/50 bg-card/70"
+          className="flex overflow-hidden rounded-xl border border-border/50 bg-card/70"
         >
-          <Skeleton className="aspect-[4/5] w-full rounded-none" />
-          <div className="flex flex-1 flex-col gap-2 p-3">
-            <Skeleton className="h-4 w-full" />
+          <div className="min-w-0 flex-1">
+            <Skeleton className="aspect-[4/5] w-full rounded-none" />
+          </div>
+          <div
+            className="flex shrink-0 flex-col gap-1.5 border-l border-border/40 p-2"
+            style={{ width: FRESH_PHOTO_PRODUCT_SIDEBAR_WIDTH }}
+          >
+            <Skeleton className="aspect-square w-full rounded-md" />
+            <Skeleton className="h-3 w-full" />
             <Skeleton className="h-3 w-2/3" />
-            <Skeleton className="h-3 w-1/2" />
             <Skeleton className="mt-auto h-8 w-full rounded-md" />
+            <Skeleton className="h-8 w-full rounded-md" />
           </div>
         </article>
       ))}
@@ -193,6 +209,7 @@ function toEnrichedPhoto(photo: CatalogPhotoItem): EnrichedPhoto {
     productSlug: photo.productSlug ?? null,
     categorySlug: photo.categorySlug ?? null,
     productName: photo.productName ?? null,
+    productImageUrl: photo.productImageUrl ?? null,
     variantId: photo.variantId ?? null,
     price: photo.price ?? null,
     stock: photo.stock ?? null,
@@ -256,6 +273,145 @@ function PhotoTitleLine({ photo }: { photo: EnrichedPhoto }) {
       {name}
       <span className="font-normal text-muted-foreground"> · {size}</span>
     </p>
+  )
+}
+
+function FreshPhotoGridCard({
+  photo,
+  locale,
+  onOpen,
+  onAddToCart,
+}: {
+  photo: EnrichedPhoto
+  locale: string
+  onOpen: (photo: EnrichedPhoto) => void
+  onAddToCart: (photo: EnrichedPhoto, qty: number) => void
+}) {
+  const t = useTranslations('catalog')
+  const tProduct = useTranslations('product')
+  const cartT = useTranslations('cart')
+  const [qty, setQty] = useState(1)
+  const productLink = photoProductHref(photo)
+  const cardVariant = photoToVariant(photo)
+  const cardDiscount = getPhotoDiscountPercent(cardVariant)
+  const productName = photo.productName || photo.appProperties.plantName || '—'
+  const variantLabel = photo.variantLabel || photo.appProperties.plantSize || '—'
+  const productThumbSrc = photo.productImageUrl
+    ? resolveThumbUrl(photo.productImageUrl)
+    : PRODUCT_PLACEHOLDER_IMAGE
+
+  return (
+    <article className="flex overflow-hidden rounded-xl border border-border/50 bg-card/70 shadow-sm">
+      <div className="min-w-0 flex-1">
+        <button
+          type="button"
+          className="relative block aspect-[4/5] w-full bg-muted"
+          onClick={() => onOpen(photo)}
+          aria-label={productName}
+        >
+          <Image
+            src={photo.url}
+            alt={productName}
+            fill
+            unoptimized
+            className="object-cover"
+            sizes="(max-width: 1280px) 20vw, 16vw"
+          />
+          {cardDiscount ? (
+            <Badge
+              variant="destructive"
+              className="absolute left-2 top-2 px-1 py-0 text-[10px] shadow-sm"
+            >
+              −{cardDiscount}%
+            </Badge>
+          ) : null}
+          <div className="absolute inset-x-0 bottom-0 bg-black/45 px-2 py-1 backdrop-blur-sm">
+            <p className="truncate text-[9px] leading-tight text-white/90">
+              {t('freshPhotosPhotoFrom')}{' '}
+              {formatPhotoDate(getPhotoTakenAt(photo), locale)}
+            </p>
+          </div>
+        </button>
+      </div>
+
+      <div
+        className="flex shrink-0 flex-col gap-1.5 border-l border-border/40 p-2"
+        style={{ width: FRESH_PHOTO_PRODUCT_SIDEBAR_WIDTH }}
+      >
+        <div className="relative aspect-square w-full overflow-hidden rounded-md border border-border/50 bg-muted">
+          {productLink ? (
+            <Link href={productLink} className="absolute inset-0">
+              <Image
+                src={productThumbSrc}
+                alt={productName}
+                fill
+                className="object-cover"
+                sizes="108px"
+              />
+            </Link>
+          ) : (
+            <Image
+              src={productThumbSrc}
+              alt={productName}
+              fill
+              className="object-cover"
+              sizes="108px"
+            />
+          )}
+        </div>
+
+        {productLink ? (
+          <Link
+            href={productLink}
+            className="line-clamp-2 text-[11px] font-medium leading-tight text-foreground transition-colors hover:text-primary"
+          >
+            {productName}
+          </Link>
+        ) : (
+          <p className="line-clamp-2 text-[11px] font-medium leading-tight text-foreground">
+            {productName}
+          </p>
+        )}
+
+        <p className="truncate text-[10px] text-muted-foreground">{variantLabel}</p>
+
+        <div className="mt-auto space-y-1.5">
+          <div className="flex h-8 w-full items-center rounded-md border border-border/70 bg-background">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => setQty((value) => Math.max(1, value - 1))}
+              aria-label={cartT('decreaseQty')}
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </Button>
+            <span className="min-w-0 flex-1 text-center text-sm font-medium tabular-nums">{qty}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => setQty((value) => value + 1)}
+              aria-label={cartT('increaseQty')}
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+
+          <Button
+            type="button"
+            size="sm"
+            className="h-8 w-full gap-1 px-2 text-xs"
+            onClick={() => onAddToCart(photo, qty)}
+          >
+            <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{tProduct('addToCart')}</span>
+          </Button>
+        </div>
+      </div>
+    </article>
   )
 }
 
@@ -411,10 +567,40 @@ export function FreshPhotosPageContent() {
       unitPrice: getUnitPriceForQuantity(variant, inCart + addQty),
     })
     if (result.added > 0) {
-      toast.success(cartT('addedToCart', { count: result.added }))
+      showAddedToCartToast(cartT('addedToCart', { count: result.added }), plant.name, variant.label)
       setQty(1)
     }
   }
+
+  const handleCardAddToCart = useCallback(
+    (photo: EnrichedPhoto, addQty: number) => {
+      const quickPlant = photoToPlant(photo)
+      const quickVariant = photoToVariant(photo)
+      if (!quickPlant || !quickVariant) {
+        openPhoto(photo)
+        return
+      }
+      const quickInCart = getCartLineQuantity(cartItems, quickPlant.id, quickVariant.id)
+      const quickMaxAddable = getMaxAddableQuantity(quickVariant, cartItems, quickPlant.id)
+      const qtyToAdd = Math.min(Math.max(1, addQty), Math.max(0, quickMaxAddable))
+      if (qtyToAdd <= 0) {
+        toast.error(cartT('inStockOnly', { count: quickVariant.stock }))
+        return
+      }
+      const result = addItem(quickPlant, qtyToAdd, {
+        variant: quickVariant,
+        unitPrice: getUnitPriceForQuantity(quickVariant, quickInCart + qtyToAdd),
+      })
+      if (result.added > 0) {
+        showAddedToCartToast(
+          cartT('addedToCart', { count: result.added }),
+          quickPlant.name,
+          quickVariant.label,
+        )
+      }
+    },
+    [addItem, cartItems, cartT, openPhoto],
+  )
 
   const hasActiveFilters = Boolean(searchFromUrl || categoryFromUrl)
 
@@ -542,71 +728,16 @@ export function FreshPhotosPageContent() {
             <p className="py-16 text-center text-muted-foreground">{t('freshPhotosEmpty')}</p>
           ) : (
             <div className={cn(isRefreshing && 'pointer-events-none opacity-60 transition-opacity')}>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                {data.items.map((photo) => {
-                  const productLink = photoProductHref(photo)
-                  const cardVariant = photoToVariant(photo)
-                  const cardDiscount = getPhotoDiscountPercent(cardVariant)
-                  return (
-                    <article
-                      key={photo.id}
-                      className="flex h-full flex-col overflow-hidden rounded-xl border border-border/50 bg-card/70 shadow-sm"
-                    >
-                      <button
-                        type="button"
-                        className="relative aspect-[4/5] w-full bg-muted"
-                        onClick={() => openPhoto(photo)}
-                      >
-                        <Image
-                          src={photo.url}
-                          alt={photo.productName || photo.appProperties.plantName || photo.ean}
-                          fill
-                          unoptimized
-                          className="object-cover"
-                          sizes="(max-width: 1280px) 20vw, 16vw"
-                        />
-                        {cardDiscount ? (
-                          <Badge
-                            variant="destructive"
-                            className="absolute left-2 top-2 px-1 py-0 text-[10px] shadow-sm"
-                          >
-                            −{cardDiscount}%
-                          </Badge>
-                        ) : null}
-                      </button>
-                      <div className="flex flex-1 flex-col gap-2 p-3">
-                        {productLink ? (
-                          <Link
-                            href={productLink}
-                            className="line-clamp-2 text-sm font-medium leading-snug text-foreground transition-colors hover:text-primary"
-                          >
-                            {photo.productName || photo.appProperties.plantName || '—'}
-                          </Link>
-                        ) : (
-                          <h2 className="line-clamp-2 text-sm font-medium leading-snug">
-                            {photo.productName || photo.appProperties.plantName || '—'}
-                          </h2>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          {photo.variantLabel || photo.appProperties.plantSize || '—'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {t('freshPhotosPhotoFrom')}{' '}
-                          {formatPhotoDate(getPhotoTakenAt(photo), locale)}
-                        </p>
-                        <Button
-                          type="button"
-                          size="sm"
-                          className="mt-auto w-full"
-                          onClick={() => openPhoto(photo)}
-                        >
-                          <ShoppingCart className="mr-1.5 h-4 w-4" />
-                          {tProduct('addToCart')}
-                        </Button>
-                      </div>
-                    </article>
-                  )
-                })}
+              <div className={FRESH_PHOTOS_GRID_CLASS}>
+                {data.items.map((photo) => (
+                  <FreshPhotoGridCard
+                    key={photo.id}
+                    photo={photo}
+                    locale={locale}
+                    onOpen={openPhoto}
+                    onAddToCart={handleCardAddToCart}
+                  />
+                ))}
               </div>
 
               <CatalogPaginationControls

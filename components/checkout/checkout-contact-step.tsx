@@ -3,7 +3,7 @@
 import { memo, useCallback, useState, type RefObject } from 'react'
 import { ArrowLeft, ChevronRight, Loader2, LogOut, Mail, Phone, Truck, User } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import { AuthOAuthButtons } from '@/components/auth/auth-oauth-buttons'
 import { FieldHint, OrDivider, RequiredLabel } from '@/components/auth/auth-form-ui'

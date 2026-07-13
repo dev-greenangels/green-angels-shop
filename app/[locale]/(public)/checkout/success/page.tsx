@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import { BrandLogo } from '@/components/brand-logo'
 import { ClientPublicPageBreadcrumbs } from '@/components/client-public-page-breadcrumbs'

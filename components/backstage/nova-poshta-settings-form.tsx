@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Loader2, RefreshCw, Save, XCircle } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 import { NovaPoshtaAutoSyncFields, DEFAULT_AUTO_SYNC_CONFIG } from '@/components/backstage/nova-poshta-auto-sync-fields'
 import { Button } from '@/components/ui/button'

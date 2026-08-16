@@ -1,6 +1,7 @@
 'use client'
 
-import { Save } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { CheckCircle2, Save, XCircle } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,7 +16,14 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import type { CartCheckoutSettings } from '@/lib/settings/types'
+import { FormSaveBar } from '@/components/backstage/form-save-bar'
+import { CompanyBankDetailsFields } from '@/components/backstage/company-bank-details-fields'
+import {
+  fetchPaymentProvidersStatus,
+  type PaymentProvidersStatus,
+} from '@/lib/backstage/payments'
+import { DEFAULT_CHECKOUT_BANK_DETAILS } from '@/lib/settings/defaults'
+import type { CartCheckoutSettings, OnlineCardProvider } from '@/lib/settings/types'
 import {
   CHECKOUT_DELIVERY_METHODS,
   CHECKOUT_PAYMENT_METHODS,
@@ -25,19 +33,47 @@ import {
   type CheckoutPaymentMethodSlug,
 } from '@/lib/checkout/methods'
 
+const ONLINE_CARD_PROVIDER_LABELS: Record<OnlineCardProvider, string> = {
+  monopay: 'MonoPay (Plata by Mono)',
+  stripe: 'Stripe',
+}
+
 type CartCheckoutSettingsFormProps = {
   cart: CartCheckoutSettings
+  marketRegion?: 'ua' | 'sk'
+  /** Derived display for taxIncluded (from market.priceBasis). */
+  marketPriceBasis?: 'ex_vat' | 'inc_vat'
   onChange: (cart: CartCheckoutSettings) => void
   onSave: () => void
   saving: boolean
+  isDirty?: boolean
 }
 
 export function CartCheckoutSettingsForm({
   cart,
+  marketRegion = 'ua',
+  marketPriceBasis = 'inc_vat',
   onChange,
   onSave,
   saving,
+  isDirty = false,
 }: CartCheckoutSettingsFormProps) {
+  const [providersStatus, setProvidersStatus] = useState<PaymentProvidersStatus | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void fetchPaymentProvidersStatus()
+      .then((status) => {
+        if (!cancelled) setProvidersStatus(status)
+      })
+      .catch(() => {
+        if (!cancelled) setProvidersStatus(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const patch = (partial: Partial<CartCheckoutSettings>) => onChange({ ...cart, ...partial })
 
   const toggleDeliveryMethod = (method: CheckoutDeliveryMethodSlug, enabled: boolean) => {
@@ -92,6 +128,27 @@ export function CartCheckoutSettingsForm({
               onCheckedChange={(showTax) => patch({ showTax })}
             />
           </div>
+          <div className="flex items-center justify-between gap-4">
+            <Label htmlFor="show-promo-code">Додати промокод</Label>
+            <Switch
+              id="show-promo-code"
+              checked={cart.showPromoCode !== false}
+              onCheckedChange={(showPromoCode) => patch({ showPromoCode })}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <Label htmlFor="allow-shipment-split">Розділення замовлення за датою</Label>
+              <p className="text-xs text-muted-foreground">
+                Якщо в кошику є товари «зараз» і з датою availableFrom — запропонувати split
+              </p>
+            </div>
+            <Switch
+              id="allow-shipment-split"
+              checked={cart.allowShipmentSplit !== false}
+              onCheckedChange={(allowShipmentSplit) => patch({ allowShipmentSplit })}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -113,57 +170,195 @@ export function CartCheckoutSettingsForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="free">Безкоштовно</SelectItem>
-                <SelectItem value="carrier_rates">За тарифами перевізника</SelectItem>
+                <SelectItem value="carrier_rates">Тарифні таблиці (Packeta / GLS)</SelectItem>
                 <SelectItem value="fixed">Фіксована сума</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              «За тарифами перевізника» — сума невідома до відправлення; не додається до «Разом»
+              {cart.deliveryMode === 'carrier_rates'
+                ? 'Сума рахується з тарифної таблиці за вагою кошика і способом доставки, одразу додається до «Разом». Якщо для методу немає рядка — fallback на фіксовану суму нижче (або 0).'
+                : cart.deliveryMode === 'fixed'
+                  ? 'Однакова сума доставки для всіх способів (крім самовивозу, якщо увімкнено безкоштовно).'
+                  : 'Доставка завжди 0.'}
             </p>
           </div>
-          {cart.deliveryMode === 'fixed' ? (
+          {cart.deliveryMode === 'fixed' || cart.deliveryMode === 'carrier_rates' ? (
             <div className="space-y-2">
-              <Label>Сума доставки (₴)</Label>
+              <Label>
+                {cart.deliveryMode === 'carrier_rates'
+                  ? 'Fallback сума доставки (якщо немає тарифу)'
+                  : 'Сума доставки'}
+              </Label>
               <Input
                 type="number"
                 min={0}
-                step={1}
+                step={0.01}
                 value={cart.deliveryAmount}
                 onChange={(e) => patch({ deliveryAmount: Number(e.target.value) || 0 })}
               />
             </div>
           ) : null}
+          {cart.deliveryMode === 'carrier_rates' ? (
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Тарифні таблиці за вагою (JSON)</Label>
+              <Textarea
+                rows={10}
+                className="font-mono text-xs"
+                value={JSON.stringify(cart.carrierRateTables ?? {}, null, 2)}
+                onChange={(e) => {
+                  try {
+                    const parsed = JSON.parse(e.target.value) as CartCheckoutSettings['carrierRateTables']
+                    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                      patch({ carrierRateTables: parsed })
+                    }
+                  } catch {
+                    /* ignore incomplete JSON while typing */
+                  }
+                }}
+                placeholder='{"packeta-box":[{"maxWeightKg":5,"amount":3.49}]}'
+              />
+              <p className="text-xs text-muted-foreground">
+                Ключі — slug способу доставки (`packeta-box`, `packeta-courier`, `gls-courier`). Для кожної
+                ваги кошика береться перший tier з `maxWeightKg` ≥ ваги. Сума в валюті деплою (EUR / UAH).
+              </p>
+            </div>
+          ) : null}
           <div className="space-y-2">
-            <Label>Пакування (₴)</Label>
-            <Input
-              type="number"
-              min={0}
-              step={1}
-              value={cart.packagingAmount}
-              onChange={(e) => patch({ packagingAmount: Number(e.target.value) || 0 })}
-            />
+            <Label>Режим пакування</Label>
+            <Select
+              value={cart.packagingMode ?? 'flat'}
+              onValueChange={(value) =>
+                patch({ packagingMode: value as CartCheckoutSettings['packagingMode'] })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="flat">Фіксована сума</SelectItem>
+                <SelectItem value="boxes">Коробки / палети (вага й об’єм)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="space-y-2">
-            <Label>Ставка ПДВ (%)</Label>
-            <Input
-              type="number"
-              min={0}
-              max={100}
-              step={1}
-              value={cart.taxRatePercent}
-              onChange={(e) => patch({ taxRatePercent: Number(e.target.value) || 0 })}
-            />
-          </div>
+          {(cart.packagingMode ?? 'flat') === 'flat' ? (
+            <div className="space-y-2">
+              <Label>Пакування (валюта деплою)</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={cart.packagingAmount}
+                onChange={(e) => patch({ packagingAmount: Number(e.target.value) || 0 })}
+              />
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label>Макс. кг на коробку (0 = ігнорувати)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.1}
+                  value={cart.boxMaxWeightKg ?? 0}
+                  onChange={(e) => patch({ boxMaxWeightKg: Number(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Макс. літрів на коробку (0 = ігнорувати)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.1}
+                  value={cart.boxMaxVolumeL ?? 0}
+                  onChange={(e) => patch({ boxMaxVolumeL: Number(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Ціна однієї коробки (з ПДВ, валюта деплою)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={cart.boxUnitPrice ?? 0}
+                  onChange={(e) => patch({ boxUnitPrice: Number(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Коробок на палету (0 = без палет)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={cart.boxesPerPallet ?? 0}
+                  onChange={(e) =>
+                    patch({ boxesPerPallet: Math.max(0, Math.floor(Number(e.target.value) || 0)) })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Доплата за повну палету</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={cart.palletSurcharge ?? 0}
+                  onChange={(e) => patch({ palletSurcharge: Number(e.target.value) || 0 })}
+                />
+              </div>
+            </>
+          )}
+          {marketRegion === 'ua' ? (
+            <div className="space-y-2">
+              <Label>Ставка ПДВ (%)</Label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                value={cart.taxRatePercent}
+                onChange={(e) => patch({ taxRatePercent: Number(e.target.value) || 0 })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Для UA — єдина ставка чекауту. Для SK ставки живуть у Market → «Куди доставляємо» /
+                TEDB.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2 rounded-lg border border-border/60 bg-muted/30 px-3 py-2 sm:col-span-1">
+              <p className="text-sm font-medium">Ставка DPH</p>
+              <p className="text-xs text-muted-foreground">
+                Не редагується тут. Чекаут бере ставку з Market (довідник країн / OSS / CN) або
+                TEDB. Поле cart.taxRatePercent лишається лише як крайній fallback на сервері.
+              </p>
+            </div>
+          )}
           <div className="flex items-center justify-between gap-4 sm:col-span-2">
             <div>
               <Label>ПДВ уже в цінах товарів</Label>
               <p className="text-xs text-muted-foreground">
-                Якщо увімкнено — податок показується інформативно, без додавання до суми
+                Лише відображення з Market → «Базис цін». Змініть базис там — після збереження
+                Market синхронізується сюди на сервері.
               </p>
             </div>
             <Switch
-              checked={cart.taxIncluded}
-              onCheckedChange={(taxIncluded) => patch({ taxIncluded })}
+              checked={marketPriceBasis === 'inc_vat'}
+              disabled
+              aria-readonly
+            />
+          </div>
+          <div className="flex items-center justify-between gap-4 sm:col-span-2">
+            <div>
+              <Label>ПДВ/DPH також на доставку та пакування</Label>
+              <p className="text-xs text-muted-foreground">
+                {marketRegion === 'sk'
+                  ? 'Для SK завжди увімкнено на сервері — перемикач лише показує стан.'
+                  : 'Для UA можна увімкнути вручну.'}
+              </p>
+            </div>
+            <Switch
+              checked={marketRegion === 'sk' ? true : Boolean(cart.taxAppliesToFees)}
+              disabled={marketRegion === 'sk'}
+              onCheckedChange={(taxAppliesToFees) => patch({ taxAppliesToFees })}
             />
           </div>
           <div className="flex items-center justify-between gap-4 sm:col-span-2">
@@ -174,6 +369,148 @@ export function CartCheckoutSettingsForm({
               checked={cart.deliveryFreeForPickup}
               onCheckedChange={(deliveryFreeForPickup) => patch({ deliveryFreeForPickup })}
             />
+          </div>
+          <div className="space-y-2">
+            <Label>Комісія dobierka (післяплата)</Label>
+            <Input
+              type="number"
+              min={0}
+              step={0.01}
+              value={cart.codFeeAmount ?? 0}
+              onChange={(e) => patch({ codFeeAmount: Number(e.target.value) || 0 })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Режим комісії dobierka</Label>
+            <Select
+              value={cart.codFeeMode ?? 'fixed'}
+              onValueChange={(value) =>
+                patch({ codFeeMode: value as CartCheckoutSettings['codFeeMode'] })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fixed">Фіксована сума</SelectItem>
+                <SelectItem value="percent">Відсоток від товарів</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label>Вага кошика для доставки</Label>
+            <div className="flex flex-col gap-3 rounded-md border p-3">
+              <div className="flex items-center justify-between gap-4">
+                <Label htmlFor="cart-weight-enabled">Увімкнути розрахунок ваги</Label>
+                <Switch
+                  id="cart-weight-enabled"
+                  checked={cart.cartWeight?.enabled ?? false}
+                  onCheckedChange={(checked) =>
+                    patch({
+                      cartWeight: {
+                        ...(cart.cartWeight ?? {
+                          enabled: false,
+                          useFactKg: true,
+                          useVolumetricKg: false,
+                          volumetricDivisor: 5000,
+                        }),
+                        enabled: checked,
+                      },
+                    })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <Label htmlFor="cart-weight-fact">Фактична вага (кг / tare)</Label>
+                <Switch
+                  id="cart-weight-fact"
+                  checked={cart.cartWeight?.useFactKg ?? true}
+                  disabled={!cart.cartWeight?.enabled}
+                  onCheckedChange={(checked) =>
+                    patch({
+                      cartWeight: {
+                        ...(cart.cartWeight ?? {
+                          enabled: false,
+                          useFactKg: true,
+                          useVolumetricKg: false,
+                          volumetricDivisor: 5000,
+                        }),
+                        useFactKg: checked,
+                      },
+                    })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <Label htmlFor="cart-weight-vol">Об&apos;ємна вага (габарити)</Label>
+                <Switch
+                  id="cart-weight-vol"
+                  checked={cart.cartWeight?.useVolumetricKg ?? false}
+                  disabled={!cart.cartWeight?.enabled}
+                  onCheckedChange={(checked) =>
+                    patch({
+                      cartWeight: {
+                        ...(cart.cartWeight ?? {
+                          enabled: false,
+                          useFactKg: true,
+                          useVolumetricKg: false,
+                          volumetricDivisor: 5000,
+                        }),
+                        useVolumetricKg: checked,
+                      },
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cart-weight-divisor">Дільник об&apos;ємної ваги (см³→кг)</Label>
+                <Input
+                  id="cart-weight-divisor"
+                  type="number"
+                  min={1}
+                  step={1}
+                  disabled={!cart.cartWeight?.enabled || !cart.cartWeight?.useVolumetricKg}
+                  value={cart.cartWeight?.volumetricDivisor ?? 5000}
+                  onChange={(e) =>
+                    patch({
+                      cartWeight: {
+                        ...(cart.cartWeight ?? {
+                          enabled: false,
+                          useFactKg: true,
+                          useVolumetricKg: false,
+                          volumetricDivisor: 5000,
+                        }),
+                        volumetricDivisor: Number(e.target.value) || 5000,
+                      },
+                    })
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Якщо увімкнені обидва режими — береться max(факт, об&apos;ємна) × кількість. Типово 5000.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label>Правила ваги → доставка (JSON)</Label>
+            <Textarea
+              rows={3}
+              className="font-mono text-xs"
+              value={JSON.stringify(cart.deliveryWeightRules ?? [], null, 2)}
+              onChange={(e) => {
+                try {
+                  const parsed = JSON.parse(e.target.value) as CartCheckoutSettings['deliveryWeightRules']
+                  if (Array.isArray(parsed)) patch({ deliveryWeightRules: parsed })
+                } catch {
+                  /* ignore incomplete JSON while typing */
+                }
+              }}
+              placeholder='[{"maxWeightKg":10,"allowedMethods":["gls-courier"]}]'
+            />
+            <p className="text-xs text-muted-foreground">
+              Працює лише коли розрахунок ваги увімкнено. Якщо вага кошика &gt; maxWeightKg — лишаються лише
+              allowedMethods.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -222,11 +559,90 @@ export function CartCheckoutSettingsForm({
 
       <Card>
         <CardHeader>
+          <CardTitle>Оплата карткою онлайн</CardTitle>
+          <CardDescription>
+            Обирає провайдера, який обробляє метод «Оплата карткою онлайн» (
+            <code>card-online</code>). Клієнт на checkout не бачить вибору — рішення приймається
+            на сервері.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Провайдер</Label>
+            <Select
+              value={cart.onlineCardProvider ?? 'monopay'}
+              onValueChange={(value) => patch({ onlineCardProvider: value as OnlineCardProvider })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(ONLINE_CARD_PROVIDER_LABELS) as OnlineCardProvider[]).map(
+                  (provider) => (
+                    <SelectItem key={provider} value={provider}>
+                      {ONLINE_CARD_PROVIDER_LABELS[provider]}
+                    </SelectItem>
+                  ),
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Передача в ERP (Abra / Flexi)</Label>
+            <Select
+              value={cart.onlineCardErpExportMode ?? 'on_paid'}
+              onValueChange={(value) =>
+                patch({
+                  onlineCardErpExportMode: value as CartCheckoutSettings['onlineCardErpExportMode'],
+                })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="on_paid">Лише після успішної оплати</SelectItem>
+                <SelectItem value="immediate">Одразу при оформленні</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Для Stripe (SK) і MonoPay (UA). Банківський переказ і dobierka завжди передаються одразу.
+            </p>
+          </div>
+          <div className="space-y-2 rounded-lg bg-muted/40 p-3">
+            <p className="text-xs font-medium text-muted-foreground">Статус провайдерів</p>
+            {(Object.keys(ONLINE_CARD_PROVIDER_LABELS) as OnlineCardProvider[]).map((provider) => {
+              const configured = providersStatus?.[provider] ?? null
+              return (
+                <div key={provider} className="flex items-center justify-between gap-3 text-sm">
+                  <span>{ONLINE_CARD_PROVIDER_LABELS[provider]}</span>
+                  {configured === null ? (
+                    <span className="text-xs text-muted-foreground">…</span>
+                  ) : configured ? (
+                    <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Налаштовано
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-destructive">
+                      <XCircle className="h-4 w-4" />
+                      Не налаштовано
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Мінімальна сума замовлення</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Мінімальна сума товарів (₴, порожньо = без обмеження)</Label>
+            <Label>Мінімальна сума товарів (валюта деплою, порожньо = без обмеження)</Label>
             <Input
               type="number"
               min={0}
@@ -258,7 +674,7 @@ export function CartCheckoutSettingsForm({
           </div>
           {cart.belowMinOrderBehavior === 'add_packaging_fee' ? (
             <div className="space-y-2">
-              <Label>Додаткова сума пакування при низькому замовленні (₴)</Label>
+              <Label>Додаткова сума пакування при низькому замовленні</Label>
               <Input
                 type="number"
                 min={0}
@@ -273,102 +689,75 @@ export function CartCheckoutSettingsForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>Реквізити організації (банківський переказ)</CardTitle>
+          <CardTitle>Реквізити організації та PDF</CardTitle>
           <CardDescription>
-            Показуються на сторінці успішного оформлення для оплати `bank-transfer` /
-            `bank-transfer-legal`
+            Показуються на сторінці успіху для банківського переказу та в PDF підтвердження.
+            Можна взяти реквізити з налаштувань «Магазин» або вказати окремі тут (ринок:{' '}
+            {marketRegion === 'sk' ? 'SK' : 'UA'}).
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="flex items-center justify-between gap-4 sm:col-span-2 rounded-lg border border-border/60 px-4 py-3">
+            <div>
+              <p className="text-sm font-medium">Завантаження PDF на сторінці успіху</p>
+            </div>
+            <Switch
+              checked={cart.orderPdfDownloadEnabled !== false}
+              onCheckedChange={(orderPdfDownloadEnabled) => patch({ orderPdfDownloadEnabled })}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-4 sm:col-span-2 rounded-lg border border-border/60 px-4 py-3">
+            <div>
+              <p className="text-sm font-medium">PDF у email підтвердження</p>
+            </div>
+            <Switch
+              checked={cart.orderPdfEmailEnabled !== false}
+              onCheckedChange={(orderPdfEmailEnabled) => patch({ orderPdfEmailEnabled })}
+            />
+          </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label>Назва організації / ФОП</Label>
+            <Label>Заголовок PDF (порожньо — дефолт за регіоном)</Label>
             <Input
-              value={cart.bankDetails?.organizationName ?? ''}
-              onChange={(e) =>
-                patch({
-                  bankDetails: {
-                    ...(cart.bankDetails ?? {
-                      organizationName: '',
-                      edrpou: '',
-                      iban: '',
-                      bankName: '',
-                      mfo: '',
-                      legalAddress: '',
-                      taxStatus: '',
-                    }),
-                    organizationName: e.target.value,
-                  },
-                })
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>ЄДРПОУ / ІПН</Label>
-            <Input
-              value={cart.bankDetails?.edrpou ?? ''}
-              onChange={(e) =>
-                patch({
-                  bankDetails: { ...cart.bankDetails, edrpou: e.target.value },
-                })
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>МФО</Label>
-            <Input
-              value={cart.bankDetails?.mfo ?? ''}
-              onChange={(e) =>
-                patch({
-                  bankDetails: { ...cart.bankDetails, mfo: e.target.value },
-                })
+              value={cart.orderPdfTitle ?? ''}
+              onChange={(e) => patch({ orderPdfTitle: e.target.value })}
+              placeholder={
+                marketRegion === 'sk'
+                  ? 'Potvrdenie objednávky / Order confirmation'
+                  : 'Підтвердження замовлення'
               }
             />
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label>IBAN</Label>
-            <Input
-              value={cart.bankDetails?.iban ?? ''}
-              onChange={(e) =>
-                patch({
-                  bankDetails: { ...cart.bankDetails, iban: e.target.value },
-                })
+            <Label>Джерело реквізитів компанії</Label>
+            <Select
+              value={cart.bankDetailsSource === 'store' ? 'store' : 'cart'}
+              onValueChange={(value) =>
+                patch({ bankDetailsSource: value as 'cart' | 'store' })
               }
-            />
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="store">З налаштувань «Магазин»</SelectItem>
+                <SelectItem value="cart">Окремі реквізити для кошика</SelectItem>
+              </SelectContent>
+            </Select>
+            {cart.bankDetailsSource === 'store' ? (
+              <p className="text-xs text-muted-foreground">
+                Використовуються реквізити з вкладки «Магазин». Редагуйте їх там.
+              </p>
+            ) : null}
           </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label>Банк</Label>
-            <Input
-              value={cart.bankDetails?.bankName ?? ''}
-              onChange={(e) =>
-                patch({
-                  bankDetails: { ...cart.bankDetails, bankName: e.target.value },
-                })
-              }
-            />
-          </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label>Юридична адреса</Label>
-            <Input
-              value={cart.bankDetails?.legalAddress ?? ''}
-              onChange={(e) =>
-                patch({
-                  bankDetails: { ...cart.bankDetails, legalAddress: e.target.value },
-                })
-              }
-            />
-          </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label>Податковий статус</Label>
-            <Input
-              placeholder="напр. Платник ПДВ / Не платник ПДВ"
-              value={cart.bankDetails?.taxStatus ?? ''}
-              onChange={(e) =>
-                patch({
-                  bankDetails: { ...cart.bankDetails, taxStatus: e.target.value },
-                })
-              }
-            />
-          </div>
+          {cart.bankDetailsSource !== 'store' ? (
+            <div className="sm:col-span-2">
+              <CompanyBankDetailsFields
+                value={cart.bankDetails ?? DEFAULT_CHECKOUT_BANK_DETAILS}
+                marketRegion={marketRegion}
+                onChange={(bankDetails) => patch({ bankDetails })}
+              />
+            </div>
+          ) : null}
           <div className="space-y-2 sm:col-span-2">
             <Label>Призначення платежу</Label>
             <Input
@@ -458,10 +847,7 @@ export function CartCheckoutSettingsForm({
         </CardContent>
       </Card>
 
-      <Button type="button" onClick={onSave} disabled={saving}>
-        <Save className="mr-2 h-4 w-4" />
-        Зберегти налаштування кошика
-      </Button>
+      <FormSaveBar onSave={onSave} saving={saving} isDirty={isDirty} label="Зберегти налаштування кошика" />
     </div>
   )
 }

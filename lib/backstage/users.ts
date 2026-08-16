@@ -71,6 +71,7 @@ export type BackstageUserOrderSummary = {
   currency: string
   itemCount: number
   createdAt: string
+  trackingNumber?: string | null
   receiverFirstName: string
   receiverLastName: string
   receiverPatronymic: string | null
@@ -85,6 +86,7 @@ export type BackstageUserOrderSummary = {
 
 export type BackstageUserDetail = BackstageUserListItem & {
   orders: BackstageUserOrderSummary[]
+  groupIds: string[]
 }
 
 export async function createBackstageStaffMember(
@@ -98,6 +100,19 @@ export async function createBackstageStaffMember(
   })
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()
+}
+
+export async function fetchBackstageUsersCount(
+  segment: BackstageUserSegment = 'customers',
+): Promise<number> {
+  const query = new URLSearchParams({ segment })
+  const res = await fetch(`/api/backstage/users/count?${query}`, {
+    credentials: 'include',
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  const data = (await res.json()) as { total?: number }
+  return typeof data.total === 'number' ? data.total : 0
 }
 
 export async function fetchBackstageUsers(
@@ -134,6 +149,20 @@ export async function updateBackstageUser(
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function updateBackstageUserGroups(
+  id: string,
+  groupIds: string[],
+): Promise<BackstageUserDetail> {
+  const res = await fetch(`/api/backstage/users/${id}/groups`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ groupIds }),
   })
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()

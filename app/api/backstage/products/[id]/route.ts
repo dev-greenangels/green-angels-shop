@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { fetchBackend, readBackendJson } from '@/lib/api/backend-fetch'
 import { requireBackstageSession } from '@/lib/backstage-auth/require-session'
-import { finalizeProductImages, type ProductImageInput } from '@/lib/media/finalize'
+import {
+  finalizeProductImagesOnBackend,
+  type ProductImageInput,
+} from '@/lib/media/backend-proxy'
 import { defaultLocale, isAppLocale } from '@/i18n/routing'
 
 type RouteContext = { params: Promise<{ id: string }> }
@@ -45,10 +48,11 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   if (body.images?.some((image) => image.url.includes('/pending/'))) {
-    body = {
-      ...body,
-      images: await finalizeProductImages(body.images, id),
+    const finalized = await finalizeProductImagesOnBackend(request, id, body.images)
+    if (!finalized.ok) {
+      return NextResponse.json(finalized.error, { status: finalized.status })
     }
+    body = { ...body, images: finalized.images }
   }
 
   try {

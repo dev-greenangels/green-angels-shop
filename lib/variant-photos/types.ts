@@ -1,6 +1,12 @@
+import {
+  resolveFreshPhotoMainUrl,
+  resolveFreshPhotoThumbUrl,
+} from '@/lib/variant-photos/fresh-photo-urls'
+
 export type VariantPhoto = {
   id: string
   url: string
+  thumbUrl: string
   alt: string
   createdAt?: string
   photoDate?: string
@@ -13,7 +19,12 @@ export type VariantPhoto = {
 export type CatalogPhotoItem = {
   id: string
   url: string
+  mainUrl?: string
+  thumbUrl?: string
   ean: string
+  identifierType?: 'ean' | 'sku'
+  identifier?: string
+  sku?: string | null
   fileSizeBytes: number
   createdAt: string
   updatedAt: string
@@ -52,7 +63,8 @@ export function mapCatalogPhotoToVariantPhoto(photo: CatalogPhotoItem): VariantP
   const plantName = plantNameFromPhoto
   return {
     id: photo.id,
-    url: photo.url,
+    url: resolveFreshPhotoMainUrl(photo),
+    thumbUrl: resolveFreshPhotoThumbUrl(photo),
     alt: [plantName, plantSize].filter(Boolean).join(' · ') || photo.ean,
     createdAt: photo.createdAt,
     photoDate: photo.appProperties.date?.trim() || undefined,

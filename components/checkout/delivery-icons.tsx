@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { Store } from 'lucide-react'
+import { Store, Truck } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
@@ -18,4 +18,9 @@ export function NovaPoshtaLogo({ className }: { className?: string }) {
 
 export function PickupStoreIcon({ className }: { className?: string }) {
   return <Store className={cn('h-6 w-6 shrink-0 text-primary', className)} aria-hidden />
+}
+
+/** SK/EU перевізники (Packeta, DPD) — доки немає власних логотипів. */
+export function CarrierTruckIcon({ className }: { className?: string }) {
+  return <Truck className={cn('h-6 w-6 shrink-0 text-primary', className)} aria-hidden />
 }

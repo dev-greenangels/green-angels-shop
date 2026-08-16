@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server'
 
 import { fetchBackend, readBackendJson } from '@/lib/api/backend-fetch'
 import { requireBackstageSession } from '@/lib/backstage-auth/require-session'
-import { finalizeCategoryImageUrl, clearCategoryImageStorage } from '@/lib/media/finalize'
+import {
+  deleteCategoryImagesOnBackend,
+  finalizeCategoryImageOnBackend,
+} from '@/lib/media/backend-proxy'
 import { isPendingCategoryPath } from '@/lib/media/paths'
 
 type RouteContext = { params: Promise<{ id: string }> }
@@ -21,11 +24,18 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   if (typeof body.image === 'string' && isPendingCategoryPath(body.image)) {
-    body = { ...body, image: await finalizeCategoryImageUrl(body.image, id) }
+    const finalized = await finalizeCategoryImageOnBackend(request, id, body.image)
+    if (!finalized.ok) {
+      return NextResponse.json(finalized.error, { status: finalized.status })
+    }
+    body = { ...body, image: finalized.image }
   }
 
   if (body.image === null) {
-    await clearCategoryImageStorage(id)
+    const deleted = await deleteCategoryImagesOnBackend(request, id)
+    if (!deleted.ok) {
+      return NextResponse.json(deleted.error, { status: deleted.status })
+    }
   }
 
   try {

@@ -5,12 +5,23 @@ import { Sparkles, Tags } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { CatalogSortControl } from '@/components/catalog/catalog-sort-control'
+import {
+  CatalogSortSheet,
+  CatalogSortToolbarPanel,
+  CATALOG_SORT_PANEL_ID,
+} from '@/components/catalog/catalog-sort-sheet'
 import { CatalogViewModeToggle } from '@/components/catalog/catalog-view-mode-toggle'
 import { PaginatedCatalogGrid } from '@/components/catalog/paginated-catalog-grid'
 import { Navigation } from '@/components/navigation'
 import { RecentlyViewedSection } from '@/components/product/recently-viewed-section'
 import { ClientPublicPageBreadcrumbs } from '@/components/client-public-page-breadcrumbs'
+import { useCatalogHref } from '@/components/providers/catalog-paths-provider'
 import { Button } from '@/components/ui/button'
+import {
+  StickyToolbarPanel,
+  StickyToolbarRow,
+  StickyToolbarShell,
+} from '@/components/layout/sticky-toolbar-shell'
 import { LISTING_PRODUCT_GRID_CLASS_NAME } from '@/lib/catalog/grid-columns'
 import type { CatalogProductsPageMeta } from '@/lib/catalog/products'
 import { useCatalogViewMode } from '@/lib/catalog/view-mode'
@@ -29,6 +40,7 @@ export function PromotionsPageContent() {
   const t = useTranslations('catalog')
   const tNav = useTranslations('nav')
   const cart = useTranslations('cart')
+  const catalogHref = useCatalogHref()
   const [meta, setMeta] = useState<CatalogProductsPageMeta | null>(null)
   const [selectedDiscountTier, setSelectedDiscountTier] = useState<number | null>(null)
   const [tierOptions, setTierOptions] = useState<number[]>([])
@@ -52,22 +64,27 @@ export function PromotionsPageContent() {
           <ClientPublicPageBreadcrumbs
             className="mb-4"
             items={[
-              { label: tNav('catalog'), href: '/catalog' },
+              { label: tNav('catalog'), href: catalogHref },
               { label: t('promotionsTitle') },
             ]}
           />
           <div className="mb-10 max-w-2xl">
-            <h1 className="font-serif text-4xl font-bold text-foreground md:text-5xl">{t('promotionsTitle')}</h1>
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <h1 className="font-serif text-4xl font-bold text-foreground md:text-5xl">
+                {t('promotionsTitle')}
+              </h1>
+              {meta ? (
+                <p className="text-sm text-muted-foreground md:text-base">
+                  {t('promotionsCount', { count: formatNumberForLocale(meta.total, locale) })}
+                </p>
+              ) : null}
+            </div>
             <p className="mt-3 text-lg text-muted-foreground">{t('promotionsSubtitle')}</p>
-            {meta ? (
-              <p className="mt-2 text-sm text-muted-foreground">
-                {t('promotionsCount', { count: formatNumberForLocale(meta.total, locale) })}
-              </p>
-            ) : null}
           </div>
 
-          <div className={siteStickyToolbarOuterClassName}>
+          <div className={cn(siteStickyToolbarOuterClassName, 'hidden lg:block')}>
             <div className={siteStickyToolbarInnerClassName}>
+              <CatalogViewModeToggle value={viewMode} onChange={setViewMode} />
               <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <Button
                   type="button"
@@ -75,7 +92,7 @@ export function PromotionsPageContent() {
                   className={cn(
                     'h-8 shrink-0 gap-1 rounded-full px-2.5 text-[11px] leading-none border-primary/30',
                     selectedDiscountTier == null
-                      ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                      ? 'bg-primary-gradient text-primary-foreground'
                       : 'bg-background text-foreground hover:bg-primary/10',
                   )}
                   variant="outline"
@@ -92,7 +109,7 @@ export function PromotionsPageContent() {
                     className={cn(
                       'h-8 shrink-0 gap-1 rounded-full px-2.5 text-[11px] leading-none border-primary/30',
                       selectedDiscountTier === tier
-                        ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                        ? 'bg-primary-gradient text-primary-foreground'
                         : 'bg-background text-foreground hover:bg-primary/10',
                     )}
                     variant="outline"
@@ -104,11 +121,57 @@ export function PromotionsPageContent() {
                 ))}
               </div>
               <div className={siteStickyToolbarControlsClusterClassName}>
-                <CatalogSortControl sortBy={sortBy} onSortChange={setSortBy} />
-                <CatalogViewModeToggle value={viewMode} onChange={setViewMode} />
+                <CatalogSortControl sortBy={sortBy} onSortChange={setSortBy} withShell={false} />
               </div>
             </div>
           </div>
+
+          <StickyToolbarShell className="lg:hidden">
+            <StickyToolbarRow>
+              <CatalogViewModeToggle value={viewMode} onChange={setViewMode} />
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <Button
+                  type="button"
+                  size="sm"
+                  className={cn(
+                    'h-8 shrink-0 gap-1 rounded-full px-2.5 text-[11px] leading-none border-primary/30',
+                    selectedDiscountTier == null
+                      ? 'bg-primary-gradient text-primary-foreground'
+                      : 'bg-background text-foreground hover:bg-primary/10',
+                  )}
+                  variant="outline"
+                  onClick={() => setSelectedDiscountTier(null)}
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Усі
+                </Button>
+                {tierOptions.map((tier) => (
+                  <Button
+                    key={tier}
+                    type="button"
+                    size="sm"
+                    className={cn(
+                      'h-8 shrink-0 gap-1 rounded-full px-2.5 text-[11px] leading-none border-primary/30',
+                      selectedDiscountTier === tier
+                        ? 'bg-primary-gradient text-primary-foreground'
+                        : 'bg-background text-foreground hover:bg-primary/10',
+                    )}
+                    variant="outline"
+                    onClick={() => setSelectedDiscountTier(tier)}
+                  >
+                    <Tags className="h-3 w-3" />
+                    {cart('fromQty', { count: tier })}
+                  </Button>
+                ))}
+              </div>
+              <div className={cn(siteStickyToolbarControlsClusterClassName, 'pl-1.5')}>
+                <CatalogSortSheet sortBy={sortBy} onSortChange={setSortBy} variant="icon" />
+              </div>
+            </StickyToolbarRow>
+            <StickyToolbarPanel id={CATALOG_SORT_PANEL_ID}>
+              <CatalogSortToolbarPanel sortBy={sortBy} onSortChange={setSortBy} />
+            </StickyToolbarPanel>
+          </StickyToolbarShell>
 
           <PaginatedCatalogGrid
             queryParams={queryParams}

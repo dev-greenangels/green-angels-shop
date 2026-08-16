@@ -61,7 +61,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
-    const res = await fetchBackend(`/orders/${id}/status`, { request, 
+    const res = await fetchBackend(`/orders/${id}`, { request, 
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

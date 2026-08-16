@@ -1,5 +1,4 @@
 import type { AppLocale } from '@/i18n/routing'
-import { getSiteUrl } from '@/lib/auth/google-oauth'
 import type { SiteBreadcrumbItem } from '@/lib/catalog/breadcrumbs'
 import { localePath } from '@/lib/locale-path'
 
@@ -7,10 +6,15 @@ type BreadcrumbJsonLdProps = {
   locale: AppLocale
   homeLabel: string
   items: SiteBreadcrumbItem[]
+  origin?: string
 }
 
-export function BreadcrumbJsonLd({ locale, homeLabel, items }: BreadcrumbJsonLdProps) {
-  const baseUrl = getSiteUrl()
+export function BreadcrumbJsonLd({ locale, homeLabel, items, origin }: BreadcrumbJsonLdProps) {
+  const baseUrl = origin?.replace(/\/$/, '') || ''
+
+  if (!baseUrl) {
+    return null
+  }
 
   const itemListElement = [
     {

@@ -13,6 +13,7 @@ export const FOOTER_VISIBILITY_OPTIONS: ReadonlyArray<{
   { key: 'showWhatsApp', label: 'Чат WhatsApp' },
   { key: 'showLink', label: 'Веб-посилання' },
   { key: 'showSchedules', label: 'Графік роботи' },
+  { key: 'showCompanyDetails', label: 'Реквізити компанії' },
 ]
 
 export const CONTACT_LINE_TYPE_OPTIONS: ReadonlyArray<{
@@ -154,7 +155,13 @@ export function getFooterVisibilityOptionsForStore(
   const types = getContactLineTypesInStore(contactBlocks)
 
   return FOOTER_VISIBILITY_OPTIONS.filter((option) => {
-    if (option.key === 'showAddress' || option.key === 'showSchedules') return true
+    if (
+      option.key === 'showAddress' ||
+      option.key === 'showSchedules' ||
+      option.key === 'showCompanyDetails'
+    ) {
+      return true
+    }
     return Array.from(types).some(
       (type) => FOOTER_KEY_BY_CONTACT_LINE_TYPE[type] === option.key,
     )

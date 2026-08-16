@@ -1,62 +1,91 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Loader2, Package } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Package } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
+import {
+  AccountPageEmpty,
+  AccountPageError,
+  AccountPageLoading,
+} from '@/components/account/account-page-state'
+import { AccountListPagination } from '@/components/account/account-list-pagination'
+import { FormattedPrice } from '@/components/commerce/formatted-price'
+import { Button } from '@/components/ui/button'
+import { Link } from '@/i18n/navigation'
 import { fetchAccountOrders, type AccountOrderListItem } from '@/lib/account/api'
 import {
-  DELIVERY_METHOD_LABELS,
   normalizeOrderStatus,
-  ORDER_STATUS_COLORS,
-  ORDER_STATUS_LABELS,
+  orderStatusBadgeClass,
+  orderStatusLabel,
 } from '@/lib/backstage/order-status'
-import { FormattedPrice } from '@/components/commerce/formatted-price'
+import { formatDateTime } from '@/lib/i18n/format-datetime'
+import { buildTrackingUrl } from '@/lib/shipping/tracking'
 import { cn } from '@/lib/utils'
 
-function formatDate(iso: string, locale: string) {
-  return new Date(iso).toLocaleDateString(locale === 'en' ? 'en-GB' : locale === 'sk' ? 'sk-SK' : 'uk-UA', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+const PAGE_SIZE = 20
+
+function useCheckoutMethodLabel() {
+  const tCheckout = useTranslations('checkout')
+  return (kind: 'delivery' | 'payment', slug: string) => {
+    if (kind === 'delivery') {
+      const key = `deliveryMethods.${slug}` as Parameters<typeof tCheckout>[0]
+      return tCheckout.has(key) ? tCheckout(key) : slug
+    }
+    const key = `paymentMethods.${slug}.title` as Parameters<typeof tCheckout>[0]
+    return tCheckout.has(key) ? tCheckout(key) : slug
+  }
 }
 
 export function AccountOrdersContent() {
   const t = useTranslations('account')
   const tc = useTranslations('common')
+  const methodLabel = useCheckoutMethodLabel()
   const locale = useLocale()
   const [orders, setOrders] = useState<AccountOrderListItem[]>([])
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    void fetchAccountOrders()
-      .then(setOrders)
+  const load = useCallback(() => {
+    setLoading(true)
+    setError(null)
+    void fetchAccountOrders({ page, pageSize: PAGE_SIZE })
+      .then((data) => {
+        setOrders(data.items)
+        setTotalPages(data.totalPages)
+        setTotal(data.total)
+      })
       .catch((e) => setError(e instanceof Error ? e.message : t('loadError')))
       .finally(() => setLoading(false))
-  }, [])
+  }, [page, t])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   if (loading) {
-    return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-        {tc('loading')}
-      </div>
-    )
+    return <AccountPageLoading />
   }
 
   if (error) {
-    return <p className="text-sm text-destructive">{error}</p>
+    return <AccountPageError message={error} onRetry={load} />
   }
 
   if (!orders.length) {
     return (
-      <div className="rounded-xl border border-dashed p-10 text-center">
-        <Package className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
-        <p className="font-medium text-foreground">{t('ordersEmptyTitle')}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{t('ordersEmptyBody')}</p>
-      </div>
+      <AccountPageEmpty
+        icon={Package}
+        title={t('ordersEmptyTitle')}
+        body={t('ordersEmptyBody')}
+        action={
+          <Button asChild variant="outline" className="min-h-11">
+            <Link href="/account/claim-order">{t('claimOrderCta')}</Link>
+          </Button>
+        }
+      />
     )
   }
 
@@ -64,34 +93,82 @@ export function AccountOrdersContent() {
     <div className="space-y-3">
       {orders.map((order) => {
         const status = normalizeOrderStatus(order.status)
+        const trackingUrl = order.trackingNumber
+          ? buildTrackingUrl(order.trackingNumber, {
+              trackingCarrier: order.trackingCarrier,
+              deliveryMethod: order.deliveryMethod,
+            })
+          : null
         return (
           <article
             key={order.id}
-            className="rounded-xl border border-border/50 bg-card p-4 shadow-sm sm:p-5"
+            className="rounded-xl border border-border/50 bg-card p-4 shadow-sm transition-colors hover:border-primary/30 sm:p-5"
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="font-medium text-foreground">{order.orderNumber}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{formatDate(order.createdAt, locale)}</p>
+              <div className="min-w-0 flex-1">
+                <Link
+                  href={`/account/orders/${order.id}`}
+                  className="break-words font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
+                >
+                  {order.orderNumber}
+                </Link>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {formatDateTime(order.createdAt, locale, 'dateLong')}
+                </p>
               </div>
               <span
                 className={cn(
                   'rounded-full px-2.5 py-0.5 text-xs font-medium',
-                  ORDER_STATUS_COLORS[status],
+                  orderStatusBadgeClass(status),
                 )}
               >
-                {ORDER_STATUS_LABELS[status]}
+                {orderStatusLabel(status, order.statusLabel)}
               </span>
             </div>
-            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 break-words text-sm text-muted-foreground">
               <span>{tc('itemCount', { count: order.itemCount })}</span>
-              <FormattedPrice amount={order.totalAmount} />
-              <span>{DELIVERY_METHOD_LABELS[order.deliveryMethod] ?? order.deliveryMethod}</span>
+              <FormattedPrice amount={order.totalAmount} mode="raw" />
+              <span>{methodLabel('delivery', order.deliveryMethod)}</span>
               {order.deliveryCity ? <span>{order.deliveryCity}</span> : null}
+              {order.trackingNumber ? (
+                <span className="break-all">
+                  {t('trackingLabel')}:{' '}
+                  {trackingUrl ? (
+                    <a
+                      className="font-medium text-primary underline-offset-2 hover:underline"
+                      href={trackingUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {order.trackingNumber}
+                    </a>
+                  ) : (
+                    <span className="font-medium text-foreground">
+                      {order.trackingNumber}
+                    </span>
+                  )}
+                </span>
+              ) : null}
+            </div>
+            <div className="mt-3">
+              <Link
+                href={`/account/orders/${order.id}`}
+                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+              >
+                {t('viewOrder')}
+              </Link>
             </div>
           </article>
         )
       })}
+      <AccountListPagination
+        page={page}
+        totalPages={totalPages}
+        total={total}
+        onPrev={() => setPage((prev) => Math.max(1, prev - 1))}
+        onNext={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+      />
     </div>
   )
 }

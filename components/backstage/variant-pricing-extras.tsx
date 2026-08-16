@@ -62,9 +62,15 @@ export function VariantPricingExtras({
       </div>
 
       <div className="space-y-3">
-        <div>
-          <Label>{tp('quantityDiscounts')}</Label>
-          <p className="text-xs text-muted-foreground">{tp('quantityDiscountsHint')}</p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <Label>{tp('quantityDiscounts')}</Label>
+            <p className="text-xs text-muted-foreground">{tp('quantityDiscountsHint')}</p>
+          </div>
+          <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={addRow}>
+            <Plus className="mr-2 h-4 w-4" />
+            {tp('addDiscount')}
+          </Button>
         </div>
 
         {quantityPrices.length > 0 ? (
@@ -147,11 +153,6 @@ export function VariantPricingExtras({
         ) : (
           <p className="text-sm text-muted-foreground">{tp('noDiscounts')}</p>
         )}
-
-        <Button type="button" variant="outline" size="sm" onClick={addRow}>
-          <Plus className="mr-2 h-4 w-4" />
-          {tp('addDiscount')}
-        </Button>
       </div>
     </div>
   )

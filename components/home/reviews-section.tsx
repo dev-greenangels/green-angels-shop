@@ -1,36 +1,39 @@
 import Image from 'next/image'
 import { ArrowRight, Quote } from 'lucide-react'
-import { getTranslations } from 'next-intl/server'
+import { getLocale, getTranslations } from 'next-intl/server'
 
 import { HomeSectionHeader } from '@/components/home/home-section-header'
 import { StarRating } from '@/components/reviews/star-rating'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Link } from '@/i18n/navigation'
-import { fetchHomeReviews } from '@/lib/catalog/home-content'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
+import type { ReviewsPageResult } from '@/lib/reviews/types'
 import { formatReviewDate, getReviewImages } from '@/lib/reviews/utils'
 import type { HomePageSettings } from '@/lib/settings/types'
 import { cn } from '@/lib/utils'
 
 type ReviewsSectionProps = {
   settings: HomePageSettings['reviews']
+  reviews: ReviewsPageResult
 }
 
 function HomeReviewCard({
   review,
+  locale,
 }: {
-  review: Awaited<ReturnType<typeof fetchHomeReviews>>['items'][number]
+  review: ReviewsPageResult['items'][number]
+  locale: string
 }) {
   const images = getReviewImages(review)
   const coverImage = images[0]
 
   return (
-    <Card className="h-full w-[72vw] max-w-[15.5rem] shrink-0 overflow-hidden border-border/50 bg-card/90 shadow-sm sm:w-[14rem]">
-      <CardContent className="flex h-full flex-col gap-3 p-4">
+    <Card className="h-full w-[72vw] max-w-[15.5rem] shrink-0 overflow-hidden border-border/50 bg-card shadow-sm sm:w-[14rem]">
+      <CardContent className="flex h-full flex-col gap-3.5 p-5">
         <div className="flex items-start justify-between gap-2">
           <StarRating rating={review.rating} size="sm" />
-          <Quote className="h-5 w-5 shrink-0 text-primary/15" />
+          <Quote className="h-5 w-5 shrink-0 text-primary/20" />
         </div>
         <p className="line-clamp-4 flex-1 text-sm leading-relaxed text-foreground">
           &ldquo;{review.text}&rdquo;
@@ -46,13 +49,15 @@ function HomeReviewCard({
             />
           </div>
         ) : null}
-        <div className="flex items-center gap-2 border-t border-border/50 pt-3">
+        <div className="flex items-center gap-2.5 border-t border-border/50 pt-3.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
             {review.authorName.charAt(0)}
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-foreground">{review.authorName}</p>
-            <p className="text-xs text-muted-foreground">{formatReviewDate(review.createdAt)}</p>
+            <p className="text-xs text-muted-foreground">
+              {formatReviewDate(review.createdAt, locale)}
+            </p>
           </div>
         </div>
       </CardContent>
@@ -60,21 +65,15 @@ function HomeReviewCard({
   )
 }
 
-export async function ReviewsSection({ settings }: ReviewsSectionProps) {
+export async function ReviewsSection({ settings, reviews }: ReviewsSectionProps) {
   if (!settings.enabled) return null
 
-  const t = await getTranslations('home')
+  const [t, locale] = await Promise.all([getTranslations('home'), getLocale()])
 
-  const reviewsResult = await fetchHomeReviews({
-    page: 1,
-    pageSize: settings.limit,
-    sort: settings.sort,
-  })
-
-  if (reviewsResult.items.length === 0) return null
+  if (reviews.items.length === 0) return null
 
   return (
-    <section className="relative overflow-hidden border-t border-border/50 bg-gradient-to-b from-muted/40 to-background py-10 md:py-14">
+    <section className="relative overflow-hidden border-y border-border/30 py-9 md:py-12">
       <div className={siteContentShellClassName}>
         <HomeSectionHeader
           eyebrow={t('reviewsEyebrow')}
@@ -83,11 +82,7 @@ export async function ReviewsSection({ settings }: ReviewsSectionProps) {
           align="left"
           className="mb-6 md:mb-8"
         >
-          <Button
-            variant="outline"
-            asChild
-            className="self-start rounded-full border-primary/20 shadow-sm hover:border-primary/40 hover:bg-primary/5 md:self-auto"
-          >
+          <Button variant="secondary" asChild className="self-start rounded-full md:self-auto">
             <Link href="/reviews">
               {t('viewAllReviews')}
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -101,8 +96,8 @@ export async function ReviewsSection({ settings }: ReviewsSectionProps) {
           )}
         >
           <div className="flex w-max gap-3 px-[var(--site-shell-padding-x)] md:gap-4">
-            {reviewsResult.items.map((review) => (
-              <HomeReviewCard key={review.id} review={review} />
+            {reviews.items.map((review) => (
+              <HomeReviewCard key={review.id} review={review} locale={locale} />
             ))}
           </div>
         </div>

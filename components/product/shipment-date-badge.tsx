@@ -1,3 +1,7 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
+
 import { cn } from '@/lib/utils'
 
 const shipmentBadgeClassName = cn(
@@ -26,6 +30,7 @@ export function ShipmentDateBadge({
   /** На всю ширину батьківського блоку, стиль звичайного бейджа, текст по центру. */
   block?: boolean
 }) {
+  const t = useTranslations('product')
   const Tag = fullWidth || block ? 'div' : 'span'
 
   return (
@@ -38,7 +43,7 @@ export function ShipmentDateBadge({
         className,
       )}
     >
-      Відвантаження з {date}
+      {t('shipmentFrom', { date })}
     </Tag>
   )
 }

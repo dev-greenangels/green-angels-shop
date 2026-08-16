@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { fetchBackend, readBackendJson } from '@/lib/api/backend-fetch'
 import { requireBackstageSession } from '@/lib/backstage-auth/require-session'
-import { finalizeCategoryImageUrl } from '@/lib/media/finalize'
+import { finalizeCategoryImageOnBackend } from '@/lib/media/backend-proxy'
 import { isPendingCategoryPath } from '@/lib/media/paths'
 import { defaultLocale, isAppLocale } from '@/i18n/routing'
 
@@ -61,12 +61,15 @@ export async function POST(request: Request) {
     if (!res.ok || !data.id) return NextResponse.json(data, { status: res.status })
 
     if (pendingImage) {
-      const image = await finalizeCategoryImageUrl(pendingImage, data.id)
+      const finalized = await finalizeCategoryImageOnBackend(request, data.id, pendingImage)
+      if (!finalized.ok) {
+        return NextResponse.json(finalized.error, { status: finalized.status })
+      }
       const patchRes = await fetchBackend(`/categories/${data.id}`, {
         request,
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image }),
+        body: JSON.stringify({ image: finalized.image }),
       })
       const patched = await readBackendJson(patchRes)
       if (!patchRes.ok) return NextResponse.json(patched, { status: patchRes.status })

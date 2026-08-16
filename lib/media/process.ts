@@ -32,3 +32,11 @@ export async function processProductImage(buffer: Buffer): Promise<ProcessedImag
   ])
   return { main, thumb }
 }
+
+export async function processBlogImage(buffer: Buffer): Promise<ProcessedImagePair> {
+  const [main, thumb] = await Promise.all([
+    toWebp(buffer, 1200),
+    toWebp(buffer, 480, 78),
+  ])
+  return { main, thumb }
+}

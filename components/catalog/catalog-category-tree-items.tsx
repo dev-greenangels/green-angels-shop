@@ -40,7 +40,10 @@ export function CatalogCategoryTreeItems({
     return (
       <div key={node.id}>
         <div
-          className="flex items-center gap-0.5"
+          className={cn(
+            'flex items-center gap-0.5',
+            isMobile && 'border-b border-[#65954f38] pb-0.5',
+          )}
           style={{ paddingLeft: `${depth * (isMobile ? 12 : 10) + (isMobile ? 8 : 4)}px` }}
         >
           {hasChildren ? (
@@ -65,10 +68,11 @@ export function CatalogCategoryTreeItems({
           )}
           <Link
             href={href}
+            data-mobile-catalog-active={isMobile && isActive ? 'true' : undefined}
             className={cn(
               pressableClassName,
               'min-w-0 flex-1 rounded-md transition-colors hover:bg-muted hover:text-primary',
-              isMobile ? 'px-2 py-2 text-base' : 'px-2 py-1.5 text-sm',
+              isMobile ? 'px-2 py-2 text-[18px] tracking-wide' : 'px-2 py-1.5 text-sm',
               isActive ? 'bg-primary/10 font-semibold text-primary' : 'text-foreground',
             )}
             onClick={onNavigate}

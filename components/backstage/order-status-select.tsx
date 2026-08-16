@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 
 import {
@@ -10,29 +11,36 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  ORDER_STATUS_COLORS,
-  ORDER_STATUS_LABELS,
-  ORDER_STATUSES,
+  orderStatusBadgeClass,
+  orderStatusLabel,
   type OrderStatus,
 } from '@/lib/backstage/order-status'
+import {
+  fetchOrderStatuses,
+  type OrderStatusDefinition,
+} from '@/lib/backstage/order-statuses'
 import { cn } from '@/lib/utils'
 
 export function OrderStatusBadge({
   status,
+  label,
+  color,
   className,
 }: {
   status: OrderStatus
+  label?: string | null
+  color?: string | null
   className?: string
 }) {
   return (
     <span
       className={cn(
         'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-        ORDER_STATUS_COLORS[status],
+        orderStatusBadgeClass(status, color),
         className,
       )}
     >
-      {ORDER_STATUS_LABELS[status]}
+      {orderStatusLabel(status, label)}
     </span>
   )
 }
@@ -40,6 +48,7 @@ export function OrderStatusBadge({
 type OrderStatusSelectProps = {
   value: OrderStatus
   onValueChange: (value: OrderStatus) => void
+  statuses?: OrderStatusDefinition[]
   disabled?: boolean
   saving?: boolean
   className?: string
@@ -49,31 +58,54 @@ type OrderStatusSelectProps = {
 export function OrderStatusSelect({
   value,
   onValueChange,
+  statuses: statusesProp,
   disabled,
   saving,
   className,
   triggerClassName,
 }: OrderStatusSelectProps) {
+  const [loaded, setLoaded] = useState<OrderStatusDefinition[] | null>(null)
+
+  useEffect(() => {
+    if (statusesProp) return
+    let cancelled = false
+    void fetchOrderStatuses(true)
+      .then((rows) => {
+        if (!cancelled) setLoaded(rows)
+      })
+      .catch(() => {
+        if (!cancelled) setLoaded([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [statusesProp])
+
+  const statuses = statusesProp ?? loaded ?? []
+  const current = statuses.find((row) => row.code === value)
+
   return (
     <div className={cn('relative inline-flex', className)}>
       <Select
         value={value}
-        onValueChange={(next) => onValueChange(next as OrderStatus)}
-        disabled={disabled || saving}
+        onValueChange={(next) => onValueChange(next)}
+        disabled={disabled || saving || (!statusesProp && loaded === null)}
       >
         <SelectTrigger
           className={cn(
             'h-auto min-w-[8.75rem] gap-1 rounded-full border-0 px-2.5 py-1 text-xs font-medium shadow-none transition-opacity hover:opacity-90 focus:ring-2 focus:ring-ring focus:ring-offset-1 data-[size=default]:h-auto',
-            ORDER_STATUS_COLORS[value],
+            orderStatusBadgeClass(value, current?.color),
             triggerClassName,
           )}
         >
-          <SelectValue>{ORDER_STATUS_LABELS[value]}</SelectValue>
+          <SelectValue>
+            {orderStatusLabel(value, current?.nameUk)}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent className="z-[80] min-w-[10rem]">
-          {ORDER_STATUSES.map((status) => (
-            <SelectItem key={status} value={status} className="py-2">
-              <OrderStatusBadge status={status} />
+          {statuses.map((row) => (
+            <SelectItem key={row.code} value={row.code} className="py-2">
+              <OrderStatusBadge status={row.code} label={row.nameUk} color={row.color} />
             </SelectItem>
           ))}
         </SelectContent>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="7" />
+    </filter>
+    <g id="leaf">
+      <path d="M0 0 C -20 -8 -20 -40 0 -54 C 20 -40 20 -8 0 0 Z" />
+    </g>
+  </defs>
+  <g fill="#33421f" fill-opacity="0.16" filter="url(#soft)">
+    <path
+      d="M394 6 C 322 58 252 118 198 210"
+      fill="none"
+      stroke="#33421f"
+      stroke-opacity="0.16"
+      stroke-width="7"
+      stroke-linecap="round"
+    />
+    <use href="#leaf" transform="translate(360 44) rotate(120) scale(1.1)" />
+    <use href="#leaf" transform="translate(322 92) rotate(150) scale(1.28)" />
+    <use href="#leaf" transform="translate(302 66) rotate(68) scale(1.02)" />
+    <use href="#leaf" transform="translate(268 142) rotate(166) scale(1.4)" />
+    <use href="#leaf" transform="translate(248 116) rotate(58) scale(1.08)" />
+    <use href="#leaf" transform="translate(220 190) rotate(182) scale(1.24)" />
+  </g>
+</svg>

@@ -7,6 +7,16 @@ import { SESSION_COOKIE_NAME } from '@/lib/auth/constants'
 import { BACKSTAGE_SESSION_COOKIE_NAME } from '@/lib/backstage-auth/constants'
 import { readSessionTokenFromCookieHeader, verifyBackendJwt } from '@/lib/auth/backend-jwt'
 import { verifySessionToken } from '@/lib/auth/session-token'
+import {
+  GA_COUNTRY_HEADER,
+  GA_DEFAULT_LOCALE_HEADER,
+} from '@/lib/country-sites/types'
+import {
+  defaultLocaleForCountry,
+  resolveCountryFromHostWithFallback,
+} from '@/lib/country-sites/resolve-country-host'
+import { COUNTRY_LOCALES } from '@/lib/country-sites/edge-locales'
+import type { CountrySiteCode } from '@/lib/country-sites/types'
 import { localePath, stripLocalePrefix } from '@/lib/locale-path'
 import { resolveRedirectForPath } from '@/lib/redirects/middleware-cache'
 
@@ -96,6 +106,41 @@ function resolveLocaleFromPathname(pathname: string): AppLocale {
   return defaultLocale
 }
 
+function applyCountryHeaders(
+  response: NextResponse,
+  country: CountrySiteCode | null,
+): NextResponse {
+  if (!country) return response
+  const defaultLoc = defaultLocaleForCountry(country)
+  response.headers.set(GA_COUNTRY_HEADER, country)
+  response.headers.set(GA_DEFAULT_LOCALE_HEADER, defaultLoc)
+
+  // Forward onto the request so `headers()` in RSC can read them
+  const override = response.headers.get('x-middleware-override-headers')
+  const list = new Set(
+    (override ? override.split(',') : [])
+      .map((h) => h.trim())
+      .filter(Boolean),
+  )
+  list.add(GA_COUNTRY_HEADER)
+  list.add(GA_DEFAULT_LOCALE_HEADER)
+  response.headers.set('x-middleware-override-headers', [...list].join(','))
+  response.headers.set(`x-middleware-request-${GA_COUNTRY_HEADER}`, country)
+  response.headers.set(`x-middleware-request-${GA_DEFAULT_LOCALE_HEADER}`, defaultLoc)
+  return response
+}
+
+function redirectToCountryLocale(
+  request: NextRequest,
+  country: CountrySiteCode,
+  barePath: string,
+): NextResponse {
+  const targetLocale = defaultLocaleForCountry(country) as AppLocale
+  const url = request.nextUrl.clone()
+  url.pathname = localePath(barePath === '/' ? '/' : barePath, targetLocale)
+  return applyCountryHeaders(NextResponse.redirect(url), country)
+}
+
 async function handleConfiguredRedirects(request: NextRequest, localizedPathname: string) {
   const barePath = stripLocalePrefix(localizedPathname)
   const hit = await resolveRedirectForPath(barePath)
@@ -132,6 +177,21 @@ export async function proxy(request: NextRequest) {
     return backstageResponse
   }
 
+  const country = resolveCountryFromHostWithFallback(request.nextUrl.hostname)
+
+  // Before i18n: if country host and locale not allowed, redirect to default
+  if (country) {
+    const pathLocale = resolveLocaleFromPathname(pathname)
+    const allowed = COUNTRY_LOCALES[country]
+    const hasLocalePrefix = routing.locales.some(
+      (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
+    )
+    if (hasLocalePrefix && !allowed.includes(pathLocale)) {
+      const barePath = stripLocalePrefix(pathname)
+      return redirectToCountryLocale(request, country, barePath)
+    }
+  }
+
   const intlResponse = handleI18nRouting(request)
   const localizedPathname = intlResponse.headers.get('x-middleware-rewrite')
     ? new URL(intlResponse.headers.get('x-middleware-rewrite')!, request.url).pathname
@@ -139,20 +199,41 @@ export async function proxy(request: NextRequest) {
 
   const redirectResponse = await handleConfiguredRedirects(request, localizedPathname)
   if (redirectResponse) {
-    return redirectResponse
+    return applyCountryHeaders(redirectResponse, country)
   }
 
   const barePath = stripLocalePrefix(localizedPathname)
 
   if (barePath.startsWith('/account')) {
     if (!(await hasCustomerSession(request))) {
-      return publicLoginRedirect(request, localizedPathname)
+      return applyCountryHeaders(publicLoginRedirect(request, localizedPathname), country)
     }
   }
 
-  return intlResponse
+  // If country set and intl landed on unsupported default (e.g. /uk on .hu), fix after intl
+  if (country) {
+    const pathLocale = resolveLocaleFromPathname(localizedPathname)
+    const allowed = COUNTRY_LOCALES[country]
+    if (!allowed.includes(pathLocale)) {
+      return redirectToCountryLocale(request, country, barePath)
+    }
+  }
+
+  return applyCountryHeaders(intlResponse, country)
 }
 
+/**
+ * Must be string literals — Next statically parses `config.matcher` at build.
+ * Keep in sync with `SHOP_PROXY_MATCHERS` / `shouldRunShopProxy`.
+ *
+ * `.*\\..*` skips every dotted path (assets, robots.txt, sitemap.xml).
+ * Extra `.html` / `.php` entries re-enable Presta legacy URLs for the
+ * existing Redirect table (`handleConfiguredRedirects`).
+ */
 export const config = {
-  matcher: ['/((?!_next|_vercel|.*\\..*).*)'],
+  matcher: [
+    '/((?!_next|_vercel|favicon.ico|.*\\..*).*)',
+    '/((?!_next|_vercel).*)\\.html',
+    '/((?!_next|_vercel).*)\\.php',
+  ],
 }

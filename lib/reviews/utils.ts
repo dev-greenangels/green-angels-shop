@@ -1,26 +1,18 @@
 import type { ReviewListItem } from '@/lib/reviews/types'
+import { formatDateTime } from '@/lib/i18n/format-datetime'
+import { toPublicMediaUrl } from '@/lib/media/public-url'
 
 export const MAX_REVIEW_IMAGES = 3
 
 export function getReviewImages(review: Pick<ReviewListItem, 'image' | 'images'>): string[] {
-  if (review.images?.length) return review.images
-  return review.image ? [review.image] : []
+  if (review.images?.length) return review.images.map((url) => toPublicMediaUrl(url))
+  return review.image ? [toPublicMediaUrl(review.image)] : []
 }
 
-export function formatReviewDate(value: string): string {
-  return new Date(value).toLocaleDateString('uk-UA', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+export function formatReviewDate(value: string, locale: string = 'uk'): string {
+  return formatDateTime(value, locale, 'dateLong')
 }
 
-export function formatReviewDateTime(value: string): string {
-  return new Date(value).toLocaleString('uk-UA', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+export function formatReviewDateTime(value: string, locale: string = 'uk'): string {
+  return formatDateTime(value, locale, 'datetimeLong')
 }

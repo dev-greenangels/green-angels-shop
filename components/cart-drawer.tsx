@@ -39,13 +39,17 @@ import type { CartItem, Plant, ProductVariant } from '@/lib/types'
 import { Link } from '@/i18n/navigation'
 import { useCatalogHref } from '@/components/providers/catalog-paths-provider'
 import { useSession } from '@/components/providers/session-provider'
+import {
+  fetchPublicSiteSettingsFromApiRoute,
+  getCartCheckoutSettings,
+} from '@/lib/settings/fetch'
 
 export function CartDrawer() {
   const catalogHref = useCatalogHref()
   const t = useTranslations('cart')
   const tc = useTranslations('common')
   const tp = useTranslations('promo')
-  const formatMoney = useFormatPrice()
+  const formatMoney = useFormatPrice('shelf')
   const { user } = useSession()
   const isOpen = useCartIsOpen()
   const items = useCartItems()
@@ -67,6 +71,7 @@ export function CartDrawer() {
 
   const [cartHydrated, setCartHydrated] = useState(false)
   const [catalogReady, setCatalogReady] = useState(false)
+  const [showPromoCode, setShowPromoCode] = useState(true)
   const [promoError, setPromoError] = useState<string | null>(null)
   const [promoInfo, setPromoInfo] = useState<string | null>(null)
   const [summaryExpanded, setSummaryExpanded] = useState(false)
@@ -87,8 +92,8 @@ export function CartDrawer() {
   const { quote, loading: quoteLoading, quoteForPromoCodes } = usePricingQuote({
     items: quoteLineItems,
     itemsKey: quoteItemsKey,
+    audienceKey: user?.id ?? null,
     promoCodes: appliedPromoCodes.length ? appliedPromoCodes : undefined,
-    userId: user?.id,
     enabled: cartHydrated && isOpen && catalogReady && quoteItemsKey.length > 0,
   })
   const quoteByVariant = useMemo(() => quoteLinesByVariantId(quote), [quote])
@@ -180,7 +185,6 @@ export function CartDrawer() {
       draftCode: promoCode,
       currentCodes: appliedPromoCodes,
       items: quoteLineItems,
-      userId: user?.id,
     })
     if (!result.ok) {
       if (result.kind === 'info') {
@@ -194,7 +198,7 @@ export function CartDrawer() {
     setAppliedPromoCodes(result.codes)
     setPromoCode('')
     return true
-  }, [promoCode, appliedPromoCodes, quoteLineItems, user?.id, setAppliedPromoCodes, setPromoCode, tp])
+  }, [promoCode, appliedPromoCodes, quoteLineItems, setAppliedPromoCodes, setPromoCode, tp])
   useEffect(() => {
     setCartHydrated(true)
   }, [])
@@ -206,7 +210,14 @@ export function CartDrawer() {
     }
 
     let cancelled = false
-    void refreshCatalogData()
+    void Promise.all([
+      refreshCatalogData(),
+      fetchPublicSiteSettingsFromApiRoute().then((result) => {
+        if (!cancelled) {
+          setShowPromoCode(getCartCheckoutSettings(result).showPromoCode !== false)
+        }
+      }),
+    ])
       .then(() => {
         if (!cancelled) setCatalogReady(true)
       })
@@ -235,8 +246,6 @@ export function CartDrawer() {
     removeItem(oldItem.plant.id, oldItem.variantId)
     addItem(plant, quantity, { variant, unitPrice })
   }
-
-  if (!isOpen) return null
 
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
@@ -340,27 +349,29 @@ export function CartDrawer() {
                     </p>
                   ) : null}
 
-                  <div className="border-b border-border/40 px-4 py-3">
-                    <CheckoutPromoCode
-                      variant="compact"
-                      value={promoCode}
-                      onChange={(value) => {
-                        setPromoCode(value)
-                        if (promoError) setPromoError(null)
-                        if (promoInfo) setPromoInfo(null)
-                      }}
-                      appliedPromos={displayedAppliedPromos}
-                      message={promoError}
-                      infoMessage={promoInfo}
-                      loading={quoteLoading}
-                      onApply={handlePromoApply}
-                      onRemove={(code) => {
-                        setPromoError(null)
-                        setPromoInfo(null)
-                        removePromoCode(code)
-                      }}
-                    />
-                  </div>
+                  {showPromoCode ? (
+                    <div className="border-b border-border/40 px-4 py-3">
+                      <CheckoutPromoCode
+                        variant="compact"
+                        value={promoCode}
+                        onChange={(value) => {
+                          setPromoCode(value)
+                          if (promoError) setPromoError(null)
+                          if (promoInfo) setPromoInfo(null)
+                        }}
+                        appliedPromos={displayedAppliedPromos}
+                        message={promoError}
+                        infoMessage={promoInfo}
+                        loading={quoteLoading}
+                        onApply={handlePromoApply}
+                        onRemove={(code) => {
+                          setPromoError(null)
+                          setPromoInfo(null)
+                          removePromoCode(code)
+                        }}
+                      />
+                    </div>
+                  ) : null}
 
                   <div className="border-b border-border/40 px-4 py-3">
                     <h3 className="mb-2 font-serif text-base font-semibold text-foreground">

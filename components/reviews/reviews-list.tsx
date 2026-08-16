@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import { ReviewImageLightbox } from '@/components/reviews/review-image-lightbox'
 import { ReviewStoreReply } from '@/components/reviews/review-store-reply'
@@ -67,9 +67,10 @@ function ReviewCard({
   showProductLink: boolean
 }) {
   const t = useTranslations('reviews')
+  const locale = useLocale()
   const images = getReviewImages(review)
   const hasImages = images.length > 0
-  const dateLabel = formatReviewDate(review.createdAt)
+  const dateLabel = formatReviewDate(review.createdAt, locale)
   const hasStoreReply = Boolean(review.storeReply)
   const hasProduct = Boolean(review.productSlug && review.productName)
   const showProduct = showProductLink && hasProduct

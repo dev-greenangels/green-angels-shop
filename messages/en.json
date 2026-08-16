@@ -47,6 +47,7 @@
     "uah": "UAH",
     "currencySymbol": "₴",
     "loadError": "Failed to load",
+    "retry": "Try again",
     "requiredField": "Required field",
     "invalidUkrPhone": "Enter a valid Ukrainian number (+380)",
     "invalidEmail": "Invalid email format",
@@ -93,7 +94,7 @@
     "codeFromEmail": "Email code",
     "codeSentToPhone": "Code sent to {phone}",
     "codeSentToEmail": "Code sent to {email}",
-    "enterFourDigitCode": "Enter the 4-digit code",
+    "enterFourDigitCode": "Enter the 6-digit code",
     "signIn": "Sign in",
     "phoneTab": "Phone",
     "phoneNumber": "Phone number",
@@ -130,6 +131,8 @@
     "shipping": "Shipping",
     "faq": "FAQ",
     "terms": "Terms of use",
+    "privacy": "Privacy policy",
+    "cookies": "Cookie policy",
     "search": "Search",
     "login": "Sign in",
     "accountCabinet": "Dashboard",
@@ -148,8 +151,14 @@
     "perennials": "Perennials",
     "shrubs": "Shrubs",
     "shipping": "Shipping & payment",
+    "shippingSk": "Doprava a platba",
     "faq": "FAQ",
     "terms": "Terms of use",
+    "termsSk": "Všeobecné obchodné podmienky (VOP)",
+    "privacy": "Privacy policy",
+    "privacySk": "Zásady ochrany osobných údajov",
+    "returnsSk": "Reklamačný poriadok",
+    "cookies": "Cookie policy",
     "admin": "Administration",
     "intro": "Professional plant nursery. We grow quality planting material with care since 2010.",
     "blog": "Blog",
@@ -184,13 +193,23 @@
       "requiredField": "Required field",
       "invalidUkrPhone": "Enter a valid Ukrainian number (+380)",
       "invalidEmail": "Invalid email format"
-    }
+    },
+    "otpChannelsDisabled": "SMS and email OTP are disabled in settings. Contact the administrator.",
+    "consentFallback": "By signing in, you agree to the terms of use and privacy policy."
   },
   "account": {
     "title": "My account",
     "subtitle": "Orders, favorites and notifications.",
     "settingsTitle": "Settings",
     "settingsSubtitle": "Profile, contacts and delivery address.",
+    "ordersTitle": "My orders",
+    "ordersSubtitle": "History and status of your orders.",
+    "favoritesTitle": "Favorites",
+    "favoritesSubtitle": "Saved plants for quick access.",
+    "reviewsTitle": "My reviews",
+    "reviewsSubtitle": "Reviews you left on the site.",
+    "notificationsPageTitle": "Subscriptions & alerts",
+    "notificationsPageSubtitle": "Back-in-stock notifications for plants.",
     "backToCabinet": "Back to dashboard",
     "dashboard": "Dashboard",
     "orders": "Orders",
@@ -204,12 +223,52 @@
     "contactDetails": "Contact details",
     "emailNotVerified": "Email not yet verified via OTP.",
     "phoneNotVerified": "Phone not yet verified via SMS.",
+    "contactEmpty": "Not set",
+    "contactVerified": "Verified",
+    "addEmail": "Add email",
+    "changeEmail": "Change email",
+    "addPhone": "Add phone",
+    "changePhone": "Change phone",
+    "clearPhone": "Remove phone",
+    "newEmailLabel": "New email",
+    "newPhoneLabel": "New phone",
+    "sendContactOtp": "Send code",
+    "resendContactOtp": "Resend code",
+    "contactOtpCode": "Verification code",
+    "contactOtpHint": "Enter the code sent to the new contact. Your current contact stays active until confirmation.",
+    "contactOtpSent": "Code sent.",
+    "confirmContact": "Confirm",
+    "contactEmailUpdated": "Email updated.",
+    "contactPhoneUpdated": "Phone updated.",
+    "contactPhoneCleared": "Phone removed.",
+    "contactStartFailed": "Could not start contact verification.",
+    "contactConfirmFailed": "Could not confirm the contact.",
+    "contactAlreadyOnAccount": "This contact is already on your account.",
+    "contactAlreadyAssociated": "The contact was verified, but it is already associated with another account and cannot be added automatically.",
+    "emailOtpUnavailable": "Email verification is currently unavailable.",
+    "phoneOtpUnavailable": "Phone verification via SMS is currently unavailable.",
+    "profileNameSection": "Name",
     "defaultDeliveryAddress": "Default delivery address",
     "defaultDeliveryHint": "Used as convenient defaults for future orders.",
     "deliveryMethod": "Delivery method",
     "citySettlement": "City / settlement",
     "ordersEmptyTitle": "No orders yet",
     "ordersEmptyBody": "After you place orders, they will appear here.",
+    "viewOrder": "View order",
+    "orderDetailTitle": "Order",
+    "orderDetailSubtitle": "Details and status of your order.",
+    "orderDetailLoading": "Loading order…",
+    "orderNotFound": "Order not found.",
+    "backToOrders": "Back to orders",
+    "orderNumberLabel": "No. {number}",
+    "orderPlacedAt": "Placed {date}",
+    "orderItems": "Items",
+    "orderItemQty": "Qty {qty}",
+    "orderTotal": "Total",
+    "orderDetails": "Order details",
+    "orderDelivery": "Delivery",
+    "orderPayment": "Payment",
+    "trackingLabel": "Tracking",
     "reviewsEmptyTitle": "No reviews yet",
     "reviewsEmptyBody": "Leave reviews on product pages after purchase.",
     "reviewStatus": {
@@ -225,12 +284,61 @@
     "notifiedAt": "Notified {date}",
     "subscriptionCancelled": "Subscription cancelled",
     "cancelFailed": "Could not cancel",
+    "referrals": "Referrals",
+    "referralsTitle": "Refer a friend",
+    "referralsSubtitle": "Share your personal link and earn points from friends' orders.",
+    "referralsShareLabel": "Your referral link",
+    "referralsBalanceLabel": "Points balance",
+    "referralsComingSoon": "This section is coming soon. Stay tuned.",
+    "referralsOpen": "Open",
+    "referralsCopy": "Copy",
+    "referralsCopied": "Copied",
+    "referralsCodeLabel": "Code",
+    "referralsEarnHint": "+{points} points for a qualifying friend order",
+    "referralsHistoryTitle": "Points history",
+    "referralsHistoryEmpty": "No points yet.",
+    "referralsUnavailableTitle": "Referral program unavailable",
+    "referralsUnavailableBody": "The program is disabled for your account or not configured yet.",
+    "claimOrder": "Claim order",
+    "claimOrderTitle": "Claim a guest order",
+    "claimOrderSubtitle": "Add a guest checkout order to your account after verifying purchaser contacts.",
+    "claimOrderIntro": "Guest orders appear in your account automatically after you sign in with email OTP, SMS OTP, or Google — when your verified contact matches the order purchaser details.",
+    "claimOrderHint": "Attachment only matches customerEmail or customerPhone on the order. Receiver phone (receiverPhone) is not used.",
+    "claimOrderManualHint": "If the order did not appear after sign-in, verify your contacts in settings, then use the button below.",
+    "claimOrderAttachAction": "Add to my account",
+    "claimOrderAttachLoading": "Attaching…",
+    "claimOrderNoOrderSelected": "Open this page from your order confirmation link — it includes the order identifier.",
+    "claimOrderSuccess": "Order {number} was added to your account.",
+    "claimOrderFailed": "Could not claim the order.",
+    "claimOrderAlreadyInAccount": "This order is already in your account.",
+    "claimOrderContactMismatch": "Your verified email or phone does not match the purchaser details on this order.",
+    "claimOrderConflict": "Could not attach the order because of conflicting data. Please contact support.",
+    "claimOrderNotFound": "Order not found or already linked to another account.",
+    "claimOrderVerifyContactsBody": "Verify the email or phone in settings first — the same contacts used when placing the order.",
+    "claimOrderGoToSettings": "Go to settings",
+    "claimOrderViewOrder": "View order",
+    "claimOrderCta": "Claim a guest order",
     "cards": {
       "orders": "Orders",
       "favorites": "Favorites",
       "reviews": "Reviews",
-      "notifications": "Back-in-stock alerts"
-    }
+      "notifications": "Back-in-stock alerts",
+      "referrals": "Referrals"
+    },
+    "privacyTitle": "Data & privacy",
+    "privacySubtitle": "Download a copy of your data or permanently delete your account.",
+    "exportData": "Download my data",
+    "exportDataHint": "A JSON file with your profile, order summary and reviews.",
+    "exportDataFailed": "Could not generate the data file.",
+    "deleteAccountTitle": "Delete account",
+    "deleteAccountHint": "The account is deleted permanently. Orders are anonymized, reviews stay without a link to you.",
+    "deleteAccountButton": "Delete account",
+    "deleteAccountDialogTitle": "Delete account permanently?",
+    "deleteAccountDialogDescription": "This action cannot be undone. Your profile, cart, favorites and linked logins will be deleted. Orders remain in history without a link to you, and reviews are anonymized.",
+    "deleteAccountConfirmLabel": "Type {word} to confirm",
+    "deleteAccountConfirmButton": "Delete permanently",
+    "deleteAccountFailed": "Could not delete the account.",
+    "privacyPolicyNote": "Learn more in our <privacy>Privacy policy</privacy>."
   },
   "catalog": {
     "title": "Catalog",
@@ -310,8 +418,9 @@
     "summaryGoods": "Items ({lines}) - {pieces} pcs",
     "unavailableNote": "Unavailable items are excluded. Delivery cost depends on the shipping method.",
     "checkout": "Checkout",
-    "checkoutGdpr": "Confirm order",
-    "privacyConsent": "I agree to the processing of personal data and the <terms>terms of use</terms>.",
+    "checkoutGdpr": "Place order",
+    "createAccount": "Create an account for faster checkout next time",
+    "privacyConsent": "I agree to the <privacy>privacy policy</privacy> and the <terms>terms of use</terms>.",
     "privacyConsentRequired": "You must agree to the terms and data processing to place the order.",
     "inStock": "In stock: {count} pcs",
     "maxQty": "Max. {count} pcs",
@@ -347,11 +456,16 @@
     "totals": {
       "products": "Products",
       "packaging": "Packaging",
+      "shippingAndPackaging": "Shipping and packaging",
       "delivery": "Delivery",
       "deliveryCarrierRates": "Carrier rates apply",
       "vat": "VAT ({included})",
       "vatIncluded": "incl.",
-      "withoutDelivery": "Subtotal excluding delivery"
+      "withoutVat": "Excl. VAT",
+      "codFee": "COD fee",
+      "withoutDelivery": "Subtotal excluding delivery",
+      "vatOfWhich": "of which VAT ({rate}%)",
+      "paidWithoutVat": "Total excl. VAT"
     },
     "unavailableOne": "1 item is out of stock and excluded from the total.",
     "unavailableMany": "{count} items are out of stock and excluded from the total.",
@@ -363,7 +477,9 @@
     "placingOrder": "Placing order...",
     "inYourOrder": " in your order",
     "grandTotal": "Grand total",
-    "inCart": "In cart"
+    "inCart": "In cart",
+    "placeOrder": "Place order",
+    "placeOrderWithObligation": "Order with obligation to pay"
   },
   "recentlyViewed": {
     "eyebrow": "Your history",
@@ -433,6 +549,11 @@
     "clearSearch": "Clear search",
     "voiceSearch": "Voice search"
   },
+  "blog": {
+    "listingTitle": "Blog",
+    "listingDescription": "Growing tips, nursery news, and plant care.",
+    "articleFallbackTitle": "Article"
+  },
   "favorites": {
     "pageTitle": "Favorites",
     "pageDescription": "Your saved plants at {brand} nursery.",
@@ -440,6 +561,7 @@
     "emptyTitle": "Your favorites list is empty",
     "emptyBody": "Tap the heart next to a product to save it here.",
     "loading": "Loading saved products...",
+    "loadError": "Could not load favorites.",
     "unavailable": "Saved products are temporarily unavailable or discontinued.",
     "added": "Added to favorites",
     "removed": "Removed from favorites",
@@ -461,6 +583,10 @@
     "pageTitle": "Checkout",
     "orderPlaced": "Order placed",
     "redirecting": "Redirecting to confirmation…",
+    "successLoadingDetails": "Loading order details…",
+    "successOrderNumberLabel": "Order number",
+    "successOrderNumbersLabel": "Order numbers",
+    "successLimitedHint": "Order details are available in the email if you provided an email address at checkout.",
     "noStockTitle": "No items in stock",
     "noCheckoutableItems": "No in-stock items in your cart to checkout.",
     "submitFailed": "Could not place order.",
@@ -483,31 +609,122 @@
     "guestBenefit2": "Confirmation by email and SMS",
     "guestBenefit3": "Register later if you want",
     "continueAsGuest": "Continue as guest",
+    "verifyOfferTitle": "You may already have an account",
+    "verifyOfferBody": "Verify access to save this order to your order history. You can continue without verifying.",
+    "verifyOfferCta": "Verify account",
+    "identityHint": {
+      "loading": "Checking contacts…",
+      "noneBody": "No account was found for the details entered. You can continue as a guest.",
+      "noneTitle": "No account was found for the details entered.",
+      "noneCreateSuggestion": "Create an account to keep your order history, or continue as a guest.",
+      "noneGuestOnly": "No account was found for the details entered. You can continue as a guest.",
+      "noneRegisterEmail": "Register with email",
+      "noneRegisterPhone": "Register with phone number",
+      "noneContinueGoogle": "Continue with Google",
+      "inlineAuthEmailRegister": "Register with email",
+      "inlineAuthPhoneRegister": "Register with phone",
+      "cancelRegister": "Cancel registration",
+      "namesRequired": "Enter your first and last name in the form above to finish registration.",
+      "singleEmailTitle": "An account already exists for this email.",
+      "singlePhoneTitle": "An account already exists for this phone number.",
+      "singleEitherTitle": "Email and phone belong to the same account.",
+      "singleBody": "Sign in to save this order to your history. You can still continue as a guest.",
+      "singlePhoneUnavailable": "Signing in with this phone number is not available right now. You can continue as a guest.",
+      "singleSignInEmail": "Sign in with email",
+      "singleSignInPhone": "Sign in with phone",
+      "conflictTitle": "Email and phone belong to different accounts.",
+      "conflictBody": "Choose the account you want this order attached to, or continue as a guest.",
+      "conflictContinueEmail": "Sign in with email",
+      "conflictContinuePhone": "Sign in with phone",
+      "continueAsGuest": "Continue as guest",
+      "sendCode": "Send code",
+      "cancelAuth": "Cancel sign-in",
+      "inlineAuthEmail": "Sign in with email",
+      "inlineAuthPhone": "Sign in with phone",
+      "accountSelected": "Account selected for this order",
+      "switchAccount": "Switch account",
+      "switchedAccount": "Account cleared. Choose email, phone, or continue as a guest.",
+      "accountLocked": "This checkout is currently using another account. Switch account if you want to continue with a different one.",
+      "switchAccountRequired": "Sign out of the current account first to use a different one.",
+      "chooseEmailAccountFirst": "Choose the email account sign-in option first.",
+      "useSelectedAccount": "Use the selected sign-in method or sign out first."
+    },
     "contactTitle": "Who is ordering?",
     "contactConfirmed": "Customer details confirmed. You can proceed to delivery.",
     "loadingProfile": "Loading your profile…",
     "contactHint": "Verify your phone or email, or sign in with Google.",
+    "contactHintBoth": "Verify your phone or email, or sign in with Google.",
+    "contactHintEmail": "Verify your email, or sign in with Google.",
+    "contactHintPhone": "Verify your phone, or sign in with Google.",
+    "contactHintGoogle": "Sign in with Google.",
+    "skGuestContactHint": "Enter your email, phone, and name to continue as a guest.",
+    "skGuestContactHintBoth": "Enter your email, phone, and name to continue as a guest.",
+    "skGuestContactHintEmail": "Enter your email and name to continue as a guest.",
+    "skGuestContactHintPhone": "Enter your phone and name to continue as a guest.",
+    "skGuestContactHintName": "Enter your name to continue as a guest.",
+    "softContactHint": "Enter your email, phone, and name.",
+    "softContactHintEmailOptional": "Enter your phone and name. Email is optional.",
+    "skAuthModeLabel": "Checkout as",
+    "skAuthModeGuest": "Without registration",
+    "skAuthModeLogin": "Sign in",
     "signedInVia": "Signed in via {method}",
     "authMethodAccount": "account",
     "authMethodPhone": "phone",
     "checkingSession": "Checking session…",
     "newCustomerHint": "New customer — enter your full name to place an order.",
-    "phoneVerifiedProfileHint": "Phone verified. Enter your first and last name in Ukrainian.",
-    "emailVerifiedProfileHint": "Email verified. Enter your first and last name in Ukrainian.",
+    "phoneVerifiedProfileHint": "Phone verified. Enter your first and last name.",
+    "emailVerifiedProfileHint": "Email verified. Enter your first and last name.",
     "backToAuthMethod": "Back to sign-in method",
     "saveAndContinue": "Save and continue",
     "nextShipping": "Next: Delivery",
     "nextPayment": "Next: Payment",
     "shippingTitle": "Delivery",
     "completeNameTitle": "Complete customer name",
-    "completeNameHint": "Enter first and last name in Ukrainian (Cyrillic).",
+    "completeNameHint": "Enter your first and last name.",
+    "completeNameHintLatin": "Enter your first and last name in Latin letters.",
     "firstNameUaPlaceholder": "First name in Ukrainian",
     "lastNameUaPlaceholder": "Last name in Ukrainian",
     "deliveryMethod": "Delivery method",
     "deliveryMethods": {
       "nova-poshta-branch": "Nova Poshta branch",
       "nova-poshta-address": "Nova Poshta address delivery",
-      "pickup": "Pickup"
+      "pickup": "Pickup",
+      "packeta-box": "Packeta pickup point",
+      "packeta-courier": "Packeta courier",
+      "gls-courier": "GLS courier"
+    },
+    "packetaPickupPointLabel": "Packeta pickup point",
+    "packetaPickupPointUnavailable": "Pickup point selection is temporarily unavailable",
+    "packetaPickupPointHint": "Packeta pickup point selection is still being configured. Please contact support to place an order with this method.",
+    "changePickupPoint": "Change pickup point",
+    "deliveryCountry": "Delivery country",
+    "deliveryCountryPlaceholder": "Select country",
+    "deliveryCountries": {
+      "sk": "Slovakia",
+      "hu": "Hungary",
+      "at": "Austria",
+      "cz": "Czechia",
+      "de": "Germany"
+    },
+    "postalCode": "Postal code (PSČ)",
+    "recipientCompanyName": "Company name (optional)",
+    "vatIdLabel": "EU VAT ID (IČ DPH)",
+    "vatIdPlaceholder": "e.g. SK2120123456",
+    "vatIdValidate": "Validate via VIES",
+    "vatIdHint": "For EU B2B buyers — automatic VIES validation.",
+    "vatIdValid": "VIES: valid ({name})",
+    "vatIdInvalid": "VIES: invalid number",
+    "vatIdUnavailable": "VIES temporarily unavailable",
+    "buyerTypeLabel": "Buyer type",
+    "buyerType": {
+      "individual": {
+        "title": "Individual",
+        "description": "Personal order"
+      },
+      "company": {
+        "title": "Company",
+        "description": "Invoice to company, VAT ID / VIES"
+      }
     },
     "cityPlaceholder": "Enter city name…",
     "npBranchLabel": "Nova Poshta branch",
@@ -520,6 +737,8 @@
     "recipient": "Recipient",
     "fillBelow": "Fill in the details below",
     "otherRecipient": "Different recipient?",
+    "otherRecipientPickup": "Will someone else pick it up?",
+    "selectCountryBeforePacketa": "Select a delivery country first — then you can search Packeta points.",
     "recipientDetails": "Recipient details",
     "paymentTitle": "Payment",
     "paymentMethod": "Payment method",
@@ -529,15 +748,34 @@
         "description": "Visa, Mastercard, Apple Pay, Google Pay — full prepayment"
       },
       "bank-transfer": {
-        "title": "Bank transfer (individual)",
-        "description": "Full or partial prepayment"
+        "title": "Bank transfer",
+        "description": "Full or partial prepayment to our bank details"
       },
       "bank-transfer-legal": {
         "title": "Bank transfer (company)",
         "description": "Payment on behalf of a company with EDRPOU details"
+      },
+      "dobierka": {
+        "title": "Cash on Delivery (COD)",
+        "description": "Pay the courier or at the pickup point on receipt"
       }
     },
     "edrpou": "EDRPOU",
+    "ico": "IČO",
+    "companyDic": "DIČ",
+    "companyStreet": "Street (registered address)",
+    "companyCity": "City",
+    "companyPostalCode": "Postal code",
+    "preferredShipDate": "Dispatch date",
+    "preferredShipDateHint": "Choose an available warehouse dispatch date",
+    "preferredShipDateCarrierHint": "Plants are transferred to the carrier on the selected date.",
+    "preferredShipDateSelect": "Select a date",
+    "preferredShipDateEmpty": "No dispatch dates available",
+    "preferredShipDatePickup": "Ready for pickup date",
+    "preferredShipDatePickupHint": "Choose the day you will collect the order from the nursery.",
+    "preferredShipDatePickupSelect": "Select a date",
+    "preferredShipDatePickupEmpty": "No pickup dates available",
+    "street": "Street",
     "companyLegalName": "Full legal entity name",
     "companyPlaceholder": "LLC \"Company name\"",
     "npEmpty": "Nothing found",
@@ -559,6 +797,7 @@
       "splitTotalsDetail": "Breakdown by order — in the sections above.",
       "splitCombinedProducts": "Combined products total for both orders",
       "splitCombinedPackaging": "Packaging (both orders)",
+      "splitCombinedShipping": "Shipping and packaging (both orders)",
       "splitCombinedPayable": "Total payable",
       "datedPrefilledHint": "Delivery details were copied from the first order. You can change them separately.",
       "splitPreview": {
@@ -568,7 +807,14 @@
         "itemsCount": "{lines} items · {pieces} pcs",
         "cannotPlace": "{message}"
       }
-    }
+    },
+    "billingTitle": "Billing",
+    "billingHint": "Invoice details. The package recipient can be someone else.",
+    "vatReverseChargeApplied": "✓ VAT number verified. Reverse charge will be applied.",
+    "deliveryEstimateAfterDispatch": "Estimated delivery: 2–3 business days after dispatch",
+    "vatIdConfirmed": "VAT ID confirmed",
+    "vatIdConfirmedWithZeroDph": "VAT ID confirmed. 0% VAT applied (reverse charge).",
+    "vatZeroDphApplied": "0% VAT applied (reverse charge)."
   },
   "product": {
     "newBadge": "New",
@@ -631,7 +877,8 @@
     "scrollThumbsBack": "Scroll thumbnails back",
     "scrollThumbsForward": "Scroll thumbnails forward",
     "photoN": "Photo {n}",
-    "viewPhoto": "View photo: {alt}"
+    "viewPhoto": "View photo: {alt}",
+    "similarPlantsCount": "{count, plural, one {# product} other {# products}}"
   },
   "reviews": {
     "pageTitle": "Reviews",
@@ -661,17 +908,19 @@
       "product": "About products"
     },
     "ratings": {
-      "all": "Any rating",
-      "5": "5 stars",
-      "4": "4 stars",
-      "3": "3 stars",
+      "1": "1 star",
       "2": "2 stars",
-      "1": "1 star"
+      "3": "3 stars",
+      "4": "4 stars",
+      "5": "5 stars",
+      "all": "All",
+      "nStars": "{count} stars"
     },
     "sort": {
-      "newest": "Newest first",
-      "oldest": "Oldest first",
-      "rating_desc": "Highest rating first"
+      "newest": "By date: newest first",
+      "oldest": "By date: oldest first",
+      "rating_desc": "By rating: highest first",
+      "rating_asc": "By rating: lowest first"
     },
     "paginationLabel": "Review pages",
     "prevPage": "Previous page",
@@ -688,6 +937,10 @@
     "ratingRequired": "Rating",
     "authorName": "Full name",
     "authorPlaceholder": "Last name First name Patronymic",
+    "guestContact": "Email or phone",
+    "guestEmailPlaceholder": "Email",
+    "guestPhonePlaceholder": "Phone",
+    "guestContactHint": "Provide at least one — email or phone.",
     "yourReview": "Your review",
     "textPlaceholderProduct": "Tell us about plant quality, description accuracy, packaging...",
     "textPlaceholderGeneral": "Tell us about plant quality, delivery or service...",
@@ -696,5 +949,130 @@
     "submitSuccess": "Thank you! Your review has been sent for moderation.",
     "submitFailed": "Could not submit review.",
     "imageUploadFailed": "Could not upload image."
+  },
+  "legalPages": {
+    "crossLinksLabel": "Other legal documents:",
+    "termsLink": "Terms of use",
+    "privacyLink": "Privacy policy",
+    "cookiesLink": "Cookie policy",
+    "templateNotice": "This text is a draft template and must be reviewed by a lawyer before publishing on a live site."
+  },
+  "cookieConsent": {
+    "title": "We use cookies",
+    "description": "Necessary cookies are required for the site to work. With your consent we also use analytics cookies. Learn more in our <cookies>Cookie policy</cookies> and <privacy>Privacy policy</privacy>.",
+    "customize": "Customize",
+    "rejectAll": "Necessary only",
+    "acceptAll": "Accept all",
+    "savePreferences": "Save preferences",
+    "necessaryTitle": "Necessary",
+    "necessaryDescription": "Power core features: cart, sign-in, saved preferences. Always active.",
+    "alwaysOn": "Always active",
+    "analyticsTitle": "Analytics",
+    "analyticsDescription": "Help us understand how visitors use the site (Vercel Analytics). Off by default."
+  },
+  "privacyPage": {
+    "title": "Privacy policy",
+    "consentVersion": "Data processing consent version: {version}",
+    "intro": "This Privacy policy explains which personal data we process, for what purpose, and what rights you have. This text is a baseline template and must be reviewed by a lawyer to match the legislation of your country.",
+    "sections": [
+      {
+        "heading": "1. Data controller",
+        "body": [
+          "The data controller is the operator of the plant store (the sole trader / legal entity listed under \"Contacts\" and in the Terms of use).",
+          "For questions about personal data processing, please use the contacts listed on the \"Contacts\" page."
+        ]
+      },
+      {
+        "heading": "2. What data we process",
+        "body": [
+          "Profile data: first name, last name, patronymic, phone, email, delivery address.",
+          "Order data: order contents, delivery method and address, payment method, status history.",
+          "Technical data: cookies, site usage data (only if you consented to analytics cookies)."
+        ]
+      },
+      {
+        "heading": "3. Purpose and legal basis",
+        "body": [
+          "Customer data is processed to place and fulfil orders and to communicate about delivery and support — based on contract performance and user consent.",
+          "Analytics cookies are used only with a separate consent, which you can withdraw at any time on the Cookie policy page."
+        ]
+      },
+      {
+        "heading": "4. Who receives the data",
+        "body": [
+          "Data may be shared with delivery carriers, payment providers and email/SMS notification providers — only to the extent needed to fulfil an order.",
+          "We do not sell personal data to third parties."
+        ]
+      },
+      {
+        "heading": "5. Retention period",
+        "body": [
+          "Profile data is kept while the account is active. Order data is kept for the period required for accounting and tax records.",
+          "You can delete your account at any time from account settings — see the section below."
+        ]
+      },
+      {
+        "heading": "6. Your rights",
+        "body": [
+          "You have the right to access, correct, delete (anonymize), restrict, and object to the processing of your data.",
+          "You can download a copy of your data or delete your account from your dashboard, under \"Settings\" → \"Data & privacy\"."
+        ]
+      }
+    ]
+  },
+  "cookiesPage": {
+    "title": "Cookie policy",
+    "intro": "This page explains which cookies the site uses, for what purpose, and how to manage your consent. This text is a baseline template pending legal review.",
+    "sections": [
+      {
+        "heading": "What are cookies",
+        "body": [
+          "Cookies are small text files stored in your browser when you visit the site. They help it work correctly and remember your preferences."
+        ]
+      },
+      {
+        "heading": "How we use cookies",
+        "body": [
+          "Necessary cookies power the cart, sign-in and saved language/region preferences — without them the site will not work correctly.",
+          "Analytics cookies (Vercel Analytics) help us understand which pages are popular and how to improve the site. They only activate after you consent."
+        ]
+      },
+      {
+        "heading": "Your choice",
+        "body": [
+          "On your first visit you see a banner where you can accept all cookies, keep only necessary ones, or customize categories individually.",
+          "You can change your choice at any time below on this page."
+        ]
+      }
+    ],
+    "manageTitle": "Manage your preferences",
+    "manageHint": "Changes are saved immediately and applied on the next page load.",
+    "currentStatusLabel": "Current status:",
+    "analyticsEnabled": "analytics enabled",
+    "analyticsDisabled": "analytics disabled",
+    "updatedAtLabel": "updated {date}",
+    "saved": "Cookie preferences saved",
+    "necessaryTitle": "Necessary",
+    "necessaryDescription": "Power core features: cart, sign-in, saved preferences. Always active.",
+    "alwaysOn": "Always active",
+    "analyticsTitle": "Analytics",
+    "analyticsDescription": "Vercel Analytics — site visit statistics. Off by default."
+  },
+  "returnsPage": {
+    "title": "Returns & complaints",
+    "intro": "Information about 14-day withdrawal and complaint procedure (SK/EU market).",
+    "policyTitle": "Return policy",
+    "policyBody": "Consumers may withdraw from the contract within 14 days without giving a reason under SK/EU law.\n\nLive plants may have specific exceptions — final legal copy will be provided by a lawyer.\n\nThis page is a temporary placeholder for SOI compliance.",
+    "formTitle": "Withdrawal form",
+    "formHint": "Fill in the details and email them to us.",
+    "formFields": "Name, address, order number, receipt date, signature / date.",
+    "formSendTo": "Send to {email}",
+    "shippingLink": "Shipping & payment"
+  },
+  "price": {
+    "label": "Price",
+    "exclVat": "{amount} excl. VAT",
+    "exclVatColon": "excl. VAT: {amount}",
+    "inclVat": "incl. VAT"
   }
 }

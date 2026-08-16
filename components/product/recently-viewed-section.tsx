@@ -190,13 +190,17 @@ export function RecentlyViewedSection({
     <>
       <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0 flex-1">
-          <h2 className="font-serif text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-            {settings.title}
-          </h2>
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h2 className="font-serif text-2xl font-medium leading-snug text-foreground md:text-3xl">
+              {settings.title}
+            </h2>
+            <p className="text-sm text-muted-foreground md:text-base">
+              {t('count', { count: itemCount })}
+            </p>
+          </div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
             {t('subtitle')}
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">{t('count', { count: itemCount })}</p>
         </div>
 
         <div className="flex shrink-0 items-center gap-2 self-start md:self-auto">
@@ -249,7 +253,7 @@ export function RecentlyViewedSection({
       <section
         className={cn(
           className,
-          'relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-muted/45 via-background to-primary/[0.03] p-5 shadow-sm md:p-7',
+          'relative overflow-hidden rounded-2xl border border-border/50 bg-muted/40 p-5 shadow-sm md:p-7',
         )}
         aria-label={settings.title}
       >
@@ -260,13 +264,9 @@ export function RecentlyViewedSection({
 
   return (
     <section
-      className="relative overflow-hidden border-y border-border/40 bg-gradient-to-b from-muted/50 via-muted/15 to-background py-6 md:py-8"
+      className="relative overflow-hidden border-y border-border/40 bg-transparent py-8 md:py-10"
       aria-label={settings.title}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-24 right-0 h-48 w-48 rounded-full bg-primary/[0.04] blur-3xl"
-      />
       <div className={cn(siteContentShellClassName, className)}>{inner}</div>
     </section>
   )

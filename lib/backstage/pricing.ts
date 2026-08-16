@@ -17,9 +17,23 @@ export type DiscountRuleItem = {
   target: 'ALL_PRODUCTS' | 'CATEGORY' | 'PRODUCT' | 'VARIANT'
   targetId: string | null
   targetIds: string[]
+  excludeProductIds: string[]
+  excludeVariantIds: string[]
+  excludeCategoryIds: string[]
+  targetLabels?: Record<string, string>
+  excludeLabels?: Record<string, string>
+  combinesWithOtherDiscounts: 'BEST_PRICE' | 'STACK' | 'MAX_OF'
   onlyForRoles: string[]
   groupIds: string[]
   groups: Array<{ id: string; name: string; slug: string }>
+  userIds: string[]
+  users: Array<{
+    id: string
+    firstName: string | null
+    lastName: string | null
+    phone: string | null
+    email: string | null
+  }>
   minCartSubtotal: number | null
   startDate: string | null
   endDate: string | null

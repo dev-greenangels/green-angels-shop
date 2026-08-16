@@ -1,6 +1,6 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import type { ReviewStoreReply as ReviewStoreReplyType } from '@/lib/reviews/types'
 import { formatReviewDate, formatReviewDateTime } from '@/lib/reviews/utils'
@@ -20,9 +20,10 @@ export function ReviewStoreReply({
   showTime = false,
 }: ReviewStoreReplyProps) {
   const t = useTranslations('reviews')
+  const locale = useLocale()
   const dateLabel = showTime
-    ? formatReviewDateTime(reply.createdAt)
-    : formatReviewDate(reply.createdAt)
+    ? formatReviewDateTime(reply.createdAt, locale)
+    : formatReviewDate(reply.createdAt, locale)
 
   if (variant === 'embedded') {
     return (

@@ -46,6 +46,8 @@ export type CatalogProductVariant = {
 
 export type CatalogProductDetail = CatalogProductListItem & {
   description: string | null
+  metaTitle?: string | null
+  metaDesc?: string | null
   pricingMode: 'simple' | 'variants'
   variants: CatalogProductVariant[]
   images: string[]
@@ -65,6 +67,7 @@ export type CatalogCategory = {
   id: string
   name: string
   slug: string
+  latinName?: string
   description: string
   footerDescription?: string
   metaTitle?: string

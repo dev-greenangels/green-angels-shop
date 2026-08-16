@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { Loader2, RefreshCw } from 'lucide-react'
 
@@ -83,6 +83,7 @@ export function CartReplacementModal({
   onReplace,
 }: CartReplacementModalProps) {
   const catalogHref = useCatalogHref()
+  const locale = useLocale()
   const t = useTranslations('cart')
   const tc = useTranslations('common')
   const te = useTranslations('errors')
@@ -104,12 +105,13 @@ export function CartReplacementModal({
 
       try {
         const [detailResult, similarResult] = await Promise.all([
-          fetchCatalogProductBySlug(item.plant.slug),
+          fetchCatalogProductBySlug(item.plant.slug, locale),
           fetchCatalogProducts({
             categoryId: item.plant.categoryId,
             excludeId: item.plant.id,
             stock: 'in_stock',
             limit: 8,
+            locale,
           }),
         ])
 
@@ -166,7 +168,7 @@ export function CartReplacementModal({
     return () => {
       cancelled = true
     }
-  }, [open, item.plant.id, item.plant.slug, item.plant.categoryId, item.variantId])
+  }, [open, item.plant.id, item.plant.slug, item.plant.categoryId, item.variantId, locale])
 
   const hasOptions = sizeOptions.length > 0 || similarOptions.length > 0
 

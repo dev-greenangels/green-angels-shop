@@ -2,6 +2,23 @@ export const CATEGORY_COVER = 'cover.webp'
 export const CATEGORY_THUMB = 'cover-thumb.webp'
 export const PRODUCT_MAIN = 'main.webp'
 export const PRODUCT_THUMB = 'thumb.webp'
+export const BLOG_COVER = 'cover.webp'
+export const BLOG_THUMB = 'cover-thumb.webp'
+
+export const BLOG_IMAGE_PATH_REGEX =
+  /^\/uploads\/blog\/(?:pending\/)?[a-f0-9-]+\/cover\.webp$/i
+
+export function isBlogImagePath(url: string): boolean {
+  return BLOG_IMAGE_PATH_REGEX.test(url.trim())
+}
+
+export function buildBlogCoverUrl(blogId: string): string {
+  return `/uploads/blog/${blogId}/${BLOG_COVER}`
+}
+
+export function buildBlogPendingCoverUrl(pendingId: string): string {
+  return `/uploads/blog/pending/${pendingId}/${BLOG_COVER}`
+}
 
 /** Новий формат: /uploads/categories/{id}/v{revision}/cover.webp або pending */
 export const CATEGORY_IMAGE_PATH_REGEX =
@@ -51,13 +68,16 @@ export function buildProductPendingUrl(pendingId: string, imageId: string): stri
   return `/uploads/products/pending/${pendingId}/${imageId}/${PRODUCT_MAIN}`
 }
 
-/** Для карток каталогу — менший файл. */
+/** Для карток каталогу — менший файл. Product / category / blog / Fresh Photo `main.webp`. */
 export function resolveThumbUrl(url: string): string {
   if (url.includes(`/${PRODUCT_MAIN}`)) {
     return url.replace(`/${PRODUCT_MAIN}`, `/${PRODUCT_THUMB}`)
   }
   if (url.endsWith(`/${CATEGORY_COVER}`)) {
     return url.replace(`/${CATEGORY_COVER}`, `/${CATEGORY_THUMB}`)
+  }
+  if (url.endsWith(`/${BLOG_COVER}`)) {
+    return url.replace(`/${BLOG_COVER}`, `/${BLOG_THUMB}`)
   }
   return url
 }

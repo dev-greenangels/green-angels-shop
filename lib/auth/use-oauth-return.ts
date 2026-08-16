@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
 import type { GoogleCheckoutProfile, PublicSession } from '@/lib/auth/types'
@@ -10,17 +11,15 @@ export type OAuthReturnPayload = {
   profile: GoogleCheckoutProfile | null
 }
 
-function googleSuccessToast(payload: OAuthReturnPayload) {
-  const firstName = payload.profile?.firstName?.trim() || payload.user.firstName?.trim()
-  toast.success(
-    firstName ? `Вітаємо, ${firstName}! Увійшли через Google` : 'Вітаємо! Увійшли через Google',
-  )
-}
-
 export function useOAuthReturn(
   onSuccess: (payload: OAuthReturnPayload) => void,
-  options?: { errorMessage?: string; showSuccessToast?: boolean },
+  options?: {
+    errorMessage?: string
+    errorMessages?: Record<string, string>
+    showSuccessToast?: boolean
+  },
 ) {
+  const tc = useTranslations('common')
   const handledRef = useRef(false)
   const showSuccessToast = options?.showSuccessToast ?? true
 
@@ -42,7 +41,7 @@ export function useOAuthReturn(
     window.history.replaceState({}, '', nextUrl)
 
     if (oauthError) {
-      toast.error(options?.errorMessage ?? oauthError)
+      toast.error(options?.errorMessages?.[oauthError] ?? options?.errorMessage ?? oauthError)
       return
     }
 
@@ -50,16 +49,21 @@ export function useOAuthReturn(
       .then((res) => (res.ok ? res.json() : null))
       .then((data: OAuthReturnPayload | null) => {
         if (!data?.user) {
-          toast.error('Не вдалося отримати сесію після входу через Google.')
+          toast.error(tc('oauthSessionFailed'))
           return
         }
         if (showSuccessToast) {
-          googleSuccessToast(data)
+          const firstName = data.profile?.firstName?.trim() || data.user.firstName?.trim()
+          toast.success(
+            firstName
+              ? tc('welcomeNameGoogle', { name: firstName })
+              : tc('welcomeGoogle'),
+          )
         }
         onSuccess(data)
       })
       .catch(() => {
-        toast.error('Помилка зʼєднання після входу через Google.')
+        toast.error(tc('oauthConnectionError'))
       })
-  }, [onSuccess, options?.errorMessage, showSuccessToast])
+  }, [onSuccess, options?.errorMessage, options?.errorMessages, showSuccessToast, tc])
 }

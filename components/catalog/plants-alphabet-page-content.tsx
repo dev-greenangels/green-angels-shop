@@ -6,10 +6,21 @@ import { useLocale, useTranslations } from 'next-intl'
 
 import { CatalogActiveFilters } from '@/components/catalog/catalog-active-filters'
 import { CatalogAlphabetNav } from '@/components/catalog/catalog-alphabet-nav'
-import { CatalogFilterSheet, FilterSidebar } from '@/components/catalog/filter-sidebar'
+import {
+  CatalogFilterSheet,
+  CatalogFilterToolbarPanel,
+  CATALOG_FILTER_PANEL_ID,
+  FilterSidebar,
+} from '@/components/catalog/filter-sidebar'
 import { PaginatedCatalogGrid } from '@/components/catalog/paginated-catalog-grid'
+import {
+  StickyToolbarPanel,
+  StickyToolbarRow,
+  StickyToolbarShell,
+} from '@/components/layout/sticky-toolbar-shell'
 import { Navigation } from '@/components/navigation'
 import { ClientPublicPageBreadcrumbs } from '@/components/client-public-page-breadcrumbs'
+import { useCatalogHref } from '@/components/providers/catalog-paths-provider'
 import { useCatalogSettings } from '@/components/providers/catalog-settings-provider'
 import { emptyCatalogFilters } from '@/lib/catalog/filter-plants'
 import { hasVisibleCatalogFilters } from '@/lib/catalog/filter-visibility'
@@ -85,7 +96,7 @@ function PlantsAlphabetActiveFiltersSticky({ children }: { children: ReactNode }
   }, [])
 
   return (
-    <div ref={ref} className={cn(plantsActiveFiltersStickyOuterClassName, 'overflow-x-hidden')}>
+    <div ref={ref} className={cn(plantsActiveFiltersStickyOuterClassName, 'overflow-visible')}>
       {children}
     </div>
   )
@@ -95,6 +106,7 @@ export function PlantsAlphabetPageContent() {
   const locale = useLocale()
   const t = useTranslations('catalog')
   const tNav = useTranslations('nav')
+  const catalogHref = useCatalogHref()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -138,21 +150,23 @@ export function PlantsAlphabetPageContent() {
           <ClientPublicPageBreadcrumbs
             className="mb-4"
             items={[
-              { label: tNav('catalog'), href: '/catalog' },
+              { label: tNav('catalog'), href: catalogHref },
               { label: tNav('plantsList') },
             ]}
           />
 
           <div className="mb-8 max-w-3xl">
-            <h1 className="font-serif text-4xl font-bold text-foreground md:text-5xl">
-              {t('plantsAlphabetTitle')}
-            </h1>
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <h1 className="font-serif text-4xl font-bold text-foreground md:text-5xl">
+                {t('plantsAlphabetTitle')}
+              </h1>
+              {meta ? (
+                <p className="text-sm text-muted-foreground md:text-base">
+                  {t('plantsAlphabetCount', { count: formatNumberForLocale(meta.total, locale) })}
+                </p>
+              ) : null}
+            </div>
             <p className="mt-3 text-lg text-muted-foreground">{t('plantsAlphabetSubtitle')}</p>
-            {meta ? (
-              <p className="mt-2 text-sm text-muted-foreground">
-                {t('plantsAlphabetCount', { count: formatNumberForLocale(meta.total, locale) })}
-              </p>
-            ) : null}
           </div>
 
           <PlantsAlphabetStickyNav>
@@ -165,33 +179,47 @@ export function PlantsAlphabetPageContent() {
 
           {showFilters ? (
             <PlantsAlphabetActiveFiltersSticky>
-              <div
-                className={cn(
-                  siteStickyToolbarInnerClassName,
-                  'flex w-full min-w-0 items-center gap-2 py-0',
-                )}
+              <StickyToolbarShell
+                outerClassName="!static top-auto mx-0 mb-0 w-full max-w-none px-0"
+                innerClassName="rounded-none border-0 bg-transparent shadow-none ![backdrop-filter:none] ![-webkit-backdrop-filter:none] dark:bg-transparent"
+                glass={false}
               >
-                <div className="shrink-0 lg:hidden">
-                  <CatalogFilterSheet
+                <StickyToolbarRow className="px-3 py-1.5 sm:px-4">
+                  <div className="shrink-0 lg:hidden">
+                    <CatalogFilterSheet
+                      filters={filters}
+                      onFilterChange={setFilters}
+                      filterVisibility={filterVisibility}
+                      expandContainerByDefault
+                      collapseContainerGroupsByDefault
+                      fitContent
+                      compact
+                    />
+                  </div>
+                  <CatalogActiveFilters
+                    filters={filters}
+                    definitions={definitions}
+                    priceBounds={priceBounds}
+                    onFilterChange={setFilters}
+                    showEmptyState
+                    scrollable
+                    className="min-w-0 flex-1"
+                  />
+                </StickyToolbarRow>
+                <StickyToolbarPanel
+                  id={CATALOG_FILTER_PANEL_ID}
+                  contentClassName="max-h-[min(70vh,28rem)] px-3 sm:px-4"
+                >
+                  <CatalogFilterToolbarPanel
                     filters={filters}
                     onFilterChange={setFilters}
                     filterVisibility={filterVisibility}
                     expandContainerByDefault
                     collapseContainerGroupsByDefault
                     fitContent
-                    compact
                   />
-                </div>
-                <CatalogActiveFilters
-                  filters={filters}
-                  definitions={definitions}
-                  priceBounds={priceBounds}
-                  onFilterChange={setFilters}
-                  showEmptyState
-                  scrollable
-                  className="min-w-0 flex-1"
-                />
-              </div>
+                </StickyToolbarPanel>
+              </StickyToolbarShell>
             </PlantsAlphabetActiveFiltersSticky>
           ) : null}
 

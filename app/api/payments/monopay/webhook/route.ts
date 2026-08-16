@@ -2,8 +2,13 @@ import { NextResponse } from 'next/server'
 
 import { getBackendApiUrl } from '@/lib/api/backend-url'
 
+/**
+ * Optional legacy proxy. Prod/local Mono webhook should hit Nest directly:
+ *   {API_PUBLIC_URL}/payments/monopay/webhook
+ * This route remains only as a manual fallback / debug helper.
+ */
 export async function POST(request: Request) {
-  const rawBody = await request.text()
+  const rawBody = Buffer.from(await request.arrayBuffer())
   const xSign = request.headers.get('x-sign') ?? ''
 
   try {
@@ -17,7 +22,11 @@ export async function POST(request: Request) {
     })
 
     if (!res.ok) {
-      return new NextResponse(null, { status: res.status })
+      const text = await res.text().catch(() => '')
+      return new NextResponse(text || null, {
+        status: res.status,
+        headers: { 'Content-Type': res.headers.get('content-type') ?? 'application/json' },
+      })
     }
 
     return NextResponse.json({ ok: true })

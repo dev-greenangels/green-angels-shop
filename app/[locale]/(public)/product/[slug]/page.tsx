@@ -13,7 +13,7 @@ export default async function LegacyProductRedirect({
   const { slug } = await params
   const locale = await getLocale()
 
-  const productResult = await fetchCatalogProductBySlug(slug)
+  const productResult = await fetchCatalogProductBySlug(slug, locale)
   if (!productResult.data) {
     notFound()
   }

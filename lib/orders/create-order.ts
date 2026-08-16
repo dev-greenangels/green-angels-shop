@@ -7,7 +7,23 @@ export type CreatedOrder = {
   totalAmount: number
   currency: string
   createdAt: string
+  confirmationToken: string
   paymentPageUrl?: string
+}
+
+export type CreateOrderOptions = {
+  idempotencyKey?: string
+}
+
+export type CreateOrdersOptions = {
+  idempotencyKeys?: Array<string | undefined>
+}
+
+function newIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
 function extractErrorMessage(data: unknown, fallback: string): string {
@@ -19,10 +35,18 @@ function extractErrorMessage(data: unknown, fallback: string): string {
   return fallback
 }
 
-export async function createOrder(payload: CreateOrderPayload): Promise<CreatedOrder> {
+export async function createOrder(
+  payload: CreateOrderPayload,
+  options?: CreateOrderOptions,
+): Promise<CreatedOrder> {
+  const idempotencyKey = options?.idempotencyKey ?? newIdempotencyKey()
+
   const res = await fetch('/api/orders', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Idempotency-Key': idempotencyKey,
+    },
     credentials: 'include',
     body: JSON.stringify(payload),
   })
@@ -35,10 +59,17 @@ export async function createOrder(payload: CreateOrderPayload): Promise<CreatedO
   return data as CreatedOrder
 }
 
-export async function createOrders(payloads: CreateOrderPayload[]): Promise<CreatedOrder[]> {
+export async function createOrders(
+  payloads: CreateOrderPayload[],
+  options?: CreateOrdersOptions,
+): Promise<CreatedOrder[]> {
   const orders: CreatedOrder[] = []
-  for (const payload of payloads) {
-    orders.push(await createOrder(payload))
+  for (let index = 0; index < payloads.length; index += 1) {
+    orders.push(
+      await createOrder(payloads[index], {
+        idempotencyKey: options?.idempotencyKeys?.[index],
+      }),
+    )
   }
   return orders
 }

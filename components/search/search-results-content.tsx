@@ -61,10 +61,13 @@ export function SearchResultsContent({ query }: SearchResultsContentProps) {
           <div className={siteStickyToolbarOuterClassName}>
             <div className={cn(siteStickyToolbarInnerClassName, 'flex-col items-stretch gap-2')}>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {meta ? t('found', { count: meta.total }) : t('loadingResults')}
-                </p>
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 items-center gap-3">
+                  <CatalogViewModeToggle value={viewMode} onChange={setViewMode} />
+                  <p className="truncate text-sm text-muted-foreground">
+                    {meta ? t('found', { count: meta.total }) : t('loadingResults')}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
                   <span className="text-sm text-muted-foreground">{tc('sortBy')}</span>
                   <Select value={sortBy} onValueChange={setSortBy}>
                     <SelectTrigger className="w-48">
@@ -77,7 +80,6 @@ export function SearchResultsContent({ query }: SearchResultsContentProps) {
                       <SelectItem value="newest">{tCatalog('sort.newest')}</SelectItem>
                     </SelectContent>
                   </Select>
-                  <CatalogViewModeToggle value={viewMode} onChange={setViewMode} />
                 </div>
               </div>
 

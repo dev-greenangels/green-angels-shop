@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { ChevronLeft, ChevronRight, Edit, Filter, Loader2, Plus, Search, Trash2, X } from 'lucide-react'
 import Link from 'next/link'
@@ -49,6 +50,9 @@ import { resolveCategoryThumbUrl } from '@/lib/category-image'
 
 const PAGE_SIZE = 100
 
+type PublishedFilter = 'all' | 'true' | 'false'
+type StockFilter = 'all' | 'in_stock' | 'out_of_stock'
+
 function flattenCategories(nodes: CategoryTreeNode[]): Array<{ id: string; name: string }> {
   const result: Array<{ id: string; name: string }> = []
   for (const node of nodes) {
@@ -58,7 +62,45 @@ function flattenCategories(nodes: CategoryTreeNode[]): Array<{ id: string; name:
   return result
 }
 
-export default function ProductsPage() {
+function parsePublished(value: string | null): PublishedFilter {
+  if (value === 'true' || value === 'false') return value
+  return 'all'
+}
+
+function parseStock(value: string | null): StockFilter {
+  if (value === 'in_stock' || value === 'out_of_stock') return value
+  return 'all'
+}
+
+function buildProductsListQuery(opts: {
+  search: string
+  category: string
+  published: PublishedFilter
+  stock: StockFilter
+  page: number
+}): string {
+  const params = new URLSearchParams()
+  if (opts.search.trim()) params.set('q', opts.search.trim())
+  if (opts.category !== 'all') params.set('category', opts.category)
+  if (opts.published !== 'all') params.set('published', opts.published)
+  if (opts.stock !== 'all') params.set('stock', opts.stock)
+  if (opts.page > 1) params.set('page', String(opts.page))
+  return params.toString()
+}
+
+function ProductsPageFallback() {
+  const tc = useTranslations('common')
+  return (
+    <AdminLayout>
+      <div className="flex items-center justify-center gap-2 py-24 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin" />
+        {tc('loading')}
+      </div>
+    </AdminLayout>
+  )
+}
+
+function ProductsPageContent() {
   const tp = useTranslations('pages.products')
   const tt = useTranslations('toast')
   const th = useTranslations('hints')
@@ -66,11 +108,18 @@ export default function ProductsPage() {
   const tc = useTranslations('common')
   const tAria = useTranslations('aria')
   const tLabels = useTranslations('labels')
-  const [search, setSearch] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('all')
-  const [publishedFilter, setPublishedFilter] = useState<'all' | 'true' | 'false'>('all')
-  const [stockFilter, setStockFilter] = useState<'all' | 'in_stock' | 'out_of_stock'>('all')
-  const [page, setPage] = useState(1)
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const urlSearch = searchParams.get('q') ?? ''
+  const categoryFilter = searchParams.get('category') ?? 'all'
+  const publishedFilter = parsePublished(searchParams.get('published'))
+  const stockFilter = parseStock(searchParams.get('stock'))
+  const page = Math.max(1, Number(searchParams.get('page') || '1') || 1)
+
+  const [searchInput, setSearchInput] = useState(urlSearch)
+  const [search, setSearch] = useState(urlSearch)
   const [loading, setLoading] = useState(true)
   const [bulkLoading, setBulkLoading] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null)
@@ -82,6 +131,36 @@ export default function ProductsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [stockDialogOpen, setStockDialogOpen] = useState(false)
   const [stockValue, setStockValue] = useState('0')
+
+  const syncUrl = useCallback(
+    (next: {
+      search: string
+      category: string
+      published: PublishedFilter
+      stock: StockFilter
+      page: number
+    }) => {
+      const qs = buildProductsListQuery(next)
+      const href = qs ? `${pathname}?${qs}` : pathname
+      router.replace(href, { scroll: false })
+    },
+    [pathname, router],
+  )
+
+  const listQueryString = useMemo(
+    () =>
+      buildProductsListQuery({
+        search: searchInput,
+        category: categoryFilter,
+        published: publishedFilter,
+        stock: stockFilter,
+        page,
+      }),
+    [searchInput, categoryFilter, publishedFilter, stockFilter, page],
+  )
+
+  const listHref = listQueryString ? `${pathname}?${listQueryString}` : pathname
+  const returnToParam = encodeURIComponent(listHref)
 
   const loadProducts = useCallback(async () => {
     setLoading(true)
@@ -109,7 +188,12 @@ export default function ProductsPage() {
     } finally {
       setLoading(false)
     }
-  }, [search, categoryFilter, publishedFilter, stockFilter, page])
+  }, [search, categoryFilter, publishedFilter, stockFilter, page, tt])
+
+  useEffect(() => {
+    setSearchInput(urlSearch)
+    setSearch(urlSearch)
+  }, [urlSearch])
 
   useEffect(() => {
     void fetchCategoryTree()
@@ -119,14 +203,50 @@ export default function ProductsPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      void loadProducts()
+      const next = searchInput.trim()
+      if (next === search.trim()) return
+      setSearch(next)
+      syncUrl({
+        search: next,
+        category: categoryFilter,
+        published: publishedFilter,
+        stock: stockFilter,
+        page: 1,
+      })
     }, 300)
     return () => clearTimeout(timer)
-  }, [loadProducts])
+  }, [searchInput, search, categoryFilter, publishedFilter, stockFilter, syncUrl])
 
   useEffect(() => {
-    setPage(1)
-  }, [search, categoryFilter, publishedFilter, stockFilter])
+    void loadProducts()
+  }, [loadProducts])
+
+  const updateFilters = (patch: {
+    category?: string
+    published?: PublishedFilter
+    stock?: StockFilter
+    page?: number
+  }) => {
+    syncUrl({
+      search: searchInput,
+      category: patch.category ?? categoryFilter,
+      published: patch.published ?? publishedFilter,
+      stock: patch.stock ?? stockFilter,
+      page: patch.page ?? 1,
+    })
+  }
+
+  const resetFilters = () => {
+    setSearchInput('')
+    setSearch('')
+    syncUrl({
+      search: '',
+      category: 'all',
+      published: 'all',
+      stock: 'all',
+      page: 1,
+    })
+  }
 
   const hasActiveFilters = useMemo(
     () =>
@@ -147,13 +267,6 @@ export default function ProductsPage() {
   const allOnPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id))
   const someOnPageSelected = pageIds.some((id) => selectedIds.has(id))
   const selectedCount = selectedIds.size
-
-  const resetFilters = () => {
-    setSearch('')
-    setCategoryFilter('all')
-    setPublishedFilter('all')
-    setStockFilter('all')
-  }
 
   const toggleSelectAllOnPage = (checked: boolean) => {
     setSelectedIds((prev) => {
@@ -255,12 +368,17 @@ export default function ProductsPage() {
             <h1 className="font-serif text-3xl font-bold text-foreground">{tp('title')}</h1>
             <p className="text-muted-foreground">{tp('subtitle')}</p>
           </div>
-          <Button asChild>
-            <Link href="/backstage/add-plant">
-              <Plus className="mr-2 h-4 w-4" />
-              {tp('addProduct')}
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" asChild>
+              <Link href="/backstage/products/table">Таблиця</Link>
+            </Button>
+            <Button asChild>
+              <Link href={`/backstage/add-plant?returnTo=${returnToParam}`}>
+                <Plus className="mr-2 h-4 w-4" />
+                {tp('addProduct')}
+              </Link>
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -270,14 +388,17 @@ export default function ProductsPage() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder={th('searchProducts')}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="pl-10"
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Filter className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <Select
+                  value={categoryFilter}
+                  onValueChange={(value) => updateFilters({ category: value })}
+                >
                   <SelectTrigger className="w-full sm:w-44">
                     <SelectValue placeholder={tp('categoryFilter')} />
                   </SelectTrigger>
@@ -293,7 +414,7 @@ export default function ProductsPage() {
                 <Select
                   value={publishedFilter}
                   onValueChange={(value) =>
-                    setPublishedFilter(value as 'all' | 'true' | 'false')
+                    updateFilters({ published: value as PublishedFilter })
                   }
                 >
                   <SelectTrigger className="w-full sm:w-40">
@@ -308,7 +429,7 @@ export default function ProductsPage() {
                 <Select
                   value={stockFilter}
                   onValueChange={(value) =>
-                    setStockFilter(value as 'all' | 'in_stock' | 'out_of_stock')
+                    updateFilters({ stock: value as StockFilter })
                   }
                 >
                   <SelectTrigger className="w-full sm:w-40">
@@ -409,7 +530,7 @@ export default function ProductsPage() {
                   size="icon"
                   className="h-8 w-8"
                   disabled={page <= 1 || loading}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  onClick={() => updateFilters({ page: Math.max(1, page - 1) })}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -422,7 +543,7 @@ export default function ProductsPage() {
                   size="icon"
                   className="h-8 w-8"
                   disabled={page >= totalPages || loading}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={() => updateFilters({ page: Math.min(totalPages, page + 1) })}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -545,7 +666,9 @@ export default function ProductsPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-2">
                             <Button variant="ghost" size="icon" asChild>
-                              <Link href={`/backstage/products/${product.id}/edit`}>
+                              <Link
+                                href={`/backstage/products/${product.id}/edit?returnTo=${returnToParam}`}
+                              >
                                 <Edit className="h-4 w-4" />
                                 <span className="sr-only">{ta('edit')}</span>
                               </Link>
@@ -574,7 +697,7 @@ export default function ProductsPage() {
                     variant="outline"
                     size="sm"
                     disabled={page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    onClick={() => updateFilters({ page: Math.max(1, page - 1) })}
                   >
                     <ChevronLeft className="mr-1 h-4 w-4" />
                     {tp('prev')}
@@ -584,7 +707,7 @@ export default function ProductsPage() {
                     variant="outline"
                     size="sm"
                     disabled={page >= totalPages}
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    onClick={() => updateFilters({ page: Math.min(totalPages, page + 1) })}
                   >
                     {tp('next')}
                     <ChevronRight className="ml-1 h-4 w-4" />
@@ -651,5 +774,13 @@ export default function ProductsPage() {
         </DialogContent>
       </Dialog>
     </AdminLayout>
+  )
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<ProductsPageFallback />}>
+      <ProductsPageContent />
+    </Suspense>
   )
 }

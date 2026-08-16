@@ -14,13 +14,14 @@ import { FreshPlantPhotosSection } from '@/components/home/fresh-plant-photos-se
 import { ReviewsSection } from '@/components/home/reviews-section'
 import { RecentlyViewedSection } from '@/components/product/recently-viewed-section'
 import { fetchCatalogCategories } from '@/lib/catalog/categories'
-import { fetchHomeFreshPhotos } from '@/lib/catalog/home-content'
+import { fetchHomeFreshPhotos, fetchHomeReviews } from '@/lib/catalog/home-content'
 import {
   fetchBestsellerProducts,
   fetchLowStockProducts,
   fetchNewArrivalProducts,
 } from '@/lib/catalog/home-products'
 import { buildHomeMetadata } from '@/lib/home/metadata'
+import { EMPTY_REVIEWS_PAGE } from '@/lib/reviews/types'
 import { normalizeHomeSectionOrder, type HomeSectionKey } from '@/lib/settings/home-sections'
 import {
   fetchPublicSiteSettings,
@@ -28,8 +29,13 @@ import {
   getRecentlyViewedSettings,
 } from '@/lib/settings/fetch'
 
-export async function generateMetadata(): Promise<Metadata> {
-  return buildHomeMetadata()
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+  const { locale } = await params
+  return buildHomeMetadata(locale)
 }
 
 export default async function HomePage() {
@@ -40,7 +46,7 @@ export default async function HomePage() {
   const home = getHomeSettings(siteSettingsResult)
   const recentlyViewedSettings = getRecentlyViewedSettings(siteSettingsResult)
 
-  const [categoriesResult, newArrivalsResult, bestsellersResult, lowStockResult, freshPhotosResult] =
+  const [categoriesResult, newArrivalsResult, bestsellersResult, lowStockResult, freshPhotosResult, reviewsResult] =
     await Promise.all([
       fetchCatalogCategories(locale),
       fetchNewArrivalProducts(home.newArrivals, locale),
@@ -49,6 +55,13 @@ export default async function HomePage() {
       home.freshPlantPhotos.enabled
         ? fetchHomeFreshPhotos(home.freshPlantPhotos.limit)
         : Promise.resolve({ items: [], total: 0, page: 1, pageSize: 0, totalPages: 1 }),
+      home.reviews.enabled
+        ? fetchHomeReviews({
+            page: 1,
+            pageSize: home.reviews.limit,
+            sort: home.reviews.sort,
+          })
+        : Promise.resolve(EMPTY_REVIEWS_PAGE),
     ])
 
   const sectionRenderers: Record<HomeSectionKey, ReactNode> = {
@@ -70,7 +83,7 @@ export default async function HomePage() {
     freshPlantPhotos: (
       <FreshPlantPhotosSection settings={home.freshPlantPhotos} photos={freshPhotosResult.items} />
     ),
-    reviews: <ReviewsSection settings={home.reviews} />,
+    reviews: <ReviewsSection settings={home.reviews} reviews={reviewsResult} />,
     recentlyViewed: (
       <RecentlyViewedSection page="home" initialSettings={recentlyViewedSettings} />
     ),
@@ -81,7 +94,7 @@ export default async function HomePage() {
   return (
     <>
       <Navigation />
-      <main className="flex-1">
+      <main className="home-page flex-1">
         <HeroSection settings={home.hero} />
         {orderedSectionKeys.map((key) => (
           <Fragment key={key}>{sectionRenderers[key]}</Fragment>

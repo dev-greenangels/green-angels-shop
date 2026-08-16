@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import type { VariantPhoto } from '@/lib/variant-photos/types'
+import { toPublicMediaUrl } from '@/lib/media/public-url'
 import { cn } from '@/lib/utils'
 
 const galleryNavButtonClassName = cn(
@@ -252,7 +253,7 @@ export function VariantPhotoGalleryDialog({
                         )}
                       >
                         <Image
-                          src={photo.url}
+                          src={photo.thumbUrl}
                           alt=""
                           fill
                           unoptimized

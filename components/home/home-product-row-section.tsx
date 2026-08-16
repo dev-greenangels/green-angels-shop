@@ -38,7 +38,7 @@ export async function HomeProductRowSection({
   const te = await getTranslations('errors')
 
   return (
-    <section id={id} className={cn('bg-background py-10 md:py-14', className)}>
+    <section id={id} className={cn('bg-transparent py-9 md:py-12', className)}>
       <div className={siteContentShellClassName}>
         <HomeSectionHeader
           title={title}
@@ -49,9 +49,9 @@ export async function HomeProductRowSection({
           {headerAction ??
             (viewAllHref && viewAllLabel ? (
               <Button
-                variant="outline"
+                variant="secondary"
                 asChild
-                className="self-start rounded-full border-primary/20 shadow-sm hover:border-primary/40 hover:bg-primary/5 md:self-auto"
+                className="self-start rounded-full md:self-auto"
               >
                 <Link href={viewAllHref}>
                   {viewAllLabel}

@@ -2,17 +2,27 @@ import { NextResponse } from 'next/server'
 
 import { fetchBackend, readBackendJson } from '@/lib/api/backend-fetch'
 import { requireBackstageSession } from '@/lib/backstage-auth/require-session'
-import { finalizeProductImages, type ProductImageInput } from '@/lib/media/finalize'
+import {
+  finalizeProductImagesOnBackend,
+  type ProductImageInput,
+} from '@/lib/media/backend-proxy'
 
 type ProductBody = {
   images?: ProductImageInput[]
   [key: string]: unknown
 }
 
-async function withFinalizedImages(body: ProductBody, productId: string): Promise<ProductBody> {
-  if (!body.images?.length) return body
-  const images = await finalizeProductImages(body.images, productId)
-  return { ...body, images }
+async function withFinalizedImages(
+  request: Request,
+  body: ProductBody,
+  productId: string,
+): Promise<{ ok: true; body: ProductBody } | { ok: false; status: number; data: unknown }> {
+  if (!body.images?.length) return { ok: true, body }
+  const finalized = await finalizeProductImagesOnBackend(request, productId, body.images)
+  if (!finalized.ok) {
+    return { ok: false, status: finalized.status, data: finalized.error }
+  }
+  return { ok: true, body: { ...body, images: finalized.images } }
 }
 
 export async function GET(request: Request) {
@@ -75,12 +85,15 @@ export async function POST(request: Request) {
     if (!res.ok || !data.id) return NextResponse.json(data, { status: res.status })
 
     if (hasPendingImages && body.images?.length) {
-      const patchBody = await withFinalizedImages(body, data.id)
+      const patchPrepared = await withFinalizedImages(request, body, data.id)
+      if (!patchPrepared.ok) {
+        return NextResponse.json(patchPrepared.data, { status: patchPrepared.status })
+      }
       const patchRes = await fetchBackend(`/products/${data.id}`, {
         request,
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patchBody),
+        body: JSON.stringify(patchPrepared.body),
       })
       const patched = await readBackendJson(patchRes)
       if (!patchRes.ok) return NextResponse.json(patched, { status: patchRes.status })

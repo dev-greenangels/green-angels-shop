@@ -33,7 +33,12 @@ export async function GET(request: Request) {
   }
 
   const sort = url.searchParams.get('sort')?.trim()
-  if (sort === 'newest' || sort === 'oldest' || sort === 'rating_desc') {
+  if (
+    sort === 'newest' ||
+    sort === 'oldest' ||
+    sort === 'rating_desc' ||
+    sort === 'rating_asc'
+  ) {
     params.set('sort', sort as ReviewSortOrder)
   }
 

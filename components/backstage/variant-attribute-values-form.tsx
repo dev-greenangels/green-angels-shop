@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Plus, Search, Trash2 } from 'lucide-react'
 
@@ -23,6 +23,10 @@ import {
   type ValueDraft,
   type VariantAttributeType,
 } from '@/lib/backstage/variant-attributes'
+import {
+  fillEmptyNumbersFromLabel,
+  syncNumbersFromLabel,
+} from '@/lib/backstage/parse-label-numbers'
 import { PACKAGING_KIND_ORDER } from '@/lib/catalog/packaging-kind'
 import { cn } from '@/lib/utils'
 
@@ -46,6 +50,8 @@ function ValueRowFields({
   onRemove,
   deleteAriaLabel,
   labels,
+  numberLocks,
+  onNumberLock,
 }: {
   valueType: VariantAttributeType
   row: ValueDraft
@@ -53,6 +59,8 @@ function ValueRowFields({
   onPatch: (patch: Partial<ValueDraft>) => void
   onRemove: () => void
   deleteAriaLabel: string
+  numberLocks: { min?: boolean; max?: boolean }
+  onNumberLock: (field: 'min' | 'max') => void
   labels: {
     name: string
     externalId: string
@@ -203,20 +211,36 @@ function ValueRowFields({
       <div className="grid grid-cols-[1fr_72px_72px_80px_40px] items-center gap-2 px-3 py-2">
         <Input
           value={row.label}
-          onChange={(e) => onPatch({ label: e.target.value })}
+          onChange={(e) => {
+            const label = e.target.value
+            onPatch({
+              label,
+              ...syncNumbersFromLabel(
+                { label, numericMin: row.numericMin, numericMax: row.numericMax },
+                'RANGE',
+                numberLocks,
+              ),
+            })
+          }}
           placeholder="H80-100, H80+…"
           className="h-9"
         />
         <Input
           value={row.numericMin}
-          onChange={(e) => onPatch({ numericMin: e.target.value })}
+          onChange={(e) => {
+            onNumberLock('min')
+            onPatch({ numericMin: e.target.value })
+          }}
           placeholder="—"
           className="h-9 text-xs"
           title={labels.min}
         />
         <Input
           value={row.numericMax}
-          onChange={(e) => onPatch({ numericMax: e.target.value })}
+          onChange={(e) => {
+            onNumberLock('max')
+            onPatch({ numericMax: e.target.value })
+          }}
           placeholder="—"
           className="h-9 text-xs"
           title={labels.max}
@@ -265,13 +289,26 @@ function ValueRowFields({
     <div className="grid grid-cols-[1fr_88px_80px_40px] items-center gap-2 px-3 py-2">
       <Input
         value={row.label}
-        onChange={(e) => onPatch({ label: e.target.value })}
+        onChange={(e) => {
+          const label = e.target.value
+          onPatch({
+            label,
+            ...syncNumbersFromLabel(
+              { label, numericMin: row.numericMin, numericMax: row.numericMax },
+              'NUMBER',
+              numberLocks,
+            ),
+          })
+        }}
         placeholder={unit ? `500 ${unit}` : '500 грн'}
         className="h-9"
       />
       <Input
         value={row.numericMin}
-        onChange={(e) => onPatch({ numericMin: e.target.value })}
+        onChange={(e) => {
+          onNumberLock('min')
+          onPatch({ numericMin: e.target.value })
+        }}
         placeholder="—"
         className="h-9 text-xs"
         title={labels.numericValue}
@@ -384,6 +421,28 @@ export function VariantAttributeValuesForm({
   const [valueSearch, setValueSearch] = useState('')
   const [bulkText, setBulkText] = useState('')
   const [showBulkPanel, setShowBulkPanel] = useState(false)
+  const numberLocksRef = useRef<Map<string, { min?: boolean; max?: boolean }>>(new Map())
+
+  useEffect(() => {
+    if (valueType !== 'RANGE' && valueType !== 'NUMBER') return
+    let changed = false
+    const next = values.map((row) => {
+      const patch = fillEmptyNumbersFromLabel(row, valueType)
+      if (!patch.numericMin && !patch.numericMax) return row
+      changed = true
+      return { ...row, ...patch }
+    })
+    if (changed) onValuesChange(next)
+    // Only re-fill when attribute type switches to RANGE/NUMBER.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: type-change autofill
+  }, [valueType])
+
+  const lockNumberField = (key: string, field: 'min' | 'max') => {
+    const prev = numberLocksRef.current.get(key) ?? {}
+    numberLocksRef.current.set(key, { ...prev, [field]: true })
+  }
+
+  const getNumberLocks = (key: string) => numberLocksRef.current.get(key) ?? {}
 
   const fieldLabels = useMemo(
     () => ({
@@ -421,6 +480,7 @@ export function VariantAttributeValuesForm({
   }
 
   const removeValue = (key: string) => {
+    numberLocksRef.current.delete(key)
     onValuesChange(values.filter((v) => v.key !== key))
   }
 
@@ -537,6 +597,8 @@ export function VariantAttributeValuesForm({
               onRemove={() => removeValue(row.key)}
               deleteAriaLabel={tAria('deleteValue')}
               labels={fieldLabels}
+              numberLocks={getNumberLocks(row.key)}
+              onNumberLock={(field) => lockNumberField(row.key, field)}
             />
           ))}
         </div>
@@ -553,6 +615,8 @@ export function VariantAttributeValuesForm({
                 onRemove={() => removeValue(row.key)}
                 deleteAriaLabel={tAria('deleteValue')}
                 labels={fieldLabels}
+                numberLocks={getNumberLocks(row.key)}
+                onNumberLock={(field) => lockNumberField(row.key, field)}
               />
             ))}
           </div>

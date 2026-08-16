@@ -8,6 +8,7 @@ export {
 export { getImageExtension as getCategoryImageExtension, validateImageFile as validateCategoryImageFile } from '@/lib/media/validate'
 
 import { resolveThumbUrl } from '@/lib/media/paths'
+import { toPublicMediaUrl } from '@/lib/media/public-url'
 
 export function isCategoryPlaceholderImage(url: string | null | undefined): boolean {
   if (!url?.trim()) return true
@@ -17,11 +18,11 @@ export function isCategoryPlaceholderImage(url: string | null | undefined): bool
 
 export function resolveCategoryImageUrl(image: string | null | undefined): string {
   const trimmed = image?.trim()
-  return trimmed || CATEGORY_DEFAULT_IMAGE
+  return toPublicMediaUrl(trimmed || CATEGORY_DEFAULT_IMAGE)
 }
 
 export function resolveCategoryThumbUrl(image: string | null | undefined): string {
   const trimmed = image?.trim()
   if (!trimmed) return CATEGORY_DEFAULT_IMAGE
-  return resolveThumbUrl(trimmed)
+  return toPublicMediaUrl(resolveThumbUrl(trimmed))
 }

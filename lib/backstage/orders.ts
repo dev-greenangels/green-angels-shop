@@ -15,6 +15,7 @@ export type BackstageOrderListItem = {
   id: string
   orderNumber: string
   status: OrderStatus
+  statusLabel?: string
   totalAmount: number
   currency: string
   customerFirstName: string
@@ -23,6 +24,7 @@ export type BackstageOrderListItem = {
   customerPhone: string
   customerEmail: string | null
   itemCount: number
+  trackingNumber?: string | null
   createdAt: string
 }
 
@@ -49,26 +51,92 @@ export type BackstageOrderDetail = BackstageOrderListItem & {
   deliveryStreet: string | null
   deliveryHouseNumber: string | null
   paymentMethod: string
+  paymentStatus?: string | null
   comment: string | null
+  trackingCarrier?: string | null
+  npDocumentRef?: string | null
+  trackingSyncedAt?: string | null
+  shippedAt?: string | null
+  cancellationReasonId?: string | null
+  cancellationReasonName?: string | null
+  cancellationSource?: string | null
+  cancellationNote?: string | null
+  cancelledAt?: string | null
+  /** Correlation only: ext:GA:{uuid}. Not native ERP number. */
+  externalErpId?: string | null
+  erpSyncStatus?: string | null
+  erpNativeId?: string | null
+  erpNativeKod?: string | null
+  erpSyncAttempts?: number
+  erpLastErrorCode?: string | null
+  erpLastErrorMessage?: string | null
+  erpLastSyncAt?: string | null
+  erpSyncedAt?: string | null
   items: BackstageOrderItem[]
 }
 
 export type BackstageOrdersFilters = {
   search?: string
   status?: string
+  page?: number
+  pageSize?: number
+}
+
+export type PaginatedBackstageOrders = {
+  items: BackstageOrderListItem[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+export type PatchOrderPayload = {
+  status?: OrderStatus
+  cancellationReasonId?: string
+  cancellationNote?: string | null
+  trackingNumber?: string | null
+  trackingCarrier?: string | null
+  npDocumentRef?: string | null
 }
 
 export async function fetchBackstageOrders(
   params?: BackstageOrdersFilters,
-): Promise<BackstageOrderListItem[]> {
+): Promise<PaginatedBackstageOrders> {
   const query = new URLSearchParams()
   if (params?.search) query.set('search', params.search)
   if (params?.status && params.status !== 'all') {
     query.set('status', params.status.toUpperCase())
   }
+  if (params?.page != null) query.set('page', String(params.page))
+  if (params?.pageSize != null) query.set('pageSize', String(params.pageSize))
 
   const suffix = query.toString() ? `?${query}` : ''
   const res = await fetch(`/api/backstage/orders${suffix}`, {
+    credentials: 'include',
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  const data = await res.json()
+  if (Array.isArray(data)) {
+    return {
+      items: data as BackstageOrderListItem[],
+      total: data.length,
+      page: 1,
+      pageSize: data.length,
+      totalPages: 1,
+    }
+  }
+  return data as PaginatedBackstageOrders
+}
+
+export type BackstageOrdersSummary = {
+  totalOrders: number
+  totalRevenue: number
+  currency: string
+}
+
+export async function fetchBackstageOrdersSummary(): Promise<BackstageOrdersSummary> {
+  const res = await fetch('/api/backstage/orders/summary', {
     credentials: 'include',
     cache: 'no-store',
   })
@@ -85,15 +153,36 @@ export async function fetchBackstageOrder(id: string): Promise<BackstageOrderDet
   return res.json()
 }
 
-export async function patchBackstageOrderStatus(
+export async function patchBackstageOrder(
   id: string,
-  status: OrderStatus,
-): Promise<BackstageOrderListItem> {
+  payload: PatchOrderPayload,
+): Promise<BackstageOrderDetail | BackstageOrderListItem> {
   const res = await fetch(`/api/backstage/orders/${id}`, {
     method: 'PATCH',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function patchBackstageOrderStatus(
+  id: string,
+  status: OrderStatus,
+  options?: { cancellationReasonId?: string; cancellationNote?: string | null },
+): Promise<BackstageOrderListItem> {
+  return patchBackstageOrder(id, {
+    status,
+    cancellationReasonId: options?.cancellationReasonId,
+    cancellationNote: options?.cancellationNote,
+  }) as Promise<BackstageOrderListItem>
+}
+
+export async function syncBackstageOrderTracking(id: string): Promise<BackstageOrderDetail> {
+  const res = await fetch(`/api/backstage/orders/${id}/sync-tracking`, {
+    method: 'POST',
+    credentials: 'include',
   })
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()

@@ -220,18 +220,16 @@ export default function ReferenceDataPage() {
             <Card>
               <CardHeader>
                 <CardTitle>За замовчуванням</CardTitle>
-                <CardDescription>Валюта та одиниця продажу для нових варіантів товарів.</CardDescription>
+                <CardDescription>
+                  Одиниця продажу для нових варіантів. Валюта інстансу задається в Налаштуваннях →
+                  Ринок.
+                </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Валюта</Label>
-                  <Select
-                    value={defaults?.defaultCurrencyCode ?? 'UAH'}
-                    onValueChange={(value) =>
-                      setDefaults((prev) => (prev ? { ...prev, defaultCurrencyCode: value } : prev))
-                    }
-                  >
-                    <SelectTrigger>
+                  <Select value={defaults?.defaultCurrencyCode ?? 'UAH'} disabled>
+                    <SelectTrigger className="bg-muted/40">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -242,6 +240,13 @@ export default function ReferenceDataPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Лише перегляд. Змінити:{' '}
+                    <a href="/backstage/settings" className="text-primary underline">
+                      Налаштування → Ринок
+                    </a>
+                    .
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label>Одиниця виміру</Label>
@@ -266,7 +271,7 @@ export default function ReferenceDataPage() {
                 <div className="sm:col-span-2">
                   <Button type="button" onClick={() => void saveDefaults()} disabled={saving}>
                     {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Зберегти налаштування
+                    Зберегти одиницю виміру
                   </Button>
                 </div>
               </CardContent>

@@ -1,35 +1,29 @@
 import Image from 'next/image'
-import { ArrowLeft, CalendarDays } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+import { notFound } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
+import { BlogPostMeta } from '@/components/blog/blog-post-meta'
 import { Navigation } from '@/components/navigation'
 import { PublicPageBreadcrumbs } from '@/components/public-page-breadcrumbs'
-import { Button } from '@/components/ui/button'
 import { ServiceUnavailableShell } from '@/components/service-unavailable-shell'
-import { ProductNotFoundError } from '@/lib/api/fetch-result'
-import { fetchBlogPostBySlug } from '@/lib/blog/posts'
-import { formatBlogDate } from '@/lib/blog/posts'
+import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
+import { ProductNotFoundError } from '@/lib/api/fetch-result'
+import { buildBlogPostMetadata } from '@/lib/blog/metadata'
+import { fetchBlogPostBySlug } from '@/lib/blog/posts'
 import { siteContentShellNarrowClassName } from '@/lib/layout/site-shell'
-import { getTranslations } from 'next-intl/server'
+import { toPublicMediaUrl } from '@/lib/media/public-url'
 import { cn } from '@/lib/utils'
-import { notFound } from 'next/navigation'
-
+import type { Metadata } from 'next'
 
 type PageProps = {
-  params: Promise<{ slug: string }>
+  params: Promise<{ slug: string; locale: string }>
 }
 
-export async function generateMetadata({ params }: PageProps) {
-  const { slug } = await params
-  try {
-    const post = await fetchBlogPostBySlug(slug)
-    return {
-      title: `${post.title} · Блог · Зелені Янголи`,
-      description: post.excerpt,
-    }
-  } catch {
-    return { title: 'Стаття · Зелені Янголи' }
-  }
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug, locale } = await params
+  return buildBlogPostMetadata(locale, slug)
 }
 
 export default async function BlogPostPage({ params }: PageProps) {
@@ -60,13 +54,12 @@ export default async function BlogPostPage({ params }: PageProps) {
   }
 
   const tNav = await getTranslations('nav')
-
-  const paragraphs = post.content.split(/\n{2,}/).filter(Boolean)
+  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(post.content)
 
   return (
     <>
       <Navigation />
-      <main className="flex-1 bg-gradient-to-br from-secondary via-background to-accent">
+      <main className="flex-1 bg-transparent">
         <article className={cn(siteContentShellNarrowClassName, 'py-10 md:py-14')}>
           <PublicPageBreadcrumbs
             className="mb-6"
@@ -82,10 +75,7 @@ export default async function BlogPostPage({ params }: PageProps) {
             </Link>
           </Button>
 
-          <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <CalendarDays className="h-4 w-4" />
-            {formatBlogDate(post.createdAt)}
-          </div>
+          <BlogPostMeta author={post.author} createdAt={post.createdAt} className="mb-4" />
 
           <h1 className="font-serif text-4xl font-bold leading-tight text-foreground md:text-5xl">
             {post.title}
@@ -94,7 +84,7 @@ export default async function BlogPostPage({ params }: PageProps) {
           {post.image ? (
             <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-2xl border border-border/60 bg-muted shadow-sm">
               <Image
-                src={post.image}
+                src={toPublicMediaUrl(post.image)}
                 alt={post.title}
                 fill
                 className="object-cover"
@@ -104,13 +94,33 @@ export default async function BlogPostPage({ params }: PageProps) {
             </div>
           ) : null}
 
-          <div className="prose prose-neutral mt-8 max-w-none dark:prose-invert">
-            {paragraphs.map((paragraph) => (
-              <p key={paragraph.slice(0, 40)} className="mb-4 text-base leading-7 text-foreground/90">
-                {paragraph}
-              </p>
-            ))}
-          </div>
+          {looksLikeHtml ? (
+            <div
+              className="prose prose-neutral mt-8 max-w-none dark:prose-invert"
+              dangerouslySetInnerHTML={{ __html: post.content }}
+            />
+          ) : (
+            <div className="prose prose-neutral mt-8 max-w-none dark:prose-invert">
+              {post.content
+                .split(/\n{2,}/)
+                .filter(Boolean)
+                .map((paragraph, index) => (
+                  <p
+                    key={`${index}-${paragraph.slice(0, 24)}`}
+                    className="mb-4 text-base leading-7 text-foreground/90"
+                  >
+                    {paragraph}
+                  </p>
+                ))}
+            </div>
+          )}
+
+          <footer className="mt-10 rounded-2xl border border-border/60 bg-background/70 px-4 py-4 shadow-sm backdrop-blur-sm sm:px-5">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Автор матеріалу
+            </p>
+            <BlogPostMeta author={post.author} createdAt={post.createdAt} className="mt-2" />
+          </footer>
         </article>
       </main>
     </>

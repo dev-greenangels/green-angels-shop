@@ -5,6 +5,7 @@ import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
+import { DiscountRuleDialog } from '@/components/backstage/discount-rule-dialog'
 import { PromoCodeDialog } from '@/components/backstage/promo-code-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,13 +20,6 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
@@ -37,7 +31,6 @@ import {
   fetchDiscountRules,
   fetchPromoCodes,
   saveCustomerGroup,
-  saveDiscountRule,
   type CustomerGroupItem,
   type DiscountRuleItem,
   type PromoCodeItem,
@@ -52,6 +45,18 @@ const TARGET_OPTIONS = [
 
 function targetLabel(value: string) {
   return TARGET_OPTIONS.find((item) => item.value === value)?.label ?? value
+}
+
+const COMBINATION_LABELS: Record<string, string> = {
+  BEST_PRICE: 'Краща ціна',
+  STACK: 'Сумується',
+  MAX_OF: 'Максимум серед подібних',
+}
+
+function ruleExclusionsCount(rule: DiscountRuleItem) {
+  return (
+    rule.excludeProductIds.length + rule.excludeVariantIds.length + rule.excludeCategoryIds.length
+  )
 }
 
 function promoBenefitLabel(promo: PromoCodeItem) {
@@ -195,14 +200,15 @@ export function PromotionsManager() {
                         </div>
                         <p className="text-sm text-muted-foreground">
                           {rule.type === 'PERCENT' ? `${rule.value}%` : `${rule.value} ₴`} ·{' '}
-                          {targetLabel(rule.target)}
+                          {targetLabel(rule.target)} ·{' '}
+                          {COMBINATION_LABELS[rule.combinesWithOtherDiscounts] ?? rule.combinesWithOtherDiscounts}
                           {rule.minCartSubtotal ? ` · від ${rule.minCartSubtotal} ₴ у кошику` : ''}
+                          {ruleExclusionsCount(rule) ? ` · виключень: ${ruleExclusionsCount(rule)}` : ''}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Групи:{' '}
-                          {rule.groups.length
-                            ? rule.groups.map((group) => group.name).join(', ')
-                            : 'усі клієнти'}
+                          {rule.userIds.length
+                            ? `Користувачів: ${rule.userIds.length}`
+                            : `Групи: ${rule.groups.length ? rule.groups.map((group) => group.name).join(', ') : 'усі клієнти'}`}
                         </p>
                       </div>
                       <div className="flex gap-1">
@@ -292,7 +298,7 @@ export function PromotionsManager() {
         onClose={() => setGroupDialog(null)}
         onSaved={() => void loadAll()}
       />
-      <RuleDialog
+      <DiscountRuleDialog
         open={ruleDialog !== null}
         item={ruleDialog === 'new' ? null : ruleDialog}
         groups={groupOptions}
@@ -390,163 +396,3 @@ function GroupDialog({
   )
 }
 
-function RuleDialog({
-  open,
-  item,
-  groups,
-  onClose,
-  onSaved,
-}: {
-  open: boolean
-  item: DiscountRuleItem | null
-  groups: Array<{ id: string; name: string }>
-  onClose: () => void
-  onSaved: () => void
-}) {
-  const [name, setName] = useState('')
-  const [type, setType] = useState<'PERCENT' | 'FIXED'>('PERCENT')
-  const [value, setValue] = useState('5')
-  const [target, setTarget] = useState<DiscountRuleItem['target']>('ALL_PRODUCTS')
-  const [targetId, setTargetId] = useState('')
-  const [minCartSubtotal, setMinCartSubtotal] = useState('')
-  const [groupIds, setGroupIds] = useState<string[]>([])
-  const [isActive, setIsActive] = useState(true)
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    if (!open) return
-    setName(item?.name ?? '')
-    setType(item?.type ?? 'PERCENT')
-    setValue(String(item?.value ?? 5))
-    setTarget(item?.target ?? 'ALL_PRODUCTS')
-    setTargetId(item?.targetId ?? '')
-    setMinCartSubtotal(item?.minCartSubtotal ? String(item.minCartSubtotal) : '')
-    setGroupIds(item?.groupIds ?? [])
-    setIsActive(item?.isActive ?? true)
-  }, [open, item])
-
-  const toggleGroup = (id: string) => {
-    setGroupIds((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]))
-  }
-
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      await saveDiscountRule(
-        {
-          name,
-          type,
-          value: Number(value),
-          target,
-          targetId: target === 'ALL_PRODUCTS' ? undefined : targetId || undefined,
-          minCartSubtotal: minCartSubtotal ? Number(minCartSubtotal) : undefined,
-          groupIds,
-          isActive,
-        },
-        item?.id,
-      )
-      toast.success(item ? 'Правило оновлено.' : 'Правило створено.')
-      onSaved()
-      onClose()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Помилка збереження.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{item ? 'Редагувати правило' : 'Нове правило знижки'}</DialogTitle>
-          <DialogDescription className="sr-only">
-            {item ? 'Редагування автоматичного правила знижки.' : 'Створення автоматичного правила знижки.'}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Назва</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Тип</Label>
-              <Select value={type} onValueChange={(v) => setType(v as 'PERCENT' | 'FIXED')}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PERCENT">Відсоток %</SelectItem>
-                  <SelectItem value="FIXED">Сума (₴/од.)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Значення</Label>
-              <Input type="number" value={value} onChange={(e) => setValue(e.target.value)} />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Область застосування</Label>
-            <Select value={target} onValueChange={(v) => setTarget(v as DiscountRuleItem['target'])}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TARGET_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {target !== 'ALL_PRODUCTS' ? (
-            <div className="space-y-2">
-              <Label>ID цілі (UUID категорії, товару або варіанту)</Label>
-              <Input value={targetId} onChange={(e) => setTargetId(e.target.value)} />
-            </div>
-          ) : null}
-          <div className="space-y-2">
-            <Label>Мін. сума кошика (₴, необовʼязково)</Label>
-            <Input
-              type="number"
-              value={minCartSubtotal}
-              onChange={(e) => setMinCartSubtotal(e.target.value)}
-              placeholder="Без умови"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Групи клієнтів (порожньо = для всіх)</Label>
-            <div className="flex flex-wrap gap-2">
-              {groups.map((group) => (
-                <Button
-                  key={group.id}
-                  type="button"
-                  size="sm"
-                  variant={groupIds.includes(group.id) ? 'default' : 'outline'}
-                  onClick={() => toggleGroup(group.id)}
-                >
-                  {group.name}
-                </Button>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch checked={isActive} onCheckedChange={setIsActive} />
-            <Label>Активне</Label>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Скасувати
-          </Button>
-          <Button type="button" disabled={saving} onClick={() => void handleSave()}>
-            Зберегти
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}

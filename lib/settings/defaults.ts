@@ -23,8 +23,9 @@ import {
 import { DEFAULT_LOCALIZATION_SETTINGS } from '@/lib/i18n/locales'
 import { DEFAULT_NAVIGATION_SETTINGS } from '@/lib/settings/navigation'
 import { HOME_SECTION_KEYS } from '@/lib/settings/home-sections'
+import { DEFAULT_MARKET_SETTINGS } from '@/lib/settings/market'
 
-export { DEFAULT_LOCALIZATION_SETTINGS, DEFAULT_NAVIGATION_SETTINGS }
+export { DEFAULT_LOCALIZATION_SETTINGS, DEFAULT_NAVIGATION_SETTINGS, DEFAULT_MARKET_SETTINGS }
 
 export const DEFAULT_FOOTER_VISIBILITY: StoreFooterVisibility = {
   showAddress: true,
@@ -35,6 +36,7 @@ export const DEFAULT_FOOTER_VISIBILITY: StoreFooterVisibility = {
   showWhatsApp: true,
   showLink: true,
   showSchedules: false,
+  showCompanyDetails: false,
 }
 
 export const DEFAULT_SOCIAL_LINKS = {
@@ -92,8 +94,22 @@ export const UNAVAILABLE_STORE_SETTINGS: StoreContactSettings = {
     showWhatsApp: false,
     showLink: false,
     showSchedules: false,
+    showCompanyDetails: false,
   },
   social: { ...DEFAULT_SOCIAL_LINKS },
+  companyDetails: {
+    organizationName: '',
+    edrpou: '',
+    iban: '',
+    bankName: '',
+    mfo: '',
+    legalAddress: '',
+    taxStatus: '',
+    bic: '',
+    dic: '',
+    icDph: '',
+  },
+  showCompanyOnContacts: false,
 }
 
 export const DEFAULT_STORE_SETTINGS: StoreContactSettings = {
@@ -124,6 +140,19 @@ export const DEFAULT_STORE_SETTINGS: StoreContactSettings = {
   ],
   footer: { ...DEFAULT_FOOTER_VISIBILITY },
   social: { ...DEFAULT_SOCIAL_LINKS },
+  companyDetails: {
+    organizationName: '',
+    edrpou: '',
+    iban: '',
+    bankName: '',
+    mfo: '',
+    legalAddress: '',
+    taxStatus: '',
+    bic: '',
+    dic: '',
+    icDph: '',
+  },
+  showCompanyOnContacts: false,
 }
 
 export const DEFAULT_HOME_SETTINGS: HomePageSettings = {
@@ -220,6 +249,7 @@ export const DEFAULT_CATALOG_SETTINGS: CatalogPageSettings = {
   categoryGridColumns: { ...DEFAULT_CATEGORY_GRID_COLUMNS },
   catalogFilters: { ...DEFAULT_CATALOG_FILTERS_VISIBILITY },
   plantsAlphabetFilters: { ...DEFAULT_PLANTS_ALPHABET_FILTERS_VISIBILITY },
+  freshPhotosLimit: 4,
 }
 
 export { DEFAULT_RECENTLY_VIEWED_SETTINGS } from '@/lib/settings/recently-viewed'
@@ -232,6 +262,9 @@ export const DEFAULT_CHECKOUT_BANK_DETAILS: CartCheckoutSettings['bankDetails'] 
   mfo: '',
   legalAddress: '',
   taxStatus: '',
+  bic: '',
+  dic: '',
+  icDph: '',
 }
 
 export const DEFAULT_CHECKOUT_NEXT_STEPS: CartCheckoutSettings['nextSteps'] = [
@@ -255,20 +288,45 @@ export const DEFAULT_CART_CHECKOUT_SETTINGS: CartCheckoutSettings = {
   showDelivery: true,
   showPackaging: true,
   showTax: true,
+  showPromoCode: true,
   deliveryMode: 'carrier_rates',
   deliveryAmount: 0,
   packagingAmount: 0,
+  packagingMode: 'flat',
+  boxMaxWeightKg: 0,
+  boxMaxVolumeL: 0,
+  boxUnitPrice: 0,
+  boxesPerPallet: 0,
+  palletSurcharge: 0,
   taxRatePercent: 20,
   taxIncluded: true,
+  taxAppliesToFees: false,
   deliveryFreeForPickup: true,
   minOrderAmount: null,
   belowMinOrderBehavior: 'reject',
   belowMinPackagingFee: 0,
   enabledDeliveryMethods: [...DEFAULT_ENABLED_DELIVERY_METHODS],
   enabledPaymentMethods: [...DEFAULT_ENABLED_PAYMENT_METHODS],
+  deliveryWeightRules: [],
+  carrierRateTables: {},
+  cartWeight: {
+    enabled: false,
+    useFactKg: true,
+    useVolumetricKg: false,
+    volumetricDivisor: 5000,
+  },
+  codFeeAmount: 0,
+  codFeeMode: 'fixed',
+  onlineCardProvider: 'monopay',
+  onlineCardErpExportMode: 'on_paid',
+  bankDetailsSource: 'cart',
   bankDetails: { ...DEFAULT_CHECKOUT_BANK_DETAILS },
   paymentPurposeTemplate: 'Оплата за замовлення {orderNumber}',
   nextSteps: DEFAULT_CHECKOUT_NEXT_STEPS.map((step) => ({ ...step })),
   gdprConsentText:
     'Я погоджуюся з обробкою персональних даних та умовами використання.',
+  allowShipmentSplit: true,
+  orderPdfDownloadEnabled: true,
+  orderPdfEmailEnabled: true,
+  orderPdfTitle: '',
 }

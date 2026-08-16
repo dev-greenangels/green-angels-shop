@@ -17,7 +17,7 @@ export function StoreContactCta({ store, className }: StoreContactCtaProps) {
           <a
             key={`${item.label}-${item.phone}`}
             href={phoneHref(item.phone)}
-            className="inline-flex flex-col items-center justify-center rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex flex-col items-center justify-center rounded-lg bg-primary-gradient px-6 py-3 font-medium text-primary-foreground transition-[filter] hover:brightness-95"
           >
             <span className="text-xs opacity-80">{item.label}</span>
             <span>{item.phone}</span>

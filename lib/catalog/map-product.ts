@@ -3,6 +3,7 @@ import {
   resolveDiscountUnitPrice,
 } from '@/lib/backstage/variant-pricing'
 import { resolveThumbUrl } from '@/lib/media/paths'
+import { toPublicMediaUrl } from '@/lib/media/public-url'
 import { getMinVariantPrice, getPlantMaxDiscountPercent } from '@/lib/product-pricing'
 import type { Plant, PriceTier, ProductVariant } from '@/lib/types'
 
@@ -68,6 +69,7 @@ function mapListVariants(item: CatalogProductListItem): ProductVariant[] {
   return (item.variants ?? []).map((variant) => ({
     id: variant.id,
     ean: variant.ean ?? null,
+    sku: variant.sku ?? null,
     label: variant.label?.trim() ?? '',
     stock: variant.stock,
     basePrice: variant.price,
@@ -81,6 +83,7 @@ function mapVariants(item: CatalogProductDetail): ProductVariant[] {
   return item.variants.map((variant) => ({
     id: variant.id,
     ean: variant.ean ?? null,
+    sku: variant.sku ?? null,
     label: variant.label?.trim() ?? '',
     stock: variant.stock,
     basePrice: variant.price,
@@ -91,8 +94,10 @@ function mapVariants(item: CatalogProductDetail): ProductVariant[] {
 }
 
 function resolveImages(item: CatalogProductDetail | CatalogProductListItem): string[] {
-  if ('images' in item && item.images.length > 0) return item.images
-  if (item.imageUrl) return [item.imageUrl]
+  if ('images' in item && item.images.length > 0) {
+    return item.images.map((url) => toPublicMediaUrl(url))
+  }
+  if (item.imageUrl) return [toPublicMediaUrl(item.imageUrl)]
   return [PLACEHOLDER_IMAGE]
 }
 
@@ -161,5 +166,7 @@ export function mapDetailToPlant(item: CatalogProductDetail): Plant {
     maxDiscountPercent: getPlantMaxDiscountPercent({ variants }) ?? listBase.maxDiscountPercent ?? null,
     containerSize: (firstVariant?.label || 'C2') as Plant['containerSize'],
     displayCharacteristics: item.displayCharacteristics ?? [],
+    metaTitle: item.metaTitle ?? null,
+    metaDesc: item.metaDesc ?? null,
   }
 }

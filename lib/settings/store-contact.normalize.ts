@@ -5,6 +5,7 @@ import {
   DEFAULT_SOCIAL_LINKS,
   DEFAULT_STORE_SETTINGS,
 } from '@/lib/settings/defaults'
+import { normalizeCheckoutBankDetails } from '@/lib/settings/cart-checkout.normalize'
 import type {
   StoreContactBlock,
   StoreContactLine,
@@ -153,6 +154,7 @@ function normalizeFooter(raw: LegacyStoreContact): StoreFooterVisibility {
     showWhatsApp: false,
     showLink: false,
     showSchedules: false,
+    showCompanyDetails: false,
   }
 
   if (raw.suppressDefaults) {
@@ -170,6 +172,7 @@ function normalizeFooter(raw: LegacyStoreContact): StoreFooterVisibility {
       showWhatsApp: true,
       showLink: true,
       showSchedules: true,
+      showCompanyDetails: false,
     }
   }
 
@@ -198,6 +201,7 @@ function normalizeFooterVisibility(
         ? Boolean(legacyPhones) || Boolean(legacyEmails)
         : defaults.showLink),
     showSchedules: footer.showSchedules ?? defaults.showSchedules,
+    showCompanyDetails: footer.showCompanyDetails ?? defaults.showCompanyDetails,
   }
 }
 
@@ -242,5 +246,9 @@ export function normalizeStoreContactSettings(raw: LegacyStoreContact): StoreCon
     schedules: normalizeSchedules(raw),
     footer: normalizeFooter(raw),
     social: normalizeSocial(raw),
+    companyDetails: normalizeCheckoutBankDetails(
+      raw.companyDetails ?? DEFAULT_STORE_SETTINGS.companyDetails,
+    ),
+    showCompanyOnContacts: raw.showCompanyOnContacts === true,
   }
 }

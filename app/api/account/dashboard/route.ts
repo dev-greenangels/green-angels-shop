@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { fetchBackend, readBackendJson } from '@/lib/api/backend-fetch'
+import { requireCustomerSession } from '@/lib/auth/require-customer-session'
 
 async function forwardGet(request: Request, path: string) {
   try {
@@ -13,5 +14,8 @@ async function forwardGet(request: Request, path: string) {
 }
 
 export async function GET(request: Request) {
+  const { error } = await requireCustomerSession(request)
+  if (error) return error
+
   return forwardGet(request, '/account/dashboard')
 }

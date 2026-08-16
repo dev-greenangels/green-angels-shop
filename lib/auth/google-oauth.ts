@@ -10,14 +10,29 @@ export type GoogleOAuthState = {
   returnTo: string
 }
 
-export function getSiteUrl(): string {
+export function getSiteUrl(requestOrigin?: string | null): string {
+  const fromRequest = requestOrigin?.trim().replace(/\/$/, '')
+  if (fromRequest && /^https?:\/\//i.test(fromRequest)) {
+    return fromRequest
+  }
   const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.trim()
   if (fromEnv) return fromEnv.replace(/\/$/, '')
   return 'http://localhost:3000'
 }
 
-export function getGoogleOAuthRedirectUri(): string {
-  return `${getSiteUrl()}/api/auth/oauth/google/callback`
+export function getGoogleOAuthRedirectUri(requestOrigin?: string | null): string {
+  return `${getSiteUrl(requestOrigin)}/api/auth/oauth/google/callback`
+}
+
+export function originFromRequest(request: Request): string {
+  const url = new URL(request.url)
+  const forwardedHost = request.headers.get('x-forwarded-host')?.split(',')[0]?.trim()
+  const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
+  if (forwardedHost) {
+    const proto = forwardedProto || url.protocol.replace(':', '') || 'https'
+    return `${proto}://${forwardedHost}`
+  }
+  return url.origin
 }
 
 function splitPathAndSearch(path: string): { pathname: string; search: string } {
@@ -69,9 +84,10 @@ export function normalizeOAuthReturnTo(path: string | null | undefined): string 
 export function buildOAuthReturnRedirect(
   path: string,
   params: Record<string, string> = {},
+  requestOrigin?: string | null,
 ): URL {
   const redirectPath = normalizeOAuthReturnTo(path)
-  const url = new URL(redirectPath, `${getSiteUrl()}/`)
+  const url = new URL(redirectPath, `${getSiteUrl(requestOrigin)}/`)
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value)
   }

@@ -12,7 +12,7 @@ export const catalogSidebarWidthClassName = 'lg:w-64 lg:shrink-0'
 
 /** Sticky-рядок обраних фільтрів під липким алфавітом. */
 export const plantsActiveFiltersStickyOuterClassName =
-  'sticky top-[calc(var(--site-header-offset,2.75rem)+var(--plants-alphabet-sticky-height,0px))] z-40 -mx-[var(--site-shell-padding-x)] mb-6 w-[calc(100%+2*var(--site-shell-padding-x))] max-w-none min-w-0 overflow-hidden border-b border-border/40 bg-background/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:mx-0 lg:w-full'
+  'sticky top-[calc(var(--site-header-offset,2.75rem)+var(--plants-alphabet-sticky-height,0px))] z-40 -mx-[var(--site-shell-padding-x)] mb-6 w-[calc(100%+2*var(--site-shell-padding-x))] max-w-none min-w-0 overflow-x-hidden overflow-y-visible border-b border-border/40 bg-background/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:mx-0 lg:w-full'
 
 /** Відступ sticky-панелей каталогу під хедером (відповідає `top-18`). */
 export const catalogSidebarStickyTopClassName = 'top-18'

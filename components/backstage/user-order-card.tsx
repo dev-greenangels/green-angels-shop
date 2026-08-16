@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Loader2, Trash2 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
@@ -13,29 +13,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { CancelOrderDialog } from '@/components/backstage/cancel-order-dialog'
+import { OrderStatusBadge, OrderStatusSelect } from '@/components/backstage/order-status-select'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  DELIVERY_METHOD_LABELS,
-  ORDER_STATUS_COLORS,
-  ORDER_STATUS_LABELS,
-  ORDER_STATUSES,
-  type OrderStatus,
-} from '@/lib/backstage/order-status'
+import { DELIVERY_METHOD_LABELS, type OrderStatus } from '@/lib/backstage/order-status'
 import { useStoreSettings } from '@/components/providers/store-settings-provider'
+import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
 import {
   formatOrderDeliveryLines,
   formatOrderReceiverName,
 } from '@/lib/backstage/order-display'
+import { formatDateTime } from '@/lib/i18n/format-datetime'
 import { formatStoreAddress } from '@/lib/settings/store-helpers'
 import type { BackstageUserOrderSummary } from '@/lib/backstage/users'
-import { cn } from '@/lib/utils'
 
 function formatMoney(amount: number, currency = 'UAH') {
   if (currency === 'UAH') return `${amount.toLocaleString('uk-UA')} ₴`
@@ -48,23 +38,36 @@ export function UserOrderCard({
   onDelete,
 }: {
   order: BackstageUserOrderSummary
-  onStatusChange: (orderId: string, status: OrderStatus) => Promise<void>
+  onStatusChange: (
+    orderId: string,
+    status: OrderStatus,
+    options?: { cancellationReasonId?: string; cancellationNote?: string | null },
+  ) => Promise<void>
   onDelete: (orderId: string) => Promise<void>
 }) {
   const [status, setStatus] = useState<OrderStatus>(order.status as OrderStatus)
   const [savingStatus, setSavingStatus] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [cancelOpen, setCancelOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const store = useStoreSettings()
+  const { locale } = useBackstageUiLocale()
   const pickupAddress = formatStoreAddress(store)
+
+  useEffect(() => {
+    setStatus(order.status as OrderStatus)
+  }, [order.status])
 
   const deliveryLines = formatOrderDeliveryLines(order, pickupAddress)
 
-  const handleStatusSave = async () => {
-    if (status === order.status) return
+  const applyStatus = async (
+    next: OrderStatus,
+    options?: { cancellationReasonId?: string; cancellationNote?: string | null },
+  ) => {
     setSavingStatus(true)
     try {
-      await onStatusChange(order.id, status)
+      await onStatusChange(order.id, next, options)
+      setStatus(next)
       toast.success('Статус замовлення оновлено.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося оновити статус.')
@@ -72,6 +75,15 @@ export function UserOrderCard({
     } finally {
       setSavingStatus(false)
     }
+  }
+
+  const handleStatusSave = async () => {
+    if (status === order.status) return
+    if (status === 'CANCELLED') {
+      setCancelOpen(true)
+      return
+    }
+    await applyStatus(status)
   }
 
   const handleDelete = async () => {
@@ -94,7 +106,7 @@ export function UserOrderCard({
           <div>
             <p className="text-base font-semibold">{order.orderNumber}</p>
             <p className="text-sm text-muted-foreground">
-              {new Date(order.createdAt).toLocaleString('uk-UA')}
+              {formatDateTime(order.createdAt, locale, 'datetime')}
             </p>
           </div>
           <div className="text-right">
@@ -107,32 +119,17 @@ export function UserOrderCard({
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={cn(
-                'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                ORDER_STATUS_COLORS[status] ?? 'bg-muted text-muted-foreground',
-              )}
-            >
-              {ORDER_STATUS_LABELS[status] ?? order.status}
-            </span>
+            <OrderStatusBadge status={status} />
             <span className="text-sm text-muted-foreground">
               {DELIVERY_METHOD_LABELS[order.deliveryMethod] ?? order.deliveryMethod}
             </span>
+            {order.trackingNumber ? (
+              <span className="text-sm font-medium">ТТН: {order.trackingNumber}</span>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Select value={status} onValueChange={(value) => setStatus(value as OrderStatus)}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ORDER_STATUSES.map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {ORDER_STATUS_LABELS[item]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <OrderStatusSelect value={status} onValueChange={setStatus} disabled={savingStatus} />
             <Button
               type="button"
               variant="outline"
@@ -154,64 +151,47 @@ export function UserOrderCard({
           </div>
         </div>
 
-        <div className="rounded-lg border border-border/60 bg-muted/40 p-3 text-sm">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Отримувач
-          </p>
-          <p className="font-medium">{formatOrderReceiverName(order)}</p>
-          <p className="mt-1 text-muted-foreground">{order.receiverPhone}</p>
-        </div>
-
-        <div className="rounded-lg border border-border/60 bg-muted/40 p-3 text-sm">
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Доставка
-          </p>
-          {deliveryLines.map((line) => (
-            <p key={line}>{line}</p>
-          ))}
-        </div>
-
-        <div>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Товари
-          </p>
-          <ul className="divide-y divide-border/60 rounded-lg border border-border/60 bg-background/60">
-            {order.items.map((item) => (
-              <li
-                key={item.id}
-                className="flex flex-wrap items-start justify-between gap-2 px-3 py-2.5 text-sm"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium">{item.productName}</p>
-                  {item.variantLabel ? (
-                    <p className="text-xs text-muted-foreground">{item.variantLabel}</p>
-                  ) : null}
-                </div>
-                <div className="text-right tabular-nums">
-                  <p>
-                    {item.quantity} × {formatMoney(item.priceAtPurchase, order.currency)}
-                  </p>
-                  <p className="font-medium">{formatMoney(item.lineTotal, order.currency)}</p>
-                </div>
-              </li>
+        <div className="grid gap-3 text-sm sm:grid-cols-2">
+          <div>
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Отримувач
+            </p>
+            <p>{formatOrderReceiverName(order)}</p>
+            <p className="text-muted-foreground">{order.receiverPhone}</p>
+          </div>
+          <div>
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Доставка
+            </p>
+            {deliveryLines.map((line) => (
+              <p key={line}>{line}</p>
             ))}
-          </ul>
+          </div>
         </div>
       </div>
+
+      <CancelOrderDialog
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        saving={savingStatus}
+        onConfirm={({ cancellationReasonId, cancellationNote }) => {
+          setCancelOpen(false)
+          void applyStatus('CANCELLED', { cancellationReasonId, cancellationNote })
+        }}
+      />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Видалити замовлення?</AlertDialogTitle>
             <AlertDialogDescription>
-              Замовлення <span className="font-medium">{order.orderNumber}</span> буде повністю
-              видалено з бази даних. Цю дію не можна скасувати.
+              Замовлення {order.orderNumber} буде видалено без можливості відновлення.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Скасувати</AlertDialogCancel>
-            <Button variant="destructive" onClick={() => void handleDelete()} disabled={deleting}>
-              {deleting ? 'Видалення…' : 'Видалити назавжди'}
+            <Button variant="destructive" disabled={deleting} onClick={() => void handleDelete()}>
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Видалити'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

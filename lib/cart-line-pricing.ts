@@ -15,9 +15,20 @@ export function resolveCartLinePricing(
   variant: ProductVariant,
   quoteLine?: PricingQuoteLine | null,
 ): CartLinePricing {
-  if (quoteLine) {
-    const originalUnitPrice = quoteLine.baseUnitPrice
-    const saleUnitPrice = quoteLine.unitPrice
+  const quoteUsable =
+    quoteLine != null &&
+    ((typeof quoteLine.unitPrice === 'number' && quoteLine.unitPrice > 0) ||
+      (typeof quoteLine.lineTotal === 'number' && quoteLine.lineTotal > 0))
+
+  if (quoteUsable && quoteLine) {
+    const originalUnitPrice =
+      quoteLine.baseUnitPrice > 0 ? quoteLine.baseUnitPrice : variant.basePrice
+    const saleUnitPrice =
+      quoteLine.unitPrice > 0
+        ? quoteLine.unitPrice
+        : quoteLine.lineTotal > 0
+          ? quoteLine.lineTotal / Math.max(1, item.quantity)
+          : getUnitPriceForQuantity(variant, item.quantity)
     const hasDiscount = saleUnitPrice < originalUnitPrice - 0.001
     return {
       originalUnitPrice,

@@ -5,6 +5,7 @@ import Image from 'next/image'
 
 import { BrandLogo } from '@/components/brand-logo'
 import { isProductPlaceholderImage } from '@/lib/product-image'
+import { toPublicMediaUrl } from '@/lib/media/public-url'
 import { cn } from '@/lib/utils'
 
 export function ProductCoverImage({
@@ -25,7 +26,7 @@ export function ProductCoverImage({
   priority?: boolean
 }) {
   const [failed, setFailed] = useState(false)
-  const trimmed = src?.trim()
+  const trimmed = toPublicMediaUrl(src)?.trim()
   const showPlaceholder = !trimmed || isProductPlaceholderImage(trimmed) || failed
 
   useEffect(() => {
@@ -57,8 +58,8 @@ export function ProductCoverImage({
       alt={alt}
       fill
       priority={priority}
-      sizes={sizes}
-      className={cn('object-cover', imageClassName, className)}
+      sizes={sizes ?? '(max-width: 1024px) 100vw, 50vw'}
+      className={cn('max-h-full max-w-full object-cover', imageClassName, className)}
       onError={() => setFailed(true)}
     />
   )

@@ -62,7 +62,7 @@ export function BackstageLoginForm({ redirectTo }: { redirectTo: string }) {
           id="backstage-email"
           type="email"
           autoComplete="username"
-          placeholder="dev.green.angels@gmail.com"
+          placeholder="email@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onClear={() => setEmail('')}

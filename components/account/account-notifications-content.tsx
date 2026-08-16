@@ -5,39 +5,47 @@ import { Bell, Loader2, Trash2 } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
+import {
+  AccountPageEmpty,
+  AccountPageError,
+  AccountPageLoading,
+} from '@/components/account/account-page-state'
+import { AccountListPagination } from '@/components/account/account-list-pagination'
 import { Button } from '@/components/ui/button'
 import {
   fetchAccountStockNotifications,
   removeAccountStockNotification,
   type AccountStockNotificationItem,
 } from '@/lib/account/api'
+import { formatDateTime } from '@/lib/i18n/format-datetime'
 import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
-
-function formatDate(iso: string, locale: string) {
-  return new Date(iso).toLocaleDateString(locale === 'en' ? 'en-GB' : locale === 'sk' ? 'sk-SK' : 'uk-UA', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
-}
+const PAGE_SIZE = 20
 
 export function AccountNotificationsContent() {
   const t = useTranslations('account')
   const tc = useTranslations('common')
   const locale = useLocale()
   const [items, setItems] = useState<AccountStockNotificationItem[]>([])
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
 
   const load = useCallback(() => {
     setLoading(true)
-    void fetchAccountStockNotifications()
-      .then(setItems)
+    setError(null)
+    void fetchAccountStockNotifications({ page, pageSize: PAGE_SIZE })
+      .then((data) => {
+        setItems(data.items)
+        setTotalPages(data.totalPages)
+        setTotal(data.total)
+      })
       .catch((e) => setError(e instanceof Error ? e.message : t('loadError')))
       .finally(() => setLoading(false))
-  }, [t])
+  }, [page, t])
 
   useEffect(() => {
     load()
@@ -57,20 +65,25 @@ export function AccountNotificationsContent() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-        {tc('loading')}
-      </div>
-    )
+    return <AccountPageLoading />
   }
 
   if (error) {
-    return <p className="text-sm text-destructive">{error}</p>
+    return <AccountPageError message={error} onRetry={load} />
   }
 
   const active = items.filter((item) => !item.notifiedAt)
   const notified = items.filter((item) => item.notifiedAt)
+
+  if (total === 0 && !active.length && !notified.length) {
+    return (
+      <AccountPageEmpty
+        icon={Bell}
+        title={t('noActiveSubscriptions')}
+        body={t('notificationsHint')}
+      />
+    )
+  }
 
   return (
     <div className="space-y-8">
@@ -78,10 +91,7 @@ export function AccountNotificationsContent() {
         <h2 className="font-serif text-lg font-semibold">{t('notificationsTitle')}</h2>
         <p className="text-sm text-muted-foreground">{t('notificationsHint')}</p>
         {!active.length ? (
-          <div className="rounded-xl border border-dashed p-8 text-center">
-            <Bell className="mx-auto mb-3 h-9 w-9 text-muted-foreground/50" />
-            <p className="text-sm text-muted-foreground">{t('noActiveSubscriptions')}</p>
-          </div>
+          <AccountPageEmpty icon={Bell} title={t('noActiveSubscriptions')} />
         ) : (
           active.map((item) => (
             <article
@@ -91,12 +101,14 @@ export function AccountNotificationsContent() {
               <div className="min-w-0">
                 <Link
                   href={`/product/${item.productSlug}`}
-                  className="pressable font-medium text-primary hover:underline"
+                  className="pressable break-words font-medium text-primary hover:underline"
                 >
                   {item.productName}
                 </Link>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {t('subscribedAt', { date: formatDate(item.createdAt, locale) })}
+                <p className="mt-1 break-words text-sm text-muted-foreground">
+                  {t('subscribedAt', {
+                    date: formatDateTime(item.createdAt, locale, 'dateLong'),
+                  })}
                   {item.email ? ` · ${item.email}` : ''}
                   {item.phone ? ` · ${item.phone}` : ''}
                 </p>
@@ -105,6 +117,7 @@ export function AccountNotificationsContent() {
                 type="button"
                 variant="outline"
                 size="sm"
+                className="min-h-11 w-full shrink-0 sm:w-auto"
                 disabled={removingId === item.id}
                 onClick={() => void handleRemove(item.id)}
               >
@@ -134,18 +147,27 @@ export function AccountNotificationsContent() {
                 'rounded-xl border border-border/40 bg-muted/30 p-4 text-sm text-muted-foreground',
               )}
             >
-              <Link href={`/product/${item.productSlug}`} className="pressable font-medium text-foreground">
+              <Link href={`/product/${item.productSlug}`} className="pressable break-words font-medium text-foreground">
                 {item.productName}
               </Link>
-              <p className="mt-1">
-                {item.notifiedAt
-                  ? t('notifiedAt', { date: formatDate(item.notifiedAt, locale) })
-                  : '—'}
-              </p>
+              {item.notifiedAt ? (
+                <p className="mt-1">
+                  {t('notifiedAt', {
+                    date: formatDateTime(item.notifiedAt, locale, 'dateLong'),
+                  })}
+                </p>
+              ) : null}
             </article>
           ))}
         </section>
       ) : null}
+      <AccountListPagination
+        page={page}
+        totalPages={totalPages}
+        total={total}
+        onPrev={() => setPage((prev) => Math.max(1, prev - 1))}
+        onNext={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+      />
     </div>
   )
 }

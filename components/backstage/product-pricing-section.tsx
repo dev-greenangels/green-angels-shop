@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { ChevronDown, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, Plus, Trash2, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,6 +37,137 @@ const pricingModeOptionClassName = cn(
 
 const pricingModeRadioClassName =
   'size-3.5 shrink-0 border-border/80 bg-background shadow-sm data-[state=checked]:border-primary'
+
+export function VariantAttributePicker({
+  attributes,
+  selections,
+  onChange,
+  onClear,
+}: {
+  attributes: VariantAttribute[]
+  selections: Record<string, string>
+  onChange: (attributeId: string, valueId: string) => void
+  onClear: (attributeId: string) => void
+}) {
+  const tp = useTranslations('pricing')
+  const [pendingAttributeId, setPendingAttributeId] = useState('')
+  const [pendingValueId, setPendingValueId] = useState('')
+
+  const selectedEntries = attributes
+    .map((attr) => {
+      const valueId = selections[attr.id]
+      if (!valueId) return null
+      const value = attr.values.find((item) => item.id === valueId)
+      if (!value) return null
+      return { attr, value }
+    })
+    .filter((item): item is { attr: VariantAttribute; value: VariantAttribute['values'][number] } =>
+      Boolean(item),
+    )
+
+  const availableAttributes = attributes.filter((attr) => !selections[attr.id])
+  const pendingAttribute = attributes.find((attr) => attr.id === pendingAttributeId) ?? null
+
+  const handleAdd = () => {
+    if (!pendingAttributeId || !pendingValueId) return
+    onChange(pendingAttributeId, pendingValueId)
+    setPendingAttributeId('')
+    setPendingValueId('')
+  }
+
+  return (
+    <div className="space-y-3">
+      {selectedEntries.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {selectedEntries.map(({ attr, value }) => (
+            <span
+              key={attr.id}
+              className="inline-flex max-w-full items-center gap-1 rounded-full border border-border/70 bg-muted/40 py-0.5 pl-2.5 pr-1 text-xs"
+            >
+              <span className="truncate">
+                <span className="text-muted-foreground">{attr.name}:</span>{' '}
+                <span className="font-medium text-foreground">{value.label}</span>
+              </span>
+              <button
+                type="button"
+                className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-background hover:text-destructive"
+                onClick={() => onClear(attr.id)}
+                aria-label={tp('removeAttribute')}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">{tp('noAttributesSelected')}</p>
+      )}
+
+      {availableAttributes.length > 0 ? (
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="w-[9.5rem] space-y-1.5 sm:w-[11rem]">
+            <Label className="text-xs leading-4">{tp('attributeLabel')}</Label>
+            <Select
+              value={pendingAttributeId || '__none__'}
+              onValueChange={(value) => {
+                setPendingAttributeId(value === '__none__' ? '' : value)
+                setPendingValueId('')
+              }}
+            >
+              <SelectTrigger className="h-9 w-full">
+                <SelectValue placeholder={tp('selectAttribute')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">{tp('notSelectedOption')}</SelectItem>
+                {availableAttributes.map((attr) => (
+                  <SelectItem key={attr.id} value={attr.id}>
+                    {attr.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-[9.5rem] space-y-1.5 sm:w-[11rem]">
+            <Label className="text-xs leading-4">{tp('valueLabel')}</Label>
+            <Select
+              value={pendingValueId || '__none__'}
+              onValueChange={(value) => setPendingValueId(value === '__none__' ? '' : value)}
+              disabled={!pendingAttribute}
+            >
+              <SelectTrigger className="h-9 w-full">
+                <SelectValue placeholder={tp('selectValue')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">{tp('notSelectedOption')}</SelectItem>
+                {(pendingAttribute?.values ?? []).map((value) => (
+                  <SelectItem key={value.id} value={value.id}>
+                    {value.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <span className="block text-xs leading-4 opacity-0" aria-hidden>
+              .
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9"
+              disabled={!pendingAttributeId || !pendingValueId}
+              onClick={handleAdd}
+            >
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              {tp('addAttribute')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
 
 export function ProductPricingModeSwitcher({
   value,
@@ -184,32 +315,15 @@ function VariantAccordionItem({
               .
             </p>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {attributes.map((attr) => (
-                <div key={attr.id} className="space-y-2">
-                  <Label>{attr.name}</Label>
-                  <Select
-                    value={variant.selections[attr.id] || '__none__'}
-                    onValueChange={(value) => updateSelection(attr.id, value)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder={tp('notSelected')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">{tp('notSelectedOption')}</SelectItem>
-                      {attr.values.map((value) => (
-                        <SelectItem key={value.id} value={value.id}>
-                          {value.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
-            </div>
+            <VariantAttributePicker
+              attributes={attributes}
+              selections={variant.selections}
+              onChange={(attributeId, valueId) => updateSelection(attributeId, valueId)}
+              onClear={(attributeId) => updateSelection(attributeId, '')}
+            />
           )}
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
             <div className="space-y-2">
               <Label htmlFor={`variant-sku-${variant.clientId}`}>SKU</Label>
               <Input
@@ -263,6 +377,50 @@ function VariantAccordionItem({
                 value={variant.legacyId}
                 onChange={(e) => onChange({ legacyId: e.target.value })}
                 placeholder={th('optional')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`variant-weight-${variant.clientId}`}>Вага, кг</Label>
+              <Input
+                id={`variant-weight-${variant.clientId}`}
+                type="number"
+                min="0"
+                step="0.01"
+                value={variant.weight}
+                onChange={(e) => onChange({ weight: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`variant-length-${variant.clientId}`}>Довжина, см</Label>
+              <Input
+                id={`variant-length-${variant.clientId}`}
+                type="number"
+                min="0"
+                step="0.1"
+                value={variant.lengthCm}
+                onChange={(e) => onChange({ lengthCm: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`variant-width-${variant.clientId}`}>Ширина, см</Label>
+              <Input
+                id={`variant-width-${variant.clientId}`}
+                type="number"
+                min="0"
+                step="0.1"
+                value={variant.widthCm}
+                onChange={(e) => onChange({ widthCm: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`variant-height-${variant.clientId}`}>Висота, см</Label>
+              <Input
+                id={`variant-height-${variant.clientId}`}
+                type="number"
+                min="0"
+                step="0.1"
+                value={variant.heightCm}
+                onChange={(e) => onChange({ heightCm: e.target.value })}
               />
             </div>
           </div>
@@ -433,6 +591,50 @@ export function ProductPricingSection({
               id="simple-sales-unit"
               value={simpleVariant.salesUnitId}
               onChange={(salesUnitId) => patchSimpleVariant({ salesUnitId })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="simple-weight">Вага, кг</Label>
+            <Input
+              id="simple-weight"
+              type="number"
+              min="0"
+              step="0.01"
+              value={simpleVariant.weight}
+              onChange={(e) => patchSimpleVariant({ weight: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="simple-length">Довжина, см</Label>
+            <Input
+              id="simple-length"
+              type="number"
+              min="0"
+              step="0.1"
+              value={simpleVariant.lengthCm}
+              onChange={(e) => patchSimpleVariant({ lengthCm: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="simple-width">Ширина, см</Label>
+            <Input
+              id="simple-width"
+              type="number"
+              min="0"
+              step="0.1"
+              value={simpleVariant.widthCm}
+              onChange={(e) => patchSimpleVariant({ widthCm: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="simple-height">Висота, см</Label>
+            <Input
+              id="simple-height"
+              type="number"
+              min="0"
+              step="0.1"
+              value={simpleVariant.heightCm}
+              onChange={(e) => patchSimpleVariant({ heightCm: e.target.value })}
             />
           </div>
 

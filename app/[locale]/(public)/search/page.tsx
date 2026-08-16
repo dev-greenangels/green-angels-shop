@@ -39,16 +39,18 @@ export default async function SearchPage({ params, searchParams }: SearchPagePro
     redirect({ href: resolveCatalogHref(catalogRootSlug), locale })
   }
 
+  const catalogHref = resolveCatalogHref(await fetchCatalogRootSlug(locale))
+
   return (
     <>
       <Navigation />
-      <main className="flex-1 bg-background">
+      <main className="flex-1 bg-transparent">
         <div className="border-b border-border/40 bg-secondary/30 py-8 md:py-12">
           <div className={siteContentShellClassName}>
             <PublicPageBreadcrumbs
               className="mb-4"
               items={[
-                { label: tNav('catalog'), href: '/catalog' },
+                { label: tNav('catalog'), href: catalogHref },
                 { label: tNav('search') },
               ]}
             />

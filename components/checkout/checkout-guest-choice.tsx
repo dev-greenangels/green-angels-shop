@@ -18,7 +18,7 @@ export function CheckoutGuestChoice({ onContinueAsGuest }: { onContinueAsGuest: 
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="relative rounded-xl border-2 border-primary/80 bg-card/95 p-6 shadow-sm lg:p-8">
+        <div className="relative rounded-xl border-2 border-primary/80 bg-card p-6 shadow-sm lg:p-8">
           <div className="absolute -top-3 left-6 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
             {tc('recommended')}
           </div>
@@ -55,7 +55,7 @@ export function CheckoutGuestChoice({ onContinueAsGuest }: { onContinueAsGuest: 
           </Button>
         </div>
 
-        <div className="rounded-xl border border-border/80 bg-card/95 p-6 shadow-sm lg:p-8">
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm lg:p-8">
           <div className="mb-6 flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
               <UserPlus className="h-7 w-7 text-muted-foreground" />

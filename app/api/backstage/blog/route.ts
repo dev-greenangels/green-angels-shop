@@ -7,8 +7,12 @@ export async function GET(request: Request) {
   const { error } = await requireBackstageSession(request)
   if (error) return error
 
+  const { searchParams } = new URL(request.url)
+  const qs = searchParams.toString()
+  const path = qs ? `/blog/admin?${qs}` : '/blog/admin'
+
   try {
-    const res = await fetchBackend('/blog', { request, cache: 'no-store' })
+    const res = await fetchBackend(path, { request, cache: 'no-store' })
     const data = await readBackendJson(res)
     if (!res.ok) return NextResponse.json(data, { status: res.status })
     return NextResponse.json(data)

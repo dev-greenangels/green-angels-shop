@@ -28,7 +28,7 @@ export async function NewArrivalsSection({
       unavailable={result.unavailable}
       viewAllHref="/new-arrivals"
       viewAllLabel={t('viewAllNewArrivals')}
-      className="border-y border-border/50 bg-gradient-to-b from-muted/60 via-muted/30 to-background"
+      className="border-y border-border/30"
     />
   )
 }

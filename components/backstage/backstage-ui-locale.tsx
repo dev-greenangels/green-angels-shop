@@ -14,11 +14,12 @@ import { fetchBackstageSettings } from '@/lib/backstage/settings'
 import { buildBackstageMessages } from '@/lib/i18n/load-backstage-messages'
 import {
   BACKSTAGE_UI_LOCALE_STORAGE_KEY,
+  BACKSTAGE_UI_LOCALES,
   LOCALE_FLAGS,
   LOCALE_LABELS,
-  SUPPORTED_LOCALES,
-  isSupportedLocale,
+  isBackstageUiLocale,
   type AppLocale,
+  type BackstageUiLocale,
   type LocalizationMessageOverrides,
 } from '@/lib/i18n/locales'
 import { normalizeLocalizationSettings } from '@/lib/settings/localization.normalize'
@@ -26,8 +27,8 @@ import { DEFAULT_LOCALIZATION_SETTINGS } from '@/lib/settings/defaults'
 import { cn } from '@/lib/utils'
 
 type BackstageUiLocaleContextValue = {
-  locale: AppLocale
-  setLocale: (locale: AppLocale) => void
+  locale: BackstageUiLocale
+  setLocale: (locale: BackstageUiLocale) => void
 }
 
 const BackstageUiLocaleContext = createContext<BackstageUiLocaleContextValue>({
@@ -40,13 +41,17 @@ export function useBackstageUiLocale() {
 }
 
 export function BackstageUiLocaleProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<AppLocale>('uk')
+  const [locale, setLocaleState] = useState<BackstageUiLocale>('uk')
   const [overrides, setOverrides] = useState<LocalizationMessageOverrides | undefined>()
 
   useEffect(() => {
     const stored = localStorage.getItem(BACKSTAGE_UI_LOCALE_STORAGE_KEY)
-    if (stored && isSupportedLocale(stored)) {
+    if (stored && isBackstageUiLocale(stored)) {
       setLocaleState(stored)
+    } else if (stored) {
+      // Drop unsupported UI locales (hu/de/cs) → Ukrainian
+      localStorage.setItem(BACKSTAGE_UI_LOCALE_STORAGE_KEY, 'uk')
+      setLocaleState('uk')
     }
   }, [])
 
@@ -68,13 +73,13 @@ export function BackstageUiLocaleProvider({ children }: { children: React.ReactN
     }
   }, [])
 
-  const setLocale = useCallback((next: AppLocale) => {
+  const setLocale = useCallback((next: BackstageUiLocale) => {
     setLocaleState(next)
     localStorage.setItem(BACKSTAGE_UI_LOCALE_STORAGE_KEY, next)
   }, [])
 
   const messages = useMemo(
-    () => buildBackstageMessages(locale, overrides),
+    () => buildBackstageMessages(locale as AppLocale, overrides),
     [locale, overrides],
   )
 
@@ -100,11 +105,14 @@ export function BackstageUiLocaleSwitcher({
 
   return (
     <div
-      className={cn('flex items-center gap-1', className)}
+      className={cn(
+        isSidebar ? 'flex flex-wrap items-center gap-1' : 'flex items-center gap-1',
+        className,
+      )}
       role="group"
       aria-label={t('uiLocaleAria')}
     >
-      {SUPPORTED_LOCALES.map((item) => {
+      {BACKSTAGE_UI_LOCALES.map((item) => {
         const active = item === locale
         return (
           <button

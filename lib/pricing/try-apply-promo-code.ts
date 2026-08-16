@@ -19,8 +19,6 @@ export async function tryApplyPromoCode(input: {
   draftCode: string
   currentCodes: string[]
   items: Array<{ productVariantId: string; quantity: number }>
-  customerPhone?: string
-  userId?: string
   deliveryMethod?: string
   splitOrderParts?: number
 }): Promise<PromoApplyResult> {
@@ -34,8 +32,6 @@ export async function tryApplyPromoCode(input: {
 
   const quoteInput = {
     items: input.items,
-    customerPhone: input.customerPhone,
-    userId: input.userId,
     deliveryMethod: input.deliveryMethod,
     splitOrderParts: input.splitOrderParts,
   }

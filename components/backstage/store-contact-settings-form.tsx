@@ -2,6 +2,7 @@
 
 import { Loader2, Plus, Save, Trash2 } from 'lucide-react'
 
+import { CompanyBankDetailsFields } from '@/components/backstage/company-bank-details-fields'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -16,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { DEFAULT_CHECKOUT_BANK_DETAILS } from '@/lib/settings/defaults'
 import { CONTACT_LINE_TYPE_OPTIONS, getFooterVisibilityOptionsForStore, isMessengerContactLine } from '@/lib/settings/store-contact-lines'
 import type { StoreContactLineType, StoreContactSettings, StoreSocialLinks } from '@/lib/settings/types'
 
@@ -32,6 +34,8 @@ type StoreContactSettingsFormProps = {
   onChange: (store: StoreContactSettings) => void
   onSave: () => void
   saving: boolean
+  isDirty?: boolean
+  marketRegion?: 'ua' | 'sk'
 }
 
 export function StoreContactSettingsForm({
@@ -39,8 +43,11 @@ export function StoreContactSettingsForm({
   onChange,
   onSave,
   saving,
+  isDirty = false,
+  marketRegion = 'ua',
 }: StoreContactSettingsFormProps) {
   const footerVisibilityOptions = getFooterVisibilityOptionsForStore(store.contactBlocks)
+  const companyDetails = store.companyDetails ?? DEFAULT_CHECKOUT_BANK_DETAILS
 
   const updateContactBlock = (
     blockIndex: number,
@@ -395,6 +402,32 @@ export function StoreContactSettingsForm({
 
         <div className="space-y-4 rounded-lg border p-4">
           <div>
+            <Label className="text-base">Реквізити компанії</Label>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Повні реквізити продавця для ринку{' '}
+              {marketRegion === 'sk' ? 'Словаччина (SK/EU)' : 'Україна'}. Можна показати на
+              сторінці «Контакти» та в футері; також доступні як джерело для PDF / банківського
+              переказу в налаштуваннях кошика.
+            </p>
+          </div>
+          <CompanyBankDetailsFields
+            value={companyDetails}
+            marketRegion={marketRegion}
+            onChange={(next) => onChange({ ...store, companyDetails: next })}
+          />
+          <label className="flex cursor-pointer items-center gap-3 rounded-md border p-3 transition-colors hover:bg-muted/50">
+            <Checkbox
+              checked={store.showCompanyOnContacts === true}
+              onCheckedChange={(checked) =>
+                onChange({ ...store, showCompanyOnContacts: checked === true })
+              }
+            />
+            <span className="text-sm font-medium">Показувати на сторінці «Контакти»</span>
+          </label>
+        </div>
+
+        <div className="space-y-4 rounded-lg border p-4">
+          <div>
             <Label className="text-base">Соціальні мережі</Label>
             <p className="mt-1 text-sm text-muted-foreground">
               Клікабельні іконки у футері та внизу мобільного меню. Увімкніть потрібні мережі та
@@ -446,7 +479,8 @@ export function StoreContactSettingsForm({
             <Label className="text-base">Відображення в футері</Label>
             <p className="mt-1 text-sm text-muted-foreground">
               Оберіть, які контакти показувати внизу сайту. Перемикачі зʼявляються лише для типів
-              рядків, які є у блоках контактів вище. Повна інформація завжди на сторінці «Контакти».
+              рядків, які є у блоках контактів вище. Реквізити компанії — окремий перемикач.
+              Повна інформація на сторінці «Контакти» (реквізити — якщо увімкнено вище).
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -470,7 +504,7 @@ export function StoreContactSettingsForm({
           </div>
         </div>
 
-        <Button type="button" onClick={onSave} disabled={saving}>
+        <Button type="button" onClick={onSave} disabled={saving || !isDirty}>
           {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
           Зберегти
         </Button>

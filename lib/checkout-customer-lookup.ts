@@ -1,3 +1,8 @@
+import {
+  CheckoutAccountLockedError,
+  isCheckoutAccountLockedPayload,
+} from '@/lib/checkout/account-lock'
+
 export type CustomerLookupResult = {
   found: boolean
   needsProfile?: boolean
@@ -16,9 +21,12 @@ export type CustomerLookupResult = {
   }
 }
 
+type OtpPurpose = 'login' | 'checkout' | 'review' | 'profile'
+
 type ApiErrorBody = {
   error?: string
-  message?: string | string[]
+  code?: string
+  message?: string | string[] | { code?: string; message?: string }
 }
 
 function extractApiError(data: ApiErrorBody, fallback: string): string {
@@ -33,24 +41,14 @@ async function readApiError(res: Response, fallback: string): Promise<string> {
   return extractApiError(data, fallback)
 }
 
-export async function lookupCustomerByPhone(phone: string): Promise<CustomerLookupResult> {
-  const res = await fetch(
-    `/api/auth/customer-by-phone?phone=${encodeURIComponent(phone.trim())}`,
-    { cache: 'no-store' },
-  )
-
-  if (!res.ok) {
-    throw new Error(await readApiError(res, 'Не вдалося перевірити номер.'))
-  }
-
-  return (await res.json()) as CustomerLookupResult
-}
-
-export async function sendAuthEmailCode(email: string): Promise<void> {
+export async function sendAuthEmailCode(
+  email: string,
+  purpose: OtpPurpose = 'login',
+): Promise<void> {
   const res = await fetch('/api/auth/otp/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email.trim().toLowerCase(), purpose: 'login' }),
+    body: JSON.stringify({ email: email.trim().toLowerCase(), purpose }),
   })
 
   if (!res.ok) {
@@ -61,11 +59,12 @@ export async function sendAuthEmailCode(email: string): Promise<void> {
 export async function verifyAuthEmailCode(
   email: string,
   code: string,
+  purpose: OtpPurpose = 'login',
 ): Promise<{ verificationToken: string }> {
   const res = await fetch('/api/auth/otp/verify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email.trim().toLowerCase(), code }),
+    body: JSON.stringify({ email: email.trim().toLowerCase(), code, purpose }),
   })
 
   if (!res.ok) {
@@ -75,11 +74,14 @@ export async function verifyAuthEmailCode(
   return (await res.json()) as { verificationToken: string }
 }
 
-export async function sendCheckoutSmsCode(phone: string): Promise<void> {
+export async function sendAuthSmsCode(
+  phone: string,
+  purpose: OtpPurpose = 'login',
+): Promise<void> {
   const res = await fetch('/api/auth/otp/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone: phone.trim(), purpose: 'checkout' }),
+    body: JSON.stringify({ phone: phone.trim(), purpose }),
   })
 
   if (!res.ok) {
@@ -87,26 +89,23 @@ export async function sendCheckoutSmsCode(phone: string): Promise<void> {
   }
 }
 
-export async function sendCheckoutEmailCode(email: string): Promise<void> {
-  const res = await fetch('/api/auth/otp/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email.trim().toLowerCase(), purpose: 'checkout' }),
-  })
-
-  if (!res.ok) {
-    throw new Error(await readApiError(res, 'Не вдалося надіслати лист.'))
-  }
+export async function sendCheckoutSmsCode(phone: string): Promise<void> {
+  return sendAuthSmsCode(phone, 'checkout')
 }
 
-export async function verifyCheckoutSmsCode(
+export async function sendCheckoutEmailCode(email: string): Promise<void> {
+  return sendAuthEmailCode(email, 'checkout')
+}
+
+export async function verifyAuthSmsCode(
   phone: string,
   code: string,
+  purpose: OtpPurpose = 'login',
 ): Promise<{ verificationToken: string }> {
   const res = await fetch('/api/auth/otp/verify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone: phone.trim(), code }),
+    body: JSON.stringify({ phone: phone.trim(), code, purpose }),
   })
 
   if (!res.ok) {
@@ -114,6 +113,14 @@ export async function verifyCheckoutSmsCode(
   }
 
   return (await res.json()) as { verificationToken: string }
+}
+
+/** @deprecated Prefer verifyAuthSmsCode(phone, code, 'checkout') */
+export async function verifyCheckoutSmsCode(
+  phone: string,
+  code: string,
+): Promise<{ verificationToken: string }> {
+  return verifyAuthSmsCode(phone, code, 'checkout')
 }
 
 export async function resolveCheckoutIdentity(input: {
@@ -137,7 +144,11 @@ export async function resolveCheckoutIdentity(input: {
   })
 
   if (!res.ok) {
-    throw new Error(await readApiError(res, 'Не вдалося підтвердити замовника.'))
+    const data = (await res.json().catch(() => ({}))) as ApiErrorBody
+    if (isCheckoutAccountLockedPayload(data)) {
+      throw new CheckoutAccountLockedError()
+    }
+    throw new Error(extractApiError(data, 'Не вдалося підтвердити контакт.'))
   }
 
   return (await res.json()) as CustomerLookupResult

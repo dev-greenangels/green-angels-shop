@@ -44,7 +44,11 @@ function CartPreviewList({
         {loadingTotal ? (
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
         ) : total != null ? (
-          <FormattedPrice amount={total} className="shrink-0 text-sm font-semibold text-foreground" />
+          <FormattedPrice
+            amount={total}
+            className="shrink-0 text-sm font-semibold text-foreground"
+            mode="shelf"
+          />
         ) : null}
       </div>
       {items.length === 0 ? (

@@ -1,36 +1,30 @@
 import type { Metadata } from 'next'
+import { getTranslations } from 'next-intl/server'
 
-import { buildSearchCanonicalUrl, normalizeSearchQuery } from '@/lib/search/url'
+import { normalizeSearchQuery } from '@/lib/search/normalize'
+import { SEARCH_QUERY_PARAM } from '@/lib/search/url'
+import { buildIndexablePageMetadata } from '@/lib/seo/build-page-metadata'
 
-const SITE_NAME = 'Зелені Янголи'
-
-export function buildSearchPageMetadata(query: string, locale: string): Metadata {
+export async function buildSearchPageMetadata(query: string, locale: string): Promise<Metadata> {
+  const tCommon = await getTranslations({ locale, namespace: 'common' })
+  const t = await getTranslations({ locale, namespace: 'search' })
+  const siteName = tCommon('brand')
   const normalized = normalizeSearchQuery(query)
+  const robots: Metadata['robots'] = { index: false, follow: true }
 
   if (!normalized) {
-    return {
-      title: `Пошук · ${SITE_NAME}`,
-      description: `Пошук рослин у каталозі розсадника ${SITE_NAME}.`,
-      robots: { index: false, follow: true },
-    }
+    return buildIndexablePageMetadata(locale, '/search', {
+      title: `${tCommon('search')} · ${siteName}`,
+      siteName,
+      robots,
+    })
   }
 
-  const title = `Результати пошуку «${normalized}» · ${SITE_NAME}`
-  const description = `Рослини та саджанці за запитом «${normalized}» в інтернет-магазині ${SITE_NAME}. Перегляньте асортимент розсадника та оберіть потрібні позиції.`
-  const canonical = buildSearchCanonicalUrl(normalized, locale)
-
-  return {
-    title,
-    description,
-    alternates: { canonical },
-    robots: { index: false, follow: true },
-    openGraph: {
-      title,
-      description,
-      url: canonical,
-      type: 'website',
-      locale: 'uk_UA',
-      siteName: SITE_NAME,
-    },
-  }
+  const pathname = `/search?${new URLSearchParams({ [SEARCH_QUERY_PARAM]: normalized }).toString()}`
+  return buildIndexablePageMetadata(locale, pathname, {
+    title: t('resultsTitle', { query: normalized }),
+    description: t('resultsSubtitle', { brand: siteName }),
+    siteName,
+    robots,
+  })
 }

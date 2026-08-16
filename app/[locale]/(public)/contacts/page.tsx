@@ -11,6 +11,7 @@ import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import { getTranslations } from 'next-intl/server'
 import {
   fetchPublicSiteSettings,
+  getMarketSettings,
   getStoreSettings,
   isStoreContactUnavailable,
 } from '@/lib/settings/fetch'
@@ -27,12 +28,13 @@ export default async function ContactsPage() {
   const tNav = await getTranslations('nav')
   const fetched = await fetchPublicSiteSettings()
   const store = getStoreSettings(fetched)
+  const market = getMarketSettings(fetched)
   const contactsUnavailable = isStoreContactUnavailable(fetched) || !hasStoreContactInfo(store)
 
   return (
     <>
       <Navigation />
-      <main className="flex-1 bg-background">
+      <main className="flex-1 bg-transparent">
         <div className="bg-secondary/30 py-8 md:py-12">
           <div className={siteContentShellClassName}>
             <PublicPageBreadcrumbs
@@ -67,6 +69,7 @@ export default async function ContactsPage() {
                       columnsOnDesktop
                       showAddress={false}
                       showSocialLinks
+                      marketRegion={market.region}
                       scheduleSectionTitle="Графік роботи"
                     />
                   </CardContent>

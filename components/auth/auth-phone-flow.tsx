@@ -1,10 +1,12 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, LogOut, Mail, Phone } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
 import { AuthOAuthButtons } from '@/components/auth/auth-oauth-buttons'
+import { AuthConsentNotice } from '@/components/auth/auth-consent-notice'
 import { FieldHint, OrDivider, RequiredLabel } from '@/components/auth/auth-form-ui'
 import { useSession } from '@/components/providers/session-provider'
 import { Button } from '@/components/ui/button'
@@ -14,13 +16,13 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   sendAuthEmailCode,
-  sendCheckoutSmsCode,
+  sendAuthSmsCode,
   verifyAuthEmailCode,
-  verifyCheckoutSmsCode,
+  verifyAuthSmsCode,
 } from '@/lib/checkout-customer-lookup'
 import { startGoogleOAuth } from '@/lib/auth/google-oauth-client'
 import { isGoogleOAuthConfigured } from '@/lib/auth/google-oauth'
-import { useOAuthReturn } from '@/lib/auth/use-oauth-return'
+import { useOAuthReturn, type OAuthReturnPayload } from '@/lib/auth/use-oauth-return'
 import { cn } from '@/lib/utils'
 import { isValidEmail, sanitizeEmail } from '@/lib/validation/register-form'
 import { useRouter } from '@/i18n/navigation'
@@ -28,7 +30,15 @@ import {
   formatPhoneDisplay,
   sanitizeCheckoutPhoneInput,
 } from '@/lib/validation/auth-phone-form'
-import { isValidUkrPhone } from '@/lib/validation/checkout-form'
+import {
+  DEFAULT_MARKET_SETTINGS,
+  isOtpChannelEnabled,
+  phoneErrorForPolicy,
+  phonePlaceholderForPolicy,
+  type OtpPurpose,
+  type MarketSettings,
+} from '@/lib/settings/market'
+import { fetchPublicSiteSettingsFromApiRoute, getMarketSettings } from '@/lib/settings/fetch'
 
 type AuthChannel = 'phone' | 'email'
 type AuthStep = 'identifier' | 'otp'
@@ -51,7 +61,7 @@ async function createPhoneSession(phone: string, verificationToken: string) {
     user?: { email: string; role: 'admin' | 'customer' }
   }
   if (!res.ok || !data.user) {
-    throw new Error(data.error || 'Не вдалося створити сесію')
+    throw new Error(data.error || 'SESSION_CREATE_FAILED')
   }
   return data.user
 }
@@ -71,34 +81,61 @@ async function createEmailSession(email: string, verificationToken: string) {
     user?: { email: string; role: 'admin' | 'customer' }
   }
   if (!res.ok || !data.user) {
-    throw new Error(data.error || 'Не вдалося створити сесію')
+    throw new Error(data.error || 'SESSION_CREATE_FAILED')
   }
   return data.user
 }
 
-function getPhoneError(phone: string): string | null {
-  if (!phone.trim()) return 'Обовʼязкове поле'
-  if (!isValidUkrPhone(phone)) return 'Введіть коректний український номер (+380)'
+function getEmailError(
+  email: string,
+  messages: { required: string; invalid: string },
+): string | null {
+  if (!email.trim()) return messages.required
+  if (!isValidEmail(email)) return messages.invalid
   return null
 }
 
-function getEmailError(email: string): string | null {
-  if (!email.trim()) return 'Обовʼязкове поле'
-  if (!isValidEmail(email)) return 'Невірний формат email'
+function pickDefaultChannel(
+  smsEnabled: boolean,
+  emailEnabled: boolean,
+  preferEmail = false,
+): AuthChannel | null {
+  if (preferEmail) {
+    if (emailEnabled) return 'email'
+    if (smsEnabled) return 'phone'
+    return null
+  }
+  if (smsEnabled) return 'phone'
+  if (emailEnabled) return 'email'
   return null
 }
 
 export function AuthPhoneFlow({
   redirectTo,
   onSuccess,
+  purpose = 'login',
+  market: marketProp,
 }: {
   redirectTo: string
   onSuccess: (target: string) => void
+  purpose?: OtpPurpose
+  market?: MarketSettings
 }) {
+  const t = useTranslations('auth')
+  const tc = useTranslations('common')
   const router = useRouter()
   const { user, setUser } = useSession()
 
-  const [channel, setChannel] = useState<AuthChannel>('phone')
+  const [market, setMarket] = useState<MarketSettings>(marketProp ?? DEFAULT_MARKET_SETTINGS)
+  const [marketReady, setMarketReady] = useState(Boolean(marketProp))
+
+  const smsEnabled = isOtpChannelEnabled(market, 'sms', purpose)
+  const emailEnabled = isOtpChannelEnabled(market, 'email', purpose)
+  const preferEmail = market.region === 'sk'
+
+  const [channel, setChannel] = useState<AuthChannel>(
+    () => pickDefaultChannel(smsEnabled, emailEnabled, preferEmail) ?? 'email',
+  )
   const [step, setStep] = useState<AuthStep>('identifier')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
@@ -111,10 +148,68 @@ export function AuthPhoneFlow({
 
   const isLoggedIn = Boolean(user)
 
-  const phoneError = getPhoneError(phone)
-  const emailError = getEmailError(email)
+  useEffect(() => {
+    if (marketProp) {
+      setMarket(marketProp)
+      setMarketReady(true)
+      return
+    }
+    let cancelled = false
+    void fetchPublicSiteSettingsFromApiRoute().then((result) => {
+      if (cancelled) return
+      setMarket(getMarketSettings(result))
+      setMarketReady(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [marketProp])
+
+  useEffect(() => {
+    if (!marketReady) return
+    const next = pickDefaultChannel(smsEnabled, emailEnabled, market.region === 'sk')
+    if (!next) return
+    if (
+      (channel === 'phone' && !smsEnabled) ||
+      (channel === 'email' && !emailEnabled) ||
+      (market.region === 'sk' && emailEnabled && channel === 'phone' && !smsEnabled)
+    ) {
+      setChannel(next)
+      setStep('identifier')
+      setCode('')
+      setCodeError(null)
+    } else if (
+      market.region === 'sk' &&
+      emailEnabled &&
+      channel === 'phone' &&
+      step === 'identifier'
+    ) {
+      // Prefer email tab on SK once market loaded
+      setChannel('email')
+    }
+  }, [marketReady, smsEnabled, emailEnabled, channel, market.region, step])
+
+  const phoneError = phoneErrorForPolicy(phone, market.authPhonePolicy)
+  const emailError = getEmailError(email, {
+    required: tc('requiredField'),
+    invalid: tc('invalidEmail'),
+  })
   const identifier =
     channel === 'phone' ? phone.trim() : email.trim().toLowerCase()
+  const mapAuthError = (e: unknown, fallbackKey: 'sendCodeFailed' | 'signInError' | 'sessionCreateFailed') => {
+    if (e instanceof Error) {
+      if (e.message === 'SESSION_CREATE_FAILED') return tc('sessionCreateFailed')
+      if (e.message && !e.message.startsWith('SESSION_')) return e.message
+    }
+    return tc(fallbackKey)
+  }
+
+  const channelCount = useMemo(() => {
+    let n = 0
+    if (smsEnabled) n += 1
+    if (emailEnabled) n += 1
+    return n
+  }, [smsEnabled, emailEnabled])
 
   const resetFlow = useCallback(() => {
     setStep('identifier')
@@ -131,15 +226,7 @@ export function AuthPhoneFlow({
   }
 
   const completeGoogleAuth = useCallback(
-    (payload: {
-      user: {
-        email: string
-        role: 'customer' | 'admin'
-        firstName?: string | null
-        lastName?: string | null
-        phone?: string | null
-      }
-    }) => {
+    (payload: OAuthReturnPayload) => {
       setUser(payload.user)
       if (payload.user.phone) setPhone(payload.user.phone)
       if (payload.user.email) setEmail(payload.user.email)
@@ -154,9 +241,7 @@ export function AuthPhoneFlow({
   const handleGoogleLogin = () => {
     if (googleLoading || isLoggedIn) return
     if (!isGoogleOAuthConfigured()) {
-      toast.error(
-        'Вхід через Google тимчасово недоступний. Налаштуйте NEXT_PUBLIC_GOOGLE_CLIENT_ID.',
-      )
+      toast.error(tc('googleSignInUnavailable'))
       return
     }
     setGoogleLoading(true)
@@ -176,42 +261,42 @@ export function AuthPhoneFlow({
     setCodeError(null)
     try {
       if (channel === 'phone') {
-        await sendCheckoutSmsCode(phone)
-        toast.success('Код надіслано SMS')
+        await sendAuthSmsCode(phone, purpose)
+        toast.success(tc('codeSentSms'))
       } else {
-        await sendAuthEmailCode(email)
-        toast.success('Код надіслано на email')
+        await sendAuthEmailCode(email, purpose)
+        toast.success(tc('codeSentEmail'))
       }
       setStep('otp')
       setCode('')
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Не вдалося надіслати код')
+      toast.error(mapAuthError(e, 'sendCodeFailed'))
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleVerify = async () => {
-    if (code.length < 4) return
+    if (code.length < 6) return
 
     setSubmitting(true)
     setCodeError(null)
     try {
       if (channel === 'phone') {
-        const { verificationToken } = await verifyCheckoutSmsCode(phone, code)
+        const { verificationToken } = await verifyAuthSmsCode(phone, code, purpose)
         const sessionUser = await createPhoneSession(phone, verificationToken)
         setUser(sessionUser)
       } else {
-        const { verificationToken } = await verifyAuthEmailCode(email, code)
+        const { verificationToken } = await verifyAuthEmailCode(email, code, purpose)
         const sessionUser = await createEmailSession(email, verificationToken)
         setUser(sessionUser)
       }
 
       router.refresh()
       onSuccess(redirectTo)
-      toast.success('Вітаємо!')
+      toast.success(tc('welcome'))
     } catch (e) {
-      setCodeError(e instanceof Error ? e.message : 'Помилка входу')
+      setCodeError(mapAuthError(e, 'signInError'))
     } finally {
       setSubmitting(false)
     }
@@ -222,15 +307,15 @@ export function AuthPhoneFlow({
     setCodeError(null)
     try {
       if (channel === 'phone') {
-        await sendCheckoutSmsCode(phone)
-        toast.success('Код надіслано SMS')
+        await sendAuthSmsCode(phone, purpose)
+        toast.success(tc('codeSentSms'))
       } else {
-        await sendAuthEmailCode(email)
-        toast.success('Код надіслано на email')
+        await sendAuthEmailCode(email, purpose)
+        toast.success(tc('codeSentEmail'))
       }
       setCode('')
     } catch (e) {
-      setCodeError(e instanceof Error ? e.message : 'Не вдалося надіслати код')
+      setCodeError(mapAuthError(e, 'sendCodeFailed'))
     } finally {
       setSubmitting(false)
     }
@@ -249,7 +334,7 @@ export function AuthPhoneFlow({
     setEmailTouched(false)
     resetFlow()
     router.refresh()
-    toast.success('Ви вийшли')
+    toast.success(tc('loggedOut'))
   }
 
   const displayName =
@@ -273,9 +358,17 @@ export function AuthPhoneFlow({
         </div>
         <Button type="button" variant="outline" size="sm" onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
-          Вийти
+          {tc('logout')}
         </Button>
       </div>
+    )
+  }
+
+  if (marketReady && channelCount === 0) {
+    return (
+      <p className="text-sm text-destructive" role="alert">
+        {t('otpChannelsDisabled')}
+      </p>
     )
   }
 
@@ -284,24 +377,26 @@ export function AuthPhoneFlow({
       <AuthOAuthButtons googleLoading={googleLoading} onGoogleClick={handleGoogleLogin} />
       <OrDivider />
 
-      <Tabs value={channel} onValueChange={handleChannelChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="phone">Телефон</TabsTrigger>
-          <TabsTrigger value="email">Email</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {channelCount > 1 ? (
+        <Tabs value={channel} onValueChange={handleChannelChange} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            {smsEnabled ? <TabsTrigger value="phone">{tc('phoneTab')}</TabsTrigger> : null}
+            {emailEnabled ? <TabsTrigger value="email">Email</TabsTrigger> : null}
+          </TabsList>
+        </Tabs>
+      ) : null}
 
       {step === 'identifier' ? (
         <div className="space-y-4">
-          {channel === 'phone' ? (
+          {channel === 'phone' && smsEnabled ? (
             <div className="space-y-2">
-              <RequiredLabel htmlFor="auth-phone">Номер телефону</RequiredLabel>
+              <RequiredLabel htmlFor="auth-phone">{tc('phoneNumber')}</RequiredLabel>
               <InputWithClear
                 id="auth-phone"
                 type="tel"
                 inputMode="tel"
                 autoComplete="tel"
-                placeholder="+380 XX XXX XX XX"
+                placeholder={phonePlaceholderForPolicy(market.authPhonePolicy)}
                 leadingIcon={phoneLeadingIcon}
                 className={cn(phoneTouched && phoneError && 'border-destructive/80 ring-destructive/30')}
                 value={phone}
@@ -315,7 +410,9 @@ export function AuthPhoneFlow({
                 message={phoneError}
               />
             </div>
-          ) : (
+          ) : null}
+
+          {channel === 'email' && emailEnabled ? (
             <div className="space-y-2">
               <RequiredLabel htmlFor="auth-email">Email</RequiredLabel>
               <InputWithClear
@@ -323,7 +420,7 @@ export function AuthPhoneFlow({
                 type="email"
                 inputMode="email"
                 autoComplete="email"
-                placeholder="ваш@email.com"
+                placeholder={t('emailPlaceholder')}
                 leadingIcon={emailLeadingIcon}
                 className={cn(emailTouched && emailError && 'border-destructive/80 ring-destructive/30')}
                 value={email}
@@ -337,21 +434,21 @@ export function AuthPhoneFlow({
                 message={emailError}
               />
             </div>
-          )}
+          ) : null}
 
           <Button
             type="button"
             className="w-full sm:w-auto"
-            disabled={submitting}
+            disabled={submitting || !marketReady}
             onClick={handleContinue}
           >
             {submitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Надсилання…
+                {tc('sending')}
               </>
             ) : (
-              'Продовжити'
+              tc('continue')
             )}
           </Button>
         </div>
@@ -360,24 +457,22 @@ export function AuthPhoneFlow({
           <p className="text-sm text-muted-foreground">
             {channel === 'phone' ? (
               <>
-                Код надіслано на{' '}
-                <span className="font-medium text-foreground">{formatPhoneDisplay(identifier)}</span>
+                {tc('codeSentToPhone', { phone: formatPhoneDisplay(identifier) })}
               </>
             ) : (
               <>
-                Код надіслано на{' '}
-                <span className="font-medium text-foreground">{identifier}</span>
+                {tc('codeSentToEmail', { email: identifier })}
               </>
             )}
           </p>
 
           <div className="space-y-3">
             <Label htmlFor="auth-code">
-              {channel === 'phone' ? 'Код з SMS' : 'Код з email'}
+              {channel === 'phone' ? tc('codeFromSms') : tc('codeFromEmail')}
             </Label>
             <InputOTP
               id="auth-code"
-              maxLength={4}
+              maxLength={6}
               value={code}
               onChange={(value) => {
                 setCode(value)
@@ -389,9 +484,11 @@ export function AuthPhoneFlow({
                 <InputOTPSlot index={1} />
                 <InputOTPSlot index={2} />
                 <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
               </InputOTPGroup>
             </InputOTP>
-            <p className="text-xs text-muted-foreground">Введіть 4-значний код</p>
+            <p className="text-xs text-muted-foreground">{tc('enterFourDigitCode')}</p>
             {codeError && (
               <p className="text-xs text-destructive" role="alert">
                 {codeError}
@@ -400,16 +497,16 @@ export function AuthPhoneFlow({
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
-                disabled={code.length < 4 || submitting}
+                disabled={code.length < 6 || submitting}
                 onClick={handleVerify}
               >
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Перевірка…
+                    {tc('verifying')}
                   </>
                 ) : (
-                  'Увійти'
+                  tc('signIn')
                 )}
               </Button>
               <Button
@@ -419,7 +516,7 @@ export function AuthPhoneFlow({
                 disabled={submitting}
                 onClick={handleResend}
               >
-                Надіслати ще раз
+                {tc('resend')}
               </Button>
               <Button
                 type="button"
@@ -428,12 +525,14 @@ export function AuthPhoneFlow({
                 disabled={submitting}
                 onClick={resetFlow}
               >
-                Змінити {channel === 'phone' ? 'номер' : 'email'}
+                {channel === 'phone' ? tc('changePhone') : tc('changeEmail')}
               </Button>
             </div>
           </div>
         </div>
       )}
+
+      <AuthConsentNotice text={market.authConsentText} />
     </div>
   )
 }

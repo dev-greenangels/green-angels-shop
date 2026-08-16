@@ -19,16 +19,8 @@ import {
   fetchBackstageCarts,
   type BackstageCartListItem,
 } from '@/lib/backstage/carts'
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleString('uk-UA', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
+import { formatDateTime } from '@/lib/i18n/format-datetime'
 
 function CartKindBadge({ kind }: { kind: BackstageCartListItem['kind'] }) {
   if (kind === 'guest') {
@@ -38,6 +30,7 @@ function CartKindBadge({ kind }: { kind: BackstageCartListItem['kind'] }) {
 }
 
 export default function CartsPage() {
+  const { locale } = useBackstageUiLocale()
   const [carts, setCarts] = useState<BackstageCartListItem[]>([])
   const [search, setSearch] = useState('')
   const [kindFilter, setKindFilter] = useState<'all' | 'guest' | 'user'>('all')
@@ -167,7 +160,7 @@ export default function CartsPage() {
                       )}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Оновлено: {formatDate(cart.updatedAt)}
+                      Оновлено: {formatDateTime(cart.updatedAt, locale, 'datetime')}
                     </div>
                   </button>
 

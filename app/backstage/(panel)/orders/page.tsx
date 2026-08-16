@@ -16,12 +16,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ORDER_STATUS_LABELS, ORDER_STATUSES } from '@/lib/backstage/order-status'
 import { formatOrderCustomerName } from '@/lib/backstage/order-display'
 import {
   fetchBackstageOrders,
   type BackstageOrderListItem,
 } from '@/lib/backstage/orders'
+import {
+  fetchOrderStatuses,
+  type OrderStatusDefinition,
+} from '@/lib/backstage/order-statuses'
+import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
+import { formatDateTime } from '@/lib/i18n/format-datetime'
+import { getVisiblePageNumbers } from '@/lib/catalog/pagination'
+import { cn } from '@/lib/utils'
+
+const PAGE_SIZE = 50
 
 function formatMoney(amount: number, currency = 'UAH') {
   if (currency === 'UAH') return `${amount.toLocaleString('uk-UA')} ₴`
@@ -29,11 +38,22 @@ function formatMoney(amount: number, currency = 'UAH') {
 }
 
 export default function OrdersPage() {
+  const { locale } = useBackstageUiLocale()
   const [orders, setOrders] = useState<BackstageOrderListItem[]>([])
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [statusDefs, setStatusDefs] = useState<OrderStatusDefinition[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    void fetchOrderStatuses(false)
+      .then(setStatusDefs)
+      .catch(() => setStatusDefs([]))
+  }, [])
 
   const loadOrders = useCallback(async () => {
     setLoading(true)
@@ -42,14 +62,22 @@ export default function OrdersPage() {
       const data = await fetchBackstageOrders({
         search: search.trim() || undefined,
         status: statusFilter,
+        page,
+        pageSize: PAGE_SIZE,
       })
-      setOrders(data)
+      setOrders(data.items)
+      setTotal(data.total)
+      setTotalPages(data.totalPages)
     } catch (err) {
       setOrders([])
       setError(err instanceof Error ? err.message : 'Не вдалося завантажити замовлення.')
     } finally {
       setLoading(false)
     }
+  }, [search, statusFilter, page])
+
+  useEffect(() => {
+    setPage(1)
   }, [search, statusFilter])
 
   useEffect(() => {
@@ -69,6 +97,8 @@ export default function OrdersPage() {
     if (orders.length === 0) return 'Замовлень поки немає.'
     return null
   }, [loading, error, orders.length])
+
+  const pageNumbers = getVisiblePageNumbers(page, totalPages)
 
   return (
     <AdminLayout>
@@ -102,9 +132,9 @@ export default function OrdersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Всі статуси</SelectItem>
-                  {ORDER_STATUSES.map((status) => (
-                    <SelectItem key={status} value={status.toLowerCase()}>
-                      {ORDER_STATUS_LABELS[status]}
+                  {statusDefs.map((row) => (
+                    <SelectItem key={row.code} value={row.code.toLowerCase()}>
+                      {row.nameUk}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -121,7 +151,7 @@ export default function OrdersPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Замовлення ({orders.length})</CardTitle>
+            <CardTitle>Замовлення ({total})</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -180,7 +210,7 @@ export default function OrdersPage() {
                           <OrderRowStatusCell order={order} onUpdated={handleStatusUpdated} />
                         </td>
                         <td className="px-4 py-3 text-sm text-muted-foreground">
-                          {new Date(order.createdAt).toLocaleDateString('uk-UA')}
+                          {formatDateTime(order.createdAt, locale, 'date')}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <OrderDetailsDialog
@@ -192,6 +222,42 @@ export default function OrdersPage() {
                     ))}
                   </tbody>
                 </table>
+                {!loading && totalPages > 1 ? (
+                  <div className="mt-6 flex flex-col items-center justify-between gap-4 border-t border-border pt-4 sm:flex-row">
+                    <p className="text-sm text-muted-foreground">
+                      Сторінка {page} з {totalPages} · усього {total}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={page <= 1}
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      >
+                        Назад
+                      </Button>
+                      {pageNumbers.map((pageNumber) => (
+                        <Button
+                          key={pageNumber}
+                          variant={pageNumber === page ? 'default' : 'outline'}
+                          size="sm"
+                          className={cn('min-w-9', pageNumber === page && 'pointer-events-none')}
+                          onClick={() => setPage(pageNumber)}
+                        >
+                          {pageNumber}
+                        </Button>
+                      ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={page >= totalPages}
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      >
+                        Далі
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             )}
           </CardContent>

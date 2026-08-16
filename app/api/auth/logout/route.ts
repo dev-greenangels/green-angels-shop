@@ -1,18 +1,20 @@
 import { NextResponse } from 'next/server'
 
 import { fetchBackend } from '@/lib/api/backend-fetch'
-import { SESSION_COOKIE_NAME } from '@/lib/auth/constants'
+import { CHECKOUT_LOCK_COOKIE_NAME, SESSION_COOKIE_NAME } from '@/lib/auth/constants'
 import { resolveLogoutRedirect } from '@/lib/auth/logout-redirect'
 import { localePath } from '@/lib/locale-path'
 
 function clearSessionCookie(response: NextResponse) {
-  response.cookies.set(SESSION_COOKIE_NAME, '', {
+  const options = {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: 'lax' as const,
     secure: process.env.NODE_ENV === 'production',
     path: '/',
     maxAge: 0,
-  })
+  }
+  response.cookies.set(SESSION_COOKIE_NAME, '', options)
+  response.cookies.set(CHECKOUT_LOCK_COOKIE_NAME, '', options)
   return response
 }
 

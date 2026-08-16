@@ -1,6 +1,10 @@
 'use client'
 
-import { useFormatPerUnitPrice, useFormatPrice } from '@/lib/commerce/use-format-price'
+import {
+  useFormatPerUnitPrice,
+  useFormatPrice,
+  type FormatPriceMode,
+} from '@/lib/commerce/use-format-price'
 import { useUnitSymbol } from '@/components/providers/commerce-provider'
 import { cn } from '@/lib/utils'
 
@@ -14,6 +18,7 @@ type DiscountedPriceProps = {
   perUnit?: boolean | 'sale-only'
   stacked?: boolean
   unitSymbol?: string | null
+  mode?: FormatPriceMode
 }
 
 export function DiscountedUnitPrice({
@@ -25,9 +30,10 @@ export function DiscountedUnitPrice({
   perUnit = false,
   stacked = false,
   unitSymbol,
+  mode = 'shelf',
 }: DiscountedPriceProps) {
-  const formatPrice = useFormatPrice()
-  const formatPerUnit = useFormatPerUnitPrice(unitSymbol)
+  const formatPrice = useFormatPrice(mode)
+  const formatPerUnit = useFormatPerUnitPrice(unitSymbol, mode)
   const defaultUnit = useUnitSymbol(unitSymbol)
   const hasDiscount = salePrice < originalPrice - 0.001
   const saleSuffix = perUnit ? `/${defaultUnit}` : ''
@@ -58,7 +64,10 @@ export function DiscountedUnitPrice({
         {perUnit === true ? formatPerUnit(originalPrice) : formatPrice(originalPrice)}
         {perUnit === true ? null : originalSuffix}
       </span>
-      <span suppressHydrationWarning className={cn('font-medium text-red-500 dark:text-red-400', saleClassName)}>
+      <span
+        suppressHydrationWarning
+        className={cn('font-medium text-red-500 dark:text-red-400', saleClassName)}
+      >
         {perUnit ? formatPerUnit(salePrice) : formatPrice(salePrice)}
         {!perUnit ? saleSuffix : null}
       </span>
@@ -72,14 +81,16 @@ export function DiscountedLineTotal({
   className,
   originalClassName,
   saleClassName,
+  mode = 'shelf',
 }: {
   originalTotal: number
   saleTotal: number
   className?: string
   originalClassName?: string
   saleClassName?: string
+  mode?: FormatPriceMode
 }) {
-  const formatPrice = useFormatPrice()
+  const formatPrice = useFormatPrice(mode)
   const hasDiscount = saleTotal < originalTotal - 0.001
 
   if (!hasDiscount) {

@@ -90,6 +90,11 @@ export const fetchCatalogRootSlug = cache(async (locale?: string): Promise<strin
   }
 })
 
+/**
+ * Канонічне посилання на каталог.
+ * Без кореня — `/catalog` (лендинг без редіректу на себе).
+ * З коренем — `/{rootSlug}`.
+ */
 export function resolveCatalogHref(catalogRootSlug: string | null | undefined): string {
   return catalogRootSlug ? catalogRootHref(catalogRootSlug) : '/catalog'
 }

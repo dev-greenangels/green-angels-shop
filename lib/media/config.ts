@@ -5,14 +5,15 @@ export const PUBLIC_UPLOAD_PREFIX = '/uploads'
 
 /**
  * Корінь файлової системи для завантажень.
- * Локально: public/uploads у проєкті магазину.
- * VPS HostPro: змінна UPLOAD_ROOT на зовнішній volume, напр. /var/www/green-angels/data/uploads
- * з симлінком public/uploads → цей шлях.
+ * Monorepo default: ../data/uploads (green-angels-project/data/uploads).
+ * Docker / VPS: UPLOAD_ROOT на зовнішній volume, напр. /data/uploads.
+ * Vercel prod: NEXT_PUBLIC_MEDIA_BASE_URL (same as R2_PUBLIC_BASE_URL).
+ * Writes go Nest → R2 / disk; this helper only maps stored `/uploads/...` paths.
  */
 export function getUploadRoot(): string {
   const configured = process.env.UPLOAD_ROOT?.trim()
   if (configured) return path.resolve(configured)
-  return path.join(process.cwd(), 'public', 'uploads')
+  return path.resolve(path.join(process.cwd(), '..', 'data', 'uploads'))
 }
 
 export function uploadUrlToAbsolutePath(urlPath: string): string {

@@ -29,7 +29,7 @@ const toastClassNames = {
   description: 'text-sm text-muted-foreground/90',
   closeButton:
     'border-border/60 bg-background/60 text-muted-foreground hover:bg-background/80 hover:text-foreground',
-  actionButton: 'bg-primary text-primary-foreground hover:bg-primary/90',
+  actionButton: 'bg-primary-gradient text-primary-foreground',
   cancelButton: 'bg-background text-foreground border border-border hover:bg-muted',
   success:
     '!bg-primary/10 !border-primary/35 !text-primary [&_[data-title]]:!text-primary [&_[data-description]]:!text-primary/85',

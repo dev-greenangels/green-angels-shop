@@ -38,8 +38,7 @@ export async function CategoriesSection({
   const title = settings.title.trim()
 
   return (
-    <section className="relative overflow-hidden bg-background py-12 md:py-16">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(91,148,56,0.08),transparent_45%)]" />
+    <section className="py-10 md:py-14">
       <div className={siteContentShellClassName}>
         {title ? (
           <HomeSectionHeader
@@ -64,12 +63,7 @@ export async function CategoriesSection({
           <>
             <HomeCategoryCarousel categories={visibleCategories} />
             <div className="mt-8 flex justify-center md:mt-10">
-              <Button
-                variant="outline"
-                size="lg"
-                asChild
-                className="rounded-full border-primary/25 bg-background/90 px-6 shadow-sm hover:border-primary/40 hover:bg-primary/5"
-              >
+              <Button variant="secondary" size="lg" asChild className="rounded-full px-6">
                 <Link href={catalogHref}>
                   {tc('fullCatalog')}
                   <ArrowRight className="ml-2 h-4 w-4" />

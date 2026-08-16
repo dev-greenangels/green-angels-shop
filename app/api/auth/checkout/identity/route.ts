@@ -36,6 +36,7 @@ export async function POST(request: Request) {
   try {
     const backendRes = await fetchBackend('/auth/checkout/identity', {
       method: 'POST',
+      request,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...(phone ? { phone } : {}),

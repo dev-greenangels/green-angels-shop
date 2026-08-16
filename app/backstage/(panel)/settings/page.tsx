@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, Plus, RefreshCw, Save, Trash2 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
@@ -8,8 +8,10 @@ import { AdminLayout } from '@/components/admin/admin-layout'
 import { CartCheckoutSettingsForm } from '@/components/backstage/cart-checkout-settings-form'
 import { CatalogSettingsForm } from '@/components/backstage/catalog-settings-form'
 import { NovaPoshtaSettingsForm } from '@/components/backstage/nova-poshta-settings-form'
+import { FlexiSettingsForm } from '@/components/backstage/flexi-settings-form'
 import { RecentlyViewedSettingsForm } from '@/components/backstage/recently-viewed-settings-form'
 import { HomeSectionOrderControls } from '@/components/backstage/home-section-order-controls'
+import { MarketSettingsForm } from '@/components/backstage/market-settings-form'
 import { clearRecentlyViewedSettingsCache } from '@/components/product/recently-viewed-section'
 import { StoreContactSettingsForm } from '@/components/backstage/store-contact-settings-form'
 import { Button } from '@/components/ui/button'
@@ -24,19 +26,30 @@ import {
   updateBackstageCartCheckoutSettings,
   updateBackstageCatalogSettings,
   updateBackstageHomeSettings,
+  updateBackstageMarketSettings,
   updateBackstageRecentlyViewedSettings,
   updateBackstageStoreSettings,
+  updateBackstagePrestaImportSettings,
 } from '@/lib/backstage/settings'
+import { fetchCurrencies } from '@/lib/backstage/reference-data'
+import type { CurrencyInfo } from '@/lib/commerce/types'
 import {
   DEFAULT_CART_CHECKOUT_SETTINGS,
   DEFAULT_CATALOG_SETTINGS,
   DEFAULT_HOME_SETTINGS,
+  DEFAULT_MARKET_SETTINGS,
   DEFAULT_RECENTLY_VIEWED_SETTINGS,
 } from '@/lib/settings/defaults'
 import { normalizeCartCheckoutSettings } from '@/lib/settings/cart-checkout.normalize'
 import { normalizeCatalogPageSettings } from '@/lib/settings/catalog.normalize'
 import { normalizeHomeSettings } from '@/lib/settings/home.normalize'
+import { normalizeMarketSettings } from '@/lib/settings/market'
 import { normalizeStoreContactSettings } from '@/lib/settings/store-contact.normalize'
+import {
+  DEFAULT_PRESTA_IMPORT_SETTINGS,
+  normalizePrestaImportSettings,
+  type PrestaImportSettings,
+} from '@/lib/settings/presta-import'
 import type {
   CartCheckoutSettings,
   CatalogPageSettings,
@@ -44,6 +57,7 @@ import type {
   HomeHighlight,
   HomePageSettings,
   HomeStat,
+  MarketSettings,
   RecentlyViewedSettings,
   StoreContactSettings,
 } from '@/lib/settings/types'
@@ -59,6 +73,10 @@ function listToLines(items: string[]): string {
   return items.join('\n')
 }
 
+function stableJson(value: unknown): string {
+  return JSON.stringify(value)
+}
+
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [savingStore, setSavingStore] = useState(false)
@@ -66,21 +84,94 @@ export default function SettingsPage() {
   const [savingCart, setSavingCart] = useState(false)
   const [savingCatalog, setSavingCatalog] = useState(false)
   const [savingRecentlyViewed, setSavingRecentlyViewed] = useState(false)
+  const [savingPrestaImport, setSavingPrestaImport] = useState(false)
+  const [savingMarket, setSavingMarket] = useState(false)
   const [store, setStore] = useState<StoreContactSettings | null>(null)
   const [home, setHome] = useState<HomePageSettings | null>(null)
   const [cart, setCart] = useState<CartCheckoutSettings | null>(null)
   const [catalog, setCatalog] = useState<CatalogPageSettings | null>(null)
   const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewedSettings | null>(null)
+  const [prestaImport, setPrestaImport] = useState<PrestaImportSettings | null>(null)
+  const [market, setMarket] = useState<MarketSettings | null>(null)
+  const [currencies, setCurrencies] = useState<CurrencyInfo[]>([])
+  const [currenciesLoading, setCurrenciesLoading] = useState(true)
+  const [baselineStore, setBaselineStore] = useState<string | null>(null)
+  const [baselineHome, setBaselineHome] = useState<string | null>(null)
+  const [baselineCart, setBaselineCart] = useState<string | null>(null)
+  const [baselineCatalog, setBaselineCatalog] = useState<string | null>(null)
+  const [baselineRecentlyViewed, setBaselineRecentlyViewed] = useState<string | null>(null)
+  const [baselinePrestaImport, setBaselinePrestaImport] = useState<string | null>(null)
+  const [baselineMarket, setBaselineMarket] = useState<string | null>(null)
+
+  const storeDirty = useMemo(
+    () => Boolean(store && baselineStore && stableJson(store) !== baselineStore),
+    [store, baselineStore],
+  )
+  const homeDirty = useMemo(
+    () => Boolean(home && baselineHome && stableJson(home) !== baselineHome),
+    [home, baselineHome],
+  )
+  const cartDirty = useMemo(
+    () => Boolean(cart && baselineCart && stableJson(cart) !== baselineCart),
+    [cart, baselineCart],
+  )
+  const catalogDirty = useMemo(
+    () => Boolean(catalog && baselineCatalog && stableJson(catalog) !== baselineCatalog),
+    [catalog, baselineCatalog],
+  )
+  const recentlyViewedDirty = useMemo(
+    () =>
+      Boolean(
+        recentlyViewed &&
+          baselineRecentlyViewed &&
+          stableJson(recentlyViewed) !== baselineRecentlyViewed,
+      ),
+    [recentlyViewed, baselineRecentlyViewed],
+  )
+  const prestaImportDirty = useMemo(
+    () =>
+      Boolean(
+        prestaImport && baselinePrestaImport && stableJson(prestaImport) !== baselinePrestaImport,
+      ),
+    [prestaImport, baselinePrestaImport],
+  )
+  const marketDirty = useMemo(
+    () => Boolean(market && baselineMarket && stableJson(market) !== baselineMarket),
+    [market, baselineMarket],
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
+    setCurrenciesLoading(true)
     try {
-      const data = await fetchBackstageSettings()
-      setStore(normalizeStoreContactSettings(data.store))
-      setHome(normalizeHomeSettings(data.home))
-      setCart(normalizeCartCheckoutSettings(data.cart ?? DEFAULT_CART_CHECKOUT_SETTINGS))
-      setCatalog(normalizeCatalogPageSettings(data.catalog ?? DEFAULT_CATALOG_SETTINGS))
-      setRecentlyViewed(data.recentlyViewed ?? DEFAULT_RECENTLY_VIEWED_SETTINGS)
+      const [data, currenciesData] = await Promise.all([
+        fetchBackstageSettings(),
+        fetchCurrencies().catch(() => [] as CurrencyInfo[]),
+      ])
+      const nextStore = normalizeStoreContactSettings(data.store)
+      const nextHome = normalizeHomeSettings(data.home)
+      const nextCart = normalizeCartCheckoutSettings(data.cart ?? DEFAULT_CART_CHECKOUT_SETTINGS)
+      const nextCatalog = normalizeCatalogPageSettings(data.catalog ?? DEFAULT_CATALOG_SETTINGS)
+      const nextRecently = data.recentlyViewed ?? DEFAULT_RECENTLY_VIEWED_SETTINGS
+      const nextPresta = normalizePrestaImportSettings(
+        data.prestaImport ?? DEFAULT_PRESTA_IMPORT_SETTINGS,
+      )
+      const nextMarket = normalizeMarketSettings(data.market ?? DEFAULT_MARKET_SETTINGS)
+      setStore(nextStore)
+      setHome(nextHome)
+      setCart(nextCart)
+      setCatalog(nextCatalog)
+      setRecentlyViewed(nextRecently)
+      setPrestaImport(nextPresta)
+      setMarket(nextMarket)
+      setCurrencies(currenciesData)
+      setBaselineStore(stableJson(nextStore))
+      setBaselineHome(stableJson(nextHome))
+      setBaselineCart(stableJson(nextCart))
+      setBaselineCatalog(stableJson(nextCatalog))
+      setBaselineRecentlyViewed(stableJson(nextRecently))
+      setBaselinePrestaImport(stableJson(nextPresta))
+      setBaselineMarket(stableJson(nextMarket))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося завантажити налаштування.')
       setStore(null)
@@ -88,8 +179,11 @@ export default function SettingsPage() {
       setCart(null)
       setCatalog(null)
       setRecentlyViewed(null)
+      setPrestaImport(null)
+      setMarket(null)
     } finally {
       setLoading(false)
+      setCurrenciesLoading(false)
     }
   }, [])
 
@@ -103,6 +197,7 @@ export default function SettingsPage() {
     try {
       const updated = await updateBackstageStoreSettings(store)
       setStore(updated)
+      setBaselineStore(stableJson(updated))
       toast.success('Контакти магазину збережено.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
@@ -117,6 +212,7 @@ export default function SettingsPage() {
     try {
       const updated = await updateBackstageCartCheckoutSettings(cart)
       setCart(updated)
+      setBaselineCart(stableJson(updated))
       toast.success('Налаштування кошика збережено.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
@@ -130,7 +226,9 @@ export default function SettingsPage() {
     setSavingCatalog(true)
     try {
       const updated = await updateBackstageCatalogSettings(catalog)
-      setCatalog(normalizeCatalogPageSettings(updated))
+      const next = normalizeCatalogPageSettings(updated)
+      setCatalog(next)
+      setBaselineCatalog(stableJson(next))
       toast.success('Налаштування каталогу збережено.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
@@ -145,6 +243,7 @@ export default function SettingsPage() {
     try {
       const updated = await updateBackstageRecentlyViewedSettings(recentlyViewed)
       setRecentlyViewed(updated)
+      setBaselineRecentlyViewed(stableJson(updated))
       clearRecentlyViewedSettingsCache()
       toast.success('Налаштування «Останні переглянуті» збережено.')
     } catch (err) {
@@ -160,11 +259,61 @@ export default function SettingsPage() {
     try {
       const updated = await updateBackstageHomeSettings(home)
       setHome(updated)
+      setBaselineHome(stableJson(updated))
       toast.success('Налаштування головної збережено.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
     } finally {
       setSavingHome(false)
+    }
+  }
+
+  const savePrestaImport = async () => {
+    if (!prestaImport) return
+    setSavingPrestaImport(true)
+    try {
+      const updated = await updateBackstagePrestaImportSettings(prestaImport)
+      const next = normalizePrestaImportSettings(updated)
+      setPrestaImport(next)
+      setBaselinePrestaImport(stableJson(next))
+      toast.success('URL шаблони імпорту збережено.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
+    } finally {
+      setSavingPrestaImport(false)
+    }
+  }
+
+  const saveMarket = async () => {
+    if (!market) return
+    setSavingMarket(true)
+    try {
+      const updated = await updateBackstageMarketSettings(market)
+      const next = normalizeMarketSettings(updated)
+      setMarket(next)
+      setBaselineMarket(stableJson(next))
+      // Backend also writes cart.taxIncluded from priceBasis — keep local cart UI in sync
+      // without an extra GET.
+      const taxIncluded = next.priceBasis === 'inc_vat'
+      setCart((prev) => {
+        if (!prev || prev.taxIncluded === taxIncluded) return prev
+        return { ...prev, taxIncluded }
+      })
+      setBaselineCart((baseline) => {
+        if (!baseline) return baseline
+        try {
+          const parsed = JSON.parse(baseline) as CartCheckoutSettings
+          if (parsed.taxIncluded === taxIncluded) return baseline
+          return stableJson({ ...parsed, taxIncluded })
+        } catch {
+          return baseline
+        }
+      })
+      toast.success('Налаштування ринку збережено.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
+    } finally {
+      setSavingMarket(false)
     }
   }
 
@@ -255,7 +404,10 @@ export default function SettingsPage() {
             <TabsTrigger value="catalog">Каталог</TabsTrigger>
             <TabsTrigger value="recently-viewed">Останні переглянуті</TabsTrigger>
             <TabsTrigger value="cart">Кошик</TabsTrigger>
+            <TabsTrigger value="market">Ринок</TabsTrigger>
             <TabsTrigger value="nova-poshta">Нова Пошта</TabsTrigger>
+            <TabsTrigger value="flexi">ABRA Flexi</TabsTrigger>
+            <TabsTrigger value="presta-import">Імпорт Presta</TabsTrigger>
           </TabsList>
 
           <TabsContent value="store" className="mt-6 space-y-6">
@@ -265,6 +417,8 @@ export default function SettingsPage() {
                 onChange={setStore}
                 onSave={() => void saveStore()}
                 saving={savingStore}
+                isDirty={storeDirty}
+                marketRegion={market?.region ?? 'ua'}
               />
             ) : null}
           </TabsContent>
@@ -276,6 +430,7 @@ export default function SettingsPage() {
                 onChange={setCatalog}
                 onSave={() => void saveCatalog()}
                 saving={savingCatalog}
+                isDirty={catalogDirty}
               />
             ) : null}
           </TabsContent>
@@ -287,21 +442,45 @@ export default function SettingsPage() {
                 onChange={setRecentlyViewed}
                 onSave={() => void saveRecentlyViewed()}
                 saving={savingRecentlyViewed}
+                isDirty={recentlyViewedDirty}
               />
             ) : null}
           </TabsContent>
 
           <TabsContent value="cart" className="mt-6 space-y-6">
-            <CartCheckoutSettingsForm
-              cart={cart}
-              onChange={setCart}
-              onSave={() => void saveCart()}
-              saving={savingCart}
-            />
+            {cart ? (
+              <CartCheckoutSettingsForm
+                cart={cart}
+                marketRegion={market?.region ?? 'ua'}
+                marketPriceBasis={market?.priceBasis ?? 'inc_vat'}
+                onChange={setCart}
+                onSave={() => void saveCart()}
+                saving={savingCart}
+                isDirty={cartDirty}
+              />
+            ) : null}
+          </TabsContent>
+
+          <TabsContent value="market" className="mt-6 space-y-6">
+            {market ? (
+              <MarketSettingsForm
+                market={market}
+                currencies={currencies}
+                currenciesLoading={currenciesLoading}
+                onChange={setMarket}
+                onSave={() => void saveMarket()}
+                saving={savingMarket}
+                isDirty={marketDirty}
+              />
+            ) : null}
           </TabsContent>
 
           <TabsContent value="nova-poshta" className="mt-6 space-y-6">
             <NovaPoshtaSettingsForm />
+          </TabsContent>
+
+          <TabsContent value="flexi" className="mt-6 space-y-6">
+            <FlexiSettingsForm />
           </TabsContent>
 
           <TabsContent value="home" className="mt-6 space-y-6">
@@ -1021,7 +1200,11 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            <Button type="button" onClick={() => void saveHome()} disabled={savingHome}>
+            <Button
+              type="button"
+              onClick={() => void saveHome()}
+              disabled={savingHome || !homeDirty}
+            >
               {savingHome ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -1029,6 +1212,89 @@ export default function SettingsPage() {
               )}
               Зберегти головну
             </Button>
+          </TabsContent>
+
+          <TabsContent value="presta-import" className="mt-6 space-y-6">
+            {prestaImport ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>URL шаблони зображень PrestaShop</CardTitle>
+                  <CardDescription>
+                    Використовуються під час імпорту зображень товарів, обкладинок блогу та фото
+                    відгуків. Плейсхолдери: {'{id_image}'}, {'{link_rewrite}'}, {'{id_comment}'},{' '}
+                    {'{id_blog}'}, {'{id}'}.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="presta-product-image-url">Фото товарів</Label>
+                    <Input
+                      id="presta-product-image-url"
+                      value={prestaImport.productImageUrlTemplate}
+                      onChange={(e) =>
+                        setPrestaImport({
+                          ...prestaImport,
+                          productImageUrlTemplate: e.target.value,
+                        })
+                      }
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Приклад:{' '}
+                      {DEFAULT_PRESTA_IMPORT_SETTINGS.productImageUrlTemplate}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="presta-blog-image-url">Обкладинки блогу</Label>
+                    <Input
+                      id="presta-blog-image-url"
+                      value={prestaImport.blogImageUrlTemplate}
+                      onChange={(e) =>
+                        setPrestaImport({
+                          ...prestaImport,
+                          blogImageUrlTemplate: e.target.value,
+                        })
+                      }
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Плейсхолдери: {'{id_blog}'}, {'{id_image}'} (або {'{id}'}). Приклад:{' '}
+                      {DEFAULT_PRESTA_IMPORT_SETTINGS.blogImageUrlTemplate}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="presta-review-image-url">Фото відгуків</Label>
+                    <Input
+                      id="presta-review-image-url"
+                      value={prestaImport.reviewImageUrlTemplate}
+                      onChange={(e) =>
+                        setPrestaImport({
+                          ...prestaImport,
+                          reviewImageUrlTemplate: e.target.value,
+                        })
+                      }
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Плейсхолдери: {'{id_comment}'}, {'{id_image}'}. Приклад:{' '}
+                      {DEFAULT_PRESTA_IMPORT_SETTINGS.reviewImageUrlTemplate}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => void savePrestaImport()}
+                    disabled={savingPrestaImport || !prestaImportDirty}
+                  >
+                    {savingPrestaImport ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
+                    Зберегти шаблони
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : null}
           </TabsContent>
         </Tabs>
       </div>

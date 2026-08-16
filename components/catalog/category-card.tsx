@@ -31,7 +31,7 @@ export function CategoryCard({ category, className, compact = false }: CategoryC
       href={categoryHref(category.slug)}
       className={cn(
         pressableClassName,
-        'group/card block h-full rounded-xl outline-none',
+        'group/card block h-full rounded-[0.5rem] outline-none',
         'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
         '[-webkit-tap-highlight-color:transparent] select-none',
         className,
@@ -39,7 +39,7 @@ export function CategoryCard({ category, className, compact = false }: CategoryC
     >
       <Card
         className={cn(
-          'flex h-24 flex-row gap-0 overflow-hidden rounded-xl border-border/50 py-0 shadow-sm',
+          'flex h-24 flex-row gap-0 overflow-hidden rounded-[0.5rem] border-border/50 py-0 shadow-sm',
           'transition-[box-shadow,border-color] duration-100 ease-out',
           'hover:border-primary/25 hover:shadow-md',
         )}
@@ -59,10 +59,10 @@ export function CategoryCard({ category, className, compact = false }: CategoryC
 
         <div
           className={cn(
-            'relative z-[1] -ml-5 flex min-w-0 flex-1 flex-col justify-center rounded-l-none rounded-r-xl border-l border-white/25',
+            'relative z-[1] -ml-5 flex min-w-0 flex-1 flex-col justify-center rounded-l-none rounded-r-[0.5rem] border-l border-white/25',
             'bg-white/40 backdrop-blur-md supports-[backdrop-filter]:bg-white/30',
             'shadow-[-8px_0_20px_rgba(0,0,0,0.06)]',
-            compact ? 'gap-0.5 p-2 pl-5' : 'gap-1 p-2.5 pl-6 sm:pl-7',
+            compact ? 'gap-1 p-2.5 pl-5' : 'gap-1.5 p-3 pl-6 sm:pl-7',
           )}
         >
           <p
@@ -92,7 +92,7 @@ export function CategoryCard({ category, className, compact = false }: CategoryC
             </p>
             <ArrowRight
               className={cn(
-                'shrink-0 text-primary transition-transform duration-200 group-hover/card:translate-x-0.5',
+                'shrink-0 text-primary/70 transition-transform duration-200 group-hover/card:translate-x-0.5',
                 compact ? 'h-4 w-4' : 'h-5 w-5',
               )}
               aria-hidden

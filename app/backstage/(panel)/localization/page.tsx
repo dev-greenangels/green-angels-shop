@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, RefreshCw } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { useTranslations } from 'next-intl'
@@ -25,14 +25,19 @@ export default function LocalizationPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [localization, setLocalization] = useState<LocalizationSettings | null>(null)
+  const [baseline, setBaseline] = useState<string | null>(null)
+  const isDirty = useMemo(
+    () => Boolean(localization && baseline && JSON.stringify(localization) !== baseline),
+    [localization, baseline],
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const data = await fetchBackstageSettings()
-      setLocalization(
-        normalizeLocalizationSettings(data.localization ?? DEFAULT_LOCALIZATION_SETTINGS),
-      )
+      const next = normalizeLocalizationSettings(data.localization ?? DEFAULT_LOCALIZATION_SETTINGS)
+      setLocalization(next)
+      setBaseline(JSON.stringify(next))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : tt('loadSettingsFailed'))
       setLocalization(null)
@@ -50,7 +55,9 @@ export default function LocalizationPage() {
     setSaving(true)
     try {
       const updated = await updateBackstageLocalizationSettings(localization)
-      setLocalization(normalizeLocalizationSettings(updated))
+      const next = normalizeLocalizationSettings(updated)
+      setLocalization(next)
+      setBaseline(JSON.stringify(next))
       toast.success(tt('localizationSaved'))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : tt('saveFailed'))
@@ -84,6 +91,7 @@ export default function LocalizationPage() {
             onChange={setLocalization}
             onSave={() => void saveLocalization()}
             saving={saving}
+            isDirty={isDirty}
           />
         ) : (
           <div className="rounded-xl border-2 border-dashed border-border bg-muted/20 p-8 text-center">

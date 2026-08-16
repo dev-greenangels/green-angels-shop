@@ -53,7 +53,7 @@ export function CatalogAlphabetNav({
         className={cn(
           'inline-flex h-8 shrink-0 items-center justify-center rounded-md border px-2.5 text-sm font-medium transition-colors',
           !activeLetter
-            ? 'border-primary bg-primary text-primary-foreground'
+            ? 'border-primary bg-primary-gradient text-primary-foreground'
             : 'border-border bg-background text-foreground hover:bg-muted',
         )}
       >
@@ -69,7 +69,7 @@ export function CatalogAlphabetNav({
             className={cn(
               'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-sm font-semibold transition-colors',
               isActive
-                ? 'border-primary bg-primary text-primary-foreground'
+                ? 'border-primary bg-primary-gradient text-primary-foreground'
                 : 'border-border bg-background text-foreground hover:bg-muted',
             )}
             aria-current={isActive ? 'true' : undefined}

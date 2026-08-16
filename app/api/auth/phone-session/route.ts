@@ -5,7 +5,8 @@ import {
   forwardBackendCookies,
   readBackendJson,
 } from '@/lib/api/backend-fetch'
-import { isValidUkrPhone } from '@/lib/validation/checkout-form'
+import { fetchPublicSiteSettings, getMarketSettings } from '@/lib/settings/fetch'
+import { isValidPhoneForPolicy, phoneErrorForPolicy } from '@/lib/settings/market'
 
 export async function POST(request: Request) {
   let body: { phone?: string; verificationToken?: string }
@@ -16,8 +17,17 @@ export async function POST(request: Request) {
   }
 
   const phone = typeof body.phone === 'string' ? body.phone.trim() : ''
-  if (!phone || !isValidUkrPhone(phone)) {
-    return NextResponse.json({ error: 'Вкажіть коректний український номер (+380).' }, { status: 400 })
+  const market = getMarketSettings(await fetchPublicSiteSettings())
+
+  if (!phone || !isValidPhoneForPolicy(phone, market.authPhonePolicy)) {
+    return NextResponse.json(
+      {
+        error:
+          phoneErrorForPolicy(phone, market.authPhonePolicy) ??
+          'Вкажіть коректний номер телефону.',
+      },
+      { status: 400 },
+    )
   }
 
   const verificationToken =

@@ -1,22 +1,31 @@
 {
   "nav": {
     "overview": "Огляд",
+    "groupCatalog": "Каталог",
+    "groupSales": "Продажі",
+    "groupContent": "Контент",
+    "groupSite": "Сайт",
     "categories": "Категорії",
     "attributes": "Атрибути",
     "characteristics": "Характеристики",
     "products": "Товари",
+    "import": "Імпорт CSV",
     "orders": "Замовлення",
+    "orderDictionaries": "Статуси замовлень",
+    "dispatchCalendar": "Календар відправок",
     "carts": "Кошики",
     "users": "Користувачі",
     "blog": "Блог",
     "reviews": "Відгуки",
     "promotions": "Знижки",
+    "referrals": "Реферали",
     "referenceData": "Довідники",
     "settings": "Налаштування",
     "localization": "Локалізація",
     "navigation": "Меню сайту",
     "redirects": "Редіректи",
-    "photos": "Свіжі фото"
+    "photos": "Свіжі фото",
+    "tedb": "TEDB / ПДВ"
   },
   "common": {
     "backstageLabel": "Бек-офіс",
@@ -60,6 +69,7 @@
     "refresh": "Оновити",
     "retry": "Спробувати знову",
     "collapseAll": "Згорнути все",
+    "expandAll": "Розгорнути все",
     "activate": "Активувати",
     "deactivate": "Деактивувати",
     "approve": "Схвалити",
@@ -146,7 +156,7 @@
     "addAdditionalCategories": "Додати додаткові категорії (опційно)",
     "additionalCategoriesHint": "Товар залишиться в головній категорії; додаткові — для дублювання в інших розділах.",
     "productDescriptionPlaceholder": "Детальний опис товару…",
-      "htmlPlaceholder": "'<p>Ваш HTML-контент…</p>'",
+    "htmlPlaceholder": "'<p>Ваш HTML-контент…</p>'",
     "htmlHint": "Можна вставити готовий HTML. Після перемикання на «Редактор» він відобразиться візуально.",
     "rootCategory": "Коренева категорія",
     "title": "Заголовок",
@@ -186,7 +196,16 @@
     "characteristicOptionsFormat": "Кожен рядок: «Назва» або «Назва | slug»",
     "characteristicOptionsPlaceholder": "Повне сонце | full-sun\nНапівтінь | partial-shade",
     "addOptionsForList": "Додайте варіанти для списку.",
-    "valueTypeChangeHint": "Безпечні переходи: список ↔ мультисписок, текст ↔ число, список → текст. Інші зміни можуть очистити значення у товарів."
+    "valueTypeChangeHint": "Безпечні переходи: список ↔ мультисписок, текст ↔ число, список → текст. Інші зміни можуть очистити значення у товарів.",
+    "noCharacteristicsSelected": "Властивості ще не додано",
+    "characteristicLabel": "Властивість",
+    "valueLabel": "Значення",
+    "selectCharacteristic": "Оберіть властивість",
+    "selectValue": "Оберіть значення",
+    "enterValue": "Введіть значення",
+    "addCharacteristic": "Додати",
+    "removeCharacteristic": "Прибрати",
+    "notSelectedOption": "— Не обрано —"
   },
   "aria": {
     "selectItem": "Обрати {name}",
@@ -276,6 +295,13 @@
     "attributesSection": "розділі «Атрибути»",
     "notSelected": "Не обрано",
     "notSelectedOption": "— Не обрано —",
+    "noAttributesSelected": "Атрибути ще не додано",
+    "attributeLabel": "Атрибут",
+    "valueLabel": "Значення",
+    "selectAttribute": "Оберіть атрибут",
+    "selectValue": "Оберіть значення",
+    "addAttribute": "Додати",
+    "removeAttribute": "Прибрати",
     "basePrice": "Базова ціна (₴) *",
     "inStock": "На складі *",
     "salesUnit": "Одиниця виміру",
@@ -320,7 +346,8 @@
     "addProduct": "Додати товар",
     "editProduct": "Редагувати товар",
     "add-plant": "Додати товар",
-    "edit": "Редагування товару"
+    "edit": "Редагування товару",
+    "table": "Таблиця товарів"
   },
   "contentBanner": {
     "editing": "Редагуєте переклад: {locale}. Slug, ціна та зображення — спільні для всіх мов."
@@ -421,6 +448,8 @@
       "mainDesc": "Назва, категорії та опис",
       "productName": "Назва товару *",
       "latinName": "Латинська назва",
+      "cnCode": "CN код (Intrastat)",
+      "cnCodeWarning": "Увага: код зазвичай приходить з ABRA (поле nomen). Змінюйте вручну лише якщо впевнені — від нього залежать пільгові ставки ПДВ у країнах доставки. Наступна синхронізація Flexi може знову перезаписати значення з Абри.",
       "primaryCategory": "Головна категорія",
       "fullDescription": "Повний опис",
       "seoTitle": "SEO та посилання",
@@ -525,6 +554,7 @@
       "statRevenue": "Дохід",
       "statRevenueDesc": "Сума всіх замовлень",
       "statCustomers": "Клієнти",
+      "statCustomersDesc": "Зареєстровані покупці",
       "statCustomersSoon": "Незабаром",
       "recentOrders": "Останні замовлення",
       "colNumber": "Номер",
@@ -535,7 +565,8 @@
       "noOrders": "Замовлень поки немає",
       "lowStock": "Низький залишок",
       "noLowStock": "Немає товарів з низьким залишком",
-      "stockUnits": "{count} шт."
+      "stockUnits": "{count} шт.",
+      "loadError": "Не вдалося завантажити дані дашборду."
     },
     "login": {
       "title": "Бек-офіс",

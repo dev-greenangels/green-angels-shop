@@ -3,6 +3,7 @@ import type {
   CatalogPageSettings,
   HomePageSettings,
   LocalizationSettings,
+  MarketSettings,
   PublicSiteSettings,
   RecentlyViewedSettings,
   StoreContactSettings,
@@ -94,6 +95,32 @@ export async function updateBackstageLocalizationSettings(
   payload: Partial<LocalizationSettings>,
 ): Promise<LocalizationSettings> {
   const res = await fetch('/api/backstage/settings/localization', {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function updateBackstageMarketSettings(
+  payload: Partial<MarketSettings>,
+): Promise<MarketSettings> {
+  const res = await fetch('/api/backstage/settings/market', {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function updateBackstagePrestaImportSettings(
+  payload: Partial<import('@/lib/settings/presta-import').PrestaImportSettings>,
+): Promise<import('@/lib/settings/presta-import').PrestaImportSettings> {
+  const res = await fetch('/api/backstage/settings/presta-import', {
     method: 'PATCH',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },

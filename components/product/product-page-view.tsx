@@ -1,15 +1,13 @@
 'use client'
 
-import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { showAddedToCartToast } from '@/lib/cart-toast'
 
-import { ProductCoverImage } from '@/components/product/product-cover-image'
 import { ProductDisplayCharacteristics } from '@/components/product/product-display-characteristics'
+import { ProductImageGallery } from '@/components/product/product-image-gallery'
 
 import { Navigation } from '@/components/navigation'
 import { ProductCard } from '@/components/product-card'
-import { FavoriteButton } from '@/components/favorites/favorite-button'
 import { ProductVariantsTable } from '@/components/product/product-variants-table'
 import { ProductReviewsSection } from '@/components/reviews/product-reviews-section'
 import {
@@ -17,13 +15,12 @@ import {
 } from '@/components/product/recently-viewed-section'
 import { useTrackProductView } from '@/lib/recently-viewed-store'
 import type { ReviewsPageResult } from '@/lib/reviews/types'
-import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getCartLineQuantity } from '@/lib/cart-limits'
 import { useCartActions, useCartItems } from '@/lib/cart-store'
 import { ClientPublicPageBreadcrumbs } from '@/components/client-public-page-breadcrumbs'
 import { getVisiblePlantVariants, isPlantFullyUnavailable } from '@/lib/plant-variants'
-import { useProductGridClassName } from '@/components/providers/catalog-settings-provider'
+import { LISTING_PRODUCT_GRID_CLASS_NAME } from '@/lib/catalog/grid-columns'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import type { CatalogCategoryBreadcrumb } from '@/lib/catalog/categories'
 import { productPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
@@ -36,17 +33,17 @@ export function ProductPageView({
   catalogRootSlug = null,
   relatedPlants,
   productReviewsPage,
+  canonicalOrigin,
 }: {
   plant: Plant
   categoryBreadcrumbs?: CatalogCategoryBreadcrumb[]
   catalogRootSlug?: string | null
   relatedPlants: Plant[]
   productReviewsPage: ReviewsPageResult
+  canonicalOrigin?: string
 }) {
   const t = useTranslations('product')
   const tc = useTranslations('cart')
-  const productGridClassName = useProductGridClassName()
-  const [selectedImage, setSelectedImage] = useState(0)
   const cartItems = useCartItems()
   const { addItem, updateQuantity } = useCartActions()
 
@@ -86,53 +83,23 @@ export function ProductPageView({
       <main className="flex-1 bg-background">
         <div className="border-b border-border/60 bg-background">
           <div className={cn(siteContentShellClassName, 'py-3 md:py-3.5')}>
-            <ClientPublicPageBreadcrumbs items={breadcrumbItems} />
+            <ClientPublicPageBreadcrumbs
+              items={breadcrumbItems}
+              origin={canonicalOrigin}
+            />
           </div>
         </div>
 
-        <div className={cn(siteContentShellClassName, 'py-8')}>
-          <div className="mb-16 grid gap-8 lg:grid-cols-2 lg:gap-12">
-            <div className="space-y-4">
-              <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
-                <ProductCoverImage
-                  src={plant.images[selectedImage]}
-                  alt={plant.name}
-                  imageClassName="object-cover"
-                  priority
-                />
-                {plant.isNew ? (
-                  <Badge className="absolute left-4 top-4 bg-primary text-primary-foreground">
-                    {t('newBadge')}
-                  </Badge>
-                ) : null}
-                <div className="absolute bottom-2 right-2 z-[2]">
-                  <FavoriteButton productId={plant.id} tone="overlay" />
-                </div>
-              </div>
-              {plant.images.length > 1 ? (
-                <div className="flex gap-3 overflow-x-auto pb-2">
-                  {plant.images.map((image, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => setSelectedImage(index)}
-                      className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
-                        selectedImage === index ? 'border-primary' : 'border-transparent'
-                      }`}
-                    >
-                      <ProductCoverImage
-                        src={image}
-                        alt={`${plant.name} ${index + 1}`}
-                        imageClassName="object-cover"
-                        logoClassName="p-2"
-                      />
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
+        <div className={cn(siteContentShellClassName, 'min-w-0 overflow-x-clip py-8')}>
+          <div className="mb-16 grid min-w-0 gap-8 lg:grid-cols-2 lg:gap-12">
+            <ProductImageGallery
+              images={plant.images}
+              productId={plant.id}
+              productName={plant.name}
+              isNew={plant.isNew}
+            />
 
-            <div className="space-y-6">
+            <div className="min-w-0 space-y-6">
               <div>
                 <h1 className="mb-2 font-serif text-3xl font-bold text-foreground md:text-4xl">
                   {plant.name}
@@ -227,8 +194,13 @@ export function ProductPageView({
 
           {relatedPlants.length > 0 ? (
             <div>
-              <h2 className="mb-6 font-serif text-2xl font-bold text-foreground">{t('similarPlants')}</h2>
-              <div className={productGridClassName}>
+              <div className="mb-6 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <h2 className="font-serif text-2xl font-bold text-foreground">{t('similarPlants')}</h2>
+                <p className="text-sm text-muted-foreground md:text-base">
+                  {t('similarPlantsCount', { count: relatedPlants.length })}
+                </p>
+              </div>
+              <div className={LISTING_PRODUCT_GRID_CLASS_NAME}>
                 {relatedPlants.map((relatedPlant) => (
                   <ProductCard key={relatedPlant.id} plant={relatedPlant} layout="grid" />
                 ))}

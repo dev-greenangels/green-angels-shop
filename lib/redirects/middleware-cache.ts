@@ -1,3 +1,5 @@
+import { getBackendApiUrl } from '@/lib/api/backend-url'
+
 type ActiveRedirectEntry = {
   toPath: string
   statusCode: number
@@ -9,6 +11,7 @@ type RedirectCacheState = {
 }
 
 const CACHE_TTL_MS = 60_000
+const FETCH_TIMEOUT_MS = 3_000
 
 let cache: RedirectCacheState | null = null
 let inflight: Promise<RedirectCacheState> | null = null
@@ -24,20 +27,21 @@ function normalizeRedirectPath(path: string): string {
 }
 
 async function loadRedirectCache(): Promise<RedirectCacheState> {
-  const origin =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  try {
+    const res = await fetch(`${getBackendApiUrl()}/redirects/active`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    })
 
-  const res = await fetch(`${origin}/api/redirects/active`, {
-    cache: 'no-store',
-  })
+    if (!res.ok) {
+      return { map: {}, loadedAt: Date.now() }
+    }
 
-  if (!res.ok) {
+    const map = (await res.json()) as Record<string, ActiveRedirectEntry>
+    return { map, loadedAt: Date.now() }
+  } catch {
     return { map: {}, loadedAt: Date.now() }
   }
-
-  const map = (await res.json()) as Record<string, ActiveRedirectEntry>
-  return { map, loadedAt: Date.now() }
 }
 
 async function getRedirectCache(): Promise<RedirectCacheState> {

@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
 
 import { fetchBackend, readBackendJson } from '@/lib/api/backend-fetch'
+import { requireCustomerSession } from '@/lib/auth/require-customer-session'
 
 export async function GET(request: Request) {
+  const { error } = await requireCustomerSession(request)
+  if (error) return error
+
   try {
     const res = await fetchBackend('/account/profile', { request, cache: 'no-store' })
     const data = await readBackendJson(res)
@@ -13,6 +17,9 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const { error } = await requireCustomerSession(request)
+  if (error) return error
+
   const body = await request.text()
   try {
     const res = await fetchBackend('/account/profile', {

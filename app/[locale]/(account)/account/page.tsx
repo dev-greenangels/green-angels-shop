@@ -1,12 +1,17 @@
+import { getTranslations, setRequestLocale } from 'next-intl/server'
+
 import { AccountDashboardContent } from '@/components/account/account-dashboard-content'
 import { AccountShell } from '@/components/account/account-shell'
 
-export default function AccountPage() {
+type Props = { params: Promise<{ locale: string }> }
+
+export default async function AccountPage({ params }: Props) {
+  const { locale } = await params
+  setRequestLocale(locale)
+  const t = await getTranslations('account')
+
   return (
-    <AccountShell
-      title="Особистий кабінет"
-      description="Огляд замовлень, обраного та сповіщень."
-    >
+    <AccountShell title={t('title')} description={t('subtitle')}>
       <AccountDashboardContent />
     </AccountShell>
   )

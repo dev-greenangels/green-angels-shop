@@ -9,32 +9,36 @@ import {
   GOOGLE_OAUTH_STATE_MAX_AGE_SEC,
   isGoogleOAuthConfigured,
   normalizeOAuthReturnTo,
+  originFromRequest,
 } from '@/lib/auth/google-oauth'
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const returnTo = normalizeOAuthReturnTo(url.searchParams.get('returnTo'))
+  const origin = originFromRequest(request)
 
   if (!isGoogleOAuthConfigured()) {
     return NextResponse.redirect(
-      buildOAuthReturnRedirect(returnTo, {
-        oauth_error:
-          'Google OAuth не налаштовано. Додайте NEXT_PUBLIC_GOOGLE_CLIENT_ID у змінні оточення магазину.',
-      }),
+      buildOAuthReturnRedirect(
+        returnTo,
+        {
+          oauth_error:
+            'Google OAuth не налаштовано. Додайте NEXT_PUBLIC_GOOGLE_CLIENT_ID у змінні оточення магазину.',
+        },
+        origin,
+      ),
     )
   }
 
   const state = createGoogleOAuthState(returnTo)
-  const redirectUri = getGoogleOAuthRedirectUri()
+  const redirectUri = getGoogleOAuthRedirectUri(origin)
 
   let authorizeUrl: string
   try {
     authorizeUrl = buildGoogleAuthorizeUrl(state.nonce, redirectUri)
   } catch {
     return NextResponse.redirect(
-      buildOAuthReturnRedirect(returnTo, {
-        oauth_error: 'Google OAuth не налаштовано.',
-      }),
+      buildOAuthReturnRedirect(returnTo, { oauth_error: 'Google OAuth не налаштовано.' }, origin),
     )
   }
 

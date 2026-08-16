@@ -7,6 +7,7 @@ import { showAddedToCartToast } from '@/lib/cart-toast'
 
 import { FavoriteButton } from '@/components/favorites/favorite-button'
 import { FormattedPrice } from '@/components/commerce/formatted-price'
+import { PriceWithExVatUnder } from '@/components/commerce/shelf-price-block'
 import { DiscountedUnitPrice } from '@/components/pricing/discounted-price'
 import { ProductCoverImage } from '@/components/product/product-cover-image'
 import { VariantPhotoGalleryDialog } from '@/components/product/variant-photo-gallery-dialog'
@@ -146,20 +147,24 @@ function CatalogListProductImage({
   const [galleryOpen, setGalleryOpen] = useState(false)
 
   const showVariantPhotos = variant?.freshPhotos !== false
-  const { photos: variantPhotos } = useVariantPhotos(showVariantPhotos ? variant?.ean : null)
+  const { photos: variantPhotos } = useVariantPhotos(
+    showVariantPhotos ? variant?.ean : null,
+    showVariantPhotos ? variant?.sku : null,
+  )
   const plantPhotos = useMemo(
     () =>
       plant.images
         .filter(Boolean)
-        .map((url, index) => ({
+          .map((url, index) => ({
           id: `${plant.id}-${index}`,
           url,
+          thumbUrl: url,
           alt: `${plant.name} — фото ${index + 1}`,
         })),
     [plant.id, plant.images, plant.name],
   )
   const galleryPhotos = variantPhotos.length > 0 ? variantPhotos : plantPhotos
-  const coverSrc = galleryPhotos[0]?.url ?? plant.images[0]
+  const coverSrc = galleryPhotos[0]?.thumbUrl ?? galleryPhotos[0]?.url ?? plant.images[0]
 
   return (
     <>
@@ -199,12 +204,15 @@ function CatalogListProductImage({
         {showBadges ? (
           <div className="absolute inset-x-0 bottom-0 z-[1] flex flex-wrap items-end gap-0.5 p-1">
             {discountPercent ? (
-              <Badge variant="destructive" className="px-[3px] py-0 text-[10px] shadow-sm">
+              <Badge
+                variant="destructive"
+                className="rounded-[2px] px-[3px] py-0 text-[10px] shadow-sm"
+              >
                 −{discountPercent}%
               </Badge>
             ) : null}
             {plant.isNew ? (
-              <Badge className="bg-primary/95 px-[3px] py-0 text-[10px] text-primary-foreground shadow-sm">
+              <Badge className="rounded-[2px] bg-primary/95 px-[3px] py-0 text-[10px] text-primary-foreground shadow-sm">
                 {t('newBadge')}
               </Badge>
             ) : null}
@@ -527,16 +535,18 @@ function CatalogProductVariantRow({
         </div>
 
         <div className="hidden min-w-0 flex-1 flex-col items-end justify-center gap-1.5 sm:flex">
-          <DiscountedUnitPrice
-            originalPrice={variant.basePrice}
-            salePrice={salePrice}
-            perUnit="sale-only"
-            unitSymbol={variant.salesUnitSymbol}
-            stacked
-            className="items-end"
-            originalClassName="font-sans text-xs"
-            saleClassName="font-sans text-base font-semibold tabular-nums"
-          />
+          <PriceWithExVatUnder storedAmount={salePrice} align="end">
+            <DiscountedUnitPrice
+              originalPrice={variant.basePrice}
+              salePrice={salePrice}
+              perUnit="sale-only"
+              unitSymbol={variant.salesUnitSymbol}
+              stacked
+              className="items-end"
+              originalClassName="font-sans text-xs"
+              saleClassName="font-sans text-base font-semibold tabular-nums"
+            />
+          </PriceWithExVatUnder>
           <CatalogVariantDiscountChips
             variant={variant}
             className="ml-auto max-w-full"
@@ -561,16 +571,18 @@ function CatalogProductVariantRow({
             tc('outOfStock')
           )}
         </p>
-        <DiscountedUnitPrice
-          originalPrice={variant.basePrice}
-          salePrice={salePrice}
-          perUnit="sale-only"
-          unitSymbol={variant.salesUnitSymbol}
-          stacked={hasVariantSalePrice(variant, salePrice)}
-          className="shrink-0 items-end"
-          originalClassName="font-sans text-xs text-muted-foreground"
-          saleClassName="font-sans text-xs font-semibold tabular-nums"
-        />
+        <PriceWithExVatUnder storedAmount={salePrice} align="end" className="shrink-0">
+          <DiscountedUnitPrice
+            originalPrice={variant.basePrice}
+            salePrice={salePrice}
+            perUnit="sale-only"
+            unitSymbol={variant.salesUnitSymbol}
+            stacked={hasVariantSalePrice(variant, salePrice)}
+            className="shrink-0 items-end"
+            originalClassName="font-sans text-xs text-muted-foreground"
+            saleClassName="font-sans text-xs font-semibold tabular-nums"
+          />
+        </PriceWithExVatUnder>
       </div>
 
       <div className="max-sm:col-span-2 w-full sm:hidden">

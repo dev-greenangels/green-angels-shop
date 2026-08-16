@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, RefreshCw } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
@@ -17,12 +17,19 @@ export default function NavigationPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [navigation, setNavigation] = useState<NavigationSettings | null>(null)
+  const [baseline, setBaseline] = useState<string | null>(null)
+  const isDirty = useMemo(
+    () => Boolean(navigation && baseline && JSON.stringify(navigation) !== baseline),
+    [navigation, baseline],
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const data = await fetchBackstageSettings()
-      setNavigation(normalizeNavigationSettings(data.navigation))
+      const next = normalizeNavigationSettings(data.navigation)
+      setNavigation(next)
+      setBaseline(JSON.stringify(next))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося завантажити меню.')
       setNavigation(null)
@@ -40,7 +47,9 @@ export default function NavigationPage() {
     setSaving(true)
     try {
       const updated = await updateBackstageNavigationSettings(navigation)
-      setNavigation(normalizeNavigationSettings(updated))
+      const next = normalizeNavigationSettings(updated)
+      setNavigation(next)
+      setBaseline(JSON.stringify(next))
       toast.success('Меню збережено.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
@@ -89,6 +98,7 @@ export default function NavigationPage() {
           onChange={setNavigation}
           onSave={() => void save()}
           saving={saving}
+          isDirty={isDirty}
         />
       </div>
     </AdminLayout>

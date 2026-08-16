@@ -20,16 +20,35 @@ export type CreateOrderPayload = {
   deliveryMethod: string
   deliveryCity?: string
   deliveryBranch?: string
+  deliveryBranchLabel?: string
   deliveryStreet?: string
   deliveryHouseNumber?: string
+  deliveryPostalCode?: string
+  deliveryCountryCode?: string
+  receiverCompanyName?: string
   paymentMethod: string
   comment?: string
+  companyLegalName?: string
+  companyIco?: string
+  companyDic?: string
+  companyVatId?: string
+  companyStreet?: string
+  companyCity?: string
+  companyPostalCode?: string
+  preferredShipDate?: string
+  countryCode?: 'sk' | 'hu' | 'at'
+  buyerType?: 'individual' | 'company'
+  vatCountryCode?: string
+  returnBaseUrl?: string
   promoCode?: string
   promoCodes?: string[]
   splitCheckout?: {
     partIndex: number
     partCount: number
   }
+  createAccount?: boolean
+  privacyConsent?: boolean
+  privacyConsentVersion?: string
 }
 
 function normalizePhoneForApi(phone: string): string {
@@ -63,6 +82,14 @@ export function buildOrderPayload(
     shipmentNote?: string
     splitCheckout?: CreateOrderPayload['splitCheckout']
     shipmentSlice?: CheckoutShipmentSlice
+    createAccount?: boolean
+    privacyConsent?: boolean
+    privacyConsentVersion?: string
+    companyVatId?: string
+    countryCode?: 'sk' | 'hu' | 'at'
+    buyerType?: 'individual' | 'company'
+    vatCountryCode?: string
+    returnBaseUrl?: string
   },
 ): CreateOrderPayload {
   const deliveryForm = options?.shipmentSlice
@@ -103,12 +130,47 @@ export function buildOrderPayload(
 
   if (deliveryForm.deliveryMethod === 'nova-poshta-branch') {
     payload.deliveryBranch =
-      deliveryForm.postOfficeLabel.trim() || deliveryForm.postOffice.trim()
+      deliveryForm.postOffice.trim() || deliveryForm.postOfficeLabel.trim()
+    if (deliveryForm.postOfficeLabel.trim()) {
+      payload.deliveryBranchLabel = deliveryForm.postOfficeLabel.trim()
+    }
   }
 
-  if (deliveryForm.deliveryMethod === 'nova-poshta-address') {
+  if (deliveryForm.deliveryMethod === 'packeta-box') {
+    // Packeta point id must be preserved for ERP / label printing
+    payload.deliveryBranch = deliveryForm.postOffice.trim()
+    if (deliveryForm.postOfficeLabel.trim()) {
+      payload.deliveryBranchLabel = deliveryForm.postOfficeLabel.trim()
+    }
+    payload.deliveryCity = deliveryForm.cityLabel.trim() || deliveryForm.city.trim()
+    const psc = deliveryForm.postalCode.trim()
+    if (psc) payload.deliveryPostalCode = psc
+  }
+
+  if (
+    deliveryForm.deliveryMethod === 'nova-poshta-address' ||
+    deliveryForm.deliveryMethod === 'packeta-courier' ||
+    deliveryForm.deliveryMethod === 'gls-courier'
+  ) {
     payload.deliveryStreet = deliveryForm.streetLabel.trim() || deliveryForm.street.trim()
     payload.deliveryHouseNumber = deliveryForm.houseNumber.trim()
+  }
+
+  if (
+    deliveryForm.deliveryMethod === 'packeta-courier' ||
+    deliveryForm.deliveryMethod === 'gls-courier'
+  ) {
+    const psc = deliveryForm.postalCode.trim()
+    if (psc) payload.deliveryPostalCode = psc
+  }
+
+  if (deliveryForm.deliveryCountryCode?.trim()) {
+    payload.deliveryCountryCode = deliveryForm.deliveryCountryCode.trim().toLowerCase()
+  }
+
+  if (deliveryForm.isOtherRecipient) {
+    const receiverCompany = deliveryForm.recipientCompanyName.trim()
+    if (receiverCompany) payload.receiverCompanyName = receiverCompany
   }
 
   const comment = form.comment.trim()
@@ -116,13 +178,34 @@ export function buildOrderPayload(
   const mergedComment = [comment, shipmentNote].filter(Boolean).join('\n')
   if (mergedComment) payload.comment = mergedComment
 
-  if (form.paymentMethod === 'bank-transfer-legal') {
-    const legalLines = [
-      `ЄДРПОУ: ${form.companyEdrpou.trim()}`,
-      `Юридична особа: ${form.companyLegalName.trim()}`,
-    ]
-    payload.comment = [payload.comment, ...legalLines].filter(Boolean).join('\n')
+  if (
+    form.paymentMethod === 'bank-transfer-legal' ||
+    options?.buyerType === 'company'
+  ) {
+    const legalName = form.companyLegalName.trim()
+    const ico = form.companyEdrpou.trim()
+    if (legalName) payload.companyLegalName = legalName
+    if (ico) payload.companyIco = ico
+    const dic = form.companyDic.trim()
+    if (dic) payload.companyDic = dic
+    const street = form.companyStreet.trim()
+    if (street) payload.companyStreet = street
+    const city = form.companyCity.trim()
+    if (city) payload.companyCity = city
+    const psc = form.companyPostalCode.trim()
+    if (psc) payload.companyPostalCode = psc
   }
+
+  const shipDate = form.preferredShipDate.trim()
+  if (shipDate) payload.preferredShipDate = shipDate
+
+  const vatId = options?.companyVatId?.trim()
+  if (vatId) payload.companyVatId = vatId
+
+  if (options?.countryCode) payload.countryCode = options.countryCode
+  if (options?.buyerType) payload.buyerType = options.buyerType
+  if (options?.vatCountryCode) payload.vatCountryCode = options.vatCountryCode
+  if (options?.returnBaseUrl) payload.returnBaseUrl = options.returnBaseUrl
 
   const promoCodes = (form.promoCodes ?? [])
     .map((code) => code.trim().toUpperCase())
@@ -134,6 +217,10 @@ export function buildOrderPayload(
   if (options?.splitCheckout) {
     payload.splitCheckout = options.splitCheckout
   }
+
+  if (options?.createAccount) payload.createAccount = true
+  if (options?.privacyConsent) payload.privacyConsent = true
+  if (options?.privacyConsentVersion) payload.privacyConsentVersion = options.privacyConsentVersion
 
   return payload
 }

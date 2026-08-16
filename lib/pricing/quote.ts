@@ -17,7 +17,10 @@ export type CheckoutTotalsBreakdown = {
   deliveryMode: DeliveryMode
   deliveryIncludedInTotal: boolean
   packagingAmount: number
+  packagingBoxCount?: number
+  packagingPalletCount?: number
   taxAmount: number
+  codFeeAmount?: number
   grandTotal: number
   minOrderAmount: number | null
   belowMinOrder: boolean
@@ -27,6 +30,16 @@ export type CheckoutTotalsBreakdown = {
   showPackaging: boolean
   showTax: boolean
   taxIncluded: boolean
+  /** Effective VAT % used for this quote (when returned by API); 0 = reverse charge / no VAT */
+  taxRatePercent?: number
+  /** seller | destination | reverse_charge */
+  taxRegime?: string | null
+  taxCountryCode?: string | null
+  /** Reverse charge + tax-inclusive: seller VAT % stripped from gross lines */
+  stripVatRatePercent?: number | null
+  /** When true, delivery/packaging amounts are ex-VAT; VAT is in taxAmount/grandTotal */
+  taxAppliesToFees?: boolean
+  allowedDeliveryMethods?: string[]
 }
 
 export type PricingQuote = {
@@ -43,6 +56,10 @@ export type PricingQuote = {
   promoMessages?: string[] | null
   promoInfoMessages?: string[] | null
   promoSkipped?: PromoSkippedSummary[]
+  /** Echo of resolveCheckoutTax for clients that do not dig into checkout */
+  taxRegime?: string | null
+  taxCountryCode?: string | null
+  taxRatePercent?: number
   checkout?: CheckoutTotalsBreakdown
 }
 
@@ -78,17 +95,22 @@ export function quoteLinesByVariantId(quote?: PricingQuote | null) {
 
 export async function fetchPricingQuote(input: {
   items: Array<{ productVariantId: string; quantity: number }>
-  customerPhone?: string
-  userId?: string
   promoCode?: string
   promoCodes?: string[]
   deliveryMethod?: string
+  paymentMethod?: string
   splitOrderParts?: number
   splitOrderPartIndex?: number
+  countryCode?: 'sk' | 'hu' | 'at'
+  deliveryCountryCode?: string
+  buyerType?: 'individual' | 'company'
+  vatCountryCode?: string
+  viesValid?: boolean
 }): Promise<PricingQuote> {
   const res = await fetch('/api/pricing/quote', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(input),
   })
   const data = await res.json().catch(() => ({}))

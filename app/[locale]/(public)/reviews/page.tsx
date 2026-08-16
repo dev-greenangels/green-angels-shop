@@ -31,12 +31,13 @@ async function loadPublishedReviewsPage(): Promise<ReviewsPageResult> {
 
 export default async function ReviewsPage() {
   const tNav = await getTranslations('nav')
+  const tReviews = await getTranslations('reviews')
   const initialPage = await loadPublishedReviewsPage()
 
   return (
     <>
       <Navigation />
-      <main className="flex-1 bg-gradient-to-br from-secondary via-background to-accent">
+      <main className="flex-1 bg-transparent">
         <div className={cn(siteContentShellClassName, 'py-8 md:py-10')}>
           <PublicPageBreadcrumbs
             className="mb-4"
@@ -47,6 +48,7 @@ export default async function ReviewsPage() {
             <p className="mt-2 text-lg text-muted-foreground">
               Що кажуть наші клієнти про якість рослин та сервіс.
             </p>
+            <p className="mt-2 text-sm text-muted-foreground/90">{tReviews('moderationHint')}</p>
           </div>
           <ReviewsPageContent initialPage={initialPage} />
         </div>

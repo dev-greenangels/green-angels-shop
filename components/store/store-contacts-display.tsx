@@ -1,6 +1,7 @@
 import { Clock, Link2, Mail, Phone } from 'lucide-react'
 
 import { StoreAddressLink } from '@/components/store/store-address-link'
+import { StoreCompanyDetailsDisplay } from '@/components/store/store-company-details-display'
 import { hasVisibleSocialLinks, SocialLinks } from '@/components/social/social-links'
 import { TelegramIcon, ViberIcon, WhatsAppIcon } from '@/components/social/social-icons'
 import {
@@ -39,6 +40,10 @@ type StoreContactsDisplayProps = {
   /** Показувати блок соцмереж */
   showSocialLinks?: boolean
   socialSectionTitle?: string
+  /** Регіон деплою для підписів реквізитів */
+  marketRegion?: 'ua' | 'sk'
+  /** Заголовок блоку реквізитів */
+  companySectionTitle?: string
 }
 
 function ContactLineIcon({
@@ -147,6 +152,8 @@ export function StoreContactsDisplay({
   scheduleSectionTitle,
   showSocialLinks = false,
   socialSectionTitle = 'Соцмережі',
+  marketRegion = 'ua',
+  companySectionTitle = 'Реквізити компанії',
 }: StoreContactsDisplayProps) {
   const phones = getStorePhones(store)
   const emails = getStoreEmails(store)
@@ -163,9 +170,22 @@ export function StoreContactsDisplay({
   const resolvedShowPhone = footerVisibility?.showPhone ?? true
   const resolvedShowEmail = footerVisibility?.showEmail ?? true
   const resolvedShowSchedules = footerVisibility?.showSchedules ?? true
+  const resolvedShowCompany = filterByFooterVisibility
+    ? Boolean(footerVisibility?.showCompanyDetails)
+    : store.showCompanyOnContacts === true
   const lineVisibility = filterByFooterVisibility ? footerVisibility! : undefined
   const showGroupedContacts = grouped && contactBlocks.length > 0
   const showSocial = showSocialLinks && hasVisibleSocialLinks(store.social)
+
+  const companySection = resolvedShowCompany ? (
+    <StoreCompanyDetailsDisplay
+      company={store.companyDetails}
+      marketRegion={marketRegion}
+      title={companySectionTitle}
+      textClassName={textClassName}
+      mutedClassName={textClassName ? 'opacity-70' : undefined}
+    />
+  ) : null
 
   const socialSection = showSocial ? (
     <div className="space-y-3">
@@ -216,6 +236,7 @@ export function StoreContactsDisplay({
 
         {socialSection}
         {schedulesSection}
+        {companySection}
 
         {resolvedShowAddress ? (
           <StoreAddressLink
@@ -255,6 +276,7 @@ export function StoreContactsDisplay({
 
       {socialSection}
       {schedulesSection}
+      {companySection}
 
       {!grouped && resolvedShowPhone
         ? phones.map((item) => (

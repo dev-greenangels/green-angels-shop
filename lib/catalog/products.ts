@@ -1,3 +1,5 @@
+import { cache } from 'react'
+
 import { getBackendApiUrl } from '@/lib/api/backend-url'
 import {
   availableResult,
@@ -21,6 +23,7 @@ export type CatalogProductsParams = {
   stock?: 'in_stock' | 'out_of_stock'
   excludeId?: string
   ids?: string[]
+  slugs?: string[]
   characteristics?: string
   variantAttributes?: string
   priceMin?: string
@@ -86,7 +89,7 @@ function isPaginatedResponse(data: unknown): data is PaginatedCatalogResponse {
   )
 }
 
-function buildProductsQuery(params: CatalogProductsParams = {}) {
+export function buildProductsQuery(params: CatalogProductsParams = {}) {
   const locale =
     params.locale && isAppLocale(params.locale) ? params.locale : defaultLocale
   const query = new URLSearchParams({ locale, published: 'true' })
@@ -96,12 +99,14 @@ function buildProductsQuery(params: CatalogProductsParams = {}) {
   if (params.stock) query.set('stock', params.stock)
   if (params.excludeId) query.set('excludeId', params.excludeId)
   if (params.ids?.length) query.set('ids', params.ids.join(','))
+  if (params.slugs?.length) query.set('slugs', params.slugs.join(','))
   if (params.characteristics) query.set('characteristics', params.characteristics)
   if (params.variantAttributes) query.set('variantAttributes', params.variantAttributes)
   if (params.priceMin) query.set('priceMin', params.priceMin)
   if (params.priceMax) query.set('priceMax', params.priceMax)
   if (params.page != null) query.set('page', String(params.page))
   if (params.pageSize != null) query.set('pageSize', String(params.pageSize))
+  if (params.limit != null) query.set('limit', String(params.limit))
   if (params.sort) query.set('sort', params.sort)
   if (params.lowStockThreshold != null) {
     query.set('lowStockThreshold', String(params.lowStockThreshold))
@@ -195,6 +200,7 @@ async function fetchListFromBackend(
   if (!res.ok) throw new Error(await parseError(res))
   const data = await res.json()
   const rows = isPaginatedResponse(data) ? data.items : (data as CatalogProductListItem[])
+  // Prisma `take` is the DB cap (`limit` query); slice is a display guard only.
   return params.limit ? rows.slice(0, params.limit) : rows
 }
 
@@ -268,15 +274,20 @@ export async function fetchCatalogProducts(
   }
 }
 
+const loadProductDetailCached = cache(async (slug: string, locale: string): Promise<CatalogProductDetail> => {
+  return fetchDetailFromBackend(slug, locale)
+})
+
 export async function fetchCatalogProductBySlug(
   slug: string,
   locale?: string,
 ): Promise<FetchResult<Plant | null>> {
+  const loc = locale && isAppLocale(locale) ? locale : defaultLocale
   try {
     const detail =
       typeof window === 'undefined'
-        ? await fetchDetailFromBackend(slug, locale)
-        : await fetchDetailFromApiRoute(slug, locale)
+        ? await loadProductDetailCached(slug, loc)
+        : await fetchDetailFromApiRoute(slug, loc)
     return availableResult(mapDetailToPlant(detail))
   } catch (err) {
     if (err instanceof ProductNotFoundError) {

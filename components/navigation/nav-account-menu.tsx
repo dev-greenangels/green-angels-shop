@@ -19,17 +19,29 @@ type NavAccountMenuProps = {
   isLoggedIn: boolean
   logoutHref: string
   onLogout: () => void
+  className?: string
 }
 
-export function NavAccountMenu({ isLoggedIn, logoutHref, onLogout }: NavAccountMenuProps) {
+export function NavAccountMenu({
+  isLoggedIn,
+  logoutHref,
+  onLogout,
+  className,
+}: NavAccountMenuProps) {
   const t = useTranslations('nav')
   const tc = useTranslations('common')
 
   if (!isLoggedIn) {
     return (
       <Link href="/auth/login">
-        <Button type="button" variant="ghost" size="icon" aria-label={tc('account')}>
-          <User className="h-5 w-5" />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={tc('account')}
+          className={className}
+        >
+          <User className="h-5 w-5" strokeWidth={2} />
         </Button>
       </Link>
     )
@@ -43,7 +55,7 @@ export function NavAccountMenu({ isLoggedIn, logoutHref, onLogout }: NavAccountM
           variant="ghost"
           size="icon"
           aria-label={tc('account')}
-          className={cn('data-[state=open]:bg-primary/10')}
+          className={cn('data-[state=open]:bg-primary/10', className)}
         >
           <User className="h-5 w-5 fill-primary/25 text-primary" strokeWidth={2} />
         </Button>

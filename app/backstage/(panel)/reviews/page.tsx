@@ -30,6 +30,8 @@ import {
 } from '@/lib/backstage/reviews'
 import type { ReviewListItem, ReviewStatus, ReviewTypeFilter } from '@/lib/reviews/types'
 import { getReviewImages } from '@/lib/reviews/utils'
+import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
+import { formatDateTime } from '@/lib/i18n/format-datetime'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
@@ -50,6 +52,7 @@ export default function BackstageReviewsPage() {
   const tStatus = useTranslations('status')
   const tAria = useTranslations('aria')
   const tt = useTranslations('toast')
+  const { locale } = useBackstageUiLocale()
 
   const statusFilters: Array<{ value: ReviewStatus | 'ALL'; label: string }> = [
     { value: 'ALL', label: tPages('filterAll') },
@@ -210,7 +213,7 @@ export default function BackstageReviewsPage() {
                         {[review.email, review.phone].filter(Boolean).join(' · ')}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(review.createdAt).toLocaleString('uk-UA')}
+                        {formatDateTime(review.createdAt, locale, 'datetime')}
                       </p>
                       {review.legacyId ? (
                         <p className="text-xs text-muted-foreground">

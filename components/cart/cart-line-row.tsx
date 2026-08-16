@@ -287,11 +287,13 @@ function InStockCartLineRow({
                 saleTotal={pricing.saleLineTotal}
                 className="text-sm font-semibold text-foreground"
                 saleClassName="text-sm font-semibold"
+                mode="shelf"
               />
             ) : (
               <FormattedPrice
                 amount={pricing.saleLineTotal}
                 className="text-sm font-semibold text-foreground"
+                mode="shelf"
               />
             )}
             <p className="text-xs text-muted-foreground">
@@ -300,6 +302,7 @@ function InStockCartLineRow({
                 salePrice={pricing.saleUnitPrice}
                 perUnit
                 saleClassName="text-xs"
+                mode="shelf"
               />
             </p>
           </div>
@@ -492,11 +495,13 @@ function InStockCartLineRow({
               originalTotal={pricing.originalLineTotal}
               saleTotal={pricing.saleLineTotal}
               saleClassName="text-sm font-semibold"
+              mode="shelf"
             />
           ) : (
             <FormattedPrice
               amount={pricing.saleLineTotal}
               className="text-sm font-semibold"
+              mode="shelf"
             />
           )}
           <p className="text-xs text-muted-foreground">
@@ -505,6 +510,7 @@ function InStockCartLineRow({
               salePrice={pricing.saleUnitPrice}
               perUnit
               saleClassName="text-xs"
+              mode="shelf"
             />
           </p>
         </div>

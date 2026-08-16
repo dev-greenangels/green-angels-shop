@@ -23,21 +23,32 @@ import { useSession } from '@/components/providers/session-provider'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { DELIVERY_METHOD_BACKSTAGE_LABELS, PAYMENT_METHOD_BACKSTAGE_LABELS } from '@/lib/checkout/methods'
-import { useCartActions } from '@/lib/cart-store'
+import { clearCartAfterCheckout } from '@/lib/carts/clear-after-checkout'
 import { useFormatPrice } from '@/lib/commerce/use-format-price'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import { downloadOrderConfirmationPdf } from '@/lib/orders/build-order-confirmation-pdf'
 import {
   fetchOrderConfirmation,
+  syncMonopayPayment,
   type PublicOrderConfirmation,
 } from '@/lib/orders/fetch-order-confirmation'
 import {
   formatPaymentPurpose,
   normalizeCartCheckoutSettings,
 } from '@/lib/settings/cart-checkout.normalize'
-import { DEFAULT_CART_CHECKOUT_SETTINGS } from '@/lib/settings/defaults'
-import { fetchPublicSiteSettingsFromApiRoute, getCartCheckoutSettings } from '@/lib/settings/fetch'
-import type { CartCheckoutSettings } from '@/lib/settings/types'
+import {
+  hasCompanyBankDetails,
+  resolveCheckoutBankDetails,
+} from '@/lib/settings/company-bank-details'
+import { DEFAULT_CART_CHECKOUT_SETTINGS, UNAVAILABLE_STORE_SETTINGS } from '@/lib/settings/defaults'
+import {
+  fetchPublicSiteSettingsFromApiRoute,
+  getCartCheckoutSettings,
+  getMarketSettings,
+  getStoreSettings,
+} from '@/lib/settings/fetch'
+import { DEFAULT_MARKET_SETTINGS } from '@/lib/settings/market'
+import type { CartCheckoutSettings, MarketSettings, StoreContactSettings } from '@/lib/settings/types'
 import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
 
@@ -66,10 +77,28 @@ function isBankTransfer(paymentMethod: string) {
   return paymentMethod === 'bank-transfer' || paymentMethod === 'bank-transfer-legal'
 }
 
+function isCardOnline(paymentMethod: string) {
+  return paymentMethod === 'card-online'
+}
+
+function paymentStatusLabel(paymentStatus: string | null | undefined) {
+  switch (paymentStatus) {
+    case 'success':
+      return 'Оплачено'
+    case 'processing':
+    case 'created':
+      return 'Очікує підтвердження оплати'
+    case 'failure':
+    case 'expired':
+    case 'reversed':
+      return 'Оплату не завершено'
+    default:
+      return null
+  }
+}
+
 function hasBankDetails(bank: CartCheckoutSettings['bankDetails']) {
-  return Boolean(
-    bank.organizationName || bank.edrpou || bank.iban || bank.bankName || bank.mfo,
-  )
+  return hasCompanyBankDetails(bank)
 }
 
 async function copyText(value: string, label: string) {
@@ -81,8 +110,8 @@ async function copyText(value: string, label: string) {
   }
 }
 
-function CopyableRow({ label, value }: { label: string; value: string }) {
-  if (!value.trim()) return null
+function CopyableRow({ label, value }: { label: string; value?: string | null }) {
+  if (!value?.trim()) return null
   return (
     <div className="flex items-start justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2">
       <div className="min-w-0">
@@ -116,6 +145,11 @@ function OrderCard({
         <div>
           <p className="text-xs text-muted-foreground">Номер замовлення</p>
           <p className="font-mono text-lg font-bold text-foreground">{order.orderNumber}</p>
+          {isCardOnline(order.paymentMethod) ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {paymentStatusLabel(order.paymentStatus) ?? 'Онлайн-оплата'}
+            </p>
+          ) : null}
         </div>
         <Package className="h-5 w-5 text-primary" />
       </div>
@@ -142,18 +176,17 @@ function OrderCard({
             <span className="tabular-nums">{formatMoney(order.productsSubtotal)}</span>
           </div>
         ) : null}
-        {order.packagingAmount != null && order.packagingAmount > 0 ? (
-          <div className="flex justify-between gap-3">
-            <span className="text-muted-foreground">Пакування</span>
-            <span className="tabular-nums">{formatMoney(order.packagingAmount)}</span>
-          </div>
-        ) : null}
-        {order.deliveryAmount != null && order.deliveryAmount > 0 ? (
-          <div className="flex justify-between gap-3">
-            <span className="text-muted-foreground">Доставка</span>
-            <span className="tabular-nums">{formatMoney(order.deliveryAmount)}</span>
-          </div>
-        ) : null}
+        {(() => {
+          const shipping =
+            (order.deliveryAmount ?? 0) + (order.packagingAmount ?? 0)
+          if (shipping <= 0) return null
+          return (
+            <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">Доставка та пакування</span>
+              <span className="tabular-nums">{formatMoney(shipping)}</span>
+            </div>
+          )
+        })()}
         <div className="flex justify-between gap-3 font-semibold">
           <span>Разом</span>
           <span className="tabular-nums text-primary">{formatMoney(order.totalAmount)}</span>
@@ -207,24 +240,32 @@ function SuccessContent() {
   const catalogHref = useCatalogHref()
   const searchParams = useSearchParams()
   const { user } = useSession()
-  const { clearCart } = useCartActions()
-  const formatMoney = useFormatPrice()
+  const formatMoney = useFormatPrice('raw')
 
   const orderNumbers = useMemo(
     () => searchParams.getAll('order').filter(Boolean),
     [searchParams],
   )
+  const confirmationTokens = useMemo(
+    () => searchParams.getAll('confirmation').map((value) => value.trim()),
+    [searchParams],
+  )
+  const syncToken = searchParams.get('sync')?.trim() ?? ''
 
   const [orders, setOrders] = useState<PublicOrderConfirmation[]>([])
   const [cartSettings, setCartSettings] = useState<CartCheckoutSettings>(
     DEFAULT_CART_CHECKOUT_SETTINGS,
   )
+  const [storeSettings, setStoreSettings] = useState<StoreContactSettings>(
+    UNAVAILABLE_STORE_SETTINGS,
+  )
+  const [marketSettings, setMarketSettings] = useState<MarketSettings>(DEFAULT_MARKET_SETTINGS)
   const [loading, setLoading] = useState(true)
   const [pdfLoading, setPdfLoading] = useState(false)
 
   useEffect(() => {
-    clearCart()
-  }, [clearCart])
+    void clearCartAfterCheckout()
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -233,15 +274,43 @@ function SuccessContent() {
       try {
         const [settingsResult, confirmations] = await Promise.all([
           fetchPublicSiteSettingsFromApiRoute(),
-          Promise.all(orderNumbers.map((number) => fetchOrderConfirmation(number))),
+          Promise.all(
+            orderNumbers.map((number, index) =>
+              fetchOrderConfirmation(number, confirmationTokens[index]),
+            ),
+          ),
         ])
         if (cancelled) return
+
         setCartSettings(
           normalizeCartCheckoutSettings(getCartCheckoutSettings(settingsResult)),
         )
-        setOrders(
-          confirmations.filter((item): item is PublicOrderConfirmation => Boolean(item)),
+        setStoreSettings(getStoreSettings(settingsResult))
+        setMarketSettings(getMarketSettings(settingsResult))
+
+        const loaded = confirmations.filter(
+          (item): item is PublicOrderConfirmation => Boolean(item),
         )
+
+        // BFF: if card-online and not yet success, ask Nest to reconcile with Mono.
+        const reconciled = await Promise.all(
+          loaded.map(async (order) => {
+            if (!isCardOnline(order.paymentMethod)) return order
+            if (order.paymentStatus === 'success') return order
+
+            const sync = await syncMonopayPayment(order.orderNumber, syncToken)
+            if (!sync) return order
+
+            return {
+              ...order,
+              status: sync.status,
+              paymentStatus: sync.paymentStatus,
+            }
+          }),
+        )
+
+        if (cancelled) return
+        setOrders(reconciled)
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -249,20 +318,23 @@ function SuccessContent() {
     return () => {
       cancelled = true
     }
-  }, [orderNumbers])
+  }, [orderNumbers, confirmationTokens, syncToken])
 
   const nextSteps = cartSettings.nextSteps?.length
     ? cartSettings.nextSteps
     : DEFAULT_CART_CHECKOUT_SETTINGS.nextSteps
 
+  const bankDetails = resolveCheckoutBankDetails(cartSettings, storeSettings)
+
   const showBankBlock =
-    orders.some((order) => isBankTransfer(order.paymentMethod)) &&
-    hasBankDetails(cartSettings.bankDetails)
+    orders.some((order) => isBankTransfer(order.paymentMethod)) && hasBankDetails(bankDetails)
 
   const paymentPurpose = formatPaymentPurpose(
     cartSettings.paymentPurposeTemplate,
     orders.map((order) => order.orderNumber),
   )
+
+  const isSk = marketSettings.region === 'sk'
 
   const handleDownloadPdf = async () => {
     if (!orders.length) {
@@ -271,7 +343,14 @@ function SuccessContent() {
     }
     setPdfLoading(true)
     try {
-      await downloadOrderConfirmationPdf(orders, cartSettings)
+      await downloadOrderConfirmationPdf(
+        orders,
+        { ...cartSettings, bankDetails },
+        {
+          region: marketSettings.region,
+          defaultCurrency: marketSettings.defaultCurrency,
+        },
+      )
     } catch {
       toast.error('Не вдалося сформувати PDF')
     } finally {
@@ -280,7 +359,7 @@ function SuccessContent() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-transparent">
       <header className="border-b bg-background">
         <div className={cn(siteContentShellClassName, 'py-4')}>
           <Link href="/" className="flex items-center gap-2">
@@ -293,7 +372,7 @@ function SuccessContent() {
         <ClientPublicPageBreadcrumbs
           className="mb-6"
           items={[
-            { label: t('pageTitle'), href: '/checkout' },
+            { label: t('pageTitle') },
             { label: t('orderPlaced') },
           ]}
         />
@@ -311,32 +390,34 @@ function SuccessContent() {
           </div>
 
           <div className="mb-6 flex flex-wrap justify-center gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pdfLoading || loading || !orders.length}
-              onClick={() => void handleDownloadPdf()}
-            >
-              {pdfLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="mr-2 h-4 w-4" />
-              )}
-              Завантажити PDF
-            </Button>
+            {cartSettings.orderPdfDownloadEnabled !== false ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={pdfLoading || loading || !orders.length}
+                onClick={() => void handleDownloadPdf()}
+              >
+                {pdfLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                Завантажити PDF
+              </Button>
+            ) : null}
           </div>
 
           <div className="mb-8 space-y-4 rounded-xl border bg-background p-6 lg:p-8">
             {loading ? (
-              <p className="text-sm text-muted-foreground">Завантажуємо деталі замовлення…</p>
+              <p className="text-sm text-muted-foreground">{t('successLoadingDetails')}</p>
             ) : orders.length ? (
               orders.map((order) => (
                 <OrderCard key={order.id} order={order} formatMoney={formatMoney} />
               ))
             ) : (
-              <div>
+              <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  {orderNumbers.length > 1 ? 'Номери замовлень' : 'Номер замовлення'}
+                  {orderNumbers.length > 1 ? t('successOrderNumbersLabel') : t('successOrderNumberLabel')}
                 </p>
                 <div className="space-y-1">
                   {(orderNumbers.length ? orderNumbers : ['ZY-00000000']).map((orderNumber) => (
@@ -345,6 +426,7 @@ function SuccessContent() {
                     </p>
                   ))}
                 </div>
+                <p className="text-sm text-muted-foreground">{t('successLimitedHint')}</p>
               </div>
             )}
           </div>
@@ -356,19 +438,32 @@ function SuccessContent() {
               </h2>
               <CopyableRow
                 label="Одержувач"
-                value={cartSettings.bankDetails.organizationName}
+                value={bankDetails.organizationName}
               />
-              <CopyableRow label="ЄДРПОУ / ІПН" value={cartSettings.bankDetails.edrpou} />
-              <CopyableRow label="IBAN" value={cartSettings.bankDetails.iban} />
-              <CopyableRow label="Банк" value={cartSettings.bankDetails.bankName} />
-              <CopyableRow label="МФО" value={cartSettings.bankDetails.mfo} />
+              <CopyableRow
+                label={isSk ? 'IČO' : 'ЄДРПОУ / ІПН'}
+                value={bankDetails.edrpou}
+              />
+              {isSk ? (
+                <>
+                  <CopyableRow label="DIČ" value={bankDetails.dic} />
+                  <CopyableRow label="IČ DPH" value={bankDetails.icDph} />
+                </>
+              ) : null}
+              <CopyableRow label="IBAN" value={bankDetails.iban} />
+              <CopyableRow label="Банк" value={bankDetails.bankName} />
+              {isSk ? (
+                <CopyableRow label="BIC / SWIFT" value={bankDetails.bic} />
+              ) : (
+                <CopyableRow label="МФО" value={bankDetails.mfo} />
+              )}
               <CopyableRow
                 label="Юридична адреса"
-                value={cartSettings.bankDetails.legalAddress}
+                value={bankDetails.legalAddress}
               />
               <CopyableRow
                 label="Податковий статус"
-                value={cartSettings.bankDetails.taxStatus}
+                value={bankDetails.taxStatus}
               />
               <CopyableRow label="Призначення платежу" value={paymentPurpose} />
             </div>
@@ -456,7 +551,7 @@ export default function CheckoutSuccessPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-muted/30">
+        <div className="flex min-h-screen items-center justify-center bg-transparent">
           <div className="text-center">
             <BrandLogo
               alt="Зелені Янголи"

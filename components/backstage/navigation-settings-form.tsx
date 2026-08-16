@@ -27,6 +27,7 @@ type NavigationSettingsFormProps = {
   onChange: (next: NavigationSettings) => void
   onSave: () => void
   saving?: boolean
+  isDirty?: boolean
 }
 
 function createEmptyItem(sortOrder: number): NavigationMenuItem {
@@ -45,6 +46,7 @@ export function NavigationSettingsForm({
   onChange,
   onSave,
   saving = false,
+  isDirty = false,
 }: NavigationSettingsFormProps) {
   const updateItem = (index: number, patch: Partial<NavigationMenuItem>) => {
     const items = navigation.items.map((item, i) => (i === index ? { ...item, ...patch } : item))
@@ -173,7 +175,7 @@ export function NavigationSettingsForm({
           </div>
         ))}
 
-        <Button type="button" onClick={onSave} disabled={saving}>
+        <Button type="button" onClick={onSave} disabled={saving || !isDirty}>
           <Save className="mr-2 h-4 w-4" />
           {saving ? 'Збереження...' : 'Зберегти меню'}
         </Button>

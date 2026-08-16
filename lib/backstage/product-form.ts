@@ -26,6 +26,10 @@ export type ProductVariantDraft = {
   legacyId: string
   availableFrom: string
   salesUnitId: string
+  weight: string
+  lengthCm: string
+  widthCm: string
+  heightCm: string
   quantityPrices: VariantQuantityPriceDraft[]
 }
 
@@ -33,6 +37,7 @@ export type ProductFormState = {
   id?: string
   name: string
   latinName: string
+  cnCode: string
   legacyId: string
   slug: string
   primaryCategoryId: string
@@ -62,6 +67,10 @@ export function createVariantDraft(partial?: Partial<ProductVariantDraft>): Prod
     legacyId: '',
     availableFrom: '',
     salesUnitId: '',
+    weight: '',
+    lengthCm: '',
+    widthCm: '',
+    heightCm: '',
     quantityPrices: [],
     ...partial,
   }
@@ -72,6 +81,7 @@ export { createQuantityPriceDraft }
 export const emptyProductForm = (): ProductFormState => ({
   name: '',
   latinName: '',
+  cnCode: '',
   legacyId: '',
   slug: '',
   primaryCategoryId: '',
@@ -95,6 +105,7 @@ function normalizeProductFormForCompare(form: ProductFormState) {
     id: form.id,
     name: form.name,
     latinName: form.latinName,
+    cnCode: form.cnCode.replace(/\s/g, '').trim(),
     legacyId: form.legacyId,
     slug: form.slug,
     primaryCategoryId: form.primaryCategoryId,

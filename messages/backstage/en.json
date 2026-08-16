@@ -1,22 +1,31 @@
 {
   "nav": {
     "overview": "Overview",
+    "groupCatalog": "Catalog",
+    "groupSales": "Sales",
+    "groupContent": "Content",
+    "groupSite": "Site",
     "categories": "Categories",
     "attributes": "Attributes",
     "characteristics": "Characteristics",
     "products": "Products",
+    "import": "CSV import",
     "orders": "Orders",
+    "orderDictionaries": "Order statuses",
+    "dispatchCalendar": "Dispatch calendar",
     "carts": "Carts",
     "users": "Users",
     "blog": "Blog",
     "reviews": "Reviews",
     "promotions": "Promotions",
+    "referrals": "Referrals",
     "referenceData": "Reference data",
     "settings": "Settings",
     "localization": "Localization",
     "navigation": "Site menu",
     "redirects": "Redirects",
-    "photos": "Fresh photos"
+    "photos": "Fresh photos",
+    "tedb": "TEDB / VAT"
   },
   "common": {
     "backstageLabel": "Back office",
@@ -60,6 +69,7 @@
     "refresh": "Refresh",
     "retry": "Try again",
     "collapseAll": "Collapse all",
+    "expandAll": "Expand all",
     "activate": "Activate",
     "deactivate": "Deactivate",
     "approve": "Approve",
@@ -146,7 +156,7 @@
     "addAdditionalCategories": "Add additional categories (optional)",
     "additionalCategoriesHint": "Product stays in the primary category; additional ones duplicate it in other sections.",
     "productDescriptionPlaceholder": "Detailed product description…",
-      "htmlPlaceholder": "'<p>Your HTML content…</p>'",
+    "htmlPlaceholder": "'<p>Your HTML content…</p>'",
     "htmlHint": "You can paste ready HTML. After switching to Editor it will display visually.",
     "rootCategory": "Root category",
     "title": "Title",
@@ -186,7 +196,16 @@
     "characteristicOptionsFormat": "Each line: \"Name\" or \"Name | slug\"",
     "characteristicOptionsPlaceholder": "Full sun | full-sun\nPartial shade | partial-shade",
     "addOptionsForList": "Add options for the list.",
-    "valueTypeChangeHint": "Safe transitions: select ↔ multi-select, text ↔ number, list → text. Other changes may clear product values."
+    "valueTypeChangeHint": "Safe transitions: select ↔ multi-select, text ↔ number, list → text. Other changes may clear product values.",
+    "noCharacteristicsSelected": "No properties added yet",
+    "characteristicLabel": "Property",
+    "valueLabel": "Value",
+    "selectCharacteristic": "Select property",
+    "selectValue": "Select value",
+    "enterValue": "Enter value",
+    "addCharacteristic": "Add",
+    "removeCharacteristic": "Remove",
+    "notSelectedOption": "— Not selected —"
   },
   "aria": {
     "selectItem": "Select {name}",
@@ -276,6 +295,13 @@
     "attributesSection": "Attributes section",
     "notSelected": "Not selected",
     "notSelectedOption": "— Not selected —",
+    "noAttributesSelected": "No attributes added yet",
+    "attributeLabel": "Attribute",
+    "valueLabel": "Value",
+    "selectAttribute": "Select attribute",
+    "selectValue": "Select value",
+    "addAttribute": "Add",
+    "removeAttribute": "Remove",
     "basePrice": "Base price (₴) *",
     "inStock": "On stock *",
     "salesUnit": "Unit of measure",
@@ -320,7 +346,8 @@
     "addProduct": "Add product",
     "editProduct": "Edit product",
     "add-plant": "Add product",
-    "edit": "Edit product"
+    "edit": "Edit product",
+    "table": "Products table"
   },
   "contentBanner": {
     "editing": "Editing translation: {locale}. Slug, price and images are shared across languages."
@@ -421,6 +448,8 @@
       "mainDesc": "Name, categories and description",
       "productName": "Product name *",
       "latinName": "Latin name",
+      "cnCode": "CN code (Intrastat)",
+      "cnCodeWarning": "Warning: this code usually comes from ABRA (nomen). Edit manually only if you are sure — reduced VAT rates by delivery country depend on it. The next Flexi sync may overwrite it with the value from ABRA.",
       "primaryCategory": "Primary category",
       "fullDescription": "Full description",
       "seoTitle": "SEO & links",
@@ -525,6 +554,7 @@
       "statRevenue": "Revenue",
       "statRevenueDesc": "Sum of all orders",
       "statCustomers": "Customers",
+      "statCustomersDesc": "Registered buyers",
       "statCustomersSoon": "Coming soon",
       "recentOrders": "Recent orders",
       "colNumber": "Number",
@@ -535,7 +565,8 @@
       "noOrders": "No orders yet",
       "lowStock": "Low stock",
       "noLowStock": "No products with low stock",
-      "stockUnits": "{count} pcs."
+      "stockUnits": "{count} pcs.",
+      "loadError": "Could not load dashboard data."
     },
     "login": {
       "title": "Back office",

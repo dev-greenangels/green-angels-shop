@@ -55,13 +55,19 @@ export function resolveDisplayedPromoCodes(
 type UsePricingQuoteInput = {
   items: Array<{ productVariantId: string; quantity: number }>
   itemsKey: string
-  customerPhone?: string
-  userId?: string
+  /** Змінюється після логіну/логауту — тригерить re-quote (аудиторія з cookie на BFF). */
+  audienceKey?: string | null
   promoCode?: string
   promoCodes?: string[]
   deliveryMethod?: string
+  paymentMethod?: string
   splitOrderParts?: number
   splitOrderPartIndex?: number
+  countryCode?: 'sk' | 'hu' | 'at'
+  deliveryCountryCode?: string
+  buyerType?: 'individual' | 'company'
+  vatCountryCode?: string
+  viesValid?: boolean
   enabled?: boolean
   debounceMs?: number
 }
@@ -69,13 +75,18 @@ type UsePricingQuoteInput = {
 export function usePricingQuote({
   items,
   itemsKey,
-  customerPhone,
-  userId,
+  audienceKey = null,
   promoCode,
   promoCodes,
   deliveryMethod,
+  paymentMethod,
   splitOrderParts,
   splitOrderPartIndex,
+  countryCode,
+  deliveryCountryCode,
+  buyerType,
+  vatCountryCode,
+  viesValid,
   enabled = true,
   debounceMs = 300,
 }: UsePricingQuoteInput) {
@@ -102,13 +113,17 @@ export function usePricingQuote({
         try {
           const result = await fetchPricingQuote({
             items,
-            customerPhone,
-            userId,
             promoCode: promoCode || undefined,
             promoCodes: requestedPromoCodes.length ? requestedPromoCodes : undefined,
             deliveryMethod: deliveryMethod || undefined,
+            paymentMethod: paymentMethod || undefined,
             splitOrderParts,
             splitOrderPartIndex,
+            countryCode,
+            deliveryCountryCode,
+            buyerType,
+            vatCountryCode,
+            viesValid,
           })
           if (requestIdRef.current !== requestId) return
           setQuoteForPromoCodes(requestedPromoCodes)
@@ -128,7 +143,24 @@ export function usePricingQuote({
     return () => {
       window.clearTimeout(timer)
     }
-  }, [customerPhone, debounceMs, deliveryMethod, enabled, items, itemsKey, promoCode, promoCodes, splitOrderPartIndex, splitOrderParts, userId])
+  }, [
+    audienceKey,
+    buyerType,
+    countryCode,
+    deliveryCountryCode,
+    debounceMs,
+    deliveryMethod,
+    paymentMethod,
+    enabled,
+    items,
+    itemsKey,
+    promoCode,
+    promoCodes,
+    splitOrderPartIndex,
+    splitOrderParts,
+    vatCountryCode,
+    viesValid,
+  ])
 
   return { quote, loading, quoteForPromoCodes }
 }

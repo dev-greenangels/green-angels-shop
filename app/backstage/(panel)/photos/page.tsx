@@ -26,10 +26,15 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
+import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
+import { formatDateTimeOrDash } from '@/lib/i18n/format-datetime'
+import { resolveFreshPhotoThumbUrl } from '@/lib/variant-photos/fresh-photo-urls'
 
 type PhotoItem = {
   id: string
   url: string
+  mainUrl?: string
+  thumbUrl?: string
   ean: string
   fileSizeBytes: number
   createdAt: string
@@ -78,18 +83,6 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
 }
 
-function formatDate(value: string | null | undefined): string {
-  if (!value?.trim()) return '—'
-  try {
-    return new Intl.DateTimeFormat('uk-UA', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    }).format(new Date(value))
-  } catch {
-    return value
-  }
-}
-
 function parseSort(value: string): {
   sortBy: 'createdAt' | 'updatedAt' | 'ean' | 'fileSizeBytes' | 'photoDate'
   sortDir: 'asc' | 'desc'
@@ -112,6 +105,7 @@ function getPhotoTakenAt(photo: PhotoItem): string | null {
 }
 
 export default function BackstagePhotosPage() {
+  const { locale } = useBackstageUiLocale()
   const [data, setData] = useState<PhotosPage | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -634,67 +628,71 @@ export default function BackstagePhotosPage() {
             ) : rows.length === 0 ? (
               <p className="px-6 py-12 text-center text-sm text-muted-foreground">Фото немає.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
-                    <TableHead>Фото</TableHead>
-                    <TableHead>Назва</TableHead>
-                    <TableHead>Розмір</TableHead>
-                    <TableHead>EAN</TableHead>
-                    <TableHead>Склад</TableHead>
-                    <TableHead>Дата зйомки</TableHead>
-                    <TableHead>Завантажено</TableHead>
-                    <TableHead>Файл</TableHead>
-                    <TableHead className="w-12" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      className="border-b border-border/80 odd:bg-background even:bg-muted/15 hover:bg-muted/35"
-                    >
-                      <TableCell className="py-3">
-                        <div className="relative h-14 w-14 overflow-hidden rounded-md border border-border/70 bg-muted shadow-sm">
-                          <Image
-                            src={row.url}
-                            alt=""
-                            fill
-                            unoptimized
-                            className="object-cover"
-                            sizes="56px"
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-[220px] font-medium">
-                        {row.appProperties.plantName || '—'}
-                      </TableCell>
-                      <TableCell>{row.appProperties.plantSize || '—'}</TableCell>
-                      <TableCell className="font-mono text-xs">{row.ean}</TableCell>
-                      <TableCell className="max-w-[140px] truncate text-sm">
-                        {row.appProperties.storageName || '—'}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {formatDate(getPhotoTakenAt(row))}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {formatDate(row.createdAt)}
-                      </TableCell>
-                      <TableCell>{formatBytes(row.fileSizeBytes)}</TableCell>
-                      <TableCell>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => void deletePhoto(row.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
+                      <TableHead>Фото</TableHead>
+                      <TableHead>Назва</TableHead>
+                      <TableHead>Розмір</TableHead>
+                      <TableHead>EAN</TableHead>
+                      <TableHead>Склад</TableHead>
+                      <TableHead>Дата зйомки</TableHead>
+                      <TableHead>Завантажено</TableHead>
+                      <TableHead>Файл</TableHead>
+                      <TableHead className="w-12" />
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        className="border-b border-border/80 odd:bg-background even:bg-muted/15 hover:bg-muted/35"
+                      >
+                        <TableCell className="py-3">
+                          <div className="relative h-14 w-14 overflow-hidden rounded-md border border-border/70 bg-muted shadow-sm">
+                            <Image
+                              src={resolveFreshPhotoThumbUrl(row)}
+                              alt=""
+                              fill
+                              unoptimized
+                              className="object-cover"
+                              sizes="56px"
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-[220px] min-w-0 truncate font-medium">
+                          {row.appProperties.plantName || '—'}
+                        </TableCell>
+                        <TableCell className="max-w-[120px] truncate whitespace-nowrap">
+                          {row.appProperties.plantSize || '—'}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{row.ean}</TableCell>
+                        <TableCell className="max-w-[140px] truncate text-sm">
+                          {row.appProperties.storageName || '—'}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {formatDateTimeOrDash(getPhotoTakenAt(row), locale, 'datetime')}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {formatDateTimeOrDash(row.createdAt, locale, 'datetime')}
+                        </TableCell>
+                        <TableCell>{formatBytes(row.fileSizeBytes)}</TableCell>
+                        <TableCell>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => void deletePhoto(row.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
 
             {data && data.totalPages > 1 ? (

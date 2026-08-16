@@ -15,7 +15,7 @@ export function HomeCategoryCarousel({ categories, className }: HomeCategoryCaro
         className,
       )}
     >
-      <div className="flex w-max gap-2.5 px-[var(--site-shell-padding-x)] sm:gap-3 md:gap-4">
+      <div className="flex w-max gap-3 px-[var(--site-shell-padding-x)] sm:gap-3.5 md:gap-4">
         {categories.map((category) => (
           <div
             key={category.id}

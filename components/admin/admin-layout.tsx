@@ -16,6 +16,7 @@ import {
   FileText,
   MessageSquareQuote,
   Percent,
+  Gift,
   Settings,
   Languages,
   Scale,
@@ -23,7 +24,12 @@ import {
   Camera,
   Menu,
   LogOut,
+  ChevronDown,
   ChevronRight,
+  ClipboardList,
+  FileUp,
+  CalendarDays,
+  Landmark,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -43,31 +49,111 @@ import { BackstageUiLocaleSwitcher } from '@/components/backstage/backstage-ui-l
 import { cn } from '@/lib/utils'
 import type { BackstageSession } from '@/lib/backstage-auth/types'
 
-const navItems = [
-  { href: '/backstage', labelKey: 'overview', icon: LayoutDashboard },
-  { href: '/backstage/categories', labelKey: 'categories', icon: FolderTree },
-  { href: '/backstage/attributes', labelKey: 'attributes', icon: Tags },
-  { href: '/backstage/characteristics', labelKey: 'characteristics', icon: SlidersHorizontal },
-  { href: '/backstage/products', labelKey: 'products', icon: Package },
-  { href: '/backstage/orders', labelKey: 'orders', icon: ShoppingCart },
-  { href: '/backstage/carts', labelKey: 'carts', icon: ShoppingBasket },
-  { href: '/backstage/users', labelKey: 'users', icon: Users },
-  { href: '/backstage/blog', labelKey: 'blog', icon: FileText },
-  { href: '/backstage/reviews', labelKey: 'reviews', icon: MessageSquareQuote },
-  { href: '/backstage/promotions', labelKey: 'promotions', icon: Percent },
-  { href: '/backstage/reference-data', labelKey: 'referenceData', icon: Scale },
-  { href: '/backstage/localization', labelKey: 'localization', icon: Languages },
-  { href: '/backstage/navigation', labelKey: 'navigation', icon: Menu },
-  { href: '/backstage/redirects', labelKey: 'redirects', icon: ArrowRightLeft },
-  { href: '/backstage/photos', labelKey: 'photos', icon: Camera },
-  { href: '/backstage/settings', labelKey: 'settings', icon: Settings },
-] as const
+type NavItem = {
+  href: string
+  labelKey: string
+  icon: typeof LayoutDashboard
+  matchPrefix?: string
+}
 
-type NavLabelKey = (typeof navItems)[number]['labelKey']
+type NavGroup = {
+  id: string
+  labelKey: string
+  items: NavItem[]
+}
+
+const topNavItem: NavItem = {
+  href: '/backstage',
+  labelKey: 'overview',
+  icon: LayoutDashboard,
+}
+
+const navGroups: NavGroup[] = [
+  {
+    id: 'catalog',
+    labelKey: 'groupCatalog',
+    items: [
+      { href: '/backstage/categories', labelKey: 'categories', icon: FolderTree },
+      { href: '/backstage/attributes', labelKey: 'attributes', icon: Tags },
+      { href: '/backstage/characteristics', labelKey: 'characteristics', icon: SlidersHorizontal },
+      {
+        href: '/backstage/products',
+        labelKey: 'products',
+        icon: Package,
+        matchPrefix: '/backstage/products',
+      },
+      { href: '/backstage/import', labelKey: 'import', icon: FileUp },
+      { href: '/backstage/photos', labelKey: 'photos', icon: Camera },
+    ],
+  },
+  {
+    id: 'sales',
+    labelKey: 'groupSales',
+    items: [
+      { href: '/backstage/orders', labelKey: 'orders', icon: ShoppingCart },
+      { href: '/backstage/order-dictionaries', labelKey: 'orderDictionaries', icon: ClipboardList },
+      {
+        href: '/backstage/dispatch-calendar',
+        labelKey: 'dispatchCalendar',
+        icon: CalendarDays,
+      },
+      { href: '/backstage/carts', labelKey: 'carts', icon: ShoppingBasket },
+      {
+        href: '/backstage/users',
+        labelKey: 'users',
+        icon: Users,
+        matchPrefix: '/backstage/users',
+      },
+      { href: '/backstage/promotions', labelKey: 'promotions', icon: Percent },
+      { href: '/backstage/referrals', labelKey: 'referrals', icon: Gift },
+    ],
+  },
+  {
+    id: 'content',
+    labelKey: 'groupContent',
+    items: [
+      { href: '/backstage/blog', labelKey: 'blog', icon: FileText },
+      { href: '/backstage/reviews', labelKey: 'reviews', icon: MessageSquareQuote },
+    ],
+  },
+  {
+    id: 'site',
+    labelKey: 'groupSite',
+    items: [
+      { href: '/backstage/localization', labelKey: 'localization', icon: Languages },
+      { href: '/backstage/navigation', labelKey: 'navigation', icon: Menu },
+      { href: '/backstage/redirects', labelKey: 'redirects', icon: ArrowRightLeft },
+      { href: '/backstage/reference-data', labelKey: 'referenceData', icon: Scale },
+      { href: '/backstage/tedb', labelKey: 'tedb', icon: Landmark },
+    ],
+  },
+]
+
+const settingsNavItem: NavItem = {
+  href: '/backstage/settings',
+  labelKey: 'settings',
+  icon: Settings,
+}
+
+const allNavItems = [
+  topNavItem,
+  ...navGroups.flatMap((group) => group.items),
+  settingsNavItem,
+]
+
+type NavLabelKey = (typeof allNavItems)[number]['labelKey']
 
 interface AdminLayoutProps {
   children: React.ReactNode
   addClassName?: string
+}
+
+function isNavActive(pathname: string, item: NavItem): boolean {
+  if (item.href === '/backstage') return pathname === '/backstage'
+  if (item.matchPrefix) {
+    return pathname === item.href || pathname.startsWith(`${item.matchPrefix}/`)
+  }
+  return pathname === item.href || pathname.startsWith(`${item.href}/`)
 }
 
 function SidebarFooter({
@@ -101,6 +187,68 @@ function SidebarFooter({
   )
 }
 
+function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
+  const tNav = useTranslations('nav')
+  const active = isNavActive(pathname, item)
+
+  return (
+    <Link
+      href={item.href}
+      className={cn(
+        'flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors',
+        active
+          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+          : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground',
+      )}
+    >
+      <item.icon className="h-5 w-5 shrink-0" />
+      {tNav(item.labelKey)}
+    </Link>
+  )
+}
+
+function NavGroupSection({
+  group,
+  pathname,
+  open,
+  onToggle,
+}: {
+  group: NavGroup
+  pathname: string
+  open: boolean
+  onToggle: () => void
+}) {
+  const tNav = useTranslations('nav')
+  const hasActive = group.items.some((item) => isNavActive(pathname, item))
+
+  return (
+    <div className="space-y-0.5">
+      <button
+        type="button"
+        onClick={onToggle}
+        className={cn(
+          'flex w-full items-center justify-between rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-wide transition-colors',
+          hasActive
+            ? 'text-sidebar-accent-foreground'
+            : 'text-sidebar-foreground/50 hover:text-sidebar-foreground/80',
+        )}
+      >
+        <span>{tNav(group.labelKey)}</span>
+        <ChevronDown
+          className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-180')}
+        />
+      </button>
+      {open ? (
+        <div className="space-y-0.5 pl-1">
+          {group.items.map((item) => (
+            <NavLink key={item.href} item={item} pathname={pathname} />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function Sidebar({
   employee,
   onLogout,
@@ -109,8 +257,29 @@ function Sidebar({
   onLogout: () => void
 }) {
   const pathname = usePathname()
-  const tNav = useTranslations('nav')
   const tCommon = useTranslations('common')
+
+  const initiallyOpen = useMemo(() => {
+    const open: Record<string, boolean> = {}
+    for (const group of navGroups) {
+      open[group.id] = group.items.some((item) => isNavActive(pathname, item))
+    }
+    return open
+  }, [pathname])
+
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(initiallyOpen)
+
+  useEffect(() => {
+    setOpenGroups((prev) => {
+      const next = { ...prev }
+      for (const group of navGroups) {
+        if (group.items.some((item) => isNavActive(pathname, item))) {
+          next[group.id] = true
+        }
+      }
+      return next
+    })
+  }, [pathname])
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-sidebar text-sidebar-foreground">
@@ -118,31 +287,26 @@ function Sidebar({
         <Link href="/backstage" className="mb-3 block">
           <BrandLogo alt="Зелені Янголи" variant="onDark" imgClassName="max-h-8 md:max-h-9" />
         </Link>
-        <div className="flex items-center justify-between gap-2">
+        <div className="space-y-2">
           <span className="text-xs text-sidebar-foreground/60">{tCommon('backstageLabel')}</span>
-          <BackstageUiLocaleSwitcher variant="sidebar" />
+          <BackstageUiLocaleSwitcher variant="sidebar" className="w-full" />
         </div>
       </div>
 
-      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-4">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
-              )}
-            >
-              <item.icon className="h-5 w-5" />
-              {tNav(item.labelKey)}
-            </Link>
-          )
-        })}
+      <nav className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+        <NavLink item={topNavItem} pathname={pathname} />
+        {navGroups.map((group) => (
+          <NavGroupSection
+            key={group.id}
+            group={group}
+            pathname={pathname}
+            open={openGroups[group.id] ?? false}
+            onToggle={() =>
+              setOpenGroups((prev) => ({ ...prev, [group.id]: !prev[group.id] }))
+            }
+          />
+        ))}
+        <NavLink item={settingsNavItem} pathname={pathname} />
       </nav>
 
       <SidebarFooter employee={employee} onLogout={onLogout} />
@@ -159,13 +323,13 @@ export function AdminLayout({ children, addClassName }: AdminLayoutProps) {
   const tBread = useTranslations('breadcrumbs')
   const tCommon = useTranslations('common')
 
-  const navLabelKeys = useMemo(() => new Set(navItems.map((item) => item.labelKey)), [])
+  const navLabelKeys = useMemo(() => new Set(allNavItems.map((item) => item.labelKey)), [])
 
   const breadcrumbLabel = (segment: string): string => {
     if (segment === 'backstage') return tBread('home')
     if (segment === 'profile') return tBread('profile')
-    if (segment in { 'add-plant': 1, edit: 1 }) {
-      return tBread(segment as 'add-plant' | 'edit')
+    if (segment in { 'add-plant': 1, edit: 1, table: 1 }) {
+      return tBread(segment as 'add-plant' | 'edit' | 'table')
     }
     if (navLabelKeys.has(segment as NavLabelKey)) {
       return tNav(segment as NavLabelKey)
@@ -223,69 +387,69 @@ export function AdminLayout({ children, addClassName }: AdminLayoutProps) {
 
   return (
     <BackstageContentLocaleProvider>
-    <div className="bg-background">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border lg:block">
-        <Sidebar employee={employee} onLogout={handleLogout} />
-      </aside>
-
-      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="flex h-full w-64 flex-col gap-0 p-0">
-          <SheetHeader className="sr-only">
-            <SheetTitle>{tCommon('menuTitle')}</SheetTitle>
-            <SheetDescription>{tCommon('menuDescription')}</SheetDescription>
-          </SheetHeader>
+      <div className="bg-background">
+        <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border lg:block">
           <Sidebar employee={employee} onLogout={handleLogout} />
-        </SheetContent>
-      </Sheet>
+        </aside>
 
-      <div className="flex min-h-screen min-w-0 flex-col lg:pl-64" data-backstage-panel>
-        <header className="sticky top-0 z-40 h-9 shrink-0 border-b border-border/60 bg-background/80 backdrop-blur-md">
-          <div className="flex h-full items-center justify-between gap-2 px-3 lg:px-5">
-            <div className="flex min-w-0 flex-1 items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 lg:hidden"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-4 w-4" />
-            </Button>
+        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <SheetContent side="left" className="flex h-full w-64 flex-col gap-0 p-0">
+            <SheetHeader className="sr-only">
+              <SheetTitle>{tCommon('menuTitle')}</SheetTitle>
+              <SheetDescription>{tCommon('menuDescription')}</SheetDescription>
+            </SheetHeader>
+            <Sidebar employee={employee} onLogout={handleLogout} />
+          </SheetContent>
+        </Sheet>
 
-            <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-xs">
-              {breadcrumbs.map((crumb, index) => (
-                <div key={`${crumb.href}-${index}`} className="flex min-w-0 items-center gap-1">
-                  {index > 0 && (
-                    <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/70" />
-                  )}
-                  {index === breadcrumbs.length - 1 ? (
-                    <span className="truncate font-medium text-foreground">{crumb.label}</span>
-                  ) : (
-                    <Link
-                      href={crumb.href}
-                      className="truncate text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      {crumb.label}
-                    </Link>
-                  )}
-                </div>
-              ))}
-            </nav>
+        <div className="flex min-h-screen min-w-0 flex-col lg:pl-64" data-backstage-panel>
+          <header className="sticky top-0 z-40 h-9 shrink-0 border-b border-border/60 bg-background/80 backdrop-blur-md">
+            <div className="flex h-full items-center justify-between gap-2 px-3 lg:px-5">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 lg:hidden"
+                  onClick={() => setSidebarOpen(true)}
+                >
+                  <Menu className="h-4 w-4" />
+                </Button>
+
+                <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-xs">
+                  {breadcrumbs.map((crumb, index) => (
+                    <div key={`${crumb.href}-${index}`} className="flex min-w-0 items-center gap-1">
+                      {index > 0 && (
+                        <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/70" />
+                      )}
+                      {index === breadcrumbs.length - 1 ? (
+                        <span className="truncate font-medium text-foreground">{crumb.label}</span>
+                      ) : (
+                        <Link
+                          href={crumb.href}
+                          className="truncate text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {crumb.label}
+                        </Link>
+                      )}
+                    </div>
+                  ))}
+                </nav>
+              </div>
+              <BackstageContentLocaleSwitcher className="shrink-0" />
             </div>
-            <BackstageContentLocaleSwitcher className="shrink-0" />
-          </div>
-        </header>
+          </header>
 
-        <main
-          className={cn(
-            'flex-1 bg-gradient-to-br from-secondary via-background to-accent p-4 pb-4 lg:p-6',
-            addClassName,
-          )}
-        >
-          {children}
-        </main>
+          <main
+            className={cn(
+              'flex-1 bg-gradient-to-br from-secondary via-background to-accent p-4 pb-4 lg:p-6',
+              addClassName,
+            )}
+          >
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
     </BackstageContentLocaleProvider>
   )
 }

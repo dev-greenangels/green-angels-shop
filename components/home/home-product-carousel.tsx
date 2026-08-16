@@ -16,7 +16,7 @@ export function HomeProductCarousel({ plants, className }: HomeProductCarouselPr
         className,
       )}
     >
-      <div className="flex w-max gap-2.5 px-[var(--site-shell-padding-x)] sm:gap-3 md:gap-4">
+      <div className="flex w-max gap-3 px-[var(--site-shell-padding-x)] sm:gap-3.5 md:gap-4">
         {plants.map((plant) => (
           <div key={plant.id} className={PRODUCT_CARD_CAROUSEL_SLOT_CLASS}>
             <ProductCard plant={plant} />

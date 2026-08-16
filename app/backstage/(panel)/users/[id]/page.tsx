@@ -8,6 +8,7 @@ import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { UserEditCard } from '@/components/backstage/user-edit-card'
+import { UserGroupsCard } from '@/components/backstage/user-groups-card'
 import { UserOrderCard } from '@/components/backstage/user-order-card'
 import {
   AlertDialog,
@@ -34,8 +35,11 @@ import {
   deleteBackstageUser,
   fetchBackstageUser,
   updateBackstageUser,
+  updateBackstageUserGroups,
   type BackstageUserDetail,
 } from '@/lib/backstage/users'
+import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
+import { formatDateTime } from '@/lib/i18n/format-datetime'
 import { formatPersonName } from '@/lib/format-person-name'
 
 type DeleteMode = 'keep-orders' | 'with-orders'
@@ -44,6 +48,7 @@ export default function UserDetailPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
   const userId = params.id
+  const { locale } = useBackstageUiLocale()
 
   const [user, setUser] = useState<BackstageUserDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -101,8 +106,12 @@ export default function UserDetailPage() {
     }
   }
 
-  const handleOrderStatusChange = async (orderId: string, status: OrderStatus) => {
-    await patchBackstageOrderStatus(orderId, status)
+  const handleOrderStatusChange = async (
+    orderId: string,
+    status: OrderStatus,
+    options?: { cancellationReasonId?: string; cancellationNote?: string | null },
+  ) => {
+    await patchBackstageOrderStatus(orderId, status, options)
     setUser((prev) => {
       if (!prev) return prev
       return {
@@ -155,7 +164,7 @@ export default function UserDetailPage() {
             {user ? (
               <p className="text-muted-foreground">
                 {roleLabel} · зареєстровано{' '}
-                {new Date(user.createdAt).toLocaleDateString('uk-UA')} · {user.orderCount}{' '}
+                {formatDateTime(user.createdAt, locale, 'date')} · {user.orderCount}{' '}
                 замовлень
               </p>
             ) : null}
@@ -186,6 +195,14 @@ export default function UserDetailPage() {
               canChangeStaffPassword={isAdmin}
               onSave={async (payload) => {
                 const updated = await updateBackstageUser(userId, payload)
+                setUser(updated)
+              }}
+            />
+
+            <UserGroupsCard
+              user={user}
+              onSave={async (groupIds) => {
+                const updated = await updateBackstageUserGroups(userId, groupIds)
                 setUser(updated)
               }}
             />

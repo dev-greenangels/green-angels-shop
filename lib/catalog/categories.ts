@@ -20,6 +20,7 @@ export type CategoryTreeNode = {
   isCatalogRoot: boolean
   position: number
   name: string
+  latinName?: string | null
   description: string | null
   footerDescription?: string | null
   image: string | null
@@ -63,6 +64,7 @@ function mapTreeNode(node: CategoryTreeNode): CatalogCategory {
     id: node.id,
     name: node.name,
     slug: node.slug,
+    latinName: node.latinName?.trim() || undefined,
     description: node.description?.trim() || '',
     footerDescription: node.footerDescription?.trim() || undefined,
     metaTitle: node.metaTitle?.trim() || undefined,

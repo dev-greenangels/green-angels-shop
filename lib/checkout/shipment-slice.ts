@@ -3,6 +3,7 @@ import type { CheckoutFormValues } from '@/lib/validation/checkout-form'
 export type CheckoutShipmentSlice = Pick<
   CheckoutFormValues,
   | 'deliveryMethod'
+  | 'deliveryCountryCode'
   | 'city'
   | 'cityLabel'
   | 'postOffice'
@@ -10,6 +11,7 @@ export type CheckoutShipmentSlice = Pick<
   | 'street'
   | 'streetLabel'
   | 'houseNumber'
+  | 'postalCode'
   | 'deliveryPhone'
   | 'patronymic'
   | 'isOtherRecipient'
@@ -17,6 +19,7 @@ export type CheckoutShipmentSlice = Pick<
   | 'recipientLastName'
   | 'recipientPatronymic'
   | 'recipientPhone'
+  | 'recipientCompanyName'
 >
 
 export type CheckoutSplitShipments = {
@@ -29,6 +32,7 @@ export function createEmptyShipmentSlice(
 ): CheckoutShipmentSlice {
   return {
     deliveryMethod: defaults?.deliveryMethod ?? 'nova-poshta-branch',
+    deliveryCountryCode: defaults?.deliveryCountryCode ?? '',
     city: defaults?.city ?? '',
     cityLabel: defaults?.cityLabel ?? '',
     postOffice: defaults?.postOffice ?? '',
@@ -36,6 +40,7 @@ export function createEmptyShipmentSlice(
     street: defaults?.street ?? '',
     streetLabel: defaults?.streetLabel ?? '',
     houseNumber: defaults?.houseNumber ?? '',
+    postalCode: defaults?.postalCode ?? '',
     deliveryPhone: defaults?.deliveryPhone ?? '',
     patronymic: defaults?.patronymic ?? '',
     isOtherRecipient: defaults?.isOtherRecipient ?? false,
@@ -43,12 +48,14 @@ export function createEmptyShipmentSlice(
     recipientLastName: defaults?.recipientLastName ?? '',
     recipientPatronymic: defaults?.recipientPatronymic ?? '',
     recipientPhone: defaults?.recipientPhone ?? '',
+    recipientCompanyName: defaults?.recipientCompanyName ?? '',
   }
 }
 
 export function extractShipmentSlice(form: CheckoutFormValues): CheckoutShipmentSlice {
   return createEmptyShipmentSlice({
     deliveryMethod: form.deliveryMethod,
+    deliveryCountryCode: form.deliveryCountryCode,
     city: form.city,
     cityLabel: form.cityLabel,
     postOffice: form.postOffice,
@@ -56,6 +63,7 @@ export function extractShipmentSlice(form: CheckoutFormValues): CheckoutShipment
     street: form.street,
     streetLabel: form.streetLabel,
     houseNumber: form.houseNumber,
+    postalCode: form.postalCode,
     deliveryPhone: form.deliveryPhone,
     patronymic: form.patronymic,
     isOtherRecipient: form.isOtherRecipient,
@@ -63,6 +71,7 @@ export function extractShipmentSlice(form: CheckoutFormValues): CheckoutShipment
     recipientLastName: form.recipientLastName,
     recipientPatronymic: form.recipientPatronymic,
     recipientPhone: form.recipientPhone,
+    recipientCompanyName: form.recipientCompanyName,
   })
 }
 

@@ -1,9 +1,10 @@
 import Image from 'next/image'
-import { ArrowRight, CalendarDays } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 
+import { BlogPostMeta } from '@/components/blog/blog-post-meta'
 import { Card, CardContent } from '@/components/ui/card'
 import type { BlogPostListItem } from '@/lib/blog/posts'
-import { formatBlogDate } from '@/lib/blog/posts'
+import { toPublicMediaUrl } from '@/lib/media/public-url'
 import { Link } from '@/i18n/navigation'
 import { pressableClassName } from '@/lib/pressable'
 import { cn } from '@/lib/utils'
@@ -15,7 +16,7 @@ export function BlogPostCard({ post }: { post: BlogPostListItem }) {
         <div className="relative aspect-[16/9] bg-muted">
           {post.image ? (
             <Image
-              src={post.image}
+              src={toPublicMediaUrl(post.image)}
               alt={post.title}
               fill
               className="object-cover"
@@ -28,11 +29,10 @@ export function BlogPostCard({ post }: { post: BlogPostListItem }) {
           )}
         </div>
         <CardContent className="space-y-3 p-5">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <CalendarDays className="h-3.5 w-3.5" />
-            {formatBlogDate(post.createdAt)}
-          </div>
-          <h2 className="font-serif text-xl font-semibold leading-tight text-foreground">{post.title}</h2>
+          <BlogPostMeta author={post.author} createdAt={post.createdAt} size="sm" />
+          <h2 className="font-serif text-xl font-semibold leading-tight text-foreground">
+            {post.title}
+          </h2>
           <p className="line-clamp-3 text-sm text-muted-foreground">{post.excerpt}</p>
           <span className="inline-flex items-center text-sm font-medium text-primary">
             Читати далі

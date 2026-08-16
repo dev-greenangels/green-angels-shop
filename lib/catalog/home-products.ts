@@ -1,5 +1,6 @@
 import { filterInStockPlants } from '@/lib/catalog/filter-in-stock-plants'
-import { fetchCatalogProductBySlug, fetchCatalogProductsPage } from '@/lib/catalog/products'
+import { fetchCatalogProducts, fetchCatalogProductsPage } from '@/lib/catalog/products'
+import { orderPlantsByPinnedSlugs, pinnedSlugsForQuery } from '@/lib/catalog/pinned-slugs'
 import type { HomePageSettings } from '@/lib/settings/types'
 import type { Plant } from '@/lib/types'
 
@@ -8,19 +9,20 @@ export type HomeProductsResult = {
   unavailable: boolean
 }
 
-async function fetchPlantsBySlugs(slugs: string[]): Promise<HomeProductsResult> {
-  const cleaned = slugs.map((slug) => slug.trim()).filter(Boolean)
-  if (!cleaned.length) {
+async function fetchPlantsBySlugs(slugs: string[], locale?: string): Promise<HomeProductsResult> {
+  const pinned = pinnedSlugsForQuery(slugs)
+  if (!pinned.length) {
     return { plants: [], unavailable: false }
   }
 
-  const results = await Promise.all(cleaned.map((slug) => fetchCatalogProductBySlug(slug)))
-  const unavailable = results.some((result) => result.unavailable)
-  const plants = filterInStockPlants(
-    results.map((result) => result.data).filter((plant): plant is Plant => plant !== null),
-  )
+  const result = await fetchCatalogProducts({
+    slugs: pinned,
+    locale,
+    limit: pinned.length,
+  })
+  const plants = filterInStockPlants(orderPlantsByPinnedSlugs(result.data, pinned))
 
-  return { plants, unavailable }
+  return { plants, unavailable: result.unavailable }
 }
 
 function mergePinnedAndAuto(
@@ -68,7 +70,7 @@ export async function fetchNewArrivalProducts(
 ): Promise<HomeProductsResult> {
   const slugs = settings.productSlugs.filter(Boolean)
   if (slugs.length > 0) {
-    const manual = await fetchPlantsBySlugs(slugs)
+    const manual = await fetchPlantsBySlugs(slugs, locale)
     if (manual.plants.length >= settings.limit) {
       return { plants: manual.plants.slice(0, settings.limit), unavailable: manual.unavailable }
     }
@@ -98,7 +100,7 @@ export async function fetchBestsellerProducts(
 ): Promise<HomeProductsResult> {
   const slugs = settings.productSlugs.filter(Boolean)
   if (slugs.length > 0) {
-    const manual = await fetchPlantsBySlugs(slugs)
+    const manual = await fetchPlantsBySlugs(slugs, locale)
     if (manual.plants.length >= settings.limit) {
       return { plants: manual.plants.slice(0, settings.limit), unavailable: manual.unavailable }
     }
@@ -127,7 +129,9 @@ export async function fetchLowStockProducts(
   locale?: string,
 ): Promise<HomeProductsResult> {
   const slugs = settings.productSlugs.filter(Boolean)
-  const manual = slugs.length ? await fetchPlantsBySlugs(slugs) : { plants: [], unavailable: false }
+  const manual = slugs.length
+    ? await fetchPlantsBySlugs(slugs, locale)
+    : { plants: [], unavailable: false }
 
   const auto = await fetchSortedInStockPlants({
     limit: Math.max(settings.limit, settings.limit * 2),

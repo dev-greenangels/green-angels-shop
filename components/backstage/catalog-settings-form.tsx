@@ -18,11 +18,16 @@ import {
   GRID_COLUMNS_MIN,
 } from '@/lib/catalog/grid-columns'
 import { CatalogFiltersVisibilityFields } from '@/components/backstage/catalog-filters-visibility-fields'
+import { Input } from '@/components/ui/input'
 import type {
   CatalogCategoryDisplay,
   CatalogGridColumns,
   CatalogPageSettings,
 } from '@/lib/settings/types'
+import {
+  FRESH_PHOTOS_LIMIT_MAX,
+  FRESH_PHOTOS_LIMIT_MIN,
+} from '@/lib/settings/fresh-photos-limit'
 
 const DISPLAY_OPTIONS: Array<{
   value: CatalogCategoryDisplay
@@ -111,11 +116,13 @@ export function CatalogSettingsForm({
   onChange,
   onSave,
   saving,
+  isDirty = false,
 }: {
   catalog: CatalogPageSettings
   onChange: (next: CatalogPageSettings) => void
   onSave: () => void
   saving: boolean
+  isDirty?: boolean
 }) {
   const selected = DISPLAY_OPTIONS.find((option) => option.value === catalog.categoryDisplay)
 
@@ -185,7 +192,36 @@ export function CatalogSettingsForm({
           onChange={(plantsAlphabetFilters) => onChange({ ...catalog, plantsAlphabetFilters })}
         />
 
-        <Button type="button" onClick={onSave} disabled={saving}>
+        <div className="space-y-2 rounded-lg border border-border/60 bg-muted/20 p-4">
+          <p className="font-medium text-foreground">Fresh Photos</p>
+          <div className="space-y-1.5">
+            <Label htmlFor="fresh-photos-limit">Максимум фото на один розмір товару</Label>
+            <Input
+              id="fresh-photos-limit"
+              type="number"
+              min={FRESH_PHOTOS_LIMIT_MIN}
+              max={FRESH_PHOTOS_LIMIT_MAX}
+              step={1}
+              className="max-w-[8rem]"
+              value={catalog.freshPhotosLimit}
+              onChange={(event) => {
+                const parsed = Number(event.target.value)
+                onChange({
+                  ...catalog,
+                  freshPhotosLimit: Number.isFinite(parsed) ? parsed : catalog.freshPhotosLimit,
+                })
+              }}
+            />
+          </div>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Скільки Fresh Photos дозволено для одного розміру / варіанту товару (sizeId). За
+            замовчуванням: 4. Зменшення ліміту не видаляє наявні фото одразу — зайві прибираються при
+            наступному завантаженні або імпорті для цього розміру. 0 і відʼємні значення не
+            зберігаються.
+          </p>
+        </div>
+
+        <Button type="button" onClick={onSave} disabled={saving || !isDirty}>
           <Save className="mr-2 h-4 w-4" />
           {saving ? 'Збереження…' : 'Зберегти'}
         </Button>

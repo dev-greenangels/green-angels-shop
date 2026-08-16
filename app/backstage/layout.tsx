@@ -10,5 +10,9 @@ export default function BackstageRootLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <div className="contents" data-backstage-root>
+      {children}
+    </div>
+  )
 }

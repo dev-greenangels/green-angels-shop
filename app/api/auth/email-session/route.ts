@@ -29,6 +29,7 @@ export async function POST(request: Request) {
   try {
     const backendRes = await fetchBackend('/auth/email-session', {
       method: 'POST',
+      request,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: emailRaw.toLowerCase(),

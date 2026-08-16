@@ -9,8 +9,11 @@ import { showAddedToCartToast } from '@/lib/cart-toast'
 
 import { Navigation } from '@/components/navigation'
 import { ClientPublicPageBreadcrumbs } from '@/components/client-public-page-breadcrumbs'
+import { useCatalogHref } from '@/components/providers/catalog-paths-provider'
 import { CatalogPaginationControls } from '@/components/catalog/catalog-pagination-controls'
+import { FreshPhotoCard, FreshPhotoCardSkeleton } from '@/components/catalog/fresh-photo-card'
 import { FormattedPrice } from '@/components/commerce/formatted-price'
+import { PriceWithExVatUnder } from '@/components/commerce/shelf-price-block'
 import { DiscountedUnitPrice } from '@/components/pricing/discounted-price'
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
 import { Badge } from '@/components/ui/badge'
@@ -22,21 +25,16 @@ import {
   DialogContent,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Link, usePathname, useRouter } from '@/i18n/navigation'
+import { usePathname, useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
-import {
-  formatAvailableFromDisplay,
-  resolveDiscountUnitPrice,
-} from '@/lib/backstage/variant-pricing'
+import { formatAvailableFromDisplay } from '@/lib/backstage/variant-pricing'
 import {
   resolveCatalogLandingContent,
   type CategoryTreeNode,
 } from '@/lib/catalog/categories'
-import { productHref } from '@/lib/catalog/paths'
 import { getCartLineQuantity, getMaxAddableQuantity } from '@/lib/cart-limits'
 import { useCartActions, useCartItems } from '@/lib/cart-store'
 import { formatNumberForLocale } from '@/lib/i18n/intl-locale'
-import { resolveThumbUrl } from '@/lib/media/paths'
 import {
   siteContentShellClassName,
   siteStickyToolbarControlsClusterClassName,
@@ -51,8 +49,14 @@ import {
   getUnitPriceForQuantity,
 } from '@/lib/product-pricing'
 import type { CatalogPhotoItem, CatalogPhotosPage } from '@/lib/variant-photos/types'
-import type { Plant, PriceTier, ProductVariant } from '@/lib/types'
-import { PRODUCT_PLACEHOLDER_IMAGE } from '@/lib/product-image'
+import { resolveFreshPhotoMainUrl } from '@/lib/variant-photos/fresh-photo-urls'
+import {
+  catalogPhotoToPlant,
+  catalogPhotoToVariant,
+  formatFreshPhotoDate,
+  getPhotoTakenAt,
+} from '@/lib/variant-photos/fresh-photo-card'
+import type { Plant, ProductVariant } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 type EnrichedPhoto = CatalogPhotoItem & {
@@ -77,55 +81,12 @@ type EnrichedPhotosPage = {
   totalPages: number
 }
 
-type QuantityPriceRow = NonNullable<CatalogPhotoItem['quantityPrices']>[number]
-
-const FRESH_PHOTO_PRODUCT_SIDEBAR_WIDTH = '6.75rem'
-
 const FRESH_PHOTOS_GRID_CLASS = cn(
-  'grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
+  'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
 )
 
-function getPhotoTakenAt(photo: Pick<CatalogPhotoItem, 'appProperties'>): string | null {
-  return photo.appProperties.date?.trim() || null
-}
-
 function formatPhotoDate(value: string | null | undefined, locale: string) {
-  if (!value?.trim()) return '—'
-  try {
-    return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(value))
-  } catch {
-    return value
-  }
-}
-
-function isQuantityPriceActive(row: QuantityPriceRow, now = new Date()) {
-  if (row.validFrom) {
-    const from = new Date(row.validFrom)
-    if (!Number.isNaN(from.getTime()) && now < from) return false
-  }
-  if (row.validTo) {
-    const to = new Date(row.validTo)
-    if (!Number.isNaN(to.getTime())) {
-      to.setHours(23, 59, 59, 999)
-      if (now > to) return false
-    }
-  }
-  return true
-}
-
-function mapPhotoPriceTiers(basePrice: number, quantityPrices: QuantityPriceRow[]): PriceTier[] {
-  return quantityPrices
-    .filter((row) => isQuantityPriceActive(row))
-    .sort((a, b) => a.minQuantity - b.minQuantity)
-    .map((row) => ({
-      minQuantity: row.minQuantity,
-      pricePerUnit: resolveDiscountUnitPrice(
-        basePrice,
-        row.discountType === 'PERCENT' ? 'percent' : 'fixed_price',
-        row.value,
-      ),
-    }))
-    .filter((tier) => tier.pricePerUnit > 0 && tier.pricePerUnit < basePrice)
+  return formatFreshPhotoDate(value, locale) ?? '—'
 }
 
 function getPhotoDiscountPercent(variant: ProductVariant | null): number | null {
@@ -165,24 +126,7 @@ function FreshPhotosGridSkeleton() {
   return (
     <div className={FRESH_PHOTOS_GRID_CLASS}>
       {Array.from({ length: 12 }).map((_, index) => (
-        <article
-          key={index}
-          className="flex overflow-hidden rounded-xl border border-border/50 bg-card/70"
-        >
-          <div className="min-w-0 flex-1">
-            <Skeleton className="aspect-[4/5] w-full rounded-none" />
-          </div>
-          <div
-            className="flex shrink-0 flex-col gap-1.5 border-l border-border/40 p-2"
-            style={{ width: FRESH_PHOTO_PRODUCT_SIDEBAR_WIDTH }}
-          >
-            <Skeleton className="aspect-square w-full rounded-md" />
-            <Skeleton className="h-3 w-full" />
-            <Skeleton className="h-3 w-2/3" />
-            <Skeleton className="mt-auto h-8 w-full rounded-md" />
-            <Skeleton className="h-8 w-full rounded-md" />
-          </div>
-        </article>
+        <FreshPhotoCardSkeleton key={index} />
       ))}
     </div>
   )
@@ -220,49 +164,11 @@ function toEnrichedPhoto(photo: CatalogPhotoItem): EnrichedPhoto {
 }
 
 function photoToVariant(photo: EnrichedPhoto): ProductVariant | null {
-  if (!photo.variantId) return null
-  const basePrice = photo.price ?? 0
-  const availableFrom = formatAvailableFromDisplay(photo.availableFrom)
-  return {
-    id: photo.variantId,
-    ean: photo.ean,
-    label: photo.variantLabel || photo.appProperties.plantSize || '',
-    stock: photo.stock ?? 0,
-    basePrice,
-    priceTiers: mapPhotoPriceTiers(basePrice, photo.quantityPrices),
-    availableFrom,
-  }
+  return catalogPhotoToVariant(photo)
 }
 
 function photoToPlant(photo: EnrichedPhoto): Plant | null {
-  if (!photo.productId || !photo.productSlug) return null
-  const variant = photoToVariant(photo)
-  return {
-    id: photo.productId,
-    name: photo.productName || photo.appProperties.plantName || 'Товар',
-    latinName: '',
-    slug: photo.productSlug,
-    category: photo.categorySlug || '',
-    price: photo.price ?? 0,
-    sku: '',
-    images: [photo.url],
-    description: '',
-    shortDescription: '',
-    isNew: false,
-    stock: photo.stock ?? 0,
-    sunRequirement: 'partial',
-    soilType: 'any',
-    hardinessZone: '—',
-    wateringNeeds: 'moderate',
-    height: '—',
-    createdAt: photo.createdAt,
-    variants: variant ? [variant] : [],
-  }
-}
-
-function photoProductHref(photo: EnrichedPhoto): string | null {
-  if (!photo.productSlug || !photo.categorySlug) return null
-  return productHref(photo.categorySlug, photo.productSlug)
+  return catalogPhotoToPlant(photo)
 }
 
 function PhotoTitleLine({ photo }: { photo: EnrichedPhoto }) {
@@ -276,149 +182,11 @@ function PhotoTitleLine({ photo }: { photo: EnrichedPhoto }) {
   )
 }
 
-function FreshPhotoGridCard({
-  photo,
-  locale,
-  onOpen,
-  onAddToCart,
-}: {
-  photo: EnrichedPhoto
-  locale: string
-  onOpen: (photo: EnrichedPhoto) => void
-  onAddToCart: (photo: EnrichedPhoto, qty: number) => void
-}) {
-  const t = useTranslations('catalog')
-  const tProduct = useTranslations('product')
-  const cartT = useTranslations('cart')
-  const [qty, setQty] = useState(1)
-  const productLink = photoProductHref(photo)
-  const cardVariant = photoToVariant(photo)
-  const cardDiscount = getPhotoDiscountPercent(cardVariant)
-  const productName = photo.productName || photo.appProperties.plantName || '—'
-  const variantLabel = photo.variantLabel || photo.appProperties.plantSize || '—'
-  const productThumbSrc = photo.productImageUrl
-    ? resolveThumbUrl(photo.productImageUrl)
-    : PRODUCT_PLACEHOLDER_IMAGE
-
-  return (
-    <article className="flex overflow-hidden rounded-xl border border-border/50 bg-card/70 shadow-sm">
-      <div className="min-w-0 flex-1">
-        <button
-          type="button"
-          className="relative block aspect-[4/5] w-full bg-muted"
-          onClick={() => onOpen(photo)}
-          aria-label={productName}
-        >
-          <Image
-            src={photo.url}
-            alt={productName}
-            fill
-            unoptimized
-            className="object-cover"
-            sizes="(max-width: 1280px) 20vw, 16vw"
-          />
-          {cardDiscount ? (
-            <Badge
-              variant="destructive"
-              className="absolute left-2 top-2 px-1 py-0 text-[10px] shadow-sm"
-            >
-              −{cardDiscount}%
-            </Badge>
-          ) : null}
-          <div className="absolute inset-x-0 bottom-0 bg-black/45 px-2 py-1 backdrop-blur-sm">
-            <p className="truncate text-[9px] leading-tight text-white/90">
-              {t('freshPhotosPhotoFrom')}{' '}
-              {formatPhotoDate(getPhotoTakenAt(photo), locale)}
-            </p>
-          </div>
-        </button>
-      </div>
-
-      <div
-        className="flex shrink-0 flex-col gap-1.5 border-l border-border/40 p-2"
-        style={{ width: FRESH_PHOTO_PRODUCT_SIDEBAR_WIDTH }}
-      >
-        <div className="relative aspect-square w-full overflow-hidden rounded-md border border-border/50 bg-muted">
-          {productLink ? (
-            <Link href={productLink} className="absolute inset-0">
-              <Image
-                src={productThumbSrc}
-                alt={productName}
-                fill
-                className="object-cover"
-                sizes="108px"
-              />
-            </Link>
-          ) : (
-            <Image
-              src={productThumbSrc}
-              alt={productName}
-              fill
-              className="object-cover"
-              sizes="108px"
-            />
-          )}
-        </div>
-
-        {productLink ? (
-          <Link
-            href={productLink}
-            className="line-clamp-2 text-[11px] font-medium leading-tight text-foreground transition-colors hover:text-primary"
-          >
-            {productName}
-          </Link>
-        ) : (
-          <p className="line-clamp-2 text-[11px] font-medium leading-tight text-foreground">
-            {productName}
-          </p>
-        )}
-
-        <p className="truncate text-[10px] text-muted-foreground">{variantLabel}</p>
-
-        <div className="mt-auto space-y-1.5">
-          <div className="flex h-8 w-full items-center rounded-md border border-border/70 bg-background">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={() => setQty((value) => Math.max(1, value - 1))}
-              aria-label={cartT('decreaseQty')}
-            >
-              <Minus className="h-3.5 w-3.5" />
-            </Button>
-            <span className="min-w-0 flex-1 text-center text-sm font-medium tabular-nums">{qty}</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={() => setQty((value) => value + 1)}
-              aria-label={cartT('increaseQty')}
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-
-          <Button
-            type="button"
-            size="sm"
-            className="h-8 w-full gap-1 px-2 text-xs"
-            onClick={() => onAddToCart(photo, qty)}
-          >
-            <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{tProduct('addToCart')}</span>
-          </Button>
-        </div>
-      </div>
-    </article>
-  )
-}
-
 export function FreshPhotosPageContent() {
   const locale = useLocale()
   const t = useTranslations('catalog')
   const tNav = useTranslations('nav')
+  const catalogHref = useCatalogHref()
   const tc = useTranslations('common')
   const tProduct = useTranslations('product')
   const cartT = useTranslations('cart')
@@ -572,36 +340,6 @@ export function FreshPhotosPageContent() {
     }
   }
 
-  const handleCardAddToCart = useCallback(
-    (photo: EnrichedPhoto, addQty: number) => {
-      const quickPlant = photoToPlant(photo)
-      const quickVariant = photoToVariant(photo)
-      if (!quickPlant || !quickVariant) {
-        openPhoto(photo)
-        return
-      }
-      const quickInCart = getCartLineQuantity(cartItems, quickPlant.id, quickVariant.id)
-      const quickMaxAddable = getMaxAddableQuantity(quickVariant, cartItems, quickPlant.id)
-      const qtyToAdd = Math.min(Math.max(1, addQty), Math.max(0, quickMaxAddable))
-      if (qtyToAdd <= 0) {
-        toast.error(cartT('inStockOnly', { count: quickVariant.stock }))
-        return
-      }
-      const result = addItem(quickPlant, qtyToAdd, {
-        variant: quickVariant,
-        unitPrice: getUnitPriceForQuantity(quickVariant, quickInCart + qtyToAdd),
-      })
-      if (result.added > 0) {
-        showAddedToCartToast(
-          cartT('addedToCart', { count: result.added }),
-          quickPlant.name,
-          quickVariant.label,
-        )
-      }
-    },
-    [addItem, cartItems, cartT, openPhoto],
-  )
-
   const hasActiveFilters = Boolean(searchFromUrl || categoryFromUrl)
 
   return (
@@ -612,7 +350,7 @@ export function FreshPhotosPageContent() {
           <ClientPublicPageBreadcrumbs
             className="mb-4"
             items={[
-              { label: tNav('catalog'), href: '/catalog' },
+              { label: tNav('catalog'), href: catalogHref },
               { label: tNav('freshPhotos') },
             ]}
           />
@@ -730,12 +468,11 @@ export function FreshPhotosPageContent() {
             <div className={cn(isRefreshing && 'pointer-events-none opacity-60 transition-opacity')}>
               <div className={FRESH_PHOTOS_GRID_CLASS}>
                 {data.items.map((photo) => (
-                  <FreshPhotoGridCard
+                  <FreshPhotoCard
                     key={photo.id}
                     photo={photo}
                     locale={locale}
-                    onOpen={openPhoto}
-                    onAddToCart={handleCardAddToCart}
+                    onImageClick={() => openPhoto(photo)}
                   />
                 ))}
               </div>
@@ -783,7 +520,7 @@ export function FreshPhotosPageContent() {
                 <div className="relative bg-muted">
                   <div className="flex min-h-[320px] items-center justify-center px-3 py-4 sm:min-h-[480px]">
                     <Image
-                      src={selected.url}
+                      src={resolveFreshPhotoMainUrl(selected)}
                       alt={selected.productName || selected.appProperties.plantName || selected.ean}
                       width={720}
                       height={960}
@@ -827,14 +564,16 @@ export function FreshPhotosPageContent() {
 
                   {variant && variant.basePrice > 0 ? (
                     <div className="space-y-1.5">
-                      <DiscountedUnitPrice
-                        originalPrice={variant.basePrice}
-                        salePrice={salePrice}
-                        perUnit="sale-only"
-                        stacked={false}
-                        originalClassName="text-[11px] text-muted-foreground"
-                        saleClassName="text-sm font-semibold tabular-nums"
-                      />
+                      <PriceWithExVatUnder storedAmount={salePrice}>
+                        <DiscountedUnitPrice
+                          originalPrice={variant.basePrice}
+                          salePrice={salePrice}
+                          perUnit="sale-only"
+                          stacked={false}
+                          originalClassName="text-[11px] text-muted-foreground"
+                          saleClassName="text-sm font-semibold tabular-nums"
+                        />
+                      </PriceWithExVatUnder>
                       <PhotoDiscountChips variant={variant} />
                     </div>
                   ) : null}

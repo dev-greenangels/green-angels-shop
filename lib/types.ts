@@ -9,8 +9,10 @@ export interface ProductVariant {
   id: string
   /** Маркування, напр. C2, C5, СВРБ, ТГ22-24… */
   label: string
-  /** EAN / штрихкод варіанту — для свіжих фото */
+  /** EAN / штрихкод варіанту — Fresh Photos (UA) */
   ean?: string | null
+  /** SKU варіанту — Fresh Photos (SK, коли EAN немає) */
+  sku?: string | null
   stock: number
   /** Орієнтовна дата відвантаження (напр. "25.05.2026"); дозволяє бронювання навіть при stock 0 */
   availableFrom?: string
@@ -63,6 +65,8 @@ export interface Plant {
   maxDiscountPercent?: number | null
   createdAt: string
   displayCharacteristics?: ProductDisplayCharacteristic[]
+  metaTitle?: string | null
+  metaDesc?: string | null
 }
 
 export interface CartItem {

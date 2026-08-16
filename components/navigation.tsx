@@ -1,25 +1,19 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useLocale, useTranslations } from 'next-intl'
 import {
-  BookOpen,
   Heart,
-  Home,
-  Info,
   LayoutGrid,
   LogOut,
   Menu,
-  Percent,
   Search,
   Settings,
   ShoppingCart,
-  Sparkles,
-  Star,
   User,
   X,
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
 
 import { BrandLogo } from '@/components/brand-logo'
 import { CartBadge } from '@/components/cart-badge'
@@ -28,13 +22,6 @@ import { useSession } from '@/components/providers/session-provider'
 import { useStoreSettings } from '@/components/providers/store-settings-provider'
 import { SocialLinks } from '@/components/social/social-links'
 import { Button } from '@/components/ui/button'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import { clearBodyScrollLock } from '@/lib/clear-body-scroll-lock'
 import { buildLogoutHref } from '@/lib/auth/logout-redirect'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
@@ -51,20 +38,27 @@ import {
 import { cn } from '@/lib/utils'
 import type { AppLocale } from '@/i18n/routing'
 
-import { CartDrawer } from './cart-drawer'
 import { MobileCatalogNav } from './navigation/mobile-catalog-nav'
 import { NavAccountMenu } from './navigation/nav-account-menu'
 import { SiteSearchField } from './search/site-search-field'
 import { Link, usePathname } from '@/i18n/navigation'
+import { useBodyScrollLock } from '@/lib/body-scroll-lock'
 
-const MOBILE_COMPACT_ENTER_Y = 48
-const MOBILE_COMPACT_EXIT_Y = 8
-const MOBILE_COMPACT_ANIM_MS = 280
+const CartDrawer = dynamic(
+  () => import('./cart-drawer').then((mod) => ({ default: mod.CartDrawer })),
+  { ssr: false },
+)
+
 const MOBILE_ACTION_SLOT_CLASS = 'flex h-9 w-9 shrink-0 items-center justify-center overflow-visible'
+const MOBILE_PANEL_ANIM_MS = 400
+const MOBILE_PANEL_EASE = 'duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]'
+/** Висота меню: під хедером, знизу відступ трохи більший ніж з боків (px-3 = 0.75rem → ~1.25rem). */
+const MOBILE_MENU_MAX_H = 'max-h-[calc(100dvh-5.75rem)]'
 
 export function Navigation() {
   const t = useTranslations('nav')
   const tc = useTranslations('common')
+  const tf = useTranslations('footer')
   const locale = useLocale()
   const pathname = usePathname()
   const catalogHref = useCatalogHref()
@@ -74,16 +68,14 @@ export function Navigation() {
   const store = useStoreSettings()
   const [searchOpen, setSearchOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [mobileCompact, setMobileCompact] = useState(false)
-  const [mobileSearchPinned, setMobileSearchPinned] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [mounted, setMounted] = useState(false)
   const mobileSearchRef = useRef<HTMLInputElement>(null)
   const desktopSearchRef = useRef<HTMLInputElement>(null)
-  const mobileCompactRef = useRef(false)
-  const lastScrollYRef = useRef(0)
-  const scrollCompactLockUntilRef = useRef(0)
   const headerRef = useRef<HTMLElement>(null)
+  const mobileSearchPanelRef = useRef<HTMLDivElement>(null)
+  const mobileMenuPanelRef = useRef<HTMLDivElement>(null)
   const { openCart } = useCartActions()
   const totalItems = useCartTotalItems()
   const favoritesCount = useFavoritesCount()
@@ -94,10 +86,8 @@ export function Navigation() {
   }, [])
 
   useEffect(() => {
-    mobileCompactRef.current = false
-    scrollCompactLockUntilRef.current = 0
-    setMobileCompact(false)
-    setMobileSearchPinned(false)
+    setMobileMenuOpen(false)
+    setMobileSearchOpen(false)
     setSearchQuery('')
   }, [pathname])
 
@@ -109,99 +99,69 @@ export function Navigation() {
     return () => window.cancelAnimationFrame(frame)
   }, [searchOpen])
 
-  useEffect(() => {
-    if (!mobileSearchPinned) return
-
-    const frame = window.requestAnimationFrame(() => {
-      mobileSearchRef.current?.focus()
-    })
-
-    return () => window.cancelAnimationFrame(frame)
-  }, [mobileSearchPinned])
-
-  useEffect(() => {
-    lastScrollYRef.current = window.scrollY
-
-    const applyCompact = (next: boolean) => {
-      if (next === mobileCompactRef.current) return
-      mobileCompactRef.current = next
-      scrollCompactLockUntilRef.current = Date.now() + MOBILE_COMPACT_ANIM_MS
-      setMobileCompact(next)
-      if (next) setMobileSearchPinned(false)
-    }
-
-    const updateCompact = () => {
-      if (Date.now() < scrollCompactLockUntilRef.current) return
-
-      const y = window.scrollY
-      const prevY = lastScrollYRef.current
-      const scrollingDown = y > prevY + 2
-      lastScrollYRef.current = y
-
-      if (y <= MOBILE_COMPACT_EXIT_Y) {
-        applyCompact(false)
-        return
-      }
-
-      if (y >= MOBILE_COMPACT_ENTER_Y && scrollingDown) {
-        applyCompact(true)
-      }
-    }
-
-    const onScrollToTop = () => {
-      mobileCompactRef.current = false
-      lastScrollYRef.current = 0
-      scrollCompactLockUntilRef.current = Date.now() + MOBILE_COMPACT_ANIM_MS
-      setMobileCompact(false)
-      setMobileSearchPinned(false)
-    }
-
-    updateCompact()
-    window.addEventListener('scroll', updateCompact, { passive: true })
-    window.addEventListener('site:scroll-to-top', onScrollToTop)
-    return () => {
-      window.removeEventListener('scroll', updateCompact)
-      window.removeEventListener('site:scroll-to-top', onScrollToTop)
-    }
-  }, [])
-
-  const openMobileSearch = () => {
-    setMobileSearchPinned(true)
+  const syncHeaderOffset = () => {
+    const header = headerRef.current
+    if (!header) return
+    document.documentElement.style.setProperty(
+      '--site-header-offset',
+      `${header.offsetHeight}px`,
+    )
   }
 
-  const closeMobileSearchIfScrolled = () => {
-    if (window.scrollY >= MOBILE_COMPACT_ENTER_Y) {
-      setMobileSearchPinned(false)
+  const toggleMobileSearch = () => {
+    const nextOpen = !mobileSearchOpen
+    if (nextOpen && mobileMenuOpen) setMobileMenuOpen(false)
+
+    setMobileSearchOpen(nextOpen)
+    if (!nextOpen) setSearchQuery('')
+
+    if (nextOpen) {
+      window.setTimeout(() => mobileSearchRef.current?.focus(), MOBILE_PANEL_ANIM_MS)
     }
   }
 
-  const showMobileSearchRow = !mobileCompact || mobileSearchPinned
-  const showMobileToolbarSearch = mobileCompact && !mobileSearchPinned
+  const closeMobileSearch = () => {
+    if (!mobileSearchOpen) {
+      setSearchQuery('')
+      return
+    }
+    setMobileSearchOpen(false)
+    setSearchQuery('')
+  }
+
+  const toggleMobileMenu = () => {
+    const nextOpen = !mobileMenuOpen
+    if (nextOpen && mobileSearchOpen) {
+      setMobileSearchOpen(false)
+      setSearchQuery('')
+    }
+    setMobileMenuOpen(nextOpen)
+  }
+
+  const closeMobileMenu = () => {
+    if (!mobileMenuOpen) return
+    setMobileMenuOpen(false)
+  }
 
   useEffect(() => {
     const header = headerRef.current
     if (!header) return
 
     let frame = 0
-    const syncHeaderOffset = () => {
+    const onResize = () => {
       cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(() => {
-        document.documentElement.style.setProperty(
-          '--site-header-offset',
-          `${header.offsetHeight}px`,
-        )
-      })
+      frame = requestAnimationFrame(syncHeaderOffset)
     }
 
     syncHeaderOffset()
-    const observer = new ResizeObserver(syncHeaderOffset)
+    const observer = new ResizeObserver(onResize)
     observer.observe(header)
 
     return () => {
       cancelAnimationFrame(frame)
       observer.disconnect()
     }
-  }, [showMobileSearchRow, mobileCompact])
+  }, [])
 
   const navLinks = useMemo(
     () =>
@@ -225,361 +185,360 @@ export function Navigation() {
   const cartCount = mounted ? totalItems : 0
   const favoritesBadgeCount = mounted ? favoritesCount : 0
 
-  const closeMobileMenu = () => {
-    setMobileMenuOpen(false)
-    window.setTimeout(clearBodyScrollLock, 300)
-  }
-
-  const handleMenuOpenChange = (open: boolean) => {
-    setMobileMenuOpen(open)
-    if (!open) window.setTimeout(clearBodyScrollLock, 300)
-  }
+  useBodyScrollLock(mobileMenuOpen || mobileSearchOpen)
 
   const isActiveLink = (href: string) =>
     pathname === href || (href !== '/' && pathname.startsWith(`${href}/`))
-
-  const linkClassName = (href: string, withIcon = false) =>
-    cn(
-      'transition-colors',
-      withIcon
-        ? cn(
-            'inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] font-semibold tracking-wide',
-            isActiveLink(href)
-              ? 'bg-primary/12 text-primary'
-              : 'text-foreground/85 hover:bg-accent hover:text-foreground',
-          )
-        : cn(
-            'text-base font-medium hover:text-foreground',
-            isActiveLink(href) ? 'text-foreground' : 'text-muted-foreground',
-          ),
-    )
 
   return (
     <>
       <header
         ref={headerRef}
         id="site-header"
-        className="sticky top-0 z-50 w-full overflow-visible border-b border-border/40 bg-background/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/60"
+        className="sticky top-0 z-50 w-full overflow-visible px-3 pt-3 pb-0 sm:px-4 sm:pt-4"
       >
-        <div className={siteContentShellClassName}>
-          <div className="overflow-visible lg:hidden -mx-1">
-            <div className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-1 overflow-visible pb-1.5 pt-3">
-              <div className={MOBILE_ACTION_SLOT_CLASS}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9"
-                  aria-label={tc('menu')}
-                  onClick={() => setMobileMenuOpen(true)}
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </div>
-
-              <Link
-                href="/"
-                className="flex min-w-0 items-center justify-center"
-                aria-label={tc('brand')}
-              >
-                <BrandLogo
-                  alt={tc('brand')}
-                  className="opacity-90 hover:opacity-100"
-                  imgClassName="max-h-8 object-center"
-                />
-              </Link>
-
-              <div className={MOBILE_ACTION_SLOT_CLASS}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    'h-9 w-9 transition-opacity duration-200',
-                    showMobileToolbarSearch
-                      ? 'pointer-events-auto opacity-100'
-                      : 'pointer-events-none opacity-0',
-                  )}
-                  aria-label={tc('search')}
-                  aria-hidden={!showMobileToolbarSearch}
-                  tabIndex={showMobileToolbarSearch ? 0 : -1}
-                  onClick={openMobileSearch}
-                >
-                  <Search className="h-5 w-5" />
-                </Button>
-              </div>
-
-              <div className={MOBILE_ACTION_SLOT_CLASS}>
-                <Link href="/favorites" className="inline-flex">
+        <div className={cn(siteContentShellClassName, '!px-0')}>
+          {/*
+            Mobile: fixed-height slot so expanding menu (Boty-style, inside nav glass)
+            does not push page content. Nav itself is absolute and grows downward.
+          */}
+          <div className="relative h-[60px] lg:hidden">
+            <nav
+              className={cn(
+                'boty-glass absolute inset-x-0 top-0 z-50 rounded-[1rem]',
+                // overflow-hidden only when collapsed — otherwise sticky «Каталог» breaks
+                mobileMenuOpen || mobileSearchOpen ? 'overflow-visible' : 'overflow-hidden',
+              )}
+              aria-label={tc('menu')}
+            >
+              <div className="grid h-[60px] grid-cols-[1fr_auto_1fr] items-center px-2 sm:px-3">
+                <div className={cn(MOBILE_ACTION_SLOT_CLASS, 'justify-self-start')}>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="relative h-9 w-9 overflow-visible"
-                    aria-label={tc('favorites')}
+                    className="relative h-9 w-9 overflow-visible text-foreground/80 hover:bg-transparent hover:text-foreground"
+                    aria-label={mobileMenuOpen ? tc('close') : tc('menu')}
+                    aria-expanded={mobileMenuOpen}
+                    onClick={toggleMobileMenu}
                   >
-                    <Heart className="h-5 w-5" />
-                    <FavoritesBadge count={favoritesBadgeCount} />
+                    {mobileMenuOpen ? (
+                      <X className="h-5 w-5" strokeWidth={2} />
+                    ) : (
+                      <Menu className="h-5 w-5" strokeWidth={2} />
+                    )}
+                    {favoritesBadgeCount > 0 ? (
+                      <span
+                        className="absolute right-1 top-1 h-2 w-2 rounded-full border border-white bg-primary shadow-sm"
+                        aria-hidden
+                      />
+                    ) : null}
                   </Button>
-                </Link>
-              </div>
+                </div>
 
-              <div className={MOBILE_ACTION_SLOT_CLASS}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="relative h-9 w-9 overflow-visible"
-                  aria-label={tc('cart')}
-                  onClick={() => openCart()}
+                <Link
+                  href="/"
+                  className="flex min-w-0 items-center justify-center justify-self-center"
+                  aria-label={tc('brand')}
                 >
-                  <ShoppingCart className="h-5 w-5" />
-                  <CartBadge count={cartCount} />
-                </Button>
-              </div>
-            </div>
+                  <BrandLogo
+                    alt={tc('brand')}
+                    className="opacity-95 hover:opacity-100"
+                    imgClassName="max-h-8 object-center"
+                  />
+                </Link>
 
-            <div
-              className={cn(
-                'grid px-0.5',
-                showMobileSearchRow
-                  ? 'grid-rows-[1fr] transition-[grid-template-rows] duration-300 ease-out'
-                  : 'grid-rows-[0fr] transition-none',
-                mobileSearchPinned ? 'overflow-visible' : 'overflow-hidden',
-              )}
-            >
-              <div className={cn('min-h-0', mobileSearchPinned ? 'overflow-visible' : 'overflow-hidden')}>
-                <div className="pb-2">
+                <div className="flex items-center justify-self-end">
+                  <div className={MOBILE_ACTION_SLOT_CLASS}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-foreground/70 hover:bg-transparent hover:text-foreground"
+                      aria-label={mobileSearchOpen ? tc('closeSearch') : tc('search')}
+                      aria-expanded={mobileSearchOpen}
+                      onClick={toggleMobileSearch}
+                    >
+                      {mobileSearchOpen ? (
+                        <X className="h-5 w-5" strokeWidth={2} />
+                      ) : (
+                        <Search className="h-5 w-5" strokeWidth={2} />
+                      )}
+                    </Button>
+                  </div>
+
+                  <div className={MOBILE_ACTION_SLOT_CLASS}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="relative h-9 w-9 overflow-visible text-foreground/70 hover:bg-transparent hover:text-foreground"
+                      aria-label={tc('cart')}
+                      onClick={() => openCart()}
+                    >
+                      <ShoppingCart className="h-5 w-5" strokeWidth={2} />
+                      <CartBadge count={cartCount} className="-right-0.5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className={cn(
+                  'overflow-hidden transition-[max-height]',
+                  MOBILE_PANEL_EASE,
+                  mobileSearchOpen ? 'max-h-40' : 'max-h-0',
+                )}
+                aria-hidden={!mobileSearchOpen}
+              >
+                <div
+                  ref={mobileSearchPanelRef}
+                  className="border-t border-border/50 px-3 pb-3 pt-2"
+                >
                   <SiteSearchField
                     value={searchQuery}
                     onChange={setSearchQuery}
                     inputRef={mobileSearchRef}
                     placeholder={tc('searchPlants')}
-                    onBlur={closeMobileSearchIfScrolled}
-                    onClear={closeMobileSearchIfScrolled}
-                    onNavigate={closeMobileSearchIfScrolled}
+                    panelVariant="header"
+                    onNavigate={closeMobileSearch}
+                    onClear={() => setSearchQuery('')}
                   />
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="hidden min-h-16 items-center gap-4 py-2 lg:flex xl:gap-5">
-            <Link href="/" className="flex shrink-0 items-center">
-              <BrandLogo alt={tc('brand')} className="opacity-90 hover:opacity-100" />
-            </Link>
-
-            <div className="relative flex min-w-0 flex-1 items-center justify-center">
-              <nav
-                className={cn(
-                  'flex flex-wrap items-center justify-center gap-0.5 transition-opacity xl:gap-1',
-                  searchOpen && 'pointer-events-none opacity-0',
-                )}
-                aria-hidden={searchOpen}
-              >
-                {navLinks.map((link) => {
-                  const Icon = link.icon
-                  return (
-                    <Link
-                      key={link.id}
-                      href={link.href}
-                      className={linkClassName(link.href, true)}
-                      target={link.openInNewTab ? '_blank' : undefined}
-                      rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
-                    >
-                      <Icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2.25} />
-                      <span className="text-[0.9rem]">{link.label}</span>
-                    </Link>
-                  )
-                })}
-              </nav>
 
               <div
                 className={cn(
-                  'absolute inset-0 flex items-center gap-2 transition-opacity',
-                  searchOpen
-                    ? 'pointer-events-auto opacity-100'
-                    : 'pointer-events-none opacity-0',
+                  'transition-[max-height]',
+                  MOBILE_PANEL_EASE,
+                  mobileMenuOpen ? MOBILE_MENU_MAX_H : 'max-h-0 overflow-hidden',
                 )}
+                aria-hidden={!mobileMenuOpen}
               >
-                <SiteSearchField
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  inputRef={desktopSearchRef}
-                  placeholder={tc('searchPlants')}
-                  className="min-w-0 flex-1"
-                  inputClassName="h-10"
-                  panelVariant="header"
-                  onNavigate={() => setSearchOpen(false)}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0"
-                  onClick={() => setSearchOpen(false)}
+                <div
+                  ref={mobileMenuPanelRef}
+                  data-mobile-menu-panel
+                  className={cn(
+                    MOBILE_MENU_MAX_H,
+                    'overflow-y-auto overscroll-contain px-4 pb-3 pt-0',
+                  )}
                 >
-                  <X className="h-5 w-5" />
-                  <span className="sr-only">{tc('closeSearch')}</span>
-                </Button>
-              </div>
-            </div>
+                  <div className="mb-3 space-y-1">
+                    {user ? (
+                      <>
+                        <Link
+                          href="/account"
+                          className="flex items-center gap-2.5 rounded-md px-1 py-2 text-[18px] font-medium tracking-wide text-foreground transition-colors hover:text-primary"
+                          onClick={closeMobileMenu}
+                        >
+                          <User className="h-5 w-5 shrink-0 text-primary" strokeWidth={2} />
+                          <span className="truncate">{t('accountCabinet')}</span>
+                        </Link>
+                        <Link
+                          href="/account/settings"
+                          className="flex items-center gap-2.5 rounded-md px-1 py-2 text-[18px] tracking-wide text-foreground/80 transition-colors hover:text-foreground"
+                          onClick={closeMobileMenu}
+                        >
+                          <Settings className="h-5 w-5 shrink-0" strokeWidth={2} />
+                          {t('accountSettings')}
+                        </Link>
+                        <a
+                          href={buildLogoutHref(pathname)}
+                          className="flex items-center gap-2.5 rounded-md px-1 py-2 text-[18px] tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+                          onClick={() => {
+                            setUser(null)
+                            closeMobileMenu()
+                          }}
+                        >
+                          <LogOut className="h-4 w-4 shrink-0" strokeWidth={2} />
+                          {t('logout')}
+                        </a>
+                      </>
+                    ) : (
+                      <Link
+                        href="/auth/login"
+                        className="flex items-center gap-2.5 rounded-md px-1 py-2 text-[18px] font-medium tracking-wide text-primary transition-colors hover:text-primary/80"
+                        onClick={closeMobileMenu}
+                      >
+                        <User className="h-5 w-5 shrink-0" strokeWidth={2} />
+                        {t('login')}
+                      </Link>
+                    )}
+                  </div>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center">
+                  <div className="flex flex-col gap-0.5 border-t border-border/40 pt-2 [&>*]:border-b [&>*]:border-[#65954f38] [&>*:last-child]:border-b-0">
+                    {navLinks.map((link) => {
+                      const Icon = link.icon
+                      const showFavoritesBadge =
+                        link.href === '/favorites' && favoritesBadgeCount > 0
+
+                      if (link.useCatalogHref) {
+                        return (
+                          <MobileCatalogNav
+                            key={link.id}
+                            label={link.label}
+                            pathname={pathname}
+                            isCatalogActive={isCatalogSectionActive(pathname, catalogRootSlug)}
+                            onNavigate={closeMobileMenu}
+                            menuOpen={mobileMenuOpen}
+                          />
+                        )
+                      }
+
+                      return (
+                        <Link
+                          key={link.id}
+                          href={link.href}
+                          className={cn(
+                            'flex items-center gap-2.5 px-1 py-2.5 text-[18px] tracking-wide transition-colors hover:text-foreground',
+                            isActiveLink(link.href)
+                              ? 'font-medium text-foreground'
+                              : 'text-foreground/75',
+                          )}
+                          onClick={closeMobileMenu}
+                        >
+                          <Icon className="h-5 w-5 shrink-0 opacity-80" strokeWidth={2} />
+                          <span className="flex-1">{link.label}</span>
+                          {showFavoritesBadge ? (
+                            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-gradient px-1 text-[11px] font-semibold text-primary-foreground">
+                              {favoritesBadgeCount > 99 ? '99+' : favoritesBadgeCount}
+                            </span>
+                          ) : null}
+                        </Link>
+                      )
+                    })}
+                  </div>
+
+                  <div className="mt-3 border-t border-border/40 pt-3">
+                    <p className="mb-2 text-sm font-medium tracking-wide text-muted-foreground">
+                      {tf('socialTitle')}
+                    </p>
+                    <SocialLinks
+                      social={store.social}
+                      size="sm"
+                      iconClassName="border-border/60 bg-background/50 text-foreground hover:border-primary/30 hover:bg-primary/10 hover:text-primary"
+                    />
+                  </div>
+                </div>
+              </div>
+            </nav>
+          </div>
+
+          <nav
+            className="boty-glass relative hidden overflow-hidden rounded-[1rem] lg:block"
+            aria-label={tc('menu')}
+          >
+            <div className="flex min-h-[68px] items-center gap-4 px-4 py-2.5 xl:gap-6 xl:px-6">
+              <Link href="/" className="shrink-0" aria-label={tc('brand')}>
+                <BrandLogo
+                  alt={tc('brand')}
+                  className="opacity-95 hover:opacity-100"
+                  imgClassName="max-h-9 object-left xl:max-h-10"
+                />
+              </Link>
+
+              <div className="flex min-w-0 flex-1 items-center">
+                {searchOpen ? (
+                  <div className="flex w-full min-w-0 items-center gap-2">
+                    <SiteSearchField
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      inputRef={desktopSearchRef}
+                      placeholder={tc('searchPlants')}
+                      className="min-w-0 flex-1"
+                      inputClassName="h-10 rounded-xl border-white/40 bg-white/50"
+                      panelVariant="header"
+                      onNavigate={() => setSearchOpen(false)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 text-foreground/70 hover:bg-transparent hover:text-foreground"
+                      onClick={() => setSearchOpen(false)}
+                    >
+                      <X className="h-5 w-5" strokeWidth={2} />
+                      <span className="sr-only">{tc('closeSearch')}</span>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex w-full min-w-0 flex-wrap items-center justify-center gap-x-5 gap-y-2 xl:gap-x-7">
+                    {navLinks.map((link) => {
+                      const active = link.useCatalogHref
+                        ? isCatalogSectionActive(pathname, catalogRootSlug)
+                        : isActiveLink(link.href)
+                      return (
+                        <Link
+                          key={link.id}
+                          href={link.href}
+                          className={cn(
+                            'shrink-0 text-[15px] tracking-wide transition-colors [text-shadow:0_1px_1px_rgb(0_0_0_/_0.14)] xl:text-base',
+                            active
+                              ? 'font-bold text-primary'
+                              : 'font-semibold text-foreground/75 hover:text-foreground',
+                          )}
+                          aria-current={active ? 'page' : undefined}
+                          target={link.openInNewTab ? '_blank' : undefined}
+                          rel={link.openInNewTab ? 'noopener noreferrer' : undefined}
+                        >
+                          {link.label}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 xl:gap-2">
                 {!searchOpen ? (
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
+                    className="text-foreground/70 hover:bg-transparent hover:text-foreground"
                     onClick={() => setSearchOpen(true)}
                   >
-                    <Search className="h-5 w-5" />
+                    <Search className="h-5 w-5" strokeWidth={2} />
                     <span className="sr-only">{tc('search')}</span>
                   </Button>
                 ) : null}
-              </div>
 
-              <NavAccountMenu
-                isLoggedIn={Boolean(user)}
-                logoutHref={buildLogoutHref(pathname)}
-                onLogout={() => setUser(null)}
-              />
+                <NavAccountMenu
+                  isLoggedIn={Boolean(user)}
+                  logoutHref={buildLogoutHref(pathname)}
+                  onLogout={() => setUser(null)}
+                  className="text-foreground/70 hover:bg-transparent hover:text-foreground"
+                />
 
-              <Link href="/favorites">
+                <Link href="/favorites">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="relative overflow-visible text-foreground/70 hover:bg-transparent hover:text-foreground"
+                    aria-label={tc('favorites')}
+                  >
+                    <Heart className="h-5 w-5" strokeWidth={2} />
+                    <FavoritesBadge count={favoritesBadgeCount} />
+                  </Button>
+                </Link>
+
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="relative overflow-visible"
-                  aria-label={tc('favorites')}
+                  className="relative overflow-visible text-foreground/70 hover:bg-transparent hover:text-foreground"
+                  aria-label={tc('cart')}
+                  onClick={() => openCart()}
                 >
-                  <Heart className="h-5 w-5" />
-                  <FavoritesBadge count={favoritesBadgeCount} />
+                  <ShoppingCart className="h-5 w-5" strokeWidth={2} />
+                  <CartBadge count={cartCount} />
                 </Button>
-              </Link>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="relative overflow-visible"
-                aria-label={tc('cart')}
-                onClick={() => openCart()}
-              >
-                <ShoppingCart className="h-5 w-5" />
-                <CartBadge count={cartCount} />
-              </Button>
+              </div>
             </div>
-          </div>
+          </nav>
         </div>
       </header>
-
-      {mobileMenuOpen ? (
-        <Sheet open onOpenChange={handleMenuOpenChange}>
-          <SheetContent
-            side="left"
-            closeOnOverlay
-            className="flex w-[84%] flex-col border-border/40 p-0 gap-0"
-          >
-            <SheetHeader className="sr-only">
-              <SheetTitle>{tc('menu')}</SheetTitle>
-              <SheetDescription>{tc('menuDescription')}</SheetDescription>
-            </SheetHeader>
-
-            <div className="border-b border-border px-4 py-4">
-              {user ? (
-                <div className="space-y-2">
-                  <Link
-                    href="/account"
-                    className="flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-3 text-base font-semibold text-primary transition-colors hover:bg-primary/15"
-                    onClick={closeMobileMenu}
-                  >
-                    <User className="h-5 w-5 shrink-0 fill-primary/25" strokeWidth={2} />
-                    <span className="truncate">{t('accountCabinet')}</span>
-                  </Link>
-                  <Link
-                    href="/account/settings"
-                    className="flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-muted hover:text-primary"
-                    onClick={closeMobileMenu}
-                  >
-                    <Settings className="h-5 w-5 shrink-0" />
-                    {t('accountSettings')}
-                  </Link>
-                  <a
-                    href={buildLogoutHref(pathname)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    onClick={() => {
-                      setUser(null)
-                      closeMobileMenu()
-                    }}
-                  >
-                    <LogOut className="h-4 w-4 shrink-0" />
-                    {t('logout')}
-                  </a>
-                </div>
-              ) : (
-                <Link
-                  href="/auth/login"
-                  className="flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-3 text-lg font-semibold text-primary transition-colors hover:bg-primary/15"
-                  onClick={closeMobileMenu}
-                >
-                  <User className="h-5 w-5 shrink-0" />
-                  {t('login')}
-                </Link>
-              )}
-            </div>
-
-            <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-4">
-              {navLinks.map((link) => {
-                const Icon = link.icon
-                const showFavoritesBadge = link.href === '/favorites' && favoritesBadgeCount > 0
-
-                if (link.useCatalogHref) {
-                  return (
-                    <MobileCatalogNav
-                      key={link.id}
-                      label={link.label}
-                      pathname={pathname}
-                      isCatalogActive={isCatalogSectionActive(pathname, catalogRootSlug)}
-                      onNavigate={closeMobileMenu}
-                    />
-                  )
-                }
-
-                return (
-                  <Link
-                    key={link.id}
-                    href={link.href}
-                    className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-3 text-lg font-medium transition-colors hover:bg-muted hover:text-primary',
-                      isActiveLink(link.href) ? 'bg-primary/10 text-primary' : 'text-foreground',
-                    )}
-                    onClick={closeMobileMenu}
-                  >
-                    <Icon className="h-5 w-5 shrink-0" />
-                    <span className="flex-1">{link.label}</span>
-                    {showFavoritesBadge ? (
-                      <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-1.5 text-[12px] font-semibold text-primary-foreground">
-                        {favoritesBadgeCount > 99 ? '99+' : favoritesBadgeCount}
-                      </span>
-                    ) : null}
-                  </Link>
-                )
-              })}
-            </nav>
-
-            <div className="border-t border-border pr-0 p-4">
-              <p className="mb-3 text-sm font-medium text-muted-foreground">Ми в соцмережах</p>
-              <SocialLinks
-                social={store.social}
-                size="md"
-                iconClassName="border-border bg-muted/60 text-foreground hover:border-primary/30 hover:bg-primary/10 hover:text-primary"
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
-      ) : null}
 
       <CartDrawer />
     </>

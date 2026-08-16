@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { PackageX } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { NotifyAvailabilityButton } from '@/components/product/notify-availability-button'
 import { NotifyWhenAvailableModal } from '@/components/product/notify-when-available-modal'
@@ -12,6 +13,7 @@ type ProductOutOfStockBlockProps = {
 }
 
 export function ProductOutOfStockBlock({ plantId, plantName }: ProductOutOfStockBlockProps) {
+  const t = useTranslations('product')
   const [notifyOpen, setNotifyOpen] = useState(false)
 
   return (
@@ -23,10 +25,8 @@ export function ProductOutOfStockBlock({ plantId, plantName }: ProductOutOfStock
               <PackageX className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-foreground">Немає в наявності</h2>
-              <p className="mt-1 text-muted-foreground">
-                Зараз усі розміри відсутні на складі. Підпишіться — повідомимо, коли товар з’явиться.
-              </p>
+              <h2 className="text-xl font-bold text-foreground">{t('outOfStockTitle')}</h2>
+              <p className="mt-1 text-muted-foreground">{t('outOfStockBody')}</p>
             </div>
           </div>
           <NotifyAvailabilityButton

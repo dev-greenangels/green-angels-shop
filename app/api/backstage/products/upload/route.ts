@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { requireBackstageSession } from '@/lib/backstage-auth/require-session'
-import { storeProductImage } from '@/lib/media/store'
+import { proxyBackendForm } from '@/lib/media/backend-proxy'
 import { validateImageFile } from '@/lib/media/validate'
 
 export const runtime = 'nodejs'
@@ -27,15 +27,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: validationError }, { status: 400 })
   }
 
-  const productId = formData.get('productId')
-  const entityId = typeof productId === 'string' && productId.trim() ? productId.trim() : undefined
-
   try {
-    const bytes = Buffer.from(await entry.arrayBuffer())
-    const stored = await storeProductImage(bytes, { productId: entityId })
-    return NextResponse.json(stored)
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Помилка запису файлу.'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return await proxyBackendForm('/backstage/media/products', request, formData)
+  } catch {
+    return NextResponse.json(
+      { error: 'Не вдалося зʼєднатися з API. Перевірте, що бекенд запущений.' },
+      { status: 502 },
+    )
   }
 }

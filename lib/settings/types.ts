@@ -54,6 +54,7 @@ export type StoreFooterVisibility = {
   showWhatsApp: boolean
   showLink: boolean
   showSchedules: boolean
+  showCompanyDetails: boolean
 }
 
 export type StoreSocialLink = {
@@ -69,6 +70,19 @@ export type StoreSocialLinks = {
   telegramCommunity: StoreSocialLink
 }
 
+export type CheckoutBankDetails = {
+  organizationName: string
+  edrpou: string
+  iban: string
+  bankName: string
+  mfo: string
+  legalAddress: string
+  taxStatus: string
+  bic: string
+  dic: string
+  icDph: string
+}
+
 export type StoreContactSettings = {
   addressLine1: string
   addressLine2: string
@@ -81,6 +95,8 @@ export type StoreContactSettings = {
   schedules: StoreHoursSchedule[]
   footer: StoreFooterVisibility
   social: StoreSocialLinks
+  companyDetails: CheckoutBankDetails
+  showCompanyOnContacts: boolean
 }
 
 export type HomeHighlight = {
@@ -170,15 +186,12 @@ export type BelowMinOrderBehavior = 'reject' | 'add_packaging_fee'
 
 export type DeliveryMode = 'free' | 'carrier_rates' | 'fixed'
 
-export type CheckoutBankDetails = {
-  organizationName: string
-  edrpou: string
-  iban: string
-  bankName: string
-  mfo: string
-  legalAddress: string
-  taxStatus: string
-}
+/** Провайдер онлайн-оплати карткою для методу `card-online`. */
+export type OnlineCardProvider = 'monopay' | 'stripe'
+
+export type OnlineCardErpExportMode = 'immediate' | 'on_paid'
+
+export type PackagingMode = 'flat' | 'boxes'
 
 export type CheckoutNextStepItem = {
   title: string
@@ -189,21 +202,55 @@ export type CartCheckoutSettings = {
   showDelivery: boolean
   showPackaging: boolean
   showTax: boolean
+  showPromoCode: boolean
   deliveryMode: DeliveryMode
   deliveryAmount: number
   packagingAmount: number
+  packagingMode: PackagingMode
+  boxMaxWeightKg: number
+  boxMaxVolumeL: number
+  boxUnitPrice: number
+  boxesPerPallet: number
+  palletSurcharge: number
   taxRatePercent: number
   taxIncluded: boolean
+  /** DPH also on delivery + packaging (forced on for SK region in Nest) */
+  taxAppliesToFees?: boolean
   deliveryFreeForPickup: boolean
   minOrderAmount: number | null
   belowMinOrderBehavior: BelowMinOrderBehavior
   belowMinPackagingFee: number
   enabledDeliveryMethods: import('@/lib/checkout/methods').CheckoutDeliveryMethodSlug[]
   enabledPaymentMethods: import('@/lib/checkout/methods').CheckoutPaymentMethodSlug[]
+  deliveryWeightRules: Array<{
+    maxWeightKg: number
+    allowedMethods: import('@/lib/checkout/methods').CheckoutDeliveryMethodSlug[]
+  }>
+  carrierRateTables?: Partial<
+    Record<
+      import('@/lib/checkout/methods').CheckoutDeliveryMethodSlug,
+      Array<{ maxWeightKg: number; amount: number }>
+    >
+  >
+  cartWeight: {
+    enabled: boolean
+    useFactKg: boolean
+    useVolumetricKg: boolean
+    volumetricDivisor: number
+  }
+  codFeeAmount: number
+  codFeeMode: 'fixed' | 'percent'
+  onlineCardProvider: OnlineCardProvider
+  onlineCardErpExportMode: OnlineCardErpExportMode
+  bankDetailsSource: 'cart' | 'store'
   bankDetails: CheckoutBankDetails
   paymentPurposeTemplate: string
   nextSteps: CheckoutNextStepItem[]
   gdprConsentText: string
+  allowShipmentSplit: boolean
+  orderPdfDownloadEnabled: boolean
+  orderPdfEmailEnabled: boolean
+  orderPdfTitle: string
 }
 
 export type CatalogCategoryDisplay = 'subcategories' | 'products' | 'both'
@@ -223,6 +270,8 @@ export type CatalogPageSettings = {
   categoryGridColumns: CatalogGridColumns
   catalogFilters: import('@/lib/catalog/filter-visibility').CatalogFiltersVisibilitySettings
   plantsAlphabetFilters: import('@/lib/catalog/filter-visibility').CatalogFiltersVisibilitySettings
+  /** Max Fresh Photos per variant size (`sizeId`). Default 4. */
+  freshPhotosLimit: number
 }
 
 export type {
@@ -237,6 +286,17 @@ export type {
   NavigationSettings,
 } from './navigation'
 
+export type {
+  CountrySiteCode,
+  CountrySiteCurrency,
+  CountrySiteProfile,
+  GuestCheckoutMode,
+  MarketRegion,
+  MarketSettings,
+  OtpPurpose,
+  PhonePolicy,
+} from './market'
+
 export type PublicSiteSettings = {
   store: StoreContactSettings
   home: HomePageSettings
@@ -245,4 +305,8 @@ export type PublicSiteSettings = {
   recentlyViewed: RecentlyViewedSettings
   localization: LocalizationSettings
   navigation: NavigationSettings
+  market: import('./market').MarketSettings
+  dispatchCalendar?: { enabled: boolean }
+  /** лише в backstage GET /settings */
+  prestaImport?: import('./presta-import').PrestaImportSettings
 }

@@ -29,7 +29,7 @@ export async function BestsellersSection({
       unavailable={unavailable}
       viewAllHref={catalogHref}
       viewAllLabel={t('viewAllPopular')}
-      className="scroll-mt-20"
+      className="scroll-mt-20 bg-transparent"
     />
   )
 }

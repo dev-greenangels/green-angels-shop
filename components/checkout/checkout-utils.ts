@@ -46,28 +46,25 @@ export function isCheckoutStepComplete(
   return paymentComplete
 }
 
-/** Фон сторінки — як на auth (login/register) */
+/** Фон сторінки — тиснений canvas з body::before (як на головній) */
 export const checkoutPageShellClassName =
-  'relative min-h-screen overflow-x-clip'
-
-export const checkoutPageGradientClassName =
-  'pointer-events-none absolute inset-0 bg-gradient-to-br from-secondary via-background to-accent'
+  'relative min-h-screen overflow-x-clip bg-transparent'
 
 export const checkoutPageContentClassName = 'relative'
 
-/** Прозорі панелі кроків чекауту */
+/** Панелі кроків чекауту — непрозорий card */
 export const checkoutPanelClassName =
-  'w-full min-w-0 rounded-xl border border-border/80 bg-background p-4 shadow-lg shadow-black/[0.08] sm:p-6'
+  'w-full min-w-0 rounded-xl border border-border bg-card p-4 shadow-lg shadow-black/[0.08] sm:p-6'
 
 export const checkoutInsetPanelClassName =
-  'rounded-lg border border-border/80 bg-background shadow-sm shadow-black/[0.04]'
+  'rounded-lg border border-border bg-muted shadow-sm shadow-black/[0.04]'
 
 /** Поля вводу в чекауті — чіткіші межі та тінь */
 export const checkoutInputClassName =
-  'border-border/95 bg-card/80 shadow-sm ring-1 ring-border/45 transition-colors focus-visible:ring-primary/35 data-[has-value=true]:border-primary/45 data-[has-value=true]:bg-primary/5 data-[has-value=true]:ring-primary/20'
+  'border-border/95 bg-card shadow-sm ring-1 ring-border/45 transition-colors focus-visible:ring-primary/35 data-[has-value=true]:border-primary/45 data-[has-value=true]:bg-primary/5 data-[has-value=true]:ring-primary/20'
 
 export const checkoutHeaderClassName =
-  'border-b border-border/50 bg-background/95 shadow-md shadow-black/5 backdrop-blur-md supports-[backdrop-filter]:bg-background/70'
+  'border-b border-border bg-background shadow-md shadow-black/5'
 
 export function formatPersonName(
   lastName: string,

@@ -44,6 +44,8 @@ import {
   type RedirectFormValues,
   type RedirectRecord,
 } from '@/lib/backstage/redirects'
+import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
+import { formatDateTimeOrDash } from '@/lib/i18n/format-datetime'
 import { cn } from '@/lib/utils'
 
 const EMPTY_FORM: RedirectFormValues = {
@@ -54,19 +56,8 @@ const EMPTY_FORM: RedirectFormValues = {
   prefix: '',
 }
 
-function formatDate(value: string | null): string {
-  if (!value) return '—'
-  try {
-    return new Intl.DateTimeFormat('uk-UA', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    }).format(new Date(value))
-  } catch {
-    return value
-  }
-}
-
 export default function RedirectsPage() {
+  const { locale } = useBackstageUiLocale()
   const [rows, setRows] = useState<RedirectRecord[]>([])
   const [prefixes, setPrefixes] = useState<string[]>([])
   const [prefixFilter, setPrefixFilter] = useState<string>('all')
@@ -281,7 +272,7 @@ export default function RedirectsPage() {
                       <TableCell>{row.prefix ?? '—'}</TableCell>
                       <TableCell>{row.hitCount}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {formatDate(row.lastHitAt)}
+                        {formatDateTimeOrDash(row.lastHitAt, locale, 'datetime')}
                       </TableCell>
                       <TableCell>
                         <Switch checked={row.isActive} onCheckedChange={() => void toggleActive(row)} />

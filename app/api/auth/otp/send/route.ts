@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 
 import { fetchBackend, readBackendJson } from '@/lib/api/backend-fetch'
+import { consumeOtpIpLimit, readBrowserIpFromRequest } from '@/lib/auth/otp-ip-rate-limit'
+
+const OTP_PURPOSES = new Set(['login', 'checkout', 'review'])
 
 export async function POST(request: Request) {
   let body: { phone?: string; email?: string; purpose?: string }
@@ -17,6 +20,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Вкажіть телефон або email.' }, { status: 400 })
   }
 
+  const purpose =
+    typeof body.purpose === 'string' && OTP_PURPOSES.has(body.purpose)
+      ? body.purpose
+      : 'login'
+
+  if (!consumeOtpIpLimit('send', readBrowserIpFromRequest(request))) {
+    return NextResponse.json({ error: 'Забагато запитів. Спробуйте пізніше.' }, { status: 429 })
+  }
+
   try {
     const backendRes = await fetchBackend('/auth/otp/send', {
       method: 'POST',
@@ -24,7 +36,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         ...(phone ? { phone } : {}),
         ...(email ? { email: email.toLowerCase() } : {}),
-        purpose: body.purpose === 'checkout' ? 'checkout' : 'login',
+        purpose,
       }),
     })
     const data = await readBackendJson(backendRes)

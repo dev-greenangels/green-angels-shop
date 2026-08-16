@@ -8,6 +8,7 @@ import { toast } from '@/lib/toast'
 import type { ProductImageDraft } from '@/lib/backstage/product-form'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { toPublicMediaUrl } from '@/lib/media/public-url'
 import { validateImageFile } from '@/lib/media/validate'
 import { cn } from '@/lib/utils'
 
@@ -179,7 +180,7 @@ export function ProductImagesField({
               >
                 <div className="relative aspect-[4/3] w-full">
                   <Image
-                    src={image.url.replace('/main.webp', '/thumb.webp')}
+                    src={toPublicMediaUrl(image.url.replace('/main.webp', '/thumb.webp'))}
                     alt=""
                     fill
                     className="object-cover"

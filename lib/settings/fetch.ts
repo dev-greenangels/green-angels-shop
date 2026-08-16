@@ -6,6 +6,7 @@ import {
   DEFAULT_CATALOG_SETTINGS,
   DEFAULT_HOME_SETTINGS,
   DEFAULT_LOCALIZATION_SETTINGS,
+  DEFAULT_MARKET_SETTINGS,
   DEFAULT_NAVIGATION_SETTINGS,
   DEFAULT_RECENTLY_VIEWED_SETTINGS,
   DEFAULT_STORE_SETTINGS,
@@ -17,11 +18,13 @@ import { normalizeHomeSettings } from '@/lib/settings/home.normalize'
 import { normalizeLocalizationSettings } from '@/lib/settings/localization.normalize'
 import { normalizeStoreContactSettings } from '@/lib/settings/store-contact.normalize'
 import { normalizeNavigationSettings } from '@/lib/settings/navigation.normalize'
+import { normalizeMarketSettings } from '@/lib/settings/market'
 import type {
   CartCheckoutSettings,
   CatalogPageSettings,
   HomePageSettings,
   LocalizationSettings,
+  MarketSettings,
   NavigationSettings,
   PublicSiteSettings,
   RecentlyViewedSettings,
@@ -59,6 +62,8 @@ function unavailableSettingsFallback(): FetchedPublicSiteSettings {
       recentlyViewed: DEFAULT_RECENTLY_VIEWED_SETTINGS,
       localization: DEFAULT_LOCALIZATION_SETTINGS,
       navigation: DEFAULT_NAVIGATION_SETTINGS,
+      market: DEFAULT_MARKET_SETTINGS,
+      dispatchCalendar: { enabled: false },
     },
     storeUnavailable: true,
   }
@@ -145,6 +150,14 @@ export function getNavigationSettings(
 ): NavigationSettings {
   const settings = 'settings' in fetched ? fetched.settings : fetched
   return normalizeNavigationSettings(settings.navigation ?? DEFAULT_NAVIGATION_SETTINGS)
+}
+
+export function getMarketSettings(
+  fetched: FetchedPublicSiteSettings | PublicSiteSettings,
+): MarketSettings {
+  const settings = 'settings' in fetched ? fetched.settings : fetched
+  // Avoid UA-default priceBasis=inc_vat when market payload is missing/partial (SK → ex_vat).
+  return normalizeMarketSettings(settings.market ?? {})
 }
 
 export function isStoreContactUnavailable(

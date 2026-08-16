@@ -18,11 +18,15 @@ import { useTranslations } from 'next-intl'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
-import {
-  CategoryFormDialog,
-  type ParentOption,
-} from '@/components/backstage/category-form-dialog'
+import { CategoryFormDialog, type ParentOption } from '@/components/backstage/category-form-dialog'
 import { CategoryThumbnail } from '@/components/backstage/category-thumbnail'
+import { CategoriesPhotosBulkEditor } from '@/components/backstage/catalog-photos-bulk-editor'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,6 +72,20 @@ function collectDescendantIds(node: CategoryTreeNode): Set<string> {
     }
   }
   walk(node)
+  return ids
+}
+
+function collectExpandableIds(nodes: CategoryTreeNode[]): string[] {
+  const ids: string[] = []
+  const walk = (list: CategoryTreeNode[]) => {
+    for (const node of list) {
+      if (node.children.length > 0) {
+        ids.push(node.id)
+        walk(node.children)
+      }
+    }
+  }
+  walk(nodes)
   return ids
 }
 
@@ -291,6 +309,7 @@ export default function CategoriesPage() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [bulkWorking, setBulkWorking] = useState(false)
+  const [photosBulkOpen, setPhotosBulkOpen] = useState(false)
 
   const flat = useMemo(() => flattenCategoryTree(tree), [tree])
   const flatIds = useMemo(() => flat.map((n) => n.id), [flat])
@@ -324,10 +343,11 @@ export default function CategoriesPage() {
     try {
       const data = await fetchCategoryTree(contentLocale)
       setTree(data)
+      // Keep tree collapsed on reload; only prune selection to still-existing ids
       setExpanded((prev) => {
-        const next = new Set(prev)
-        data.forEach((node) => next.add(node.id))
-        return next
+        if (prev.size === 0) return prev
+        const valid = new Set(collectExpandableIds(data))
+        return new Set([...prev].filter((id) => valid.has(id)))
       })
       setSelected((prev) => {
         const valid = new Set(flattenCategoryTree(data).map((n) => n.id))
@@ -341,8 +361,17 @@ export default function CategoriesPage() {
   }, [contentLocale])
 
   useEffect(() => {
+    // Fresh locale / first load: start fully collapsed
+    setExpanded(new Set())
     void loadTree()
   }, [loadTree])
+
+  const expandableIds = useMemo(() => collectExpandableIds(tree), [tree])
+  const allExpanded =
+    expandableIds.length > 0 && expandableIds.every((id) => expanded.has(id))
+
+  const expandAll = () => setExpanded(new Set(expandableIds))
+  const collapseAll = () => setExpanded(new Set())
 
   const openCreateRoot = () => {
     setDialogMode('create')
@@ -511,16 +540,32 @@ export default function CategoriesPage() {
             <h1 className="font-serif text-3xl font-bold text-foreground">{tPages('title')}</h1>
             <p className="text-muted-foreground">{tPages('subtitle')}</p>
           </div>
-          <Button onClick={openCreateRoot}>
-            <Plus className="mr-2 h-4 w-4" />
-            {tActions('addCategory')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={() => setPhotosBulkOpen(true)}>
+              Фото списком
+            </Button>
+            <Button onClick={openCreateRoot}>
+              <Plus className="mr-2 h-4 w-4" />
+              {tActions('addCategory')}
+            </Button>
+          </div>
         </div>
 
+        <Dialog open={photosBulkOpen} onOpenChange={setPhotosBulkOpen}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-5xl">
+            <DialogHeader>
+              <DialogTitle>Фото категорій</DialogTitle>
+            </DialogHeader>
+            <CategoriesPhotosBulkEditor onClose={() => setPhotosBulkOpen(false)} />
+          </DialogContent>
+        </Dialog>
+
         {selectedCount > 0 ? (
-          <div className="backstage-glass flex flex-wrap items-center gap-2 rounded-lg border px-4 py-3">
-            <span className="text-sm font-medium">{tCommon('selected', { count: selectedCount })}</span>
-            <div className="ml-auto flex flex-wrap gap-2">
+          <div className="backstage-glass sticky top-9 z-30 flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3 shadow-sm">
+            <span className="text-sm font-medium text-foreground">
+              {tCommon('selected', { count: selectedCount })}
+            </span>
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
               <Button
                 type="button"
                 variant="outline"
@@ -565,11 +610,33 @@ export default function CategoriesPage() {
         ) : null}
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
             <CardTitle className="flex items-center gap-2">
               <FolderTree className="h-5 w-5 text-muted-foreground" />
               {tPages('treeTitle', { count: flat.length })}
             </CardTitle>
+            {!loading && tree.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={expandableIds.length === 0 || allExpanded}
+                  onClick={expandAll}
+                >
+                  {tActions('expandAll')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={expanded.size === 0}
+                  onClick={collapseAll}
+                >
+                  {tActions('collapseAll')}
+                </Button>
+              </div>
+            ) : null}
           </CardHeader>
           <CardContent className="p-0">
             {loading ? (

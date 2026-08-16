@@ -4,9 +4,11 @@ import {
   DELIVERY_METHOD_BACKSTAGE_LABELS,
   PAYMENT_METHOD_BACKSTAGE_LABELS,
 } from '@/lib/checkout/methods'
+import { formatDateTime } from '@/lib/i18n/format-datetime'
 import type { PublicOrderConfirmation } from '@/lib/orders/fetch-order-confirmation'
+import { hasCompanyBankDetails } from '@/lib/settings/company-bank-details'
 import { formatPaymentPurpose } from '@/lib/settings/cart-checkout.normalize'
-import type { CartCheckoutSettings } from '@/lib/settings/types'
+import type { CartCheckoutSettings, MarketSettings } from '@/lib/settings/types'
 
 function formatPersonName(last: string, first: string, patronymic?: string | null) {
   return [last, first, patronymic?.trim()].filter(Boolean).join(' ')
@@ -34,17 +36,7 @@ function isBankTransfer(paymentMethod: string) {
 }
 
 function hasBankDetails(bank: CartCheckoutSettings['bankDetails']) {
-  return Boolean(
-    bank.organizationName || bank.edrpou || bank.iban || bank.bankName || bank.mfo,
-  )
-}
-
-function formatMoney(amount: number) {
-  return new Intl.NumberFormat('uk-UA', {
-    style: 'currency',
-    currency: 'UAH',
-    minimumFractionDigits: 2,
-  }).format(amount)
+  return hasCompanyBankDetails(bank)
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -101,9 +93,33 @@ function writeKeyValue(ctx: PdfCursor, label: string, value: string) {
 export async function downloadOrderConfirmationPdf(
   orders: PublicOrderConfirmation[],
   cart: CartCheckoutSettings,
+  market?: Pick<MarketSettings, 'region' | 'defaultCurrency'> &
+    Partial<Pick<MarketSettings, 'eurToHufRate'>>,
 ): Promise<void> {
   if (!orders.length) {
     throw new Error('Немає даних замовлення')
+  }
+
+  const region = market?.region ?? 'ua'
+  const currency = market?.defaultCurrency || orders[0]?.currency || 'UAH'
+  const locale = region === 'sk' ? 'sk-SK' : 'uk-UA'
+  const isSk = region === 'sk'
+
+  const formatMoney = (amount: number) => {
+    const primary = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 2,
+    }).format(amount)
+    if (currency.toUpperCase() !== 'HUF') return primary
+    const rate = market?.eurToHufRate
+    if (rate == null || rate <= 0) return primary
+    const eurStr = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+    }).format(amount / rate)
+    return `${primary} (${eurStr})`
   }
 
   const [regularFont, boldFont] = await Promise.all([
@@ -129,8 +145,12 @@ export async function downloadOrderConfirmationPdf(
     contentWidth: pageWidth - margin * 2,
   }
 
-  writeText(ctx, 'Підтвердження замовлення', { bold: true, size: 18, gap: 8 })
-  writeText(ctx, `Дата формування: ${new Date().toLocaleString('uk-UA')}`, {
+  const title =
+    cart.orderPdfTitle.trim() ||
+    (isSk ? 'Potvrdenie objednávky / Order confirmation' : 'Підтвердження замовлення')
+
+  writeText(ctx, title, { bold: true, size: 18, gap: 8 })
+  writeText(ctx, `Дата формування: ${formatDateTime(new Date(), locale, 'datetime')}`, {
     size: 9,
     gap: 8,
   })
@@ -165,8 +185,8 @@ export async function downloadOrderConfirmationPdf(
     writeText(ctx, 'Товари', { bold: true, size: 11, gap: 4 })
 
     for (const item of order.items) {
-      const title = `${item.productName}${item.variantLabel ? ` · ${item.variantLabel}` : ''}`
-      const line = `${title}  × ${item.quantity}  —  ${formatMoney(item.lineTotal)}`
+      const itemTitle = `${item.productName}${item.variantLabel ? ` · ${item.variantLabel}` : ''}`
+      const line = `${itemTitle}  × ${item.quantity}  —  ${formatMoney(item.lineTotal)}`
       writeText(ctx, line, { size: 10, gap: 3 })
     }
 
@@ -174,11 +194,13 @@ export async function downloadOrderConfirmationPdf(
     if (order.productsSubtotal != null) {
       writeKeyValue(ctx, 'Товари', formatMoney(order.productsSubtotal))
     }
-    if (order.packagingAmount != null && order.packagingAmount > 0) {
-      writeKeyValue(ctx, 'Пакування', formatMoney(order.packagingAmount))
-    }
-    if (order.deliveryAmount != null && order.deliveryAmount > 0) {
-      writeKeyValue(ctx, 'Доставка', formatMoney(order.deliveryAmount))
+    const shippingFee = (order.deliveryAmount ?? 0) + (order.packagingAmount ?? 0)
+    if (shippingFee > 0) {
+      writeKeyValue(
+        ctx,
+        isSk ? 'Doprava a balenie' : 'Доставка та пакування',
+        formatMoney(shippingFee),
+      )
     }
     writeText(ctx, `Разом: ${formatMoney(order.totalAmount)}`, {
       bold: true,
@@ -197,10 +219,13 @@ export async function downloadOrderConfirmationPdf(
     ensureSpace(ctx, 40)
     writeText(ctx, 'Реквізити для оплати', { bold: true, size: 14, gap: 5 })
     if (bank.organizationName) writeKeyValue(ctx, 'Одержувач', bank.organizationName)
-    if (bank.edrpou) writeKeyValue(ctx, 'ЄДРПОУ / ІПН', bank.edrpou)
+    if (bank.edrpou) writeKeyValue(ctx, isSk ? 'IČO' : 'ЄДРПОУ / ІПН', bank.edrpou)
+    if (bank.dic) writeKeyValue(ctx, 'DIČ', bank.dic)
+    if (bank.icDph) writeKeyValue(ctx, 'IČ DPH', bank.icDph)
     if (bank.iban) writeKeyValue(ctx, 'IBAN', bank.iban)
+    if (bank.bic) writeKeyValue(ctx, 'BIC / SWIFT', bank.bic)
+    if (bank.mfo && !isSk) writeKeyValue(ctx, 'МФО', bank.mfo)
     if (bank.bankName) writeKeyValue(ctx, 'Банк', bank.bankName)
-    if (bank.mfo) writeKeyValue(ctx, 'МФО', bank.mfo)
     if (bank.legalAddress) writeKeyValue(ctx, 'Юридична адреса', bank.legalAddress)
     if (bank.taxStatus) writeKeyValue(ctx, 'Податковий статус', bank.taxStatus)
     writeKeyValue(ctx, 'Призначення платежу', purpose)

@@ -10,7 +10,7 @@ export function FavoritesBadge({ count }: { count: number }) {
     <span
       className={cn(
         'pointer-events-none absolute z-10 flex items-center justify-center rounded-full',
-        'bg-primary text-[12px] font-bold leading-none text-primary-foreground tabular-nums',
+        'bg-primary-gradient text-[12px] font-bold leading-none text-primary-foreground tabular-nums',
         digitCount <= 1 && '-right-2 -top-2 h-5 min-w-5',
         digitCount === 2 && '-right-2 -top-2 h-5 min-w-[22px] px-1.5',
         digitCount >= 3 && '-right-2 -top-2 h-5 min-w-[26px] px-1.5',

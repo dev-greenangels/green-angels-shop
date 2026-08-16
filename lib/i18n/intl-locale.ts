@@ -5,6 +5,8 @@ import { formatMoneyAmount } from '@/lib/commerce/format'
 export function intlLocaleForApp(locale: string): string {
   if (locale === 'en') return 'en-GB'
   if (locale === 'sk') return 'sk-SK'
+  if (locale === 'hu') return 'hu-HU'
+  if (locale === 'de') return 'de-AT'
   return 'uk-UA'
 }
 

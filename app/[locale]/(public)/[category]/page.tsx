@@ -23,14 +23,17 @@ type PageProps = {
   searchParams: Promise<{ page?: string; sort?: string }>
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { category } = await params
-  const tree = await fetchCategoryTreeWithStatus()
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
+  const { category, locale } = await params
+  const resolved = await searchParams
+  const page = Math.max(1, Number(resolved.page ?? '1') || 1)
+  const sort = resolved.sort?.trim() || 'name'
+  const tree = await fetchCategoryTreeWithStatus(locale)
   const rootSlug = findCatalogRootNode(tree.data)?.slug
   if (rootSlug && category === rootSlug) {
-    return buildCatalogLandingMetadata()
+    return buildCatalogLandingMetadata(locale, { page, sort })
   }
-  return buildCategoryMetadata(category)
+  return buildCategoryMetadata(category, locale, { page, sort })
 }
 
 export default async function CategoryOrCatalogPage({ params, searchParams }: PageProps) {
@@ -76,7 +79,7 @@ export default async function CategoryOrCatalogPage({ params, searchParams }: Pa
     return (
       <>
         <Navigation />
-        <main className="flex flex-1 flex-col bg-background [overflow-anchor:none]">
+        <main className="flex flex-1 flex-col bg-transparent [overflow-anchor:none]">
           <CatalogLandingClient
             catalogRoot={landing.root}
             subcategories={landing.subcategories}
@@ -115,7 +118,7 @@ export default async function CategoryOrCatalogPage({ params, searchParams }: Pa
   return (
     <>
       <Navigation />
-      <main className="flex flex-1 flex-col bg-background [overflow-anchor:none]">
+      <main className="flex flex-1 flex-col bg-transparent [overflow-anchor:none]">
         <CategoryCatalogClient
           categorySlug={categorySlug}
           category={categoryResult.data.detail}

@@ -1,3 +1,5 @@
+import { formatDateTime } from '@/lib/i18n/format-datetime'
+
 export type NpOption = {
   id: string
   label: string
@@ -121,12 +123,15 @@ export function formatSyncRunProgress(run: NpSyncRunSnapshot): string {
   return parts.join(' · ')
 }
 
-export function formatTargetLastSync(result: NpTargetLastSync): {
+export function formatTargetLastSync(
+  result: NpTargetLastSync,
+  locale: string = 'uk',
+): {
   summary: string
   error: string | null
 } {
   const label = TARGET_LABELS[result.target]
-  const when = new Date(result.finishedAt).toLocaleString('uk-UA')
+  const when = formatDateTime(result.finishedAt, locale, 'datetime')
   const source = result.source === 'auto' ? 'авто' : 'ручний'
   const count =
     result.status === 'completed' && result.recordsSynced > 0

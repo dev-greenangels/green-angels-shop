@@ -40,7 +40,7 @@ export function CatalogActiveFilters({
   scrollable = false,
 }: CatalogActiveFiltersProps) {
   const t = useTranslations('filter')
-  const formatAmount = useFormatPrice()
+  const formatAmount = useFormatPrice('shelf')
 
   const hasActive = definitions ? hasActiveCatalogFilters(filters, priceBounds) : false
 

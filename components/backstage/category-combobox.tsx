@@ -30,6 +30,7 @@ export function CategoryCombobox({
   loading,
   required,
   label,
+  hideLabel = false,
 }: {
   options: CategoryOption[]
   value: string
@@ -37,6 +38,7 @@ export function CategoryCombobox({
   loading?: boolean
   required?: boolean
   label?: string
+  hideLabel?: boolean
 }) {
   const tc = useTranslations('common')
   const th = useTranslations('hints')
@@ -46,11 +48,13 @@ export function CategoryCombobox({
   const resolvedLabel = label ?? tl('category')
 
   return (
-    <div className="space-y-2">
-      <Label>
-        {resolvedLabel}
-        {required ? ' *' : ''}
-      </Label>
+    <div className={hideLabel ? undefined : 'space-y-2'}>
+      {hideLabel ? null : (
+        <Label>
+          {resolvedLabel}
+          {required ? ' *' : ''}
+        </Label>
+      )}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -58,7 +62,7 @@ export function CategoryCombobox({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between font-normal"
+            className="h-9 w-full justify-between font-normal"
             disabled={loading}
           >
             {loading

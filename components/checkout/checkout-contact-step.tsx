@@ -1,7 +1,8 @@
 'use client'
 
-import { memo, useCallback, useState, type RefObject } from 'react'
-import { ArrowLeft, ChevronRight, Loader2, LogOut, Mail, Phone, Truck, User } from 'lucide-react'
+import { memo, useCallback, useEffect, useState, type ReactNode, type RefObject } from 'react'
+import { flushSync } from 'react-dom'
+import { ArrowLeft, ArrowLeftRight, ChevronRight, Loader2, LogOut, Mail, Phone, User } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
@@ -10,7 +11,7 @@ import { FieldHint, OrDivider, RequiredLabel } from '@/components/auth/auth-form
 import { useSession } from '@/components/providers/session-provider'
 import { startGoogleOAuth } from '@/lib/auth/google-oauth-client'
 import { isGoogleOAuthConfigured } from '@/lib/auth/google-oauth'
-import { useOAuthReturn } from '@/lib/auth/use-oauth-return'
+import { useOAuthReturn, type OAuthReturnPayload } from '@/lib/auth/use-oauth-return'
 import { Button } from '@/components/ui/button'
 import { InputWithClear } from '@/components/ui/input-with-clear'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
@@ -21,27 +22,55 @@ import {
   sendCheckoutEmailCode,
   sendCheckoutSmsCode,
   verifyAuthEmailCode,
+  verifyAuthSmsCode,
   verifyCheckoutSmsCode,
   type CustomerLookupResult,
 } from '@/lib/checkout-customer-lookup'
+import {
+  fetchCheckoutIdentityHint,
+  type CheckoutIdentityHint,
+} from '@/lib/checkout/identity-hint'
+import { buildVerifiedCheckoutContactPatch } from '@/lib/checkout/verified-contact-patch'
+import { CheckoutIdentityHintPanel } from '@/components/checkout/checkout-identity-hint-panel'
+import { CheckoutAccountLockedError } from '@/lib/checkout/account-lock'
+import { CHECKOUT_ACCOUNT_LOCKED } from '@/lib/auth/constants'
 import { cn } from '@/lib/utils'
 import {
   checkoutInsetPanelClassName,
   checkoutPanelClassName,
   checkoutInputClassName,
 } from '@/components/checkout/checkout-utils'
-import { useRouter } from '@/i18n/navigation'
-import { isValidCyrillicName, isValidEmail, sanitizeEmail } from '@/lib/validation/register-form'
 import {
+  CheckoutSkAuthModeToggle,
+  type SkCheckoutAuthMode,
+} from '@/components/checkout/checkout-sk-auth-mode-toggle'
+import { useRouter } from '@/i18n/navigation'
+import {
+  customerNeedsCheckoutNameEntry,
   formatPhoneDisplay,
   getCheckoutContactFieldError,
   sanitizeCheckoutPhoneInput,
   sanitizeCyrillicName,
+  sanitizeLatinName,
   type CheckoutContactFieldKey,
   type CheckoutFormValues,
   type CheckoutIdentificationState,
+  type CheckoutMarketRegion,
 } from '@/lib/validation/checkout-form'
-import { isValidUkrPhone } from '@/lib/validation/checkout-form'
+import {
+  isValidCyrillicName,
+  isValidEmail,
+  isValidLatinName,
+  sanitizeEmail,
+} from '@/lib/validation/register-form'
+import {
+  DEFAULT_MARKET_SETTINGS,
+  isOtpChannelEnabled,
+  isValidPhoneForPolicy,
+  phoneErrorForPolicy,
+  phonePlaceholderForPolicy,
+  type MarketSettings,
+} from '@/lib/settings/market'
 
 type AuthChannel = 'phone' | 'email'
 type AuthStep = 'identifier' | 'otp' | 'profile'
@@ -57,14 +86,19 @@ function NameFields({
   showError,
   onBlurField,
   onPatchForm,
+  marketRegion = 'ua',
 }: {
   formData: CheckoutFormValues
   contactTouched: Partial<Record<CheckoutContactFieldKey, boolean>>
   showError: (field: CheckoutContactFieldKey) => boolean
   onBlurField: (field: CheckoutContactFieldKey) => void
   onPatchForm: (patch: Partial<CheckoutFormValues>) => void
+  marketRegion?: CheckoutMarketRegion
 }) {
   const tc = useTranslations('common')
+  const sanitizeName = marketRegion === 'sk' ? sanitizeLatinName : sanitizeCyrillicName
+  const errorOptions = { marketRegion }
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div className="space-y-2">
@@ -77,13 +111,13 @@ function NameFields({
           aria-invalid={showError('firstName')}
           value={formData.firstName}
           onBlur={() => onBlurField('firstName')}
-          onChange={(e) => onPatchForm({ firstName: sanitizeCyrillicName(e.target.value) })}
+          onChange={(e) => onPatchForm({ firstName: sanitizeName(e.target.value) })}
           onClear={() => onPatchForm({ firstName: '' })}
         />
         <FieldHint
           id="firstName-error"
           show={Boolean(contactTouched.firstName)}
-          message={getCheckoutContactFieldError('firstName', formData)}
+          message={getCheckoutContactFieldError('firstName', formData, errorOptions)}
         />
       </div>
       <div className="space-y-2">
@@ -96,27 +130,37 @@ function NameFields({
           aria-invalid={showError('lastName')}
           value={formData.lastName}
           onBlur={() => onBlurField('lastName')}
-          onChange={(e) => onPatchForm({ lastName: sanitizeCyrillicName(e.target.value) })}
+          onChange={(e) => onPatchForm({ lastName: sanitizeName(e.target.value) })}
           onClear={() => onPatchForm({ lastName: '' })}
         />
         <FieldHint
           id="lastName-error"
           show={Boolean(contactTouched.lastName)}
-          message={getCheckoutContactFieldError('lastName', formData)}
+          message={getCheckoutContactFieldError('lastName', formData, errorOptions)}
         />
       </div>
     </div>
   )
 }
 
-function getPhoneError(phone: string, tc: (key: string) => string): string | null {
+function getPhoneError(
+  phone: string,
+  phonePolicy: MarketSettings['authPhonePolicy'],
+  tc: (key: string) => string,
+): string | null {
   if (!phone.trim()) return tc('requiredField')
-  if (!isValidUkrPhone(phone)) return tc('invalidUkrPhone')
+  const err = phoneErrorForPolicy(phone, phonePolicy)
+  if (err && err !== 'Обовʼязкове поле') return err
+  if (err) return tc('requiredField')
   return null
 }
 
-function getEmailFieldError(email: string, tc: (key: string) => string): string | null {
-  if (!email.trim()) return tc('requiredField')
+function getEmailFieldError(
+  email: string,
+  tc: (key: string) => string,
+  required: boolean,
+): string | null {
+  if (!email.trim()) return required ? tc('requiredField') : null
   if (!isValidEmail(email)) return tc('invalidEmail')
   return null
 }
@@ -135,7 +179,12 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
   onAuthenticated,
   onReturningCustomerVerified,
   onLogout,
+  onSwitchAccount,
   showStepNav = true,
+  marketSettings = DEFAULT_MARKET_SETTINGS,
+  skAuthMode: skAuthModeProp,
+  onSkAuthModeChange,
+  billingSlot,
 }: {
   formData: CheckoutFormValues
   contactTouched: Partial<Record<CheckoutContactFieldKey, boolean>>
@@ -150,7 +199,12 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
   onAuthenticated: () => void
   onReturningCustomerVerified: (discountPercent: number) => void
   onLogout: () => void
+  onSwitchAccount?: () => void
   showStepNav?: boolean
+  marketSettings?: MarketSettings
+  skAuthMode?: SkCheckoutAuthMode
+  onSkAuthModeChange?: (mode: SkCheckoutAuthMode) => void
+  billingSlot?: ReactNode
 }) {
   const t = useTranslations('checkout')
   const tc = useTranslations('common')
@@ -158,7 +212,37 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
   const router = useRouter()
   const { user, setUser } = useSession()
 
-  const [channel, setChannel] = useState<AuthChannel>('phone')
+  const marketRegion: CheckoutMarketRegion = marketSettings.region === 'sk' ? 'sk' : 'ua'
+  const checkoutEmailRequired = marketSettings.checkoutEmailRequired
+  const contactErrorOptions = {
+    marketRegion,
+    checkoutEmailRequired,
+    authPhonePolicy: marketSettings.authPhonePolicy,
+    deliveryPhonePolicy: marketSettings.deliveryPhonePolicy,
+  }
+
+  const smsEnabled = isOtpChannelEnabled(marketSettings, 'sms', 'checkout')
+  const emailEnabled = isOtpChannelEnabled(marketSettings, 'email', 'checkout')
+  const isSoftGuestMode = marketSettings.guestCheckoutMode === 'soft'
+  const isTrueGuestMode = marketSettings.guestCheckoutMode === 'true_guest'
+
+  const [internalSkAuthMode, setInternalSkAuthMode] = useState<SkCheckoutAuthMode>('guest')
+  const skAuthMode = skAuthModeProp ?? internalSkAuthMode
+  const handleSkAuthModeChange = onSkAuthModeChange ?? setInternalSkAuthMode
+
+  const [channel, setChannel] = useState<AuthChannel>(() =>
+    emailEnabled && !smsEnabled
+      ? 'email'
+      : smsEnabled && !emailEnabled
+        ? 'phone'
+        : marketSettings.region === 'sk'
+          ? emailEnabled
+            ? 'email'
+            : 'phone'
+          : smsEnabled
+            ? 'phone'
+            : 'email',
+  )
   const [step, setStep] = useState<AuthStep>('identifier')
   const [phoneTouched, setPhoneTouched] = useState(false)
   const [emailTouched, setEmailTouched] = useState(false)
@@ -167,21 +251,49 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
   const [code, setCode] = useState('')
   const [codeError, setCodeError] = useState<string | null>(null)
   const [verificationToken, setVerificationToken] = useState<string | null>(null)
+  const [identityHint, setIdentityHint] = useState<CheckoutIdentityHint | null>(null)
+  const [hintLoading, setHintLoading] = useState(false)
+  const [activeAuthChannel, setActiveAuthChannel] = useState<AuthChannel | null>(null)
+  const [conflictAuthPath, setConflictAuthPath] = useState<'email' | 'phone' | null>(null)
+  const [sessionLockUserId, setSessionLockUserId] = useState<string | null>(null)
 
   const isAuthenticated = identification.returningVerified
   const sessionPending = sessionHydrationPending
+  const showGuestForm =
+    !isAuthenticated &&
+    !sessionPending &&
+    (isSoftGuestMode || (isTrueGuestMode && skAuthMode === 'guest'))
+  const showAuthToggle = isTrueGuestMode && !user && !isAuthenticated && !sessionPending
+  const channelLocked = Boolean(conflictAuthPath)
 
-  const phoneError = getPhoneError(formData.phone, tc)
-  const emailError = getEmailFieldError(formData.email, tc)
+  const phoneError = getPhoneError(formData.phone, marketSettings.authPhonePolicy, tc)
+  const emailError = getEmailFieldError(formData.email, tc, checkoutEmailRequired)
+  const emailReadyForHint =
+    emailEnabled && Boolean(formData.email.trim()) && isValidEmail(formData.email.trim())
+  const phoneReadyForHint =
+    smsEnabled &&
+    Boolean(formData.phone.trim()) &&
+    isValidPhoneForPolicy(formData.phone.trim(), marketSettings.authPhonePolicy)
+  const contactsReadyForHint =
+    isSoftGuestMode &&
+    showGuestForm &&
+    (emailEnabled || smsEnabled) &&
+    !phoneError &&
+    !emailError &&
+    (emailReadyForHint || phoneReadyForHint)
   const canSendIdentifierCode =
     channel === 'phone'
-      ? isValidUkrPhone(formData.phone.trim())
+      ? isValidPhoneForPolicy(formData.phone.trim(), marketSettings.authPhonePolicy)
       : Boolean(formData.email.trim()) && isValidEmail(formData.email.trim())
   const canSaveProfile =
-    isValidCyrillicName(formData.firstName) && isValidCyrillicName(formData.lastName)
+    marketRegion === 'sk'
+      ? isValidLatinName(formData.firstName) && isValidLatinName(formData.lastName)
+      : isValidCyrillicName(formData.firstName) && isValidCyrillicName(formData.lastName)
 
   const showError = (field: CheckoutContactFieldKey) =>
-    Boolean(contactTouched[field] && getCheckoutContactFieldError(field, formData))
+    Boolean(
+      contactTouched[field] && getCheckoutContactFieldError(field, formData, contactErrorOptions),
+    )
 
   const resetAuthFlow = useCallback(() => {
     setStep('identifier')
@@ -191,6 +303,54 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
     setPhoneTouched(false)
     setEmailTouched(false)
   }, [])
+
+  useEffect(() => {
+    if (!isSoftGuestMode) {
+      setIdentityHint(null)
+      setHintLoading(false)
+      return
+    }
+
+    setActiveAuthChannel(null)
+    setConflictAuthPath(null)
+    resetAuthFlow()
+
+    if (!contactsReadyForHint) {
+      setIdentityHint(null)
+      setHintLoading(false)
+      return
+    }
+
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      setHintLoading(true)
+      try {
+        const hint = await fetchCheckoutIdentityHint(formData.email, formData.phone)
+        if (!cancelled) setIdentityHint(hint)
+      } catch {
+        if (!cancelled) {
+          setIdentityHint({ identityResolution: 'none', suggestedAuth: null })
+        }
+      } finally {
+        if (!cancelled) setHintLoading(false)
+      }
+    }, 600)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [isSoftGuestMode, contactsReadyForHint, formData.email, formData.phone, resetAuthFlow])
+
+  useEffect(() => {
+    if (channel === 'phone' && !smsEnabled && emailEnabled) {
+      setChannel('email')
+      resetAuthFlow()
+    } else if (channel === 'email' && !emailEnabled && smsEnabled) {
+      setChannel('phone')
+      resetAuthFlow()
+    }
+  }, [smsEnabled, emailEnabled, channel, resetAuthFlow])
 
   const buildVerifiedContactPatch = useCallback(
     (
@@ -202,28 +362,17 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
         user?: CustomerLookupResult['user']
       },
       method: AuthMethod,
-    ): Partial<CheckoutFormValues> => {
-      const patch: Partial<CheckoutFormValues> = {
-        firstName: profile.firstName ?? formData.firstName,
-        lastName: profile.lastName ?? formData.lastName,
-      }
-
-      const dbPhone = profile.phone ?? profile.user?.phone ?? ''
-      const dbEmail = profile.email ?? profile.user?.email ?? ''
-
-      if (method === 'sms') {
-        patch.phone = dbPhone || formData.phone.trim()
-        patch.email = dbEmail && isValidEmail(dbEmail) ? dbEmail : ''
-      } else if (method === 'email') {
-        patch.email = dbEmail && isValidEmail(dbEmail) ? dbEmail : formData.email.trim()
-        patch.phone = dbPhone || ''
-      } else {
-        patch.phone = dbPhone || ''
-        patch.email = dbEmail && isValidEmail(dbEmail) ? dbEmail : ''
-      }
-
-      return patch
-    },
+    ): Partial<CheckoutFormValues> =>
+      buildVerifiedCheckoutContactPatch(
+        {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phone: formData.phone,
+          email: formData.email,
+        },
+        profile,
+        method,
+      ),
     [formData.email, formData.firstName, formData.lastName, formData.phone],
   )
 
@@ -239,9 +388,18 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
       },
       method: AuthMethod,
     ) => {
+      const nextUserId = profile.user?.id
+      if (sessionLockUserId && nextUserId && nextUserId !== sessionLockUserId) {
+        toast.error(t('identityHint.accountLocked'))
+        return false
+      }
+
       onPatchForm(buildVerifiedContactPatch(profile, method))
       if (profile.user) {
         setUser(profile.user)
+      }
+      if (conflictAuthPath && nextUserId) {
+        setSessionLockUserId(nextUserId)
       }
       onIdentificationChange({
         lookupDone: true,
@@ -254,89 +412,171 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
       onReturningCustomerVerified(profile.personalDiscountPercent ?? 0)
       onAuthenticated()
       router.refresh()
+      return true
     },
     [
       buildVerifiedContactPatch,
+      conflictAuthPath,
       onAuthenticated,
       onIdentificationChange,
       onPatchForm,
       onReturningCustomerVerified,
       router,
+      sessionLockUserId,
       setUser,
+      t,
     ],
   )
 
   const completeGoogleCheckout = useCallback(
-    (payload: {
-      user: {
-        email: string
-        role: 'customer' | 'admin'
-        firstName?: string | null
-        lastName?: string | null
-        phone?: string | null
-      }
-      profile: {
-        firstName: string
-        lastName: string
-        phone: string
-        personalDiscountPercent?: number
-      } | null
-    }) => {
-      applyCustomerProfile(
+    (payload: OAuthReturnPayload) => {
+      const applied = applyCustomerProfile(
         {
           firstName: payload.profile?.firstName ?? payload.user.firstName ?? '',
           lastName: payload.profile?.lastName ?? payload.user.lastName ?? '',
           phone: payload.profile?.phone ?? payload.user.phone ?? '',
-          email: payload.user.email,
+          email: payload.user.email ?? '',
           personalDiscountPercent: payload.profile?.personalDiscountPercent ?? 0,
-          user: payload.user,
+          user: {
+            ...payload.user,
+            email: payload.user.email ?? '',
+          },
         },
         'google',
       )
-      toast.success(tc('personalPricesApplied'))
+      if (applied) toast.success(tc('personalPricesApplied'))
     },
-    [applyCustomerProfile],
+    [applyCustomerProfile, tc],
   )
 
-  useOAuthReturn(completeGoogleCheckout)
+  useOAuthReturn(completeGoogleCheckout, {
+    errorMessages: {
+      [CHECKOUT_ACCOUNT_LOCKED]: t('identityHint.accountLocked'),
+    },
+  })
 
   const handleChannelChange = (value: string) => {
+    if (channelLocked) {
+      toast.error(t('identityHint.useSelectedAccount'))
+      return
+    }
     const next = value as AuthChannel
     setChannel(next)
     resetAuthFlow()
     onPatchForm(next === 'phone' ? { email: '' } : { phone: '' })
   }
 
-  const handleContinue = async () => {
-    if (channel === 'phone') {
-      setPhoneTouched(true)
-      if (phoneError) return
-    } else {
-      setEmailTouched(true)
-      if (emailError) return
-    }
-
-    setSubmitting(true)
-    setCodeError(null)
-    try {
-      if (channel === 'phone') {
-        await sendCheckoutSmsCode(formData.phone)
-        toast.success(channel === 'phone' ? tc('codeSentSms') : tc('codeSentEmail'))
-      } else {
-        await sendCheckoutEmailCode(formData.email)
-        toast.success(tc('codeSentEmail'))
+  const sendCodeForChannel = useCallback(
+    async (authChannel: AuthChannel, lockedPath: 'email' | 'phone' | null = conflictAuthPath) => {
+      if (lockedPath && authChannel !== lockedPath) {
+        toast.error(t('identityHint.useSelectedAccount'))
+        return
       }
-      setStep('otp')
+      if (authChannel === 'phone') {
+        setPhoneTouched(true)
+        if (phoneError) return
+      } else {
+        setEmailTouched(true)
+        if (emailError) return
+      }
+
+      setSubmitting(true)
+      setCodeError(null)
       setCode('')
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : tc('sendCodeFailed'))
-    } finally {
-      setSubmitting(false)
+      try {
+        if (authChannel === 'phone') {
+          await sendCheckoutSmsCode(formData.phone)
+          toast.success(tc('codeSentSms'))
+        } else {
+          await sendCheckoutEmailCode(formData.email)
+          toast.success(tc('codeSentEmail'))
+        }
+        setStep('otp')
+      } catch (e) {
+        setStep('identifier')
+        toast.error(e instanceof Error ? e.message : tc('sendCodeFailed'))
+      } finally {
+        setSubmitting(false)
+      }
+    },
+    [conflictAuthPath, emailError, formData.email, formData.phone, phoneError, t, tc],
+  )
+
+  const startSoftInlineAuth = useCallback(
+    (nextChannel: AuthChannel, isConflict: boolean) => {
+      if (nextChannel === 'phone') {
+        setPhoneTouched(true)
+        if (phoneError) return
+      } else {
+        setEmailTouched(true)
+        if (emailError) return
+      }
+
+      const locked = isConflict ? nextChannel : null
+      // Mount OTP in the click handler so autoFocus still counts as a user gesture (iOS).
+      flushSync(() => {
+        setConflictAuthPath(locked)
+        setChannel(nextChannel)
+        setActiveAuthChannel(nextChannel)
+        setStep('otp')
+        setCode('')
+        setCodeError(null)
+        setVerificationToken(null)
+      })
+      void sendCodeForChannel(nextChannel, locked)
+    },
+    [emailError, phoneError, sendCodeForChannel],
+  )
+
+  const startSoftSignInEmail = useCallback(() => {
+    startSoftInlineAuth('email', false)
+  }, [startSoftInlineAuth])
+
+  const startSoftSignInPhone = useCallback(() => {
+    startSoftInlineAuth('phone', false)
+  }, [startSoftInlineAuth])
+
+  const startConflictEmailAccount = useCallback(() => {
+    startSoftInlineAuth('email', true)
+  }, [startSoftInlineAuth])
+
+  const startConflictPhoneAccount = useCallback(() => {
+    startSoftInlineAuth('phone', true)
+  }, [startSoftInlineAuth])
+
+  const cancelSoftInlineAuth = useCallback(() => {
+    setActiveAuthChannel(null)
+    setConflictAuthPath(null)
+    resetAuthFlow()
+  }, [resetAuthFlow])
+
+  const handleContinueAsGuest = useCallback(() => {
+    setActiveAuthChannel(null)
+    setConflictAuthPath(null)
+    resetAuthFlow()
+    if (canProceed) onContinue()
+  }, [canProceed, onContinue, resetAuthFlow])
+
+  const handleContinue = () => {
+    if (isSoftGuestMode && step === 'identifier') {
+      if (channel === 'phone') {
+        setPhoneTouched(true)
+        if (phoneError) return
+      } else {
+        setEmailTouched(true)
+        if (emailError) return
+      }
+      flushSync(() => {
+        setStep('otp')
+        setCode('')
+        setCodeError(null)
+      })
     }
+    void sendCodeForChannel(channel)
   }
 
   const handleVerifyCode = async () => {
-    if (code.length < 4) return
+    if (code.length < 6) return
 
     setSubmitting(true)
     setCodeError(null)
@@ -344,7 +584,7 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
       const result =
         channel === 'phone'
           ? await verifyCheckoutSmsCode(formData.phone, code)
-          : await verifyAuthEmailCode(formData.email, code)
+          : await verifyAuthEmailCode(formData.email, code, 'checkout')
 
       setVerificationToken(result.verificationToken)
 
@@ -353,9 +593,21 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
           ? { phone: formData.phone.trim() }
           : { email: formData.email.trim() }),
         verificationToken: result.verificationToken,
+        ...(formData.firstName.trim() ? { firstName: formData.firstName.trim() } : {}),
+        ...(formData.lastName.trim() ? { lastName: formData.lastName.trim() } : {}),
       })
 
       if (identity.needsProfile || !identity.found) {
+        if (isSoftGuestMode) {
+          onBlurField('firstName')
+          onBlurField('lastName')
+          setCodeError(
+            getCheckoutContactFieldError('firstName', formData, contactErrorOptions) ||
+              getCheckoutContactFieldError('lastName', formData, contactErrorOptions) ||
+              t('identityHint.namesRequired'),
+          )
+          return
+        }
         setStep('profile')
         return
       }
@@ -366,6 +618,10 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
       )
       toast.success(tc('personalPricesApplied'))
     } catch (e) {
+      if (e instanceof CheckoutAccountLockedError) {
+        setCodeError(t('identityHint.accountLocked'))
+        return
+      }
       setCodeError(e instanceof Error ? e.message : tc('invalidCode'))
     } finally {
       setSubmitting(false)
@@ -376,8 +632,8 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
     onBlurField('firstName')
     onBlurField('lastName')
     if (
-      getCheckoutContactFieldError('firstName', formData) ||
-      getCheckoutContactFieldError('lastName', formData)
+      getCheckoutContactFieldError('firstName', formData, contactErrorOptions) ||
+      getCheckoutContactFieldError('lastName', formData, contactErrorOptions)
     ) {
       return
     }
@@ -406,6 +662,10 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
       applyCustomerProfile(identity, channel === 'phone' ? 'sms' : 'email')
       toast.success(tc('profileSaved'))
     } catch (e) {
+      if (e instanceof CheckoutAccountLockedError) {
+        setCodeError(t('identityHint.accountLocked'))
+        return
+      }
       setCodeError(e instanceof Error ? e.message : tc('profileSaveFailed'))
     } finally {
       setSubmitting(false)
@@ -418,12 +678,53 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
 
   const handleGoogleLogin = () => {
     if (googleLoading || isAuthenticated) return
+    if (conflictAuthPath === 'phone') {
+      toast.error(t('identityHint.chooseEmailAccountFirst'))
+      return
+    }
+    if (identityHint?.identityResolution === 'conflict' && !conflictAuthPath) {
+      toast.error(t('identityHint.chooseEmailAccountFirst'))
+      return
+    }
+    if (sessionLockUserId) {
+      toast.error(t('identityHint.accountLocked'))
+      return
+    }
     if (!isGoogleOAuthConfigured()) {
       toast.error(tc('googleSignInUnavailable'))
       return
     }
     setGoogleLoading(true)
     startGoogleOAuth('/checkout', 'checkout')
+  }
+
+  const handleSwitchAccount = async () => {
+    try {
+      await fetch('/api/auth/checkout/switch-account', {
+        method: 'POST',
+        credentials: 'include',
+      })
+    } catch {
+      /* best-effort */
+    }
+    setUser(null)
+    resetAuthFlow()
+    setIdentityHint(null)
+    setConflictAuthPath(null)
+    setActiveAuthChannel(null)
+    setSessionLockUserId(null)
+    onIdentificationChange({
+      lookupDone: false,
+      customerFound: null,
+      returningVerified: false,
+      skippedReturningLogin: true,
+      attemptingReturningLogin: false,
+      authMethod: null,
+    })
+    handleSkAuthModeChange('guest')
+    onSwitchAccount?.()
+    router.refresh()
+    toast.success(t('identityHint.switchedAccount'))
   }
 
   const handleLogout = async () => {
@@ -434,6 +735,10 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
     }
     setUser(null)
     resetAuthFlow()
+    setIdentityHint(null)
+    setConflictAuthPath(null)
+    setActiveAuthChannel(null)
+    setSessionLockUserId(null)
     onPatchForm({ firstName: '', lastName: '', phone: '', email: '' })
     onIdentificationChange({
       lookupDone: false,
@@ -479,6 +784,8 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
   const showVerifiedPhone = Boolean(verifiedPhone?.trim())
   const showVerifiedEmail = Boolean(verifiedEmail?.trim()) && isValidEmail(verifiedEmail)
 
+  const showBillingSlot = Boolean(billingSlot) && (isAuthenticated || !sessionPending)
+
   return (
     <div className={checkoutPanelClassName}>
       <header className="mb-6 space-y-2">
@@ -494,15 +801,43 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
             ? t('contactConfirmed')
             : sessionPending
               ? t('loadingProfile')
-              : t('contactHint')}
+                : showGuestForm
+                ? isSoftGuestMode
+                  ? t(
+                      checkoutEmailRequired
+                        ? 'softContactHint'
+                        : 'softContactHintEmailOptional',
+                    )
+                  : t(
+                      emailEnabled && smsEnabled
+                        ? 'skGuestContactHintBoth'
+                        : emailEnabled
+                          ? 'skGuestContactHintEmail'
+                          : smsEnabled
+                            ? 'skGuestContactHintPhone'
+                            : 'skGuestContactHintName',
+                    )
+                : t(
+                    emailEnabled && smsEnabled
+                      ? 'contactHintBoth'
+                      : emailEnabled
+                        ? 'contactHintEmail'
+                        : smsEnabled
+                          ? 'contactHintPhone'
+                          : 'contactHintGoogle',
+                  )}
         </p>
       </header>
+
+      {showAuthToggle ? (
+        <CheckoutSkAuthModeToggle mode={skAuthMode} onChange={handleSkAuthModeChange} />
+      ) : null}
 
       {isAuthenticated ? (
         <div
           className={cn(
             checkoutInsetPanelClassName,
-            'flex items-start justify-between gap-3 border-primary/30 bg-primary/10 p-4',
+            'flex flex-col gap-3 border-primary/30 bg-primary/10 p-4 sm:flex-row sm:items-start sm:justify-between',
           )}
         >
           <div className="min-w-0">
@@ -520,38 +855,361 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
             <p className="mt-2 text-xs text-muted-foreground">
               {t('signedInVia', { method: authMethodLabel })}
             </p>
+            <p className="mt-1 text-xs text-primary">{t('identityHint.accountSelected')}</p>
           </div>
-          <Button
-            className="shrink-0"
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleLogout}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            {tc('logout')}
-          </Button>
+          {sessionLockUserId || conflictAuthPath ? (
+            <Button
+              className="w-full shrink-0 sm:w-auto"
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSwitchAccount}
+            >
+              <ArrowLeftRight className="mr-2 h-4 w-4" />
+              {t('identityHint.switchAccount')}
+            </Button>
+          ) : (
+            <Button
+              className="w-full shrink-0 sm:w-auto"
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              {tc('logout')}
+            </Button>
+          )}
         </div>
-      ) : sessionPending ? (
+      ) : null}
+
+      {isAuthenticated && marketRegion === 'sk' ? (
+        <div className="mt-4 space-y-4">
+          {!showVerifiedPhone ? (
+            <div className="space-y-2">
+              <RequiredLabel htmlFor="checkout-auth-phone">{tc('phone')}</RequiredLabel>
+              <InputWithClear
+                ref={phoneInputRef}
+                id="checkout-auth-phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder={phonePlaceholderForPolicy(marketSettings.authPhonePolicy)}
+                leadingIcon={phoneLeadingIcon}
+                className={cn(
+                  checkoutInputClassName,
+                  (contactTouched.phone || phoneTouched) &&
+                    phoneError &&
+                    'border-destructive/80 ring-destructive/30',
+                )}
+                value={formData.phone}
+                onBlur={() => {
+                  setPhoneTouched(true)
+                  onBlurField('phone')
+                }}
+                onChange={(e) =>
+                  onPatchForm({ phone: sanitizeCheckoutPhoneInput(e.target.value) })
+                }
+                onClear={() => onPatchForm({ phone: '' })}
+              />
+              <FieldHint
+                id="checkout-auth-phone-error"
+                show={Boolean(contactTouched.phone || phoneTouched)}
+                message={phoneError}
+              />
+            </div>
+          ) : null}
+          {!showVerifiedEmail ? (
+            <div className="space-y-2">
+              {checkoutEmailRequired ? (
+                <RequiredLabel htmlFor="checkout-auth-email">{tc('email')}</RequiredLabel>
+              ) : (
+                <Label htmlFor="checkout-auth-email">{tc('email')}</Label>
+              )}
+              <InputWithClear
+                id="checkout-auth-email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                leadingIcon={emailLeadingIcon}
+                className={cn(
+                  checkoutInputClassName,
+                  showError('email') && 'border-destructive/80 ring-destructive/30',
+                )}
+                value={formData.email}
+                onBlur={() => onBlurField('email')}
+                onChange={(e) => onPatchForm({ email: sanitizeEmail(e.target.value) })}
+                onClear={() => onPatchForm({ email: '' })}
+              />
+              <FieldHint
+                id="checkout-auth-email-error"
+                show={Boolean(contactTouched.email)}
+                message={getCheckoutContactFieldError('email', formData, contactErrorOptions)}
+              />
+            </div>
+          ) : null}
+          {customerNeedsCheckoutNameEntry(formData, identification, { marketRegion }) ? (
+            <NameFields
+              formData={formData}
+              contactTouched={contactTouched}
+              showError={showError}
+              onBlurField={onBlurField}
+              onPatchForm={onPatchForm}
+              marketRegion={marketRegion}
+            />
+          ) : null}
+        </div>
+      ) : null}
+
+      {!isAuthenticated && sessionPending ? (
         <div className={cn(checkoutInsetPanelClassName, 'flex items-center justify-center gap-2 p-8')}>
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
           <span className="text-sm text-muted-foreground">{t('checkingSession')}</span>
         </div>
-      ) : (
+      ) : !isAuthenticated && showGuestForm ? (
+        <div className="space-y-5">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              {checkoutEmailRequired ? (
+                <RequiredLabel htmlFor="checkout-guest-email">{tc('email')}</RequiredLabel>
+              ) : (
+                <Label htmlFor="checkout-guest-email">{tc('email')}</Label>
+              )}
+              <InputWithClear
+                id="checkout-guest-email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder={ta('emailPlaceholder')}
+                leadingIcon={emailLeadingIcon}
+                className={cn(
+                  checkoutInputClassName,
+                  showError('email') && 'border-destructive/80 ring-destructive/30',
+                )}
+                aria-invalid={showError('email')}
+                value={formData.email}
+                onBlur={() => onBlurField('email')}
+                onChange={(e) => onPatchForm({ email: sanitizeEmail(e.target.value) })}
+                onClear={() => onPatchForm({ email: '' })}
+              />
+              <FieldHint
+                id="checkout-guest-email-error"
+                show={Boolean(contactTouched.email)}
+                message={getCheckoutContactFieldError('email', formData, contactErrorOptions)}
+              />
+            </div>
+            <div className="space-y-2">
+              <RequiredLabel htmlFor="checkout-guest-phone">{tc('phone')}</RequiredLabel>
+              <InputWithClear
+                ref={phoneInputRef}
+                id="checkout-guest-phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder={phonePlaceholderForPolicy(marketSettings.authPhonePolicy)}
+                leadingIcon={phoneLeadingIcon}
+                className={cn(
+                  checkoutInputClassName,
+                  (contactTouched.phone || phoneTouched) &&
+                    phoneError &&
+                    'border-destructive/80 ring-destructive/30',
+                )}
+                aria-invalid={Boolean((contactTouched.phone || phoneTouched) && phoneError)}
+                value={formData.phone}
+                onBlur={() => {
+                  setPhoneTouched(true)
+                  onBlurField('phone')
+                }}
+                onChange={(e) =>
+                  onPatchForm({ phone: sanitizeCheckoutPhoneInput(e.target.value) })
+                }
+                onClear={() => onPatchForm({ phone: '' })}
+              />
+              <FieldHint
+                id="checkout-guest-phone-error"
+                show={Boolean(contactTouched.phone || phoneTouched)}
+                message={phoneError}
+              />
+            </div>
+          </div>
+          <NameFields
+            formData={formData}
+            contactTouched={contactTouched}
+            showError={showError}
+            onBlurField={onBlurField}
+            onPatchForm={onPatchForm}
+            marketRegion={marketRegion}
+          />
+          {isSoftGuestMode ? (
+            <CheckoutIdentityHintPanel
+              hint={identityHint}
+              hintLoading={hintLoading}
+              smsEnabled={smsEnabled}
+              emailEnabled={emailEnabled}
+              googleEnabled={isGoogleOAuthConfigured()}
+              googleLoading={googleLoading}
+              emailReady={Boolean(formData.email.trim()) && isValidEmail(formData.email.trim())}
+              phoneReady={isValidPhoneForPolicy(
+                formData.phone.trim(),
+                marketSettings.authPhonePolicy,
+              )}
+              inlineAuthChannel={activeAuthChannel}
+              inlineAuth={
+                activeAuthChannel ? (
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {identityHint?.identityResolution === 'none'
+                            ? activeAuthChannel === 'phone'
+                              ? t('identityHint.inlineAuthPhoneRegister')
+                              : t('identityHint.inlineAuthEmailRegister')
+                            : activeAuthChannel === 'phone'
+                              ? t('identityHint.inlineAuthPhone')
+                              : t('identityHint.inlineAuthEmail')}
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">{identifierLabel}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="shrink-0"
+                        disabled={submitting}
+                        onClick={cancelSoftInlineAuth}
+                      >
+                        {identityHint?.identityResolution === 'none'
+                          ? t('identityHint.cancelRegister')
+                          : t('identityHint.cancelAuth')}
+                      </Button>
+                    </div>
+
+                    {step === 'identifier' ? (
+                      <Button
+                        type="button"
+                        className="w-full sm:w-auto"
+                        disabled={submitting || !canSendIdentifierCode}
+                        onClick={handleContinue}
+                      >
+                        {submitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {tc('sending')}
+                          </>
+                        ) : (
+                          t('identityHint.sendCode')
+                        )}
+                      </Button>
+                    ) : null}
+
+                    {step === 'otp' ? (
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          {channel === 'phone'
+                            ? tc('codeSentToPhone', { phone: identifierLabel })
+                            : tc('codeSentToEmail', { email: identifierLabel })}
+                        </p>
+                        <Label htmlFor="checkout-soft-otp">
+                          {channel === 'phone' ? tc('codeFromSms') : tc('codeFromEmail')}
+                        </Label>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                          <InputOTP
+                            id="checkout-soft-otp"
+                            maxLength={6}
+                            autoFocus
+                            autoComplete="one-time-code"
+                            value={code}
+                            onChange={(value) => {
+                              setCode(value)
+                              setCodeError(null)
+                            }}
+                          >
+                            <InputOTPGroup>
+                              <InputOTPSlot index={0} />
+                              <InputOTPSlot index={1} />
+                              <InputOTPSlot index={2} />
+                              <InputOTPSlot index={3} />
+                              <InputOTPSlot index={4} />
+                              <InputOTPSlot index={5} />
+                            </InputOTPGroup>
+                          </InputOTP>
+                          <div className="flex shrink-0 flex-wrap gap-2">
+                            <Button
+                              type="button"
+                              disabled={code.length < 6 || submitting}
+                              onClick={handleVerifyCode}
+                            >
+                              {submitting ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  {tc('verifying')}
+                                </>
+                              ) : (
+                                tc('confirm')
+                              )}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              disabled={submitting}
+                              onClick={handleContinue}
+                            >
+                              {tc('resend')}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {codeError ? (
+                      <p className="text-xs text-destructive" role="alert">
+                        {codeError}
+                      </p>
+                    ) : null}
+
+                    {identityHint?.identityResolution !== 'none' &&
+                    activeAuthChannel === 'email' &&
+                    isGoogleOAuthConfigured() &&
+                    conflictAuthPath !== 'phone' ? (
+                      <>
+                        <OrDivider />
+                        <AuthOAuthButtons googleLoading={googleLoading} onGoogleClick={handleGoogleLogin} />
+                      </>
+                    ) : null}
+                  </div>
+                ) : null
+              }
+              onSignInEmail={startSoftSignInEmail}
+              onSignInPhone={startSoftSignInPhone}
+              onGoogleSignIn={handleGoogleLogin}
+              onConflictEmailAccount={startConflictEmailAccount}
+              onConflictPhoneAccount={startConflictPhoneAccount}
+              onContinueAsGuest={handleContinueAsGuest}
+            />
+          ) : null}
+        </div>
+      ) : !isAuthenticated ? (
         <div className="space-y-5">
           {step === 'identifier' ? (
-            <Tabs value={channel} onValueChange={handleChannelChange} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="phone" className="gap-2">
-                  <Phone className="h-4 w-4" />
-                  {tc('phoneTab')}
-                </TabsTrigger>
-                <TabsTrigger value="email" className="gap-2">
-                  <Mail className="h-4 w-4" />
-                  {tc('email')}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            !smsEnabled && !emailEnabled ? (
+              <p className="text-sm text-destructive" role="alert">
+                {ta('otpChannelsDisabled')}
+              </p>
+            ) : smsEnabled && emailEnabled && !channelLocked ? (
+              <Tabs value={channel} onValueChange={handleChannelChange} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="phone" className="gap-2">
+                    <Phone className="h-4 w-4" />
+                    {tc('phoneTab')}
+                  </TabsTrigger>
+                  <TabsTrigger value="email" className="gap-2">
+                    <Mail className="h-4 w-4" />
+                    {tc('email')}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            ) : null
           ) : (
             <Button
               type="button"
@@ -579,7 +1237,7 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
                         type="tel"
                         inputMode="tel"
                         autoComplete="tel"
-                        placeholder="+380 XX XXX XX XX"
+                        placeholder={phonePlaceholderForPolicy(marketSettings.authPhonePolicy)}
                         leadingIcon={phoneLeadingIcon}
                         className={cn(
                           checkoutInputClassName,
@@ -669,7 +1327,7 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
                   </Label>
                   <InputOTP
                     id="checkout-otp"
-                    maxLength={4}
+                    maxLength={6}
                     value={code}
                     onChange={(value) => {
                       setCode(value)
@@ -681,13 +1339,15 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
                       <InputOTPSlot index={1} />
                       <InputOTPSlot index={2} />
                       <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
                     </InputOTPGroup>
                   </InputOTP>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-2">
                   <Button
                     type="button"
-                    disabled={code.length < 4 || submitting}
+                    disabled={code.length < 6 || submitting}
                     onClick={handleVerifyCode}
                   >
                     {submitting ? (
@@ -734,6 +1394,7 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
                 showError={showError}
                 onBlurField={onBlurField}
                 onPatchForm={onPatchForm}
+                marketRegion={marketRegion}
               />
               {codeError && (
                 <p className="text-xs text-destructive" role="alert">
@@ -760,14 +1421,18 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
             </div>
           ) : null}
 
-          {step === 'identifier' ? (
+          {step === 'identifier' &&
+          isGoogleOAuthConfigured() &&
+          (!conflictAuthPath || conflictAuthPath === 'email') ? (
             <>
               <OrDivider />
               <AuthOAuthButtons googleLoading={googleLoading} onGoogleClick={handleGoogleLogin} />
             </>
           ) : null}
         </div>
-      )}
+      ) : null}
+
+      {showBillingSlot ? billingSlot : null}
 
       {showStepNav ? (
         <div className="mt-6 flex justify-end">

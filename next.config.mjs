@@ -11,6 +11,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Serve /uploads from public/uploads (symlink → ../../data/uploads).
+  // Do NOT rewrite through /api/uploads — that buffered media in Node and OOM'd next dev (~8GB).
   async headers() {
     return [
       {

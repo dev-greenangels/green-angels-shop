@@ -98,7 +98,21 @@ function validateForm(
 
 type SlugStatus = 'idle' | 'checking' | 'available' | 'taken' | 'error'
 
-export function ProductEditor({ productId }: { productId?: string }) {
+function resolveProductsReturnTo(returnTo?: string): string {
+  if (!returnTo) return '/backstage/products'
+  if (returnTo === '/backstage/products' || returnTo.startsWith('/backstage/products?')) {
+    return returnTo
+  }
+  return '/backstage/products'
+}
+
+export function ProductEditor({
+  productId,
+  returnTo,
+}: {
+  productId?: string
+  returnTo?: string
+}) {
   const router = useRouter()
   const { locale: contentLocale } = useBackstageContentLocale()
   const tp = useTranslations('pages.products')
@@ -107,6 +121,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
   const th = useTranslations('hints')
   const tl = useTranslations('labels')
   const isEditing = Boolean(productId)
+  const productsListHref = resolveProductsReturnTo(returnTo)
   const [isLoading, setIsLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(isEditing)
   const [categoriesLoading, setCategoriesLoading] = useState(true)
@@ -181,7 +196,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
       .catch((err) => {
         if (!cancelled) {
           toast.error(err instanceof Error ? err.message : tt('loadFailed'))
-          router.push('/backstage/products')
+          router.push(productsListHref)
         }
       })
       .finally(() => {
@@ -191,7 +206,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
     return () => {
       cancelled = true
     }
-  }, [productId, router, contentLocale])
+  }, [productId, router, contentLocale, productsListHref, tt])
 
   const patch = useCallback(
     (patchValues: Partial<ProductFormState>) => {
@@ -294,7 +309,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
         await createProduct(payload)
         toast.success(tt('productCreated'))
       }
-      router.push('/backstage/products')
+      router.push(productsListHref)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : tt('saveFailed'))
     } finally {
@@ -321,7 +336,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
           <StickyFormActions
             title={editorTitle}
             subtitle={tp('formSubtitle')}
-            onCancel={() => router.back()}
+            onCancel={() => router.push(productsListHref)}
             isLoading={isLoading}
             isDirty={isDirty}
             isPublished={form.isPublished}
@@ -364,6 +379,21 @@ export function ProductEditor({ productId }: { productId?: string }) {
                           placeholder="Thuja occidentalis Smaragd"
                         />
                       </div>
+                    </div>
+
+                    <div className="space-y-2 sm:max-w-md">
+                      <Label htmlFor="cnCode">{tp('cnCode')}</Label>
+                      <Input
+                        id="cnCode"
+                        value={form.cnCode}
+                        onChange={(e) => patch({ cnCode: e.target.value })}
+                        placeholder="060290"
+                        inputMode="numeric"
+                        autoComplete="off"
+                      />
+                      <p className="text-xs text-amber-800 dark:text-amber-200/90">
+                        {tp('cnCodeWarning')}
+                      </p>
                     </div>
 
                     <div className="space-y-2 sm:max-w-md">

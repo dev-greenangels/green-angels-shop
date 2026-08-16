@@ -47,6 +47,7 @@
     "uah": "грн",
     "currencySymbol": "₴",
     "loadError": "Помилка завантаження",
+    "retry": "Спробувати знову",
     "requiredField": "Обовʼязкове поле",
     "invalidUkrPhone": "Введіть коректний український номер (+380)",
     "invalidEmail": "Невірний формат email",
@@ -93,7 +94,7 @@
     "codeFromEmail": "Код з email",
     "codeSentToPhone": "Код надіслано на {phone}",
     "codeSentToEmail": "Код надіслано на {email}",
-    "enterFourDigitCode": "Введіть 4-значний код",
+    "enterFourDigitCode": "Введіть 6-значний код",
     "signIn": "Увійти",
     "phoneTab": "Телефон",
     "phoneNumber": "Номер телефону",
@@ -130,6 +131,8 @@
     "shipping": "Доставка",
     "faq": "Часті питання",
     "terms": "Умови використання",
+    "privacy": "Політика конфіденційності",
+    "cookies": "Політика Cookie",
     "search": "Пошук",
     "login": "Увійти",
     "accountCabinet": "Кабінет",
@@ -148,8 +151,14 @@
     "perennials": "Багаторічники",
     "shrubs": "Чагарники",
     "shipping": "Доставка та оплата",
+    "shippingSk": "Doprava a platba",
     "faq": "Часті питання",
     "terms": "Умови використання",
+    "termsSk": "Všeobecné obchodné podmienky (VOP)",
+    "privacy": "Політика конфіденційності",
+    "privacySk": "Zásady ochrany osobných údajov",
+    "returnsSk": "Reklamačný poriadok",
+    "cookies": "Політика Cookie",
     "admin": "Адміністрування",
     "intro": "Професійний розсадник рослин. Вирощуємо якісний посадковий матеріал з любов'ю та турботою з 2010 року.",
     "blog": "Блог",
@@ -183,13 +192,23 @@
       "requiredField": "Обовʼязкове поле",
       "invalidUkrPhone": "Введіть коректний український номер (+380)",
       "invalidEmail": "Невірний формат email"
-    }
+    },
+    "otpChannelsDisabled": "OTP через SMS і email вимкнено в налаштуваннях. Зверніться до адміністратора.",
+    "consentFallback": "Авторизуючись, ви погоджуєтесь з умовами використання та політикою конфіденційності."
   },
   "account": {
     "title": "Особистий кабінет",
     "subtitle": "Огляд замовлень, обраного та сповіщень.",
     "settingsTitle": "Налаштування",
     "settingsSubtitle": "Профіль, контакти та адреса доставки.",
+    "ordersTitle": "Мої замовлення",
+    "ordersSubtitle": "Історія та статус ваших замовлень.",
+    "favoritesTitle": "Вподобане",
+    "favoritesSubtitle": "Збережені рослини для швидкого доступу.",
+    "reviewsTitle": "Мої відгуки",
+    "reviewsSubtitle": "Відгуки, які ви залишили на сайті.",
+    "notificationsPageTitle": "Підписки та сповіщення",
+    "notificationsPageSubtitle": "Сповіщення про появу рослин на складі.",
     "backToCabinet": "До кабінету",
     "dashboard": "Дашборд",
     "orders": "Замовлення",
@@ -203,12 +222,52 @@
     "contactDetails": "Контактні дані",
     "emailNotVerified": "Email ще не підтверджено через OTP.",
     "phoneNotVerified": "Телефон ще не підтверджено через SMS.",
+    "contactEmpty": "Не вказано",
+    "contactVerified": "Підтверджено",
+    "addEmail": "Додати email",
+    "changeEmail": "Змінити email",
+    "addPhone": "Додати телефон",
+    "changePhone": "Змінити телефон",
+    "clearPhone": "Видалити телефон",
+    "newEmailLabel": "Новий email",
+    "newPhoneLabel": "Новий телефон",
+    "sendContactOtp": "Надіслати код",
+    "resendContactOtp": "Надіслати ще раз",
+    "contactOtpCode": "Код підтвердження",
+    "contactOtpHint": "Введіть код, надісланий на новий контакт. Поточний контакт залишиться активним до підтвердження.",
+    "contactOtpSent": "Код надіслано.",
+    "confirmContact": "Підтвердити",
+    "contactEmailUpdated": "Email оновлено.",
+    "contactPhoneUpdated": "Телефон оновлено.",
+    "contactPhoneCleared": "Телефон видалено.",
+    "contactStartFailed": "Не вдалося розпочати підтвердження контакту.",
+    "contactConfirmFailed": "Не вдалося підтвердити контакт.",
+    "contactAlreadyOnAccount": "Цей контакт уже на вашому обліковому записі.",
+    "contactAlreadyAssociated": "Контакт підтверджено, але він уже повʼязаний з іншим обліковим записом. Його не можна додати до цього облікового запису автоматично.",
+    "emailOtpUnavailable": "Підтвердження email зараз недоступне.",
+    "phoneOtpUnavailable": "Підтвердження телефону через SMS зараз недоступне.",
+    "profileNameSection": "Імʼя",
     "defaultDeliveryAddress": "Адреса доставки за замовчуванням",
     "defaultDeliveryHint": "Використовується як зручні дані для наступних замовлень.",
     "deliveryMethod": "Спосіб доставки",
     "citySettlement": "Місто / населений пункт",
     "ordersEmptyTitle": "Замовлень поки немає",
     "ordersEmptyBody": "Після оформлення покупок вони з'являться тут.",
+    "viewOrder": "Переглянути замовлення",
+    "orderDetailTitle": "Замовлення",
+    "orderDetailSubtitle": "Деталі та статус вашого замовлення.",
+    "orderDetailLoading": "Завантаження замовлення…",
+    "orderNotFound": "Замовлення не знайдено.",
+    "backToOrders": "До списку замовлень",
+    "orderNumberLabel": "№ {number}",
+    "orderPlacedAt": "Оформлено {date}",
+    "orderItems": "Товари",
+    "orderItemQty": "{qty} шт.",
+    "orderTotal": "Разом",
+    "orderDetails": "Деталі замовлення",
+    "orderDelivery": "Доставка",
+    "orderPayment": "Оплата",
+    "trackingLabel": "ТТН",
     "reviewsEmptyTitle": "Відгуків поки немає",
     "reviewsEmptyBody": "Залишайте відгуки на сторінках товарів після покупки.",
     "reviewStatus": {
@@ -224,12 +283,61 @@
     "notifiedAt": "Сповіщено {date}",
     "subscriptionCancelled": "Підписку скасовано",
     "cancelFailed": "Не вдалося скасувати",
+    "referrals": "Реферали",
+    "referralsTitle": "Запроси друга",
+    "referralsSubtitle": "Діліться персональним посиланням і отримуйте бали за замовлення друзів.",
+    "referralsShareLabel": "Ваше реферальне посилання",
+    "referralsBalanceLabel": "Баланс балів",
+    "referralsComingSoon": "Розділ у розробці. Слідкуйте за оновленнями.",
+    "referralsOpen": "Перейти",
+    "referralsCopy": "Копіювати",
+    "referralsCopied": "Скопійовано",
+    "referralsCodeLabel": "Код",
+    "referralsEarnHint": "+{points} балів за кваліфіковане замовлення друга",
+    "referralsHistoryTitle": "Історія балів",
+    "referralsHistoryEmpty": "Поки немає нарахувань.",
+    "referralsUnavailableTitle": "Реферальна програма недоступна",
+    "referralsUnavailableBody": "Для вашого акаунта програма вимкнена або ще не налаштована.",
+    "claimOrder": "Привʼязати замовлення",
+    "claimOrderTitle": "Привʼязати гостьове замовлення",
+    "claimOrderSubtitle": "Додайте замовлення без входу до кабінету після підтвердження контактів покупця.",
+    "claimOrderIntro": "Гостьові замовлення автоматично зʼявляються в кабінеті після входу через email OTP, SMS OTP або Google — якщо підтверджений контакт збігається з даними замовлення.",
+    "claimOrderHint": "Привʼязка працює лише для customerEmail або customerPhone з замовлення. Телефон одержувача (receiverPhone) не використовується.",
+    "claimOrderManualHint": "Якщо замовлення ще не зʼявилось після входу, підтвердьте контакти в профілі та натисніть кнопку нижче.",
+    "claimOrderAttachAction": "Додати до мого кабінету",
+    "claimOrderAttachLoading": "Привʼязуємо…",
+    "claimOrderNoOrderSelected": "Відкрийте цю сторінку з посилання після оформлення замовлення або зі сторінки підтвердження — там передається ідентифікатор замовлення.",
+    "claimOrderSuccess": "Замовлення {number} додано до вашого кабінету.",
+    "claimOrderFailed": "Не вдалося привʼязати замовлення.",
+    "claimOrderAlreadyInAccount": "Це замовлення вже у вашому кабінеті.",
+    "claimOrderContactMismatch": "Підтверджений email або телефон у профілі не збігається з даними покупця в замовленні.",
+    "claimOrderConflict": "Не вдалося привʼязати замовлення через конфлікт даних. Зверніться до підтримки.",
+    "claimOrderNotFound": "Замовлення не знайдено або воно вже привʼязане до іншого акаунта.",
+    "claimOrderVerifyContactsBody": "Спочатку підтвердьте email або телефон у налаштуваннях — саме ті контакти, якими оформлювали замовлення.",
+    "claimOrderGoToSettings": "Перейти до налаштувань",
+    "claimOrderViewOrder": "Переглянути замовлення",
+    "claimOrderCta": "Привʼязати гостьове замовлення",
     "cards": {
       "orders": "Замовлення",
       "favorites": "Вподобане",
       "reviews": "Відгуки",
-      "notifications": "Сповіщення про наявність"
-    }
+      "notifications": "Сповіщення про наявність",
+      "referrals": "Реферали"
+    },
+    "privacyTitle": "Дані та конфіденційність",
+    "privacySubtitle": "Завантажте копію своїх даних або видаліть акаунт назавжди.",
+    "exportData": "Завантажити мої дані",
+    "exportDataHint": "JSON-файл з профілем, підсумком замовлень та відгуками.",
+    "exportDataFailed": "Не вдалося сформувати файл з даними.",
+    "deleteAccountTitle": "Видалити акаунт",
+    "deleteAccountHint": "Акаунт видаляється назавжди. Замовлення знеособлюються, відгуки залишаються без прив'язки до вас.",
+    "deleteAccountButton": "Видалити акаунт",
+    "deleteAccountDialogTitle": "Видалити акаунт назавжди?",
+    "deleteAccountDialogDescription": "Цю дію неможливо скасувати. Профіль, кошик, обране та привʼязки акаунта буде видалено. Замовлення залишаться в історії без привʼязки до вас, а відгуки — знеособлені.",
+    "deleteAccountConfirmLabel": "Введіть {word}, щоб підтвердити",
+    "deleteAccountConfirmButton": "Видалити назавжди",
+    "deleteAccountFailed": "Не вдалося видалити акаунт.",
+    "privacyPolicyNote": "Дізнайтеся більше в <privacy>Політиці конфіденційності</privacy>."
   },
   "catalog": {
     "title": "Каталог",
@@ -309,8 +417,9 @@
     "summaryGoods": "Товари ({lines}) - {pieces}шт",
     "unavailableNote": "Недоступні товари не враховані. Точна сума доставки залежить від способу отримання.",
     "checkout": "Оформити замовлення",
-    "checkoutGdpr": "Підтвердити замовлення",
-    "privacyConsent": "Я погоджуюся з обробкою персональних даних та <terms>умовами використання</terms>.",
+    "checkoutGdpr": "Оформити замовлення",
+    "createAccount": "Створити акаунт для швидших замовлень у майбутньому",
+    "privacyConsent": "Я погоджуюся з <privacy>політикою конфіденційності</privacy> та <terms>умовами використання</terms>.",
     "privacyConsentRequired": "Потрібно погодитися з умовами та обробкою даних, щоб оформити замовлення.",
     "inStock": "В наявності {count} шт.",
     "maxQty": "Макс. {count} шт.",
@@ -346,10 +455,15 @@
     "totals": {
       "products": "Товари",
       "packaging": "Пакування",
+      "shippingAndPackaging": "Доставка та пакування",
       "delivery": "Доставка",
       "deliveryCarrierRates": "За тарифами перевізника",
       "vat": "ПДВ ({included})",
       "vatIncluded": "у т.ч.",
+      "vatOfWhich": "з них ПДВ ({rate}%)",
+      "withoutVat": "Без ПДВ",
+      "paidWithoutVat": "Сума без ПДВ",
+      "codFee": "Комісія за післяплату",
       "withoutDelivery": "Разом без вартості доставки"
     },
     "unavailableOne": "1 товар закінчився і не врахований у сумі.",
@@ -362,7 +476,9 @@
     "placingOrder": "Оформлення...",
     "inYourOrder": " у вашому замовленні",
     "grandTotal": "Загальна сума",
-    "inCart": "У кошику"
+    "inCart": "У кошику",
+    "placeOrder": "Оформити замовлення",
+    "placeOrderWithObligation": "Замовляю з обовʼязком оплати"
   },
   "recentlyViewed": {
     "eyebrow": "Ваша історія",
@@ -432,6 +548,11 @@
     "clearSearch": "Очистити пошук",
     "voiceSearch": "Голосовий пошук"
   },
+  "blog": {
+    "listingTitle": "Блог",
+    "listingDescription": "Корисні поради, новини розсадника та догляд за рослинами.",
+    "articleFallbackTitle": "Стаття"
+  },
   "favorites": {
     "pageTitle": "Обране",
     "pageDescription": "Ваш список обраних рослин у розсаднику {brand}.",
@@ -439,6 +560,7 @@
     "emptyTitle": "Список обраного порожній",
     "emptyBody": "Натисніть на сердечко біля товару, щоб зберегти його тут.",
     "loading": "Завантаження обраних товарів...",
+    "loadError": "Не вдалося завантажити обране.",
     "unavailable": "Збережені товари тимчасово недоступні або зняті з продажу.",
     "added": "Додано до обраного",
     "removed": "Прибрано з обраного",
@@ -460,6 +582,10 @@
     "pageTitle": "Оформлення замовлення",
     "orderPlaced": "Замовлення оформлено",
     "redirecting": "Переходимо до підтвердження…",
+    "successLoadingDetails": "Завантажуємо деталі замовлення…",
+    "successOrderNumberLabel": "Номер замовлення",
+    "successOrderNumbersLabel": "Номери замовлень",
+    "successLimitedHint": "Деталі замовлення доступні в листі, якщо ви вказали email під час оформлення.",
     "noStockTitle": "Немає товарів у наявності",
     "noCheckoutableItems": "У кошику немає товарів у наявності для оформлення.",
     "submitFailed": "Не вдалося оформити замовлення.",
@@ -482,31 +608,122 @@
     "guestBenefit2": "Підтвердження на email та SMS",
     "guestBenefit3": "Можливість зареєструватися пізніше",
     "continueAsGuest": "Продовжити як гість",
+    "verifyOfferTitle": "Можливо, у вас уже є обліковий запис",
+    "verifyOfferBody": "Підтвердіть доступ, щоб зберегти це замовлення в історії замовлень. Можна продовжити й без підтвердження.",
+    "verifyOfferCta": "Підтвердити обліковий запис",
+    "identityHint": {
+      "loading": "Перевіряємо контакти…",
+      "noneBody": "Акаунт за вказаними даними не знайдено. Можете продовжити як гість.",
+      "noneTitle": "Акаунт за вказаними даними не знайдено.",
+      "noneCreateSuggestion": "Створіть акаунт, щоб зберігати історію замовлень, або продовжіть як гість.",
+      "noneGuestOnly": "Акаунт за вказаними даними не знайдено. Можете продовжити як гість.",
+      "noneRegisterEmail": "Зареєструватися через email",
+      "noneRegisterPhone": "Зареєструватися за номером телефону",
+      "noneContinueGoogle": "Продовжити з Google",
+      "inlineAuthEmailRegister": "Реєстрація через email",
+      "inlineAuthPhoneRegister": "Реєстрація за телефоном",
+      "cancelRegister": "Скасувати реєстрацію",
+      "namesRequired": "Вкажіть імʼя та прізвище в формі вище, щоб завершити реєстрацію.",
+      "singleEmailTitle": "Для цього email уже є акаунт.",
+      "singlePhoneTitle": "Для цього телефону уже є акаунт.",
+      "singleEitherTitle": "Email і телефон повʼязані з одним акаунтом.",
+      "singleBody": "Увійдіть, щоб зберегти це замовлення в історії. Можна продовжити як гість.",
+      "singlePhoneUnavailable": "Увійти за цим телефоном зараз неможливо. Можете продовжити як гість.",
+      "singleSignInEmail": "Увійти через email",
+      "singleSignInPhone": "Увійти за телефоном",
+      "conflictTitle": "Email і телефон повʼязані з різними акаунтами.",
+      "conflictBody": "Оберіть акаунт, до якого хочете привʼязати замовлення, або продовжуйте як гість.",
+      "conflictContinueEmail": "Увійти через email",
+      "conflictContinuePhone": "Увійти за телефоном",
+      "continueAsGuest": "Продовжити як гість",
+      "sendCode": "Надіслати код",
+      "cancelAuth": "Скасувати вхід",
+      "inlineAuthEmail": "Вхід через email",
+      "inlineAuthPhone": "Вхід через телефон",
+      "accountSelected": "Обрано акаунт для цього замовлення",
+      "switchAccount": "Змінити акаунт",
+      "switchedAccount": "Акаунт скинуто. Оберіть email, телефон або продовжіть як гість.",
+      "accountLocked": "Це оформлення вже використовує інший акаунт. Натисніть «Змінити акаунт», щоб продовжити з іншим.",
+      "switchAccountRequired": "Спочатку вийдіть із поточного акаунта, щоб увійти в інший.",
+      "chooseEmailAccountFirst": "Спочатку оберіть вхід через email-акаунт.",
+      "useSelectedAccount": "Використовуйте обраний спосіб входу або вийдіть із акаунта."
+    },
     "contactTitle": "Хто замовляє?",
     "contactConfirmed": "Дані замовника підтверджено. Можете перейти до доставки.",
     "loadingProfile": "Завантажуємо ваш профіль…",
     "contactHint": "Підтвердіть телефон або email, або увійдіть через Google.",
+    "contactHintBoth": "Підтвердіть телефон або email, або увійдіть через Google.",
+    "contactHintEmail": "Підтвердіть email, або увійдіть через Google.",
+    "contactHintPhone": "Підтвердіть телефон, або увійдіть через Google.",
+    "contactHintGoogle": "Увійдіть через Google.",
+    "skGuestContactHint": "Вкажіть email, телефон та імʼя, щоб продовжити як гість.",
+    "skGuestContactHintBoth": "Вкажіть email, телефон та імʼя, щоб продовжити як гість.",
+    "skGuestContactHintEmail": "Вкажіть email та імʼя, щоб продовжити як гість.",
+    "skGuestContactHintPhone": "Вкажіть телефон та імʼя, щоб продовжити як гість.",
+    "skGuestContactHintName": "Вкажіть імʼя, щоб продовжити як гість.",
+    "softContactHint": "Вкажіть email, телефон та імʼя.",
+    "softContactHintEmailOptional": "Вкажіть телефон та імʼя. Email — за бажанням.",
+    "skAuthModeLabel": "Оформлення як",
+    "skAuthModeGuest": "Без реєстрації",
+    "skAuthModeLogin": "Увійти",
     "signedInVia": "Увійшли через {method}",
     "authMethodAccount": "обліковий запис",
     "authMethodPhone": "телефон",
     "checkingSession": "Перевіряємо сесію…",
     "newCustomerHint": "Новий замовник — вкажіть ПІБ для оформлення замовлення.",
-    "phoneVerifiedProfileHint": "Телефон підтверджено. Вкажіть ваше ім'я та прізвище українською мовою.",
-    "emailVerifiedProfileHint": "Email підтверджено. Вкажіть ваше ім'я та прізвище українською мовою.",
+    "phoneVerifiedProfileHint": "Телефон підтверджено. Вкажіть імʼя та прізвище.",
+    "emailVerifiedProfileHint": "Email підтверджено. Вкажіть імʼя та прізвище.",
     "backToAuthMethod": "Назад до вибору способу",
     "saveAndContinue": "Зберегти і продовжити",
     "nextShipping": "Далі: Доставка",
     "nextPayment": "Далі: Оплата",
     "shippingTitle": "Доставка",
     "completeNameTitle": "Доповніть ПІБ замовника",
-    "completeNameHint": "Вкажіть імʼя та прізвище українською мовою (кирилицею).",
+    "completeNameHint": "Вкажіть імʼя та прізвище.",
+    "completeNameHintLatin": "Вкажіть імʼя та прізвище латиницею.",
     "firstNameUaPlaceholder": "Ім'я українською",
     "lastNameUaPlaceholder": "Прізвище українською",
     "deliveryMethod": "Спосіб доставки",
     "deliveryMethods": {
       "nova-poshta-branch": "На відділення НП",
       "nova-poshta-address": "Адресна доставка НП",
-      "pickup": "Самовивіз"
+      "pickup": "Самовивіз",
+      "packeta-box": "Packeta — видачне місце",
+      "packeta-courier": "Packeta — курʼєр",
+      "gls-courier": "GLS — курʼєр"
+    },
+    "packetaPickupPointLabel": "Видачне місце Packeta",
+    "packetaPickupPointUnavailable": "Вибір видачного місця тимчасово недоступний",
+    "packetaPickupPointHint": "Функція вибору видачного місця Packeta ще налаштовується. Зверніться до підтримки для оформлення цим способом.",
+    "changePickupPoint": "Змінити видачне місце",
+    "deliveryCountry": "Країна доставки",
+    "deliveryCountryPlaceholder": "Оберіть країну",
+    "deliveryCountries": {
+      "sk": "Словаччина",
+      "hu": "Угорщина",
+      "at": "Австрія",
+      "cz": "Чехія",
+      "de": "Німеччина"
+    },
+    "postalCode": "Поштовий індекс (PSČ)",
+    "recipientCompanyName": "Назва компанії (необовʼязково)",
+    "vatIdLabel": "IČ DPH (EU VAT)",
+    "vatIdPlaceholder": "Напр. SK2120123456",
+    "vatIdValidate": "Перевірити VIES",
+    "vatIdHint": "Для B2B покупців з ЄС — автоматична перевірка через VIES.",
+    "vatIdValid": "VIES: підтверджено ({name})",
+    "vatIdInvalid": "VIES: номер недійсний",
+    "vatIdUnavailable": "VIES тимчасово недоступний",
+    "buyerTypeLabel": "Тип покупця",
+    "buyerType": {
+      "individual": {
+        "title": "Фізична особа",
+        "description": "Особисте замовлення"
+      },
+      "company": {
+        "title": "Юридична особа",
+        "description": "Рахунок на компанію, IČ DPH / VIES"
+      }
     },
     "cityPlaceholder": "Введіть назву міста…",
     "npBranchLabel": "Відділення Нової Пошти",
@@ -519,6 +736,8 @@
     "recipient": "Отримувач",
     "fillBelow": "Заповніть дані нижче",
     "otherRecipient": "Інший отримувач?",
+    "otherRecipientPickup": "Забере інша особа?",
+    "selectCountryBeforePacketa": "Спочатку оберіть країну доставки — тоді з’явиться пошук пунктів Packeta.",
     "recipientDetails": "Дані отримувача",
     "paymentTitle": "Оплата",
     "paymentMethod": "Спосіб оплати",
@@ -528,15 +747,34 @@
         "description": "Visa, Mastercard, Apple Pay, Google Pay — повна предоплата"
       },
       "bank-transfer": {
-        "title": "Банківський переказ для фіз. осіб",
-        "description": "Повна або часткова предоплата"
+        "title": "Банківський переказ",
+        "description": "Повна або часткова предоплата за реквізитами"
       },
       "bank-transfer-legal": {
         "title": "Банківський переказ для юр. осіб",
         "description": "Оплата за рахунок компанії з реквізитами ЄДРПОУ"
+      },
+      "dobierka": {
+        "title": "Оплата при отриманні",
+        "description": "Оплата курʼєру або на видачному місці при отриманні замовлення"
       }
     },
     "edrpou": "ЄДРПОУ",
+    "ico": "IČO",
+    "companyDic": "DIČ",
+    "companyStreet": "Вулиця (юридична адреса)",
+    "companyCity": "Місто",
+    "companyPostalCode": "Поштовий індекс",
+    "preferredShipDate": "Дата відправки",
+    "preferredShipDateHint": "Оберіть доступну дату відправки зі складу",
+    "preferredShipDateCarrierHint": "Рослини передаються перевізнику в обрану дату.",
+    "preferredShipDateSelect": "Оберіть дату",
+    "preferredShipDateEmpty": "Немає доступних дат відправки",
+    "preferredShipDatePickup": "Дата готовності до самовивозу",
+    "preferredShipDatePickupHint": "Оберіть день, коли заберете замовлення зі складу.",
+    "preferredShipDatePickupSelect": "Оберіть дату",
+    "preferredShipDatePickupEmpty": "Немає доступних дат для самовивозу",
+    "street": "Вулиця",
     "companyLegalName": "Повна назва юридичної особи",
     "companyPlaceholder": "ТОВ \"Назва компанії\"",
     "npEmpty": "Нічого не знайдено",
@@ -558,6 +796,7 @@
       "splitTotalsDetail": "Детальний розбій — у блоках вище.",
       "splitCombinedProducts": "Загальна сума товарів у двох замовленнях",
       "splitCombinedPackaging": "Пакування (обидва замовлення)",
+      "splitCombinedShipping": "Доставка та пакування (обидва замовлення)",
       "splitCombinedPayable": "Разом до сплати",
       "datedPrefilledHint": "Дані доставки заповнено з першого замовлення. Ви можете змінити їх окремо.",
       "splitPreview": {
@@ -567,7 +806,14 @@
         "itemsCount": "{lines} поз. · {pieces} шт.",
         "cannotPlace": "{message}"
       }
-    }
+    },
+    "billingTitle": "Платник",
+    "billingHint": "Дані для рахунку. Отримувач доставки може бути іншою особою.",
+    "vatReverseChargeApplied": "✓ VAT number verified. Reverse charge will be applied.",
+    "deliveryEstimateAfterDispatch": "Орієнтовна доставка: 2–3 робочі дні після відправлення",
+    "vatIdConfirmed": "IČ DPH підтверджено",
+    "vatIdConfirmedWithZeroDph": "IČ DPH підтверджено. Застосовано 0% DPH (reverse charge).",
+    "vatZeroDphApplied": "Застосовано 0% ПДВ (reverse charge / перенесення податкового обовʼязку)."
   },
   "product": {
     "newBadge": "Новинка",
@@ -630,7 +876,8 @@
     "scrollThumbsBack": "Прокрутити мініатюри назад",
     "scrollThumbsForward": "Прокрутити мініатюри вперед",
     "photoN": "Фото {n}",
-    "viewPhoto": "Переглянути фото: {alt}"
+    "viewPhoto": "Переглянути фото: {alt}",
+    "similarPlantsCount": "{count, plural, one {# товар} few {# товари} other {# товарів}}"
   },
   "reviews": {
     "pageTitle": "Відгуки",
@@ -660,17 +907,19 @@
       "product": "Про товари"
     },
     "ratings": {
-      "all": "Будь-який рейтинг",
-      "5": "5 зірок",
-      "4": "4 зірки",
-      "3": "3 зірки",
+      "1": "1 зірка",
       "2": "2 зірки",
-      "1": "1 зірка"
+      "3": "3 зірки",
+      "4": "4 зірки",
+      "5": "5 зірок",
+      "all": "Усі",
+      "nStars": "{count} зірок"
     },
     "sort": {
-      "newest": "Спочатку новіші",
-      "oldest": "Спочатку старіші",
-      "rating_desc": "Спочатку з найвищою оцінкою"
+      "newest": "За датою: спочатку новіші",
+      "oldest": "За датою: спочатку старіші",
+      "rating_desc": "За оцінкою: від вищої",
+      "rating_asc": "За оцінкою: від нижчої"
     },
     "paginationLabel": "Сторінки відгуків",
     "prevPage": "Попередня сторінка",
@@ -687,6 +936,10 @@
     "ratingRequired": "Оцінка",
     "authorName": "ПІБ",
     "authorPlaceholder": "Прізвище Імʼя По батькові",
+    "guestContact": "Email або телефон",
+    "guestEmailPlaceholder": "Email",
+    "guestPhonePlaceholder": "Телефон",
+    "guestContactHint": "Потрібно вказати хоча б одне — email або телефон.",
     "yourReview": "Ваш відгук",
     "textPlaceholderProduct": "Розкажіть про якість рослини, відповідність опису, упаковку...",
     "textPlaceholderGeneral": "Розкажіть про якість рослин, доставку чи сервіс...",
@@ -695,5 +948,130 @@
     "submitSuccess": "Дякуємо! Відгук надіслано на модерацію.",
     "submitFailed": "Не вдалося надіслати відгук.",
     "imageUploadFailed": "Не вдалося завантажити зображення."
+  },
+  "legalPages": {
+    "crossLinksLabel": "Інші правові документи:",
+    "termsLink": "Умови використання",
+    "privacyLink": "Політика конфіденційності",
+    "cookiesLink": "Політика Cookie",
+    "templateNotice": "Цей текст є шаблоном-заготовкою і потребує перевірки юристом перед публікацією на реальному сайті."
+  },
+  "cookieConsent": {
+    "title": "Ми використовуємо cookie",
+    "description": "Необхідні cookie потрібні для роботи сайту. За вашою згодою ми також використовуємо аналітичні cookie. Детальніше — у <cookies>Політиці Cookie</cookies> та <privacy>Політиці конфіденційності</privacy>.",
+    "customize": "Налаштування",
+    "rejectAll": "Лише необхідні",
+    "acceptAll": "Прийняти всі",
+    "savePreferences": "Зберегти вибір",
+    "necessaryTitle": "Необхідні",
+    "necessaryDescription": "Забезпечують роботу сайту: кошик, вхід в акаунт, збереження налаштувань. Завжди активні.",
+    "alwaysOn": "Завжди активні",
+    "analyticsTitle": "Аналітичні",
+    "analyticsDescription": "Допомагають розуміти, як відвідувачі використовують сайт (Vercel Analytics). Вимкнено за замовчуванням."
+  },
+  "privacyPage": {
+    "title": "Політика конфіденційності",
+    "consentVersion": "Версія згоди на обробку даних: {version}",
+    "intro": "Ця Політика конфіденційності пояснює, які персональні дані ми обробляємо, з якою метою та які права ви маєте. Текст є базовим шаблоном і підлягає уточненню юристом відповідно до законодавства вашої країни.",
+    "sections": [
+      {
+        "heading": "1. Контролер персональних даних",
+        "body": [
+          "Контролером персональних даних є продавець магазину рослин (ФОП/юридична особа, зазначена в розділі «Контакти» та Умовах використання).",
+          "З питань обробки персональних даних можна звертатися контактами, вказаними на сторінці «Контакти»."
+        ]
+      },
+      {
+        "heading": "2. Які дані ми обробляємо",
+        "body": [
+          "Дані профілю: ім'я, прізвище, по батькові, телефон, email, адреса доставки.",
+          "Дані замовлень: склад замовлення, спосіб та адреса доставки, спосіб оплати, історія статусів.",
+          "Технічні дані: cookie, дані про використання сайту (за наявності згоди на аналітичні cookie)."
+        ]
+      },
+      {
+        "heading": "3. Мета та правові підстави обробки",
+        "body": [
+          "Обробка даних клієнтів здійснюється для оформлення та виконання замовлень, зв'язку щодо доставки та підтримки — на підставі виконання договору та згоди користувача.",
+          "Аналітичні cookie використовуються лише за окремою згодою, яку можна відкликати в будь-який час у Політиці Cookie."
+        ]
+      },
+      {
+        "heading": "4. Кому передаються дані",
+        "body": [
+          "Дані можуть передаватися службам доставки, платіжним провайдерам та постачальникам email/SMS-сповіщень — виключно в обсязі, необхідному для виконання замовлення.",
+          "Ми не продаємо персональні дані третім особам."
+        ]
+      },
+      {
+        "heading": "5. Строк зберігання",
+        "body": [
+          "Дані профілю зберігаються, поки діє акаунт. Дані замовлень зберігаються протягом строку, необхідного для бухгалтерського та податкового обліку.",
+          "Ви можете видалити акаунт у будь-який час у налаштуваннях кабінету — див. розділ нижче."
+        ]
+      },
+      {
+        "heading": "6. Ваші права",
+        "body": [
+          "Ви маєте право на доступ до своїх даних, їх виправлення, видалення (анонімізацію), обмеження обробки та заперечення проти обробки.",
+          "Завантажити копію своїх даних або видалити акаунт можна в особистому кабінеті, у розділі «Налаштування» → «Дані та конфіденційність»."
+        ]
+      }
+    ]
+  },
+  "cookiesPage": {
+    "title": "Політика Cookie",
+    "intro": "Ця сторінка пояснює, які cookie використовує сайт, з якою метою та як керувати своєю згодою. Текст є базовим шаблоном для подальшого юридичного опрацювання.",
+    "sections": [
+      {
+        "heading": "Що таке cookie",
+        "body": [
+          "Cookie — це невеликі текстові файли, які зберігаються у вашому браузері під час відвідування сайту та допомагають йому працювати коректно й запам'ятовувати ваші налаштування."
+        ]
+      },
+      {
+        "heading": "Як ми використовуємо cookie",
+        "body": [
+          "Необхідні cookie використовуються для роботи кошика, входу в акаунт та збереження мовних і регіональних налаштувань — без них сайт не працюватиме коректно.",
+          "Аналітичні cookie (Vercel Analytics) допомагають розуміти, які сторінки популярні та як покращити сайт. Вони активуються лише після вашої згоди."
+        ]
+      },
+      {
+        "heading": "Ваш вибір",
+        "body": [
+          "Під час першого відвідування сайту ви бачите банер з вибором: прийняти всі cookie, залишити лише необхідні або налаштувати категорії окремо.",
+          "Свій вибір можна змінити в будь-який момент нижче на цій сторінці."
+        ]
+      }
+    ],
+    "manageTitle": "Керуйте своїми налаштуваннями",
+    "manageHint": "Зміни зберігаються одразу та застосовуються під час наступного завантаження сторінки.",
+    "currentStatusLabel": "Поточний статус:",
+    "analyticsEnabled": "аналітику увімкнено",
+    "analyticsDisabled": "аналітику вимкнено",
+    "updatedAtLabel": "оновлено {date}",
+    "saved": "Налаштування cookie збережено",
+    "necessaryTitle": "Необхідні",
+    "necessaryDescription": "Забезпечують роботу сайту: кошик, вхід в акаунт, збереження налаштувань. Завжди активні.",
+    "alwaysOn": "Завжди активні",
+    "analyticsTitle": "Аналітичні",
+    "analyticsDescription": "Vercel Analytics — статистика відвідувань сайту. Вимкнено за замовчуванням."
+  },
+  "returnsPage": {
+    "title": "Повернення та рекламації",
+    "intro": "Інформація про повернення протягом 14 днів та рекламаційний порядок (для ринку SK/EU).",
+    "policyTitle": "Правила повернення",
+    "policyBody": "Споживач має право відмовитися від договору протягом 14 днів без пояснення причин згідно із законодавством SK/EU.\n\nЖиві рослини можуть мати специфічні винятки — фінальний текст надасть юрист.\n\nЦя сторінка — тимчасовий placeholder для відповідності вимогам SOI.",
+    "formTitle": "Форма відмови",
+    "formHint": "Заповніть дані та надішліть нам email.",
+    "formFields": "ПІБ, адреса, номер замовлення, дата отримання, підпис / дата.",
+    "formSendTo": "Надіслати на {email}",
+    "shippingLink": "Доставка та оплата"
+  },
+  "price": {
+    "label": "Ціна",
+    "exclVat": "{amount} без ПДВ",
+    "exclVatColon": "без ПДВ: {amount}",
+    "inclVat": "з ПДВ"
   }
 }

@@ -1,7 +1,7 @@
-import Image from 'next/image'
 import { ArrowRight } from 'lucide-react'
 import { getLocale, getTranslations } from 'next-intl/server'
 
+import { FreshPhotoCard } from '@/components/catalog/fresh-photo-card'
 import { HomeSectionHeader } from '@/components/home/home-section-header'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
@@ -16,74 +16,6 @@ type FreshPlantPhotosSectionProps = {
   photos: CatalogPhotoItem[]
 }
 
-function formatPhotoDate(value: string | null | undefined, locale: string) {
-  if (!value?.trim()) return null
-  try {
-    return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(value))
-  } catch {
-    return value
-  }
-}
-
-function photoProductHref(photo: CatalogPhotoItem): string | null {
-  if (photo.productSlug) return `/product/${photo.productSlug}`
-  if (photo.categorySlug && photo.productSlug) return `/catalog/${photo.categorySlug}/${photo.productSlug}`
-  return null
-}
-
-function FreshPhotoCard({ photo, locale }: { photo: CatalogPhotoItem; locale: string }) {
-  const productName = photo.productName || photo.appProperties.plantName || photo.ean
-  const variantLabel = photo.variantLabel || photo.appProperties.plantSize || null
-  const photoDate = formatPhotoDate(photo.appProperties.date?.trim() || photo.createdAt, locale)
-  const href = photoProductHref(photo)
-
-  const image = (
-    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-t-xl bg-muted">
-      <Image
-        src={photo.url}
-        alt={productName}
-        fill
-        unoptimized
-        className="object-cover transition-transform duration-500 group-hover:scale-105"
-        sizes="(max-width: 768px) 58vw, 11rem"
-      />
-    </div>
-  )
-
-  return (
-    <article
-      className={cn(
-        PRODUCT_CARD_CAROUSEL_SLOT_CLASS,
-        'group w-[58vw] max-w-[13.5rem] overflow-hidden rounded-xl border border-border/50 bg-card/80 shadow-sm sm:w-[9.25rem] md:w-[10.75rem] lg:w-[11.25rem]',
-      )}
-    >
-      {href ? (
-        <Link href={href} className="block">
-          {image}
-        </Link>
-      ) : (
-        image
-      )}
-      <div className="space-y-1 p-3">
-        {href ? (
-          <Link
-            href={href}
-            className="line-clamp-2 text-sm font-medium leading-snug text-foreground transition-colors hover:text-primary"
-          >
-            {productName}
-          </Link>
-        ) : (
-          <p className="line-clamp-2 text-sm font-medium leading-snug">{productName}</p>
-        )}
-        {variantLabel ? (
-          <p className="truncate text-xs text-muted-foreground">{variantLabel}</p>
-        ) : null}
-        {photoDate ? <p className="text-xs text-muted-foreground">{photoDate}</p> : null}
-      </div>
-    </article>
-  )
-}
-
 export async function FreshPlantPhotosSection({ settings, photos }: FreshPlantPhotosSectionProps) {
   if (!settings.enabled || photos.length === 0) return null
 
@@ -91,7 +23,7 @@ export async function FreshPlantPhotosSection({ settings, photos }: FreshPlantPh
   const locale = await getLocale()
 
   return (
-    <section className="bg-background py-10 md:py-14">
+    <section className="border-y border-border/30 py-9 md:py-12">
       <div className={siteContentShellClassName}>
         <HomeSectionHeader
           eyebrow={t('freshPhotosEyebrow')}
@@ -100,11 +32,7 @@ export async function FreshPlantPhotosSection({ settings, photos }: FreshPlantPh
           align="left"
           className="mb-6 md:mb-8"
         >
-          <Button
-            variant="outline"
-            asChild
-            className="self-start rounded-full border-primary/20 shadow-sm hover:border-primary/40 hover:bg-primary/5 md:self-auto"
-          >
+          <Button variant="secondary" asChild className="self-start rounded-full md:self-auto">
             <Link href="/fresh-photos">
               {t('viewAllFreshPhotos')}
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -113,9 +41,17 @@ export async function FreshPlantPhotosSection({ settings, photos }: FreshPlantPh
         </HomeSectionHeader>
 
         <div className="-mx-[var(--site-shell-padding-x)] overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex w-max gap-2.5 px-[var(--site-shell-padding-x)] sm:gap-3 md:gap-4">
+          <div className="flex w-max gap-3 px-[var(--site-shell-padding-x)] sm:gap-3.5 md:gap-4">
             {photos.map((photo) => (
-              <FreshPhotoCard key={photo.id} photo={photo} locale={locale} />
+              <FreshPhotoCard
+                key={photo.id}
+                photo={photo}
+                locale={locale}
+                className={cn(
+                  PRODUCT_CARD_CAROUSEL_SLOT_CLASS,
+                  'group h-full w-[78vw] max-w-[22rem] sm:w-[18.5rem] md:w-[19.5rem] lg:w-[20.5rem]',
+                )}
+              />
             ))}
           </div>
         </div>

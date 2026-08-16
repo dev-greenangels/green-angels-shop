@@ -68,8 +68,9 @@ export function ReviewsPageContent({ initialPage }: ReviewsPageContentProps) {
         onTypeChange={handleTypeChange}
         onRatingChange={handleRatingChange}
         onSortChange={handleSortChange}
-        hintText={t('moderationHint')}
-        leaveReviewAction={<ReviewLeaveFlow onSubmitted={() => void reload()} />}
+        leaveReviewAction={
+          <ReviewLeaveFlow variant="premium" onSubmitted={() => void reload()} />
+        }
       />
 
       {loading ? (

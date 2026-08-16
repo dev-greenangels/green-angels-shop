@@ -13,8 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Link } from '@/i18n/navigation'
-import { FormattedPrice } from '@/components/commerce/formatted-price'
-import { DiscountedUnitPrice } from '@/components/pricing/discounted-price'
+import { ShelfPriceBlock } from '@/components/commerce/shelf-price-block'
 import { productHrefFromPlant } from '@/lib/catalog/paths'
 import { PRODUCT_CARD_CAROUSEL_WIDTH_CLASS } from '@/lib/catalog/product-card-layout'
 import { triggerSelectionHaptic } from '@/lib/haptic'
@@ -68,7 +67,7 @@ export function ProductCard({ plant, layout = 'carousel' }: ProductCardProps) {
     >
       <Card
         className={cn(
-          'group/card relative flex h-full flex-col gap-0 overflow-hidden rounded-lg border-border/40 py-0',
+          'group/card relative flex h-full flex-col gap-0 overflow-hidden rounded-[0.5rem] border-border/40 py-0',
           productCardSurfaceShadow,
           'select-none transition-[box-shadow,transform] duration-150 ease-out',
           '[-webkit-tap-highlight-color:transparent]',
@@ -77,7 +76,7 @@ export function ProductCard({ plant, layout = 'carousel' }: ProductCardProps) {
       >
         <Link
           href={href}
-          className="absolute inset-0 z-[1] rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="absolute inset-0 z-[1] rounded-[0.5rem] outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           aria-label={tc('goToProduct', { name: plant.name })}
           onPointerDown={() => {
             triggerSelectionHaptic()
@@ -105,12 +104,15 @@ export function ProductCard({ plant, layout = 'carousel' }: ProductCardProps) {
 
           <div className="absolute left-0 top-1 z-[2] flex flex-col items-start gap-0.5">
             {discountPercent ? (
-              <Badge variant="destructive" className="px-1 py-0 text-[10px] shadow-sm">
+              <Badge
+                variant="destructive"
+                className="rounded-[2px] px-1 py-0 text-[10px] shadow-sm"
+              >
                 −{discountPercent}%
               </Badge>
             ) : null}
             {plant.isNew ? (
-              <Badge className="bg-primary/95 px-1 py-0 text-[10px] text-primary-foreground shadow-sm">
+              <Badge className="rounded-[2px] bg-primary/95 px-1 py-0 text-[10px] text-primary-foreground shadow-sm">
                 {t('newBadge')}
               </Badge>
             ) : null}
@@ -125,44 +127,38 @@ export function ProductCard({ plant, layout = 'carousel' }: ProductCardProps) {
           </div>
         </div>
 
-        <CardContent className="pointer-events-none relative z-[2] flex flex-1 flex-col gap-1 px-2.5 pb-2.5 pt-1.5">
-          <div className="space-y-0">
+        <CardContent className="pointer-events-none relative z-[2] flex flex-1 flex-col gap-1.5 px-3 pb-3 pt-2">
+          <div className="space-y-0.5">
             {plant.latinName ? (
               <p className="line-clamp-1 text-[10px] leading-tight italic text-muted-foreground">
                 {plant.latinName}
               </p>
             ) : null}
-            <h3 className="line-clamp-2 font-sans text-[15px] font-medium leading-[1.32] text-foreground transition-colors duration-150 group-hover/card:text-primary/90">
+            <h3 className="line-clamp-2 font-sans text-[15px] font-medium leading-[1.32] text-foreground transition-colors duration-150 group-hover/card:text-primary">
               {plant.name}
             </h3>
           </div>
-          <div className="mt-auto space-y-1.5 border-t border-border/50 pt-1.5">
+          <div className="mt-auto space-y-2 border-t border-border/50 pt-2">
             {isOutOfStock ? (
               <p className="text-xs font-medium text-muted-foreground">{tc('outOfStock')}</p>
-            ) : singleUnitSale && singleVariant ? (
-              <DiscountedUnitPrice
-                originalPrice={singleVariant.basePrice}
-                salePrice={singleUnitSale.pricePerUnit}
-                originalClassName="text-[10px]"
-                saleClassName="text-xs tabular-nums"
+            ) : singleVariant ? (
+              <ShelfPriceBlock
+                label="price"
+                amount={singleUnitSale?.pricePerUnit ?? singleVariant.basePrice}
+                originalAmount={
+                  singleUnitSale ? singleVariant.basePrice : undefined
+                }
+                className="text-xs"
+                primaryClassName="text-xs"
               />
             ) : (
-              <p className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5 text-muted-foreground">
-                <span className="text-[10px]">{t('from')}</span>
-                <FormattedPrice
-                  amount={priceMin}
-                  className="text-xs font-medium tabular-nums text-primary"
-                />
-                {hasPriceRange ? (
-                  <>
-                    <span className="text-[10px]">{t('to')}</span>
-                    <FormattedPrice
-                      amount={priceMax}
-                      className="text-xs font-medium tabular-nums text-primary"
-                    />
-                  </>
-                ) : null}
-              </p>
+              <ShelfPriceBlock
+                label="from"
+                amount={priceMin}
+                amountMax={hasPriceRange ? priceMax : undefined}
+                className="text-xs"
+                primaryClassName="text-xs"
+              />
             )}
 
             {isOutOfStock ? (
@@ -184,13 +180,8 @@ export function ProductCard({ plant, layout = 'carousel' }: ProductCardProps) {
                 variant="default"
                 data-card-action
                 className={cn(
-                  'pointer-events-auto relative z-[3] h-8 w-full gap-1.5 text-xs font-semibold',
-                  'border border-primary/70 bg-primary text-primary-foreground',
-                  'shadow-[0_4px_16px_rgba(91,148,56,0.35)] backdrop-blur-sm',
-                  'supports-[backdrop-filter]:bg-primary/95',
-                  'transition-[background-color,box-shadow,transform] duration-150',
-                  'hover:bg-primary/92 hover:shadow-[0_6px_20px_rgba(91,148,56,0.42)]',
-                  'active:scale-[0.98] active:bg-primary',
+                  'pointer-events-auto relative z-[3] h-9 w-full gap-1.5 text-xs font-semibold',
+                  'transition-[box-shadow,transform,filter] duration-150',
                 )}
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={(event) => {

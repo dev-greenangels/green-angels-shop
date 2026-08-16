@@ -21,14 +21,17 @@ import {
   getCheckoutContactFieldError,
   customerNeedsCheckoutNameEntry,
   sanitizeCyrillicName,
+  sanitizeLatinName,
   type CheckoutContactFieldKey,
   type CheckoutFormValues,
   type CheckoutIdentificationState,
+  type CheckoutMarketRegion,
   type CheckoutRecipientFieldKey,
   type CheckoutShippingFieldKey,
 } from '@/lib/validation/checkout-form'
 import { extractShipmentSlice } from '@/lib/checkout/shipment-slice'
 import type { CheckoutDeliveryMethodSlug } from '@/lib/checkout/methods'
+import type { CountrySiteProfile } from '@/lib/settings/market'
 
 export const CheckoutShippingStep = memo(function CheckoutShippingStep({
   formData,
@@ -49,6 +52,11 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
   showStepNav = true,
   shipmentSplitSection,
   shipmentSplitActive = false,
+  marketRegion = 'ua',
+  deliveryPhonePolicy,
+  enabledCountrySites,
+  enabledDeliveryCountries,
+  beforeRecipientSlot,
 }: {
   formData: CheckoutFormValues
   enabledDeliveryMethods?: CheckoutDeliveryMethodSlug[]
@@ -68,14 +76,26 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
   showStepNav?: boolean
   shipmentSplitSection?: ReactNode
   shipmentSplitActive?: boolean
+  marketRegion?: CheckoutMarketRegion
+  deliveryPhonePolicy?: import('@/lib/settings/market').PhonePolicy
+  enabledCountrySites?: CountrySiteProfile[]
+  enabledDeliveryCountries?: string[]
+  beforeRecipientSlot?: ReactNode
 }) {
   const t = useTranslations('checkout')
   const tc = useTranslations('common')
+  const contactErrorOptions = { marketRegion, deliveryPhonePolicy, authPhonePolicy: undefined }
+  const sanitizeName = marketRegion === 'sk' ? sanitizeLatinName : sanitizeCyrillicName
 
   const showContactError = (field: CheckoutContactFieldKey) =>
-    Boolean(contactTouched[field] && getCheckoutContactFieldError(field, formData))
+    Boolean(
+      contactTouched[field] &&
+        getCheckoutContactFieldError(field, formData, contactErrorOptions),
+    )
 
-  const needsNameEntry = customerNeedsCheckoutNameEntry(formData, identification)
+  const needsNameEntry = customerNeedsCheckoutNameEntry(formData, identification, {
+    marketRegion,
+  })
   const [showNameEntryPanel, setShowNameEntryPanel] = useState(needsNameEntry)
 
   useEffect(() => {
@@ -102,7 +122,9 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
         <div className={cn(checkoutInsetPanelClassName, 'mb-6 space-y-4 border-primary/25 bg-primary/5 p-4')}>
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">{t('completeNameTitle')}</p>
-            <p className="text-sm text-muted-foreground">{t('completeNameHint')}</p>
+            <p className="text-sm text-muted-foreground">
+              {t(marketRegion === 'sk' ? 'completeNameHintLatin' : 'completeNameHint')}
+            </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -111,7 +133,9 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
                 <InputWithClear
                   id="google-checkout-firstName"
                   autoComplete="given-name"
-                  placeholder={t('firstNameUaPlaceholder')}
+                  placeholder={
+                    marketRegion === 'sk' ? tc('firstName') : t('firstNameUaPlaceholder')
+                  }
                   className={cn(
                     checkoutInputClassName,
                     showContactError('firstName') && 'border-destructive/80 ring-destructive/30',
@@ -120,14 +144,18 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
                   value={formData.firstName}
                   onBlur={() => onBlurContactField('firstName')}
                   onChange={(e) =>
-                    onPatchForm({ firstName: sanitizeCyrillicName(e.target.value) })
+                    onPatchForm({ firstName: sanitizeName(e.target.value) })
                   }
                   onClear={() => onPatchForm({ firstName: '' })}
                 />
                 <FieldHint
                   id="google-checkout-firstName-error"
                   show={Boolean(contactTouched.firstName)}
-                  message={getCheckoutContactFieldError('firstName', formData)}
+                  message={getCheckoutContactFieldError(
+                    'firstName',
+                    formData,
+                    contactErrorOptions,
+                  )}
                 />
               </div>
               <div className="space-y-2">
@@ -135,7 +163,9 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
                 <InputWithClear
                   id="google-checkout-lastName"
                   autoComplete="family-name"
-                  placeholder={t('lastNameUaPlaceholder')}
+                  placeholder={
+                    marketRegion === 'sk' ? tc('lastName') : t('lastNameUaPlaceholder')
+                  }
                   className={cn(
                     checkoutInputClassName,
                     showContactError('lastName') && 'border-destructive/80 ring-destructive/30',
@@ -144,14 +174,18 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
                   value={formData.lastName}
                   onBlur={() => onBlurContactField('lastName')}
                   onChange={(e) =>
-                    onPatchForm({ lastName: sanitizeCyrillicName(e.target.value) })
+                    onPatchForm({ lastName: sanitizeName(e.target.value) })
                   }
                   onClear={() => onPatchForm({ lastName: '' })}
                 />
                 <FieldHint
                   id="google-checkout-lastName-error"
                   show={Boolean(contactTouched.lastName)}
-                  message={getCheckoutContactFieldError('lastName', formData)}
+                  message={getCheckoutContactFieldError(
+                    'lastName',
+                    formData,
+                    contactErrorOptions,
+                  )}
                 />
               </div>
             </div>
@@ -168,6 +202,10 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
             shipment={extractShipmentSlice(formData)}
             identification={identification}
             enabledDeliveryMethods={enabledDeliveryMethods}
+            marketRegion={marketRegion}
+            deliveryPhonePolicy={deliveryPhonePolicy}
+            enabledCountrySites={enabledCountrySites}
+            enabledDeliveryCountries={enabledDeliveryCountries}
             shippingTouched={shippingTouched}
             recipientTouched={recipientTouched}
             onPatchShipment={onPatchForm}
@@ -175,6 +213,7 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
             onBlurRecipientField={onBlurRecipientField}
             deliveryPhoneInputRef={deliveryPhoneInputRef}
             moveDeliveryPhoneCursorToEnd={moveDeliveryPhoneCursorToEnd}
+            beforeRecipientSlot={beforeRecipientSlot}
           />
         ) : null}
       </div>

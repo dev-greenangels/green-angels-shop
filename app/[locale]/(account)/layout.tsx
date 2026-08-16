@@ -4,7 +4,8 @@ import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 
 function FooterFallback() {
-  return <footer className="bg-primary text-primary-foreground" aria-hidden />
+  // Без aria-hidden — атрибути мають збігатися з реальним <Footer>, інакше hydration mismatch.
+  return <footer className="bg-footer-gradient text-primary-foreground" />
 }
 
 export default function AccountSectionLayout({ children }: { children: React.ReactNode }) {

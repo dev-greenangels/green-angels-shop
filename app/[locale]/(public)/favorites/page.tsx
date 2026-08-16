@@ -18,7 +18,7 @@ export default async function FavoritesPage() {
   return (
     <>
       <Navigation />
-      <main className="flex-1 bg-gradient-to-br from-secondary via-background to-accent">
+      <main className="flex-1 bg-transparent">
         <div className={cn(siteContentShellClassName, 'py-10 md:py-14')}>
           <PublicPageBreadcrumbs
             className="mb-4"

@@ -17,10 +17,15 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import backstageDeMessages from '@/messages/backstage/de.json'
 import backstageEnMessages from '@/messages/backstage/en.json'
+import backstageHuMessages from '@/messages/backstage/hu.json'
 import backstageSkMessages from '@/messages/backstage/sk.json'
 import backstageUkMessages from '@/messages/backstage/uk.json'
+import csMessages from '@/messages/cs.json'
+import deMessages from '@/messages/de.json'
 import enMessages from '@/messages/en.json'
+import huMessages from '@/messages/hu.json'
 import skMessages from '@/messages/sk.json'
 import ukMessages from '@/messages/uk.json'
 import {
@@ -55,6 +60,18 @@ const BASE_MESSAGES_BY_LOCALE: Record<AppLocale, Record<string, unknown>> = {
   sk: {
     ...(skMessages as Record<string, unknown>),
     backstage: backstageSkMessages as Record<string, unknown>,
+  },
+  hu: {
+    ...(huMessages as Record<string, unknown>),
+    backstage: backstageHuMessages as Record<string, unknown>,
+  },
+  de: {
+    ...(deMessages as Record<string, unknown>),
+    backstage: backstageDeMessages as Record<string, unknown>,
+  },
+  cs: {
+    ...(csMessages as Record<string, unknown>),
+    backstage: backstageEnMessages as Record<string, unknown>,
   },
 }
 
@@ -327,11 +344,13 @@ export function LocalizationSettingsForm({
   onChange,
   onSave,
   saving,
+  isDirty = false,
 }: {
   settings: LocalizationSettings
   onChange: (next: LocalizationSettings) => void
   onSave: () => void
   saving: boolean
+  isDirty?: boolean
 }) {
   const tPages = useTranslations('pages.localization')
   const tActions = useTranslations('actions')
@@ -572,7 +591,7 @@ export function LocalizationSettingsForm({
         </CardContent>
       </Card>
 
-      <Button type="button" onClick={onSave} disabled={saving} className="border-2 border-primary/20">
+      <Button type="button" onClick={onSave} disabled={saving || !isDirty} className="border-2 border-primary/20">
         {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
         {tActions('saveLocalization')}
       </Button>

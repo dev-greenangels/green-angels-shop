@@ -18,9 +18,29 @@ export function isValidCyrillicName(value: string): boolean {
 }
 
 const LATIN_LETTER_REGEX = /[A-Za-z]/
+const CYRILLIC_LETTER_REGEX = /[А-Яа-яІіЇїЄєҐґЁё]/
+/** Latin letters + EU diacritics + apostrophe / hyphen / space; min 2 letters overall after trim */
+export const LATIN_NAME_REGEX =
+  /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žĄąĆćČčĎďĐđĘęĚěĹĺĽľŁłŃńŇňŐőŘřŚśŠšŤťŮůŰűŹźŻżŽž'ʼ\- ]{2,}$/
+const LATIN_NAME_FILTER =
+  /[^A-Za-zÀ-ÖØ-öø-ÿĀ-žĄąĆćČčĎďĐđĘęĚěĹĺĽľŁłŃńŇňŐőŘřŚśŠšŤťŮůŰűŹźŻżŽž'ʼ\- ]/g
 
 export function containsLatinLetters(value: string): boolean {
   return LATIN_LETTER_REGEX.test(value)
+}
+
+export function containsCyrillicLetters(value: string): boolean {
+  return CYRILLIC_LETTER_REGEX.test(value)
+}
+
+export function sanitizeLatinName(value: string): string {
+  return value.replace(LATIN_NAME_FILTER, '')
+}
+
+export function isValidLatinName(value: string): boolean {
+  const trimmed = value.trim()
+  if (!LATIN_NAME_REGEX.test(trimmed)) return false
+  return /[A-Za-zÀ-ÖØ-öø-ÿĀ-ž]/.test(trimmed)
 }
 
 export function sanitizeEmail(value: string): string {

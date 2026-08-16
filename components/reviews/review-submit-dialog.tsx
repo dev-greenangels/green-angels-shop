@@ -23,8 +23,11 @@ import type { PublicSession } from '@/lib/auth/types'
 import { submitReview, uploadReviewImage } from '@/lib/reviews/fetch'
 import { MAX_REVIEW_IMAGES } from '@/lib/reviews/utils'
 import {
+  sanitizeEmail,
+  sanitizeRecipientPhoneInput,
   sanitizeReviewFullName,
   sanitizeReviewText,
+  validateReviewContact,
   validateReviewFullName,
   validateReviewImages,
   validateReviewRating,
@@ -38,6 +41,8 @@ type ReviewSubmitDialogProps = {
   productId?: string
   productName?: string
   onSubmitted?: () => void
+  /** Дозволяє надсилати відгук без входу — показує поля email/телефону. */
+  allowGuestReviews?: boolean
 }
 
 function buildDefaultName(user: PublicSession | null): string {
@@ -62,6 +67,7 @@ export function ReviewSubmitDialog({
   productId,
   productName,
   onSubmitted,
+  allowGuestReviews = false,
 }: ReviewSubmitDialogProps) {
   const t = useTranslations('reviews')
   const tc = useTranslations('common')
@@ -69,9 +75,13 @@ export function ReviewSubmitDialog({
   const [rating, setRating] = useState(0)
   const [text, setText] = useState('')
   const [imageUrls, setImageUrls] = useState<string[]>([])
+  const [guestEmail, setGuestEmail] = useState('')
+  const [guestPhone, setGuestPhone] = useState('')
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [touched, setTouched] = useState<Record<string, boolean>>({})
+
+  const isGuest = !user && allowGuestReviews
 
   useEffect(() => {
     if (!open) return
@@ -79,6 +89,8 @@ export function ReviewSubmitDialog({
     setRating(0)
     setText('')
     setImageUrls([])
+    setGuestEmail('')
+    setGuestPhone('')
     setTouched({})
   }, [open, user])
 
@@ -88,8 +100,10 @@ export function ReviewSubmitDialog({
       text: touched.text ? validateReviewText(text) : null,
       rating: touched.rating ? validateReviewRating(rating) : null,
       images: touched.images ? validateReviewImages(imageUrls) : null,
+      guestContact:
+        isGuest && touched.guestContact ? validateReviewContact(guestEmail, guestPhone) : null,
     }),
-    [authorName, imageUrls, rating, text, touched],
+    [authorName, guestEmail, guestPhone, imageUrls, isGuest, rating, text, touched],
   )
 
   const handleImageChange = async (file: File | null) => {
@@ -118,21 +132,23 @@ export function ReviewSubmitDialog({
       text: true,
       rating: true,
       images: true,
+      guestContact: true,
     })
 
     const fullNameError = validateReviewFullName(authorName)
     const textError = validateReviewText(text)
     const ratingError = validateReviewRating(rating)
     const imagesError = validateReviewImages(imageUrls)
+    const guestContactError = isGuest ? validateReviewContact(guestEmail, guestPhone) : null
 
-    if (fullNameError || textError || ratingError || imagesError) return
+    if (fullNameError || textError || ratingError || imagesError || guestContactError) return
 
     setSubmitting(true)
     try {
       await submitReview({
         authorName: authorName.trim(),
-        email: buildSessionEmail(user),
-        phone: buildSessionPhone(user),
+        email: isGuest ? guestEmail.trim() || undefined : buildSessionEmail(user),
+        phone: isGuest ? guestPhone.trim() || undefined : buildSessionPhone(user),
         text: text.trim(),
         rating,
         productId,
@@ -192,6 +208,36 @@ export function ReviewSubmitDialog({
             />
             {errors.authorName ? <p className="text-sm text-destructive">{errors.authorName}</p> : null}
           </div>
+
+          {isGuest ? (
+            <div className="space-y-2">
+              <RequiredLabel htmlFor="review-guest-contact">{t('guestContact')}</RequiredLabel>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Input
+                  id="review-guest-email"
+                  type="email"
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(sanitizeEmail(e.target.value))}
+                  onBlur={() => setTouched((prev) => ({ ...prev, guestContact: true }))}
+                  placeholder={t('guestEmailPlaceholder')}
+                  autoComplete="email"
+                />
+                <Input
+                  id="review-guest-phone"
+                  type="tel"
+                  value={guestPhone}
+                  onChange={(e) => setGuestPhone(sanitizeRecipientPhoneInput(e.target.value))}
+                  onBlur={() => setTouched((prev) => ({ ...prev, guestContact: true }))}
+                  placeholder={t('guestPhonePlaceholder')}
+                  autoComplete="tel"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">{t('guestContactHint')}</p>
+              {errors.guestContact ? (
+                <p className="text-sm text-destructive">{errors.guestContact}</p>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="space-y-2">
             <RequiredLabel htmlFor="review-text">{t('yourReview')}</RequiredLabel>

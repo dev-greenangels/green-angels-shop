@@ -19,11 +19,13 @@ export function RecentlyViewedSettingsForm({
   onChange,
   onSave,
   saving,
+  isDirty = false,
 }: {
   settings: RecentlyViewedSettings
   onChange: (next: RecentlyViewedSettings) => void
   onSave: () => void
   saving: boolean
+  isDirty?: boolean
 }) {
   const setPage = (page: RecentlyViewedPageKey, enabled: boolean) => {
     onChange({
@@ -111,7 +113,7 @@ export function RecentlyViewedSettingsForm({
           </div>
         </div>
 
-        <Button type="button" onClick={onSave} disabled={saving}>
+        <Button type="button" onClick={onSave} disabled={saving || !isDirty}>
           <Save className="mr-2 h-4 w-4" />
           {saving ? 'Збереження…' : 'Зберегти'}
         </Button>

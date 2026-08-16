@@ -28,7 +28,12 @@ export type BackstageProductListItem = {
   id: string
   slug: string
   name: string
+  nameUk?: string
+  nameEn?: string
+  nameSk?: string
   latinName: string | null
+  /** Intrastat Combined Nomenclature (e.g. 060290) */
+  cnCode: string | null
   legacyId: string | null
   isPublished: boolean
   categoryId: string
@@ -79,6 +84,11 @@ export type BackstageProductVariant = {
   quantityPrices: BackstageVariantQuantityPrice[]
   salesUnitId: string | null
   salesUnitSymbol: string | null
+  weight: number | null
+  lengthCm: number | null
+  widthCm: number | null
+  heightCm: number | null
+  volumetricWeightKg: number | null
 }
 
 export type BackstageProductDetail = BackstageProductListItem & {
@@ -94,6 +104,7 @@ export type BackstageProductDetail = BackstageProductListItem & {
 export type ProductPayload = {
   name: string
   latinName?: string
+  cnCode?: string
   slug: string
   legacyId?: string
   primaryCategoryId: string
@@ -128,6 +139,10 @@ export type ProductPayload = {
     attributeValueIds: string[]
     availableFrom?: string
     salesUnitId?: string
+    weight?: number
+    lengthCm?: number
+    widthCm?: number
+    heightCm?: number
     quantityPrices?: Array<{
       minQuantity: number
       discountType?: 'fixed_price' | 'percent'
@@ -147,6 +162,10 @@ export type ProductPayload = {
     attributeValueIds: string[]
     availableFrom?: string
     salesUnitId?: string
+    weight?: number
+    lengthCm?: number
+    widthCm?: number
+    heightCm?: number
     quantityPrices?: Array<{
       minQuantity: number
       discountType?: 'fixed_price' | 'percent'
@@ -186,6 +205,10 @@ function buildVariantPayload(
     attributeValueIds: Object.values(variant.selections).filter(Boolean),
     availableFrom: variant.availableFrom.trim() || undefined,
     salesUnitId: variant.salesUnitId.trim() || undefined,
+    weight: variant.weight.trim() ? Number(variant.weight) : undefined,
+    lengthCm: variant.lengthCm.trim() ? Number(variant.lengthCm) : undefined,
+    widthCm: variant.widthCm.trim() ? Number(variant.widthCm) : undefined,
+    heightCm: variant.heightCm.trim() ? Number(variant.heightCm) : undefined,
     quantityPrices: quantityPrices.length ? quantityPrices : undefined,
   }
 }
@@ -203,6 +226,10 @@ function mapVariantToDraft(
     legacyId: variant.legacyId ?? '',
     availableFrom: isoToDateInput(variant.availableFrom),
     salesUnitId: variant.salesUnitId ?? '',
+    weight: variant.weight != null ? String(variant.weight) : '',
+    lengthCm: variant.lengthCm != null ? String(variant.lengthCm) : '',
+    widthCm: variant.widthCm != null ? String(variant.widthCm) : '',
+    heightCm: variant.heightCm != null ? String(variant.heightCm) : '',
     quantityPrices: (variant.quantityPrices ?? []).map((row) =>
       createQuantityPriceDraft({
         minQuantity: String(row.minQuantity),
@@ -238,6 +265,9 @@ export function buildProductPayload(
   const latinName = form.latinName.trim()
   if (latinName) base.latinName = latinName
 
+  // Always send so empty clears DB (Flexi may refill on next sync).
+  base.cnCode = form.cnCode.replace(/\s/g, '').trim()
+
   const legacyId = form.legacyId.trim()
   if (legacyId) base.legacyId = legacyId
 
@@ -268,6 +298,10 @@ export function buildProductPayload(
       attributeValueIds: [],
       availableFrom: variant?.availableFrom.trim() || undefined,
       salesUnitId: variant?.salesUnitId.trim() || undefined,
+      weight: variant?.weight.trim() ? Number(variant.weight) : undefined,
+      lengthCm: variant?.lengthCm.trim() ? Number(variant.lengthCm) : undefined,
+      widthCm: variant?.widthCm.trim() ? Number(variant.widthCm) : undefined,
+      heightCm: variant?.heightCm.trim() ? Number(variant.heightCm) : undefined,
       quantityPrices: quantityPrices.length ? quantityPrices : undefined,
     }
     return base
@@ -428,6 +462,7 @@ export function productDetailToFormState(
     id: detail.id,
     name: detail.name,
     latinName: detail.latinName ?? '',
+    cnCode: detail.cnCode ?? '',
     legacyId: detail.legacyId ?? '',
     slug: detail.slug,
     primaryCategoryId: detail.categoryId,

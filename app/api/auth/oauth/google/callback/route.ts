@@ -11,6 +11,7 @@ import {
   getGoogleOAuthRedirectUri,
   GOOGLE_OAUTH_STATE_COOKIE,
   normalizeOAuthReturnTo,
+  originFromRequest,
   parseGoogleOAuthState,
 } from '@/lib/auth/google-oauth'
 
@@ -19,6 +20,7 @@ export async function GET(request: Request) {
   const code = url.searchParams.get('code')?.trim()
   const stateNonce = url.searchParams.get('state')?.trim()
   const googleError = url.searchParams.get('error')?.trim()
+  const origin = originFromRequest(request)
 
   const cookieStore = await cookies()
   const storedState = parseGoogleOAuthState(cookieStore.get(GOOGLE_OAUTH_STATE_COOKIE)?.value)
@@ -40,7 +42,7 @@ export async function GET(request: Request) {
       NextResponse.redirect(
         buildOAuthReturnRedirect(returnTo, {
           oauth_error: 'Вхід через Google скасовано.',
-        }),
+        }, origin),
       ),
     )
   }
@@ -50,7 +52,7 @@ export async function GET(request: Request) {
       NextResponse.redirect(
         buildOAuthReturnRedirect(returnTo, {
           oauth_error: 'Невалідний стан OAuth. Спробуйте ще раз.',
-        }),
+        }, origin),
       ),
     )
   }
@@ -58,18 +60,31 @@ export async function GET(request: Request) {
   try {
     const backendRes = await fetchBackend('/auth/oauth/google/callback', {
       method: 'POST',
+      request,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         code,
-        redirectUri: getGoogleOAuthRedirectUri(),
+        redirectUri: getGoogleOAuthRedirectUri(origin),
       }),
     })
 
-    const data = await readBackendJson<{ error?: string; message?: string | string[] }>(backendRes)
+    const data = await readBackendJson<{
+      error?: string
+      message?: string | string[] | { code?: string; message?: string }
+      code?: string
+    }>(backendRes)
 
     if (!backendRes.ok) {
-      const message =
-        typeof data.error === 'string'
+      const locked =
+        data.code === 'CHECKOUT_ACCOUNT_LOCKED' ||
+        data.error === 'CHECKOUT_ACCOUNT_LOCKED' ||
+        (data.message &&
+          typeof data.message === 'object' &&
+          !Array.isArray(data.message) &&
+          data.message.code === 'CHECKOUT_ACCOUNT_LOCKED')
+      const message = locked
+        ? 'CHECKOUT_ACCOUNT_LOCKED'
+        : typeof data.error === 'string'
           ? data.error
           : Array.isArray(data.message)
             ? data.message.join(', ')
@@ -77,12 +92,12 @@ export async function GET(request: Request) {
               ? data.message
               : 'Не вдалося увійти через Google.'
       return clearState(
-        NextResponse.redirect(buildOAuthReturnRedirect(returnTo, { oauth_error: message })),
+        NextResponse.redirect(buildOAuthReturnRedirect(returnTo, { oauth_error: message }, origin)),
       )
     }
 
     const res = clearState(
-      NextResponse.redirect(buildOAuthReturnRedirect(returnTo, { oauth: 'success' })),
+      NextResponse.redirect(buildOAuthReturnRedirect(returnTo, { oauth: 'success' }, origin)),
     )
     forwardBackendCookies(backendRes, res)
     return res
@@ -91,7 +106,7 @@ export async function GET(request: Request) {
       NextResponse.redirect(
         buildOAuthReturnRedirect(returnTo, {
           oauth_error: 'Не вдалося зʼєднатися з API.',
-        }),
+        }, origin),
       ),
     )
   }

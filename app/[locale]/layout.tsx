@@ -4,6 +4,8 @@ import { getMessages, setRequestLocale } from 'next-intl/server'
 
 import { DocumentLang } from '@/components/localization/document-lang'
 import { OAuthFallbackHandler } from '@/components/auth/oauth-fallback-handler'
+import { CookieConsentBanner } from '@/components/legal/cookie-consent-banner'
+import { ReferralCaptureHandler } from '@/components/referrals/referral-capture-handler'
 import { ScrollToTopButton } from '@/components/scroll-to-top-button'
 import { isAppLocale, locales } from '@/i18n/routing'
 
@@ -30,8 +32,10 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     <NextIntlClientProvider locale={locale} messages={messages} timeZone="Europe/Kyiv">
       <DocumentLang />
       <OAuthFallbackHandler />
+      <ReferralCaptureHandler />
       {children}
       <ScrollToTopButton />
+      <CookieConsentBanner />
     </NextIntlClientProvider>
   )
 }

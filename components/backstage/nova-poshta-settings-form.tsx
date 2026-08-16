@@ -4,8 +4,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { Loader2, RefreshCw, Save, XCircle } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
+import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
 import { NovaPoshtaAutoSyncFields, DEFAULT_AUTO_SYNC_CONFIG } from '@/components/backstage/nova-poshta-auto-sync-fields'
 import { Button } from '@/components/ui/button'
+import { formatDateTime } from '@/lib/i18n/format-datetime'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -59,13 +61,18 @@ function targetStatusClass(status: NpTargetLastSync['status'] | undefined): stri
 }
 
 export function NovaPoshtaSettingsForm() {
+  const { locale } = useBackstageUiLocale()
   const [settings, setSettings] = useState<NovaPoshtaSettings>(DEFAULT_SETTINGS)
+  const [baseline, setBaseline] = useState<string | null>(null)
   const [status, setStatus] = useState<NovaPoshtaSyncStatus | null>(null)
   const [apiKey, setApiKey] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [syncing, setSyncing] = useState<NpSyncTarget | null>(null)
   const [cancelling, setCancelling] = useState(false)
+
+  const dirty =
+    Boolean(baseline && JSON.stringify({ settings, apiKey }) !== baseline) || apiKey.trim().length > 0
 
   const refreshStatus = useCallback(async () => {
     const nextStatus = await fetchNovaPoshtaSyncStatus()
@@ -79,7 +86,7 @@ export function NovaPoshtaSettingsForm() {
         fetchNovaPoshtaSettings(),
         fetchNovaPoshtaSyncStatus(),
       ])
-      setSettings({
+      const merged = {
         ...DEFAULT_SETTINGS,
         ...nextSettings,
         syncPageSizes: {
@@ -91,7 +98,10 @@ export function NovaPoshtaSettingsForm() {
           ...nextSettings.syncPageSizeLimits,
         },
         autoSync: nextSettings.autoSync ?? DEFAULT_SETTINGS.autoSync,
-      })
+      }
+      setSettings(merged)
+      setApiKey('')
+      setBaseline(JSON.stringify({ settings: merged, apiKey: '' }))
       setStatus(nextStatus)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося завантажити налаштування НП.')
@@ -157,6 +167,7 @@ export function NovaPoshtaSettingsForm() {
       const next = await updateNovaPoshtaSettings(payload)
       setSettings(next)
       setApiKey('')
+      setBaseline(JSON.stringify({ settings: next, apiKey: '' }))
       toast.success('Налаштування Нової Пошти збережено.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
@@ -313,7 +324,7 @@ export function NovaPoshtaSettingsForm() {
             onChange={(autoSync) => setSettings({ ...settings, autoSync })}
           />
           <div className="sm:col-span-2">
-            <Button type="button" onClick={() => void save()} disabled={saving}>
+            <Button type="button" onClick={() => void save()} disabled={saving || !dirty}>
               {saving ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -349,7 +360,7 @@ export function NovaPoshtaSettingsForm() {
                   {formatSyncRunProgress(activeRun)}
                   <br />
                   <span className="text-xs font-normal text-muted-foreground">
-                    Початок: {new Date(activeRun.startedAt).toLocaleString('uk-UA')}
+                    Початок: {formatDateTime(activeRun.startedAt, locale, 'datetimeSeconds')}
                   </span>
                 </p>
               )}
@@ -368,7 +379,7 @@ export function NovaPoshtaSettingsForm() {
                         </li>
                       )
                     }
-                    const formatted = formatTargetLastSync(entry)
+                    const formatted = formatTargetLastSync(entry, locale)
                     return (
                       <li key={target} className={targetStatusClass(entry.status)}>
                         <p>{formatted.summary}</p>

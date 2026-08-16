@@ -1,5 +1,6 @@
 import { Navigation } from '@/components/navigation'
 import { PublicPageBreadcrumbs } from '@/components/public-page-breadcrumbs'
+import { LegalPageLinks } from '@/components/legal/legal-page-links'
 import { Link } from '@/i18n/navigation'
 import { staticPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
 import { getTranslations } from 'next-intl/server'
@@ -28,7 +29,7 @@ export default async function TermsPage() {
   return (
     <>
       <Navigation />
-      <main className="flex-1 bg-background">
+      <main className="flex-1 bg-transparent">
         {/* Header */}
         <div className="bg-secondary/30 py-8 md:py-12">
           <div className={siteContentShellClassName}>
@@ -44,6 +45,10 @@ export default async function TermsPage() {
 
         <div className={cn(siteContentShellClassName, 'py-12')}>
           <div className="max-w-3xl mx-auto prose prose-green">
+            <div className="mb-6">
+              <LegalPageLinks current="terms" />
+            </div>
+
             <p className="text-muted-foreground text-lg mb-8">
               Останнє оновлення: 1 лютого 2024 року
             </p>

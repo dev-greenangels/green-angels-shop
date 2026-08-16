@@ -2,7 +2,7 @@ export type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
 export type ReviewTypeFilter = 'all' | 'store' | 'product'
 
-export type ReviewSortOrder = 'newest' | 'oldest' | 'rating_desc'
+export type ReviewSortOrder = 'newest' | 'oldest' | 'rating_desc' | 'rating_asc'
 
 export type ReviewStoreReply = {
   authorName: string

@@ -11,6 +11,7 @@ import { hasHiddenFooterContacts } from '@/lib/settings/store-contact-lines'
 import {
   fetchPublicSiteSettings,
   getLocalizationSettings,
+  getMarketSettings,
   getStoreSettings,
   isStoreContactUnavailable,
 } from '@/lib/settings/fetch'
@@ -33,6 +34,8 @@ export async function Footer() {
 
   const store = getStoreSettings(siteSettings)
   const localization = getLocalizationSettings(siteSettings)
+  const market = getMarketSettings(siteSettings)
+  const isSkMarket = market.region === 'sk'
   const storeUnavailable = isStoreContactUnavailable(siteSettings)
   const showContactsUnavailable = storeUnavailable || !hasStoreContactInfo(store)
 
@@ -46,7 +49,7 @@ export async function Footer() {
     'block text-base text-primary-foreground/85 transition-colors hover:text-primary-foreground'
 
   return (
-    <footer className="bg-primary text-primary-foreground">
+    <footer className="bg-footer-gradient text-primary-foreground">
       <div className={cn(siteContentShellClassName, 'py-14 md:pt-20 md:pb-10')}>
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-[auto_1fr_1fr_auto]">
           <div className="flex flex-col items-center space-y-5 text-center md:items-start md:text-left">
@@ -83,7 +86,7 @@ export async function Footer() {
             <h3 className="mb-5 font-serif text-xl font-semibold md:text-2xl">{t('infoTitle')}</h3>
             <nav className="space-y-2.5">
               <Link href="/shipping" className={linkClassName}>
-                {t('shipping')}
+                {isSkMarket ? t('shippingSk') : t('shipping')}
               </Link>
               <Link href="/blog" className={linkClassName}>
                 {t('blog')}
@@ -98,7 +101,18 @@ export async function Footer() {
                 {t('faq')}
               </Link>
               <Link href="/terms" className={linkClassName}>
-                {t('terms')}
+                {isSkMarket ? t('termsSk') : t('terms')}
+              </Link>
+              <Link href="/privacy" className={linkClassName}>
+                {isSkMarket ? t('privacySk') : t('privacy')}
+              </Link>
+              {isSkMarket ? (
+                <Link href="/returns" className={linkClassName}>
+                  {t('returnsSk')}
+                </Link>
+              ) : null}
+              <Link href="/cookies" className={linkClassName}>
+                {t('cookies')}
               </Link>
             </nav>
           </div>
@@ -116,6 +130,7 @@ export async function Footer() {
                   grouped
                   filterByFooterVisibility
                   visibility={store.footer}
+                  marketRegion={market.region}
                   socialSectionTitle={t('socialTitle')}
                   iconClassName="text-primary-foreground"
                   textClassName="text-base text-primary-foreground/85"

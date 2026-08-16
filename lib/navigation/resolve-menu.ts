@@ -41,7 +41,9 @@ export function resolveNavigationItemLabel(
     item.labels?.[locale] ??
     item.labels?.uk ??
     item.labels?.en ??
-    item.labels?.sk
+    item.labels?.sk ??
+    item.labels?.hu ??
+    item.labels?.de
   if (custom?.trim()) return custom.trim()
   if (item.labelKey) {
     try {

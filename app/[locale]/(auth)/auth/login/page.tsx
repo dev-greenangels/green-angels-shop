@@ -58,7 +58,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[100dvh] min-h-screen items-center justify-center bg-gradient-to-br from-secondary via-background to-accent">
+        <div className="flex min-h-[100dvh] min-h-screen items-center justify-center bg-transparent">
           <BrandLogo
             alt="Зелені Янголи"
             className="animate-pulse"

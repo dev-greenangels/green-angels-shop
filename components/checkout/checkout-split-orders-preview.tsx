@@ -8,8 +8,11 @@ import { CartOrderTotalsBreakdown } from '@/components/cart/cart-order-totals-br
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
 import { cn } from '@/lib/utils'
 import { useFormatPrice } from '@/lib/commerce/use-format-price'
+import { findVariantOnPlant } from '@/lib/cart-limits'
+import { resolveCartLinePricing } from '@/lib/cart-line-pricing'
 import type { CartItem } from '@/lib/types'
-import type { PricingQuote } from '@/lib/pricing/quote'
+import type { PricingQuote, PricingQuoteLine } from '@/lib/pricing/quote'
+import { isReverseChargeCheckout, toReverseChargeLineAmount } from '@/lib/pricing/checkout-tax-display'
 import { Button } from '@/components/ui/button'
 
 type CheckoutSplitOrdersPreviewProps = {
@@ -34,6 +37,21 @@ function getCartLineDisplay(item: CartItem): { plantName: string; variantSize: s
   return { plantName, variantSize: variantLabel }
 }
 
+function resolveCheckoutLineTotal(
+  item: CartItem,
+  quoteLine?: PricingQuoteLine | null,
+): number {
+  const variant = item.variantId ? findVariantOnPlant(item.plant, item.variantId) : null
+  if (variant) {
+    const pricing = resolveCartLinePricing(item, variant, quoteLine ?? null)
+    if (pricing.saleLineTotal > 0) return pricing.saleLineTotal
+  }
+  const cartFallback = (item.unitPrice ?? item.plant.price) * item.quantity
+  if (cartFallback > 0) return cartFallback
+  if (quoteLine && typeof quoteLine.lineTotal === 'number') return quoteLine.lineTotal
+  return 0
+}
+
 function sumItemPieces(items: CartItem[]): number {
   return items.reduce((sum, item) => sum + item.quantity, 0)
 }
@@ -46,18 +64,27 @@ function OrderItemsList({
   quote?: PricingQuote | null
 }) {
   const tc = useTranslations('common')
-  const formatMoney = useFormatPrice()
+  const formatShelf = useFormatPrice('shelf')
+  const formatRaw = useFormatPrice('raw')
+  const reverseCharge = isReverseChargeCheckout(quote?.checkout, quote)
   const quoteByVariant = new Map(
     quote?.lines.map((line) => [line.productVariantId, line]) ?? [],
   )
+
+  const formatLineAmount = (grossLineTotal: number) => {
+    const amount = toReverseChargeLineAmount(grossLineTotal, {
+      reverseCharge,
+      taxIncluded: quote?.checkout?.taxIncluded !== false,
+      stripVatRatePercent: quote?.checkout?.stripVatRatePercent,
+    })
+    return reverseCharge ? formatRaw(amount) : formatShelf(grossLineTotal)
+  }
 
   return (
     <ul className="space-y-1.5 text-sm">
       {items.map((item) => {
         const quoteLine = item.variantId ? quoteByVariant.get(item.variantId) : undefined
-        const lineTotal =
-          quoteLine?.lineTotal ??
-          (item.unitPrice ?? item.plant.price) * item.quantity
+        const lineTotal = resolveCheckoutLineTotal(item, quoteLine)
         const key = item.variantId ? `${item.plant.id}:${item.variantId}` : item.plant.id
 
         const { plantName, variantSize } = getCartLineDisplay(item)
@@ -65,7 +92,7 @@ function OrderItemsList({
         return (
           <li
             key={key}
-            className="flex items-start justify-between gap-3 rounded-md bg-muted/45 px-2.5 py-2"
+            className="flex items-start justify-between gap-3 rounded-md bg-muted px-2.5 py-2"
           >
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium leading-snug text-foreground">
@@ -76,16 +103,18 @@ function OrderItemsList({
                   {variantSize}
                 </p>
               ) : null}
-              <span className="mt-1 inline-flex items-center rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
-                × {item.quantity} {tc('pieceShort')}
-              </span>
             </div>
-            <span
-              suppressHydrationWarning
-              className="shrink-0 pt-0.5 tabular-nums text-sm font-medium text-foreground"
-            >
-              {formatMoney(lineTotal)}
-            </span>
+            <div className="shrink-0 text-right">
+              <p
+                suppressHydrationWarning
+                className="tabular-nums text-sm font-medium text-foreground"
+              >
+                {formatLineAmount(lineTotal)}
+              </p>
+              <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                × {item.quantity} {tc('pieceShort')}
+              </p>
+            </div>
           </li>
         )
       })}
@@ -118,7 +147,7 @@ function SplitOrderPanel({
   const tCart = useTranslations('cart')
 
   return (
-    <div className="rounded-xl bg-muted/35 p-4">
+    <div className="rounded-xl bg-muted p-4">
       <div className="mb-3">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
           <p className="text-base font-bold leading-snug text-foreground">{title}</p>
@@ -134,9 +163,10 @@ function SplitOrderPanel({
       {deliverySection ? <div className="mt-4 space-y-4">{deliverySection}</div> : null}
 
       {showTotals ? (
-        <div className="mt-4 rounded-lg bg-background/70 p-3">
+        <div className="mt-4 rounded-lg bg-background p-3">
           <CartOrderTotalsBreakdown
             checkout={quote?.checkout}
+            taxRegime={quote?.taxRegime}
             productsSubtotal={quote?.totalAmount}
             discountAmount={Math.max(
               0,

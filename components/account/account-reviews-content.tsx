@@ -1,11 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Loader2, MessageSquare } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { MessageSquare } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
+import {
+  AccountPageEmpty,
+  AccountPageError,
+  AccountPageLoading,
+} from '@/components/account/account-page-state'
+import { AccountListPagination } from '@/components/account/account-list-pagination'
 import { StarRating } from '@/components/reviews/star-rating'
+import { ReviewStoreReply } from '@/components/reviews/review-store-reply'
 import { fetchAccountReviews, type AccountReviewItem } from '@/lib/account/api'
+import { productHrefFromPlant } from '@/lib/catalog/paths'
+import { formatDateTime } from '@/lib/i18n/format-datetime'
 import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
 
@@ -14,50 +23,51 @@ const STATUS_COLORS: Record<AccountReviewItem['status'], string> = {
   APPROVED: 'bg-green-100 text-green-800',
   REJECTED: 'bg-red-100 text-red-800',
 }
-
-function formatDate(iso: string, locale: string) {
-  return new Date(iso).toLocaleDateString(locale === 'en' ? 'en-GB' : locale === 'sk' ? 'sk-SK' : 'uk-UA', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
-}
+const PAGE_SIZE = 20
 
 export function AccountReviewsContent() {
   const t = useTranslations('account')
   const tc = useTranslations('common')
   const locale = useLocale()
   const [reviews, setReviews] = useState<AccountReviewItem[]>([])
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    void fetchAccountReviews()
-      .then(setReviews)
+  const load = useCallback(() => {
+    setLoading(true)
+    setError(null)
+    void fetchAccountReviews({ page, pageSize: PAGE_SIZE })
+      .then((data) => {
+        setReviews(data.items)
+        setTotalPages(data.totalPages)
+        setTotal(data.total)
+      })
       .catch((e) => setError(e instanceof Error ? e.message : t('loadError')))
       .finally(() => setLoading(false))
-  }, [t])
+  }, [page, t])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   if (loading) {
-    return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-        {tc('loading')}
-      </div>
-    )
+    return <AccountPageLoading />
   }
 
   if (error) {
-    return <p className="text-sm text-destructive">{error}</p>
+    return <AccountPageError message={error} onRetry={load} />
   }
 
   if (!reviews.length) {
     return (
-      <div className="rounded-xl border border-dashed p-10 text-center">
-        <MessageSquare className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
-        <p className="font-medium text-foreground">{t('reviewsEmptyTitle')}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{t('reviewsEmptyBody')}</p>
-      </div>
+      <AccountPageEmpty
+        icon={MessageSquare}
+        title={t('reviewsEmptyTitle')}
+        body={t('reviewsEmptyBody')}
+      />
     )
   }
 
@@ -69,21 +79,24 @@ export function AccountReviewsContent() {
           className="rounded-xl border border-border/50 bg-card p-4 shadow-sm sm:p-5"
         >
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0 flex-1">
               {review.productSlug ? (
                 <Link
-                  href={`/product/${review.productSlug}`}
-                  className="pressable font-medium text-primary hover:underline"
+                  href={productHrefFromPlant({
+                    slug: review.productSlug,
+                    category: review.productCategorySlug,
+                  })}
+                  className="pressable break-words font-medium text-primary hover:underline"
                 >
                   {review.productName ?? tc('productFallback')}
                 </Link>
               ) : (
-                <p className="font-medium text-foreground">
+                <p className="break-words font-medium text-foreground">
                   {review.productName ?? tc('productFallback')}
                 </p>
               )}
               <p className="mt-1 text-sm text-muted-foreground">
-                {formatDate(review.createdAt, locale)}
+                {formatDateTime(review.createdAt, locale, 'dateLong')}
               </p>
             </div>
             <span
@@ -98,9 +111,19 @@ export function AccountReviewsContent() {
           <div className="mt-3">
             <StarRating rating={review.rating} size="sm" />
           </div>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{review.text}</p>
+          <p className="mt-3 break-words text-sm leading-relaxed text-muted-foreground">{review.text}</p>
+          {review.storeReply ? (
+            <ReviewStoreReply reply={review.storeReply} className="mt-4" />
+          ) : null}
         </article>
       ))}
+      <AccountListPagination
+        page={page}
+        totalPages={totalPages}
+        total={total}
+        onPrev={() => setPage((prev) => Math.max(1, prev - 1))}
+        onNext={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+      />
     </div>
   )
 }

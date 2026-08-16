@@ -4,6 +4,7 @@ import {
   normalizeGridColumns,
 } from '@/lib/catalog/grid-columns'
 import { DEFAULT_CATALOG_SETTINGS } from '@/lib/settings/defaults'
+import { normalizeFreshPhotosLimit } from '@/lib/settings/fresh-photos-limit'
 import {
   DEFAULT_CATALOG_FILTERS_VISIBILITY,
   DEFAULT_PLANTS_ALPHABET_FILTERS_VISIBILITY,
@@ -63,5 +64,6 @@ export function normalizeCatalogPageSettings(
       input?.plantsAlphabetFilters,
       DEFAULT_PLANTS_ALPHABET_FILTERS_VISIBILITY,
     ),
+    freshPhotosLimit: normalizeFreshPhotosLimit(input?.freshPhotosLimit),
   }
 }

@@ -41,7 +41,7 @@ function PageButton({
         'inline-flex h-9 min-w-9 items-center justify-center rounded-full px-3 text-sm font-medium transition-all duration-200',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
         active
-          ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25'
+          ? 'bg-primary-gradient text-primary-foreground shadow-sm shadow-primary/25'
           : 'text-foreground hover:bg-primary/10 hover:text-primary',
         disabled && 'pointer-events-none opacity-40',
       )}

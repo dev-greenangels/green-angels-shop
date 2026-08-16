@@ -4,14 +4,19 @@ import { useEffect, useMemo, useState } from 'react'
 import { Heart } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
+import {
+  AccountPageEmpty,
+  AccountPageError,
+  AccountPageLoading,
+} from '@/components/account/account-page-state'
 import { ProductCard } from '@/components/product-card'
+import { useCatalogHref } from '@/components/providers/catalog-paths-provider'
 import { Button } from '@/components/ui/button'
 import { LISTING_PRODUCT_GRID_CLASS_NAME } from '@/lib/catalog/grid-columns'
 import { mapListItemToPlant } from '@/lib/catalog/map-product'
 import type { CatalogProductListItem } from '@/lib/catalog/types'
 import { useFavoriteIds } from '@/lib/favorites-store'
 import { Link } from '@/i18n/navigation'
-import { useCatalogHref } from '@/components/providers/catalog-paths-provider'
 
 const FAVORITES_GRID_CLASS_NAME = LISTING_PRODUCT_GRID_CLASS_NAME
 
@@ -22,21 +27,30 @@ export function FavoritesPageContent() {
   const productIds = useFavoriteIds()
   const [plants, setPlants] = useState<CatalogProductListItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [reloadToken, setReloadToken] = useState(0)
 
   const idsKey = useMemo(() => productIds.join(','), [productIds])
 
   useEffect(() => {
     if (!productIds.length) {
       setPlants([])
+      setError(null)
+      setLoading(false)
       return
     }
 
     let cancelled = false
     setLoading(true)
+    setError(null)
 
-    void fetch(`/api/catalog/products?ids=${encodeURIComponent(idsKey)}`, { cache: 'no-store' })
+    void fetch(`/api/catalog/products?ids=${encodeURIComponent(idsKey)}`, {
+      cache: 'no-store',
+    })
       .then(async (res) => {
-        if (!res.ok) return []
+        if (!res.ok) {
+          throw new Error(t('loadError'))
+        }
         const data = (await res.json()) as CatalogProductListItem[]
         return Array.isArray(data) ? data : []
       })
@@ -48,6 +62,11 @@ export function FavoritesPageContent() {
         )
         setPlants(sorted)
       })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        setPlants([])
+        setError(err instanceof Error ? err.message : t('loadError'))
+      })
       .finally(() => {
         if (!cancelled) setLoading(false)
       })
@@ -55,30 +74,48 @@ export function FavoritesPageContent() {
     return () => {
       cancelled = true
     }
-  }, [idsKey, productIds])
+  }, [idsKey, productIds, reloadToken, t])
 
   if (!productIds.length) {
     return (
-      <div className="rounded-xl border border-dashed p-12 text-center">
-        <Heart className="mx-auto mb-4 h-10 w-10 text-muted-foreground/50" />
-        <p className="text-lg font-medium text-foreground">{t('emptyTitle')}</p>
-        <p className="mt-2 text-muted-foreground">{t('emptyBody')}</p>
-        <Button asChild className="mt-6">
-          <Link href={catalogHref}>{tc('goToCatalog')}</Link>
-        </Button>
-      </div>
+      <AccountPageEmpty
+        icon={Heart}
+        title={t('emptyTitle')}
+        body={t('emptyBody')}
+        action={
+          <Button asChild>
+            <Link href={catalogHref}>{tc('goToCatalog')}</Link>
+          </Button>
+        }
+      />
     )
   }
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground">{t('loading')}</p>
+    return <AccountPageLoading />
+  }
+
+  if (error) {
+    return (
+      <AccountPageError
+        message={error}
+        onRetry={() => setReloadToken((n) => n + 1)}
+      />
+    )
   }
 
   if (!plants.length) {
     return (
-      <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
-        {t('unavailable')}
-      </div>
+      <AccountPageEmpty
+        icon={Heart}
+        title={t('unavailable')}
+        body={t('emptyBody')}
+        action={
+          <Button asChild variant="outline">
+            <Link href={catalogHref}>{tc('goToCatalog')}</Link>
+          </Button>
+        }
+      />
     )
   }
 

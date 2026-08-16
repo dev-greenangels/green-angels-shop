@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl'
 
 import { DiscountedUnitPrice } from '@/components/pricing/discounted-price'
 import { FormattedPrice } from '@/components/commerce/formatted-price'
+import { PriceWithExVatUnder, ShelfPriceBlock } from '@/components/commerce/shelf-price-block'
 import { ProductOutOfStockBlock } from '@/components/product/product-out-of-stock-block'
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
 import { VariantPhotoGalleryDialog } from '@/components/product/variant-photo-gallery-dialog'
@@ -73,6 +74,7 @@ function VariantTitleColumn({
   variant: ProductVariant
   className?: string
 }) {
+  const t = useTranslations('product')
   const { packaging, sizeLabel } = splitVariantLabel(variant.label)
   const hasShipment = variantHasAvailableFrom(variant) && Boolean(variant.availableFrom)
 
@@ -91,7 +93,7 @@ function VariantTitleColumn({
       </p>
       {hasShipment && variant.availableFrom ? (
         <p className="mt-1 text-xs font-medium text-amber-900/90 dark:text-amber-100/90">
-          Відвантаження з {variant.availableFrom}
+          {t('shipmentFrom', { date: variant.availableFrom })}
         </p>
       ) : null}
     </div>
@@ -109,30 +111,22 @@ function ProductVariantsSectionSummary({
 }) {
   const t = useTranslations('product')
   const hasRange = priceMin !== priceMax
+  const singleSize = variantCount === 1 && !hasRange
 
   return (
-    <div className="mt-2 space-y-1.5 text-base text-muted-foreground">
-      <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        <span>{t('from')}</span>
-        <FormattedPrice
-          amount={priceMin}
-          className="text-base font-medium tabular-nums text-foreground"
-        />
-        {hasRange && (
-          <>
-            <span className="text-muted-foreground/60" aria-hidden>
-              —
-            </span>
-            <span>{t('to')}</span>
-            <FormattedPrice
-              amount={priceMax}
-              className="text-base font-medium tabular-nums text-foreground"
-            />
-          </>
-        )}
-      </p>
-      <p>{getVariantSizeCountLabel(variantCount, t)}</p>
-    </div>
+    <p className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-xs tracking-wide text-muted-foreground/80 sm:text-[13px]">
+      <ShelfPriceBlock
+        label={singleSize ? 'price' : 'from'}
+        amount={priceMin}
+        amountMax={hasRange ? priceMax : undefined}
+        className="text-xs sm:text-[13px]"
+        primaryClassName="text-xs font-medium text-muted-foreground sm:text-[13px]"
+      />
+      <span className="text-muted-foreground/40" aria-hidden>
+        ·
+      </span>
+      <span>{getVariantSizeCountLabel(variantCount, t)}</span>
+    </p>
   )
 }
 
@@ -241,18 +235,24 @@ function VariantBasePrice({
   const salePrice = singleUnitSale?.pricePerUnit ?? variant.basePrice
 
   return (
-    <span className={cn('inline-flex items-baseline', className)}>
-      <DiscountedUnitPrice
-        originalPrice={variant.basePrice}
-        salePrice={salePrice}
-        perUnit="sale-only"
-        unitSymbol={variant.salesUnitSymbol}
-        stacked={stackedDiscount}
-        className={stackedDiscount && priceAlign === 'start' ? 'items-start' : undefined}
-        originalClassName="text-sm font-medium"
-        saleClassName="text-sm font-medium tabular-nums text-foreground"
-      />
-    </span>
+    <PriceWithExVatUnder
+      storedAmount={salePrice}
+      align={priceAlign}
+      className={className}
+    >
+      <span className="inline-flex items-baseline">
+        <DiscountedUnitPrice
+          originalPrice={variant.basePrice}
+          salePrice={salePrice}
+          perUnit="sale-only"
+          unitSymbol={variant.salesUnitSymbol}
+          stacked={stackedDiscount}
+          className={stackedDiscount && priceAlign === 'start' ? 'items-start' : undefined}
+          originalClassName="text-sm font-medium"
+          saleClassName="text-sm font-medium tabular-nums text-foreground"
+        />
+      </span>
+    </PriceWithExVatUnder>
   )
 }
 
@@ -360,14 +360,14 @@ function VariantPhotoControls({
 }) {
   const [galleryOpen, setGalleryOpen] = useState(false)
   const showPhotos = variant.freshPhotos !== false
-  const { photos } = useVariantPhotos(showPhotos ? variant.ean : null)
+  const { photos } = useVariantPhotos(showPhotos ? variant.ean : null, showPhotos ? variant.sku : null)
 
   if (!showPhotos || photos.length === 0) return null
 
   return (
     <>
       <VariantPhotoThumbnail
-        imageUrl={photos[0].url}
+        imageUrl={photos[0].thumbUrl}
         alt={photos[0].alt}
         onClick={() => setGalleryOpen(true)}
         className={className}
@@ -984,18 +984,20 @@ export function ProductVariantsTable({
   return (
     <section className="space-y-4" aria-label={t('sizesAndPrices')}>
       <div>
-        <h2 className="text-xl font-bold text-foreground md:text-2xl">
-          {fullyOutOfStock ? t('availability') : t('sizesAndPrices')}
-        </h2>
-        {canOrder && variants.length > 0 && (
-          <ProductVariantsSectionSummary
-            priceMin={priceMin}
-            priceMax={priceMax}
-            variantCount={variants.length}
-          />
-        )}
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h2 className="text-xl font-bold text-foreground md:text-2xl">
+            {fullyOutOfStock ? t('availability') : t('sizesAndPrices')}
+          </h2>
+          {canOrder && variants.length > 0 ? (
+            <ProductVariantsSectionSummary
+              priceMin={priceMin}
+              priceMax={priceMax}
+              variantCount={variants.length}
+            />
+          ) : null}
+        </div>
         {!fullyOutOfStock ? (
-          <p className="mt-3 text-sm text-muted-foreground md:text-base">{t('sizesHint')}</p>
+          <p className="mt-2 text-sm text-muted-foreground md:text-base">{t('sizesHint')}</p>
         ) : null}
       </div>
 

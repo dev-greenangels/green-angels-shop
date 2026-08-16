@@ -19,7 +19,7 @@ export async function NurseryGallerySection({ settings }: NurseryGallerySectionP
   const [featured, ...rest] = settings.images
 
   return (
-    <section className="bg-background py-16 md:py-24">
+    <section className="border-y border-border/40 bg-transparent py-12 md:py-16">
       <div className={siteContentShellClassName}>
         <HomeSectionHeader
           eyebrow={t('nurseryEyebrow')}
@@ -29,7 +29,7 @@ export async function NurseryGallerySection({ settings }: NurseryGallerySectionP
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 lg:grid-rows-2 lg:gap-5">
           {featured ? (
-            <figure className="group relative min-h-[280px] overflow-hidden rounded-3xl bg-secondary shadow-xl ring-1 ring-border/40 lg:col-span-2 lg:row-span-2 lg:min-h-[420px]">
+            <figure className="group relative min-h-[280px] overflow-hidden rounded-3xl bg-muted shadow-xl ring-1 ring-border/40 lg:col-span-2 lg:row-span-2 lg:min-h-[420px]">
               <Image
                 src={featured.url || PLACEHOLDER_IMAGE}
                 alt={featured.caption}
@@ -47,7 +47,7 @@ export async function NurseryGallerySection({ settings }: NurseryGallerySectionP
           {rest.map((image) => (
             <figure
               key={`${image.url}-${image.caption}`}
-              className="group relative aspect-[4/5] overflow-hidden rounded-2xl bg-secondary shadow-md ring-1 ring-border/40 transition-all hover:-translate-y-1 hover:shadow-xl lg:aspect-auto lg:min-h-[200px]"
+              className="group relative aspect-[4/5] overflow-hidden rounded-2xl bg-muted shadow-md ring-1 ring-border/40 transition-all hover:-translate-y-1 hover:shadow-xl lg:aspect-auto lg:min-h-[200px]"
             >
               <Image
                 src={image.url || PLACEHOLDER_IMAGE}

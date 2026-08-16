@@ -119,7 +119,7 @@ const CheckoutHeaderProgress = memo(function CheckoutHeaderProgress({
               }}
               className={cn(
                 'flex h-8 w-8 items-center justify-center rounded-full border transition-colors',
-                isCurrent && 'border-primary bg-primary text-primary-foreground',
+                isCurrent && 'border-primary bg-primary-gradient text-primary-foreground',
                 !isCurrent && isComplete && 'border-primary/35 bg-primary/10 text-primary',
                 !isCurrent && !isComplete && 'border-border bg-muted text-muted-foreground',
                 canClick && 'cursor-pointer hover:bg-primary/20'

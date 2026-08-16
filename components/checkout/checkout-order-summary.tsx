@@ -2,7 +2,7 @@
 
 import { memo, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
-import { Loader2 } from 'lucide-react'
+import { Loader2, PenSquare } from 'lucide-react'
 
 import { CartOrderTotalsBreakdown } from '@/components/cart/cart-order-totals-breakdown'
 import { CartPromoGiftLines } from '@/components/cart/cart-promo-gift-lines'
@@ -19,7 +19,12 @@ import {
   useCartHasCheckoutableItems,
   useCartItems,
 } from '@/lib/cart-store'
-import type { PricingQuote } from '@/lib/pricing/quote'
+import { useFormatPrice } from '@/lib/commerce/use-format-price'
+import { findVariantOnPlant } from '@/lib/cart-limits'
+import { resolveCartLinePricing } from '@/lib/cart-line-pricing'
+import type { CartItem } from '@/lib/types'
+import type { PricingQuote, PricingQuoteLine } from '@/lib/pricing/quote'
+import { isReverseChargeCheckout, toReverseChargeLineAmount } from '@/lib/pricing/checkout-tax-display'
 
 type CheckoutOrderSummaryProps = {
   quote?: PricingQuote | null
@@ -35,10 +40,45 @@ type CheckoutOrderSummaryProps = {
   promoSection?: ReactNode
   shipmentSplitSection?: ReactNode
   totalsSection?: ReactNode
+  onEditOrder?: () => void
   privacyConsentChecked?: boolean
   privacyConsentError?: boolean
   privacyConsentLabel?: string | null
   onPrivacyConsentChange?: (checked: boolean) => void
+  showCreateAccountOption?: boolean
+  createAccountChecked?: boolean
+  onCreateAccountChange?: (checked: boolean) => void
+  /** Optional ETA line under totals (SK carrier estimate) */
+  deliveryEstimate?: string | null
+  /** SK/EU: button must state obligation to pay (CRD) */
+  useObligationToPayLabel?: boolean
+}
+
+function getCartLineDisplay(item: CartItem): { plantName: string; variantSize: string | null } {
+  const plantName = item.plant.name
+  const variantLabel = item.variantLabel?.trim()
+  if (!variantLabel || variantLabel === plantName) {
+    return { plantName, variantSize: null }
+  }
+  return { plantName, variantSize: variantLabel }
+}
+
+/** Same final price as cart/product card — never treat C2 label as money; ignore quote zeros. */
+function resolveCheckoutLineTotal(
+  item: CartItem,
+  quoteLine?: PricingQuoteLine | null,
+): number {
+  const variant = item.variantId ? findVariantOnPlant(item.plant, item.variantId) : null
+  if (variant) {
+    const pricing = resolveCartLinePricing(item, variant, quoteLine ?? null)
+    if (pricing.saleLineTotal > 0) return pricing.saleLineTotal
+  }
+
+  const cartFallback = (item.unitPrice ?? item.plant.price) * item.quantity
+  if (cartFallback > 0) return cartFallback
+
+  if (quoteLine && typeof quoteLine.lineTotal === 'number') return quoteLine.lineTotal
+  return 0
 }
 
 export const CheckoutOrderSummary = memo(function CheckoutOrderSummary({
@@ -55,27 +95,66 @@ export const CheckoutOrderSummary = memo(function CheckoutOrderSummary({
   promoSection,
   shipmentSplitSection,
   totalsSection,
+  onEditOrder,
   privacyConsentChecked = false,
   privacyConsentError = false,
-  privacyConsentLabel = null,
+  privacyConsentLabel: _privacyConsentLabel = null,
   onPrivacyConsentChange,
+  showCreateAccountOption = false,
+  createAccountChecked = false,
+  onCreateAccountChange,
+  deliveryEstimate = null,
+  useObligationToPayLabel = false,
 }: CheckoutOrderSummaryProps) {
   const t = useTranslations('cart')
   const tc = useTranslations('common')
+  const reverseCharge = isReverseChargeCheckout(quote?.checkout, quote)
+  const formatMoney = useFormatPrice('raw')
+  const formatShelf = useFormatPrice('shelf')
   const items = useCartItems()
   const inStockItems = getInStockCartItems(items)
   const hasCheckoutable = useCartHasCheckoutableItems()
+  const quoteByVariant = new Map(
+    quote?.lines.map((line) => [line.productVariantId, line]) ?? [],
+  )
 
-  const subtotal = quote?.subtotalBeforeDiscount ?? inStockItems.reduce((sum, item) => {
-    const price = item.unitPrice ?? item.plant.price
-    return sum + price * item.quantity
-  }, 0)
+  const formatLineAmount = (grossLineTotal: number) => {
+    const amount = toReverseChargeLineAmount(grossLineTotal, {
+      reverseCharge,
+      taxIncluded: quote?.checkout?.taxIncluded !== false,
+      stripVatRatePercent: quote?.checkout?.stripVatRatePercent,
+    })
+    return reverseCharge ? formatMoney(amount) : formatShelf(grossLineTotal)
+  }
+
+  const subtotal =
+    quote?.subtotalBeforeDiscount ??
+    inStockItems.reduce((sum, item) => {
+      return sum + resolveCheckoutLineTotal(item, null)
+    }, 0)
 
   const totalPrice = quote?.totalAmount ?? subtotal
   const discountAmount = Math.max(0, subtotal - totalPrice)
   const unavailableCount = items.length - inStockItems.length
   const canSubmit =
     !isLoading && !checkoutDisabled && hasCheckoutable && privacyConsentChecked
+  const showInlineItems = !shipmentSplitSection && inStockItems.length > 0
+
+  const consentRich = t.rich('privacyConsent', {
+    privacy: (chunks) => (
+      <Link
+        href="/privacy"
+        className="inline underline underline-offset-2 hover:text-foreground"
+      >
+        {chunks}
+      </Link>
+    ),
+    terms: (chunks) => (
+      <Link href="/terms" className="inline underline underline-offset-2 hover:text-foreground">
+        {chunks}
+      </Link>
+    ),
+  })
 
   return (
     <div
@@ -103,6 +182,64 @@ export const CheckoutOrderSummary = memo(function CheckoutOrderSummary({
           </p>
         ) : null}
 
+        {showInlineItems ? (
+          <div className="mt-4 space-y-3">
+            <ul className="space-y-1.5 text-sm">
+              {inStockItems.map((item) => {
+                const quoteLine = item.variantId
+                  ? quoteByVariant.get(item.variantId)
+                  : undefined
+                const lineTotal = resolveCheckoutLineTotal(item, quoteLine)
+                const key = item.variantId
+                  ? `${item.plant.id}:${item.variantId}`
+                  : item.plant.id
+                const { plantName, variantSize } = getCartLineDisplay(item)
+
+                return (
+                  <li
+                    key={key}
+                    className="flex items-start justify-between gap-3 rounded-md bg-muted px-2.5 py-2"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium leading-snug text-foreground">
+                        {plantName}
+                      </p>
+                      {variantSize ? (
+                        <p className="mt-0.5 truncate text-xs font-medium leading-snug text-primary/90">
+                          {variantSize}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p
+                        suppressHydrationWarning
+                        className="tabular-nums text-sm font-medium text-foreground"
+                      >
+                        {quoteLoading ? '...' : formatLineAmount(lineTotal)}
+                      </p>
+                      <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                        × {item.quantity} {tc('pieceShort')}
+                      </p>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+            {onEditOrder ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={onEditOrder}
+              >
+                <PenSquare className="mr-2 h-4 w-4" />
+                {t('editOrder')}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
         {shipmentSplitSection ? (
           <div className="mt-4 border-y border-border/40 py-4">{shipmentSplitSection}</div>
         ) : null}
@@ -114,7 +251,8 @@ export const CheckoutOrderSummary = memo(function CheckoutOrderSummary({
         {totalsSection ?? (
           <CartOrderTotalsBreakdown
             checkout={quote?.checkout}
-            productsSubtotal={quote?.totalAmount ?? totalPrice}
+            taxRegime={quote?.taxRegime}
+            productsSubtotal={quote?.checkout?.productsSubtotal ?? quote?.totalAmount ?? totalPrice}
             discountAmount={discountAmount}
             grandTotal={quote?.checkout?.grandTotal ?? totalPrice}
             quoteLoading={quoteLoading}
@@ -122,6 +260,10 @@ export const CheckoutOrderSummary = memo(function CheckoutOrderSummary({
             divided
           />
         )}
+
+        {deliveryEstimate ? (
+          <p className="mt-3 text-sm text-muted-foreground">{deliveryEstimate}</p>
+        ) : null}
 
         {!hasCheckoutable ? (
           <p className="mt-3 text-sm text-destructive">
@@ -162,51 +304,56 @@ export const CheckoutOrderSummary = memo(function CheckoutOrderSummary({
         ) : null}
       </div>
 
-      <div className="shrink-0 space-y-3 border-t border-border/50 bg-background/95 px-4 py-3 shadow-[0_-6px_16px_rgba(0,0,0,0.08)] backdrop-blur-md supports-[backdrop-filter]:bg-background/75 sm:px-6">
-        <Button
-          type="submit"
-          form={formId}
-          size="lg"
-          disabled={!canSubmit}
-          className="w-full"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t('placingOrder')}
-            </>
-          ) : (
-            t('checkoutGdpr')
-          )}
-        </Button>
+      <div className="shrink-0 space-y-3 border-t border-border bg-background px-4 py-3 shadow-[0_-6px_16px_rgba(0,0,0,0.08)] sm:px-6">
+        {showCreateAccountOption ? (
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="checkout-create-account"
+              checked={createAccountChecked}
+              onCheckedChange={(checked) => onCreateAccountChange?.(checked === true)}
+              className="mt-0.5 size-4 rounded-[4px] border-2"
+            />
+            <Label
+              htmlFor="checkout-create-account"
+              className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground"
+            >
+              {t('createAccount')}
+            </Label>
+          </div>
+        ) : null}
         <div className="flex items-start gap-3">
           <Checkbox
             id="checkout-privacy-consent"
             checked={privacyConsentChecked}
             onCheckedChange={(checked) => onPrivacyConsentChange?.(checked === true)}
             aria-invalid={privacyConsentError}
-            className={cn(privacyConsentError && 'border-destructive')}
+            className={cn(
+              'mt-0.5 size-4 shrink-0 rounded-[4px] border-2',
+              privacyConsentError && 'border-destructive',
+            )}
           />
           <Label
             htmlFor="checkout-privacy-consent"
-            className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground"
+            className="block min-w-0 flex-1 cursor-pointer gap-0 text-xs font-normal leading-snug text-muted-foreground"
           >
-            {privacyConsentLabel?.trim() ? (
-              privacyConsentLabel
-            ) : (
-              t.rich('privacyConsent', {
-                terms: (chunks) => (
-                  <Link href="/terms" className="underline underline-offset-2 hover:text-foreground">
-                    {chunks}
-                  </Link>
-                ),
-              })
-            )}
+            <span className="whitespace-normal [&>a]:inline [&>a]:whitespace-nowrap">
+              {consentRich}
+            </span>
           </Label>
         </div>
         {privacyConsentError ? (
           <p className="text-xs text-destructive">{t('privacyConsentRequired')}</p>
         ) : null}
+        <Button type="submit" form={formId} size="lg" disabled={!canSubmit} className="w-full">
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {t('placingOrder')}
+            </>
+          ) : (
+            t(useObligationToPayLabel ? 'placeOrderWithObligation' : 'placeOrder')
+          )}
+        </Button>
       </div>
     </div>
   )

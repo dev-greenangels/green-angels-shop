@@ -10,11 +10,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Некоректний JSON.' }, { status: 400 })
   }
 
+  // Не проксуємо client-supplied userId/customerPhone — аудиторія лише з session cookie.
+  const sanitized =
+    body && typeof body === 'object' && !Array.isArray(body)
+      ? (() => {
+          const next = { ...(body as Record<string, unknown>) }
+          delete next.userId
+          delete next.customerPhone
+          return next
+        })()
+      : body
+
   try {
     const res = await fetchBackend('/pricing/quote', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify(sanitized),
+      request,
     })
     const data = await readBackendJson(res)
     if (!res.ok) return NextResponse.json(data, { status: res.status })

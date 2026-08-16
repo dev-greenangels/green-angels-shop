@@ -2,9 +2,12 @@ import { NextResponse } from 'next/server'
 
 import { fetchBackend, readBackendJson } from '@/lib/api/backend-fetch'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const res = await fetchBackend('/blog', { cache: 'no-store' })
+    const { searchParams } = new URL(request.url)
+    const qs = searchParams.toString()
+    const path = qs ? `/blog?${qs}` : '/blog'
+    const res = await fetchBackend(path, { cache: 'no-store' })
     const data = await readBackendJson(res)
     if (!res.ok) return NextResponse.json(data, { status: res.status })
     return NextResponse.json(data)

@@ -6,14 +6,33 @@ type RouteContext = {
   params: Promise<{ orderNumber: string }>
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+function readConfirmationToken(request: Request): string {
+  const header = request.headers.get('x-order-confirmation-token')?.trim()
+  if (header) return header
+  try {
+    const url = new URL(request.url)
+    return url.searchParams.get('confirmation')?.trim() ?? ''
+  } catch {
+    return ''
+  }
+}
+
+export async function GET(request: Request, context: RouteContext) {
   const { orderNumber } = await context.params
   const encoded = encodeURIComponent(orderNumber)
+  const confirmationToken = readConfirmationToken(request)
 
   try {
+    const headers: Record<string, string> = {}
+    if (confirmationToken) {
+      headers['X-Order-Confirmation-Token'] = confirmationToken
+    }
+
     const res = await fetchBackend(`/orders/confirmation/${encoded}`, {
       method: 'GET',
+      request,
       cache: 'no-store',
+      headers,
     })
     const data = await readBackendJson(res)
     if (!res.ok) return NextResponse.json(data, { status: res.status })

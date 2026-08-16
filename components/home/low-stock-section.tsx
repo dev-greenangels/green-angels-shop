@@ -23,7 +23,7 @@ export async function LowStockSection({
       subtitle={settings.subtitle}
       plants={plants}
       unavailable={unavailable}
-      className="border-y border-border/50 bg-gradient-to-b from-background via-muted/20 to-background"
+      className="border-y border-border/30"
     />
   )
 }

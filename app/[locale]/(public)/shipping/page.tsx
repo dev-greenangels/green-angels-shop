@@ -32,7 +32,7 @@ export default async function ShippingPage() {
   return (
     <>
       <Navigation />
-      <main className="flex-1 bg-background">
+      <main className="flex-1 bg-transparent">
         <div className="bg-secondary/30 py-8 md:py-12">
           <div className={siteContentShellClassName}>
             <PublicPageBreadcrumbs

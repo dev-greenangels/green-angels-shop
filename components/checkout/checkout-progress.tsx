@@ -36,7 +36,7 @@ export const CheckoutProgress = memo(function CheckoutProgress({
               disabled={index > currentStepIndex}
               className={`flex min-w-[4.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-full px-3 py-2.5 transition-colors sm:min-w-0 sm:flex-row sm:gap-2 sm:px-4 sm:py-2 ${
                 index === currentStepIndex
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-primary-gradient text-primary-foreground'
                   : index < currentStepIndex
                     ? 'cursor-pointer bg-primary/10 text-primary hover:bg-primary/20'
                     : 'cursor-not-allowed bg-muted text-muted-foreground'

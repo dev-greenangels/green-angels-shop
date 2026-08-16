@@ -1,24 +1,17 @@
 'use client'
 
 import { type CSSProperties } from 'react'
-import { Filter, Loader2 } from 'lucide-react'
+import { Filter, Loader2, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { CatalogActiveFilters } from '@/components/catalog/catalog-active-filters'
 import { CatalogPriceFilter } from '@/components/catalog/catalog-price-filter'
 import { CatalogContainerFilterValues } from '@/components/catalog/catalog-container-filter-values'
+import { useStickyToolbarOptional } from '@/components/layout/sticky-toolbar-shell'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import type { CatalogFilterDefinitions } from '@/lib/backstage/characteristics'
 import {
@@ -281,6 +274,8 @@ export function CatalogFilterPanel({
   )
 }
 
+export const CATALOG_FILTER_PANEL_ID = 'filter'
+
 export const CatalogFilterSheet = FilterSidebarMobile
 
 export function FilterSidebar({
@@ -326,6 +321,7 @@ export function FilterSidebar({
   )
 }
 
+/** Mobile filter trigger for StickyToolbarShell — expands inline, not a Sheet. */
 export function FilterSidebarMobile({
   filterScope,
   filters,
@@ -337,57 +333,97 @@ export function FilterSidebarMobile({
   collapseContainerGroupsByDefault,
   triggerClassName,
   compact,
-}: FilterSidebarProps & { triggerClassName?: string; compact?: boolean }) {
+  iconOnly = false,
+  panelId = CATALOG_FILTER_PANEL_ID,
+}: FilterSidebarProps & {
+  triggerClassName?: string
+  compact?: boolean
+  iconOnly?: boolean
+  panelId?: string
+}) {
   const t = useTranslations('filter')
+  const tc = useTranslations('common')
+  const toolbar = useStickyToolbarOptional()
   const { priceBounds } = useCatalogFilterDefinitions(filterScope, filters, filterDefinitionsOptions)
   const activeCount = countActiveCatalogFilters(filters, priceBounds)
+  const open = toolbar?.isOpen(panelId) ?? false
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
+    <Button
+      type="button"
+      variant="outline"
+      size={iconOnly ? 'icon-sm' : 'sm'}
+      className={cn(
+        'relative lg:hidden',
+        iconOnly
+          ? 'size-8 shrink-0 shadow-xs'
+          : compact
+            ? 'h-7 gap-1 px-2 text-xs'
+            : undefined,
+        open && 'border-primary/40 bg-primary/10 text-primary',
+        triggerClassName,
+      )}
+      aria-label={t('title')}
+      aria-expanded={open}
+      onClick={() => toolbar?.togglePanel(panelId)}
+    >
+      {open ? (
+        <X className={cn(iconOnly ? 'h-4 w-4' : compact ? 'mr-1 h-3.5 w-3.5' : 'mr-2 h-4 w-4')} />
+      ) : (
+        <Filter
           className={cn(
-            'lg:hidden',
-            compact && 'h-7 gap-1 px-2 text-xs',
-            triggerClassName,
+            iconOnly ? 'h-4 w-4' : compact ? 'mr-1 h-3.5 w-3.5' : 'mr-2 h-4 w-4',
+          )}
+        />
+      )}
+      {iconOnly ? (
+        <span className="sr-only">{open ? tc('close') : t('title')}</span>
+      ) : (
+        t('title')
+      )}
+      {!open && activeCount > 0 ? (
+        <span
+          className={cn(
+            'rounded-full bg-primary-gradient text-primary-foreground',
+            iconOnly
+              ? 'absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center px-1 text-[10px] leading-none'
+              : compact
+                ? 'ml-1 min-w-[1.125rem] px-1 py-0 text-[10px] leading-none'
+                : 'ml-2 px-2 py-0.5 text-xs',
           )}
         >
-          <Filter className={cn(compact ? 'mr-1 h-3.5 w-3.5' : 'mr-2 h-4 w-4')} />
-          {t('title')}
-          {activeCount > 0 ? (
-            <span
-              className={cn(
-                'rounded-full bg-primary text-primary-foreground',
-                compact
-                  ? 'ml-1 min-w-[1.125rem] px-1 py-0 text-[10px] leading-none'
-                  : 'ml-2 px-2 py-0.5 text-xs',
-              )}
-            >
-              {activeCount}
-            </span>
-          ) : null}
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="w-[min(100vw-2rem,320px)]">
-        <SheetHeader>
-          <SheetTitle>{t('title')}</SheetTitle>
-          <SheetDescription>{t('description')}</SheetDescription>
-        </SheetHeader>
-        <div className="mt-6 overflow-y-auto pb-8">
-          <FilterSidebarContent
-            filters={filters}
-            onFilterChange={onFilterChange}
-            filterScope={filterScope}
-            filterVisibility={filterVisibility}
-            filterDefinitionsOptions={filterDefinitionsOptions}
-            fitContent={fitContent}
-            expandContainerByDefault={expandContainerByDefault}
-            collapseContainerGroupsByDefault={collapseContainerGroupsByDefault}
-          />
-        </div>
-      </SheetContent>
-    </Sheet>
+          {activeCount}
+        </span>
+      ) : null}
+    </Button>
+  )
+}
+
+export function CatalogFilterToolbarPanel({
+  filters,
+  onFilterChange,
+  filterScope,
+  filterVisibility,
+  filterDefinitionsOptions,
+  fitContent,
+  expandContainerByDefault,
+  collapseContainerGroupsByDefault,
+}: FilterSidebarProps) {
+  const t = useTranslations('filter')
+
+  return (
+    <div>
+      <p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground">{t('title')}</p>
+      <FilterSidebarContent
+        filters={filters}
+        onFilterChange={onFilterChange}
+        filterScope={filterScope}
+        filterVisibility={filterVisibility}
+        filterDefinitionsOptions={filterDefinitionsOptions}
+        fitContent={fitContent}
+        expandContainerByDefault={expandContainerByDefault}
+        collapseContainerGroupsByDefault={collapseContainerGroupsByDefault}
+      />
+    </div>
   )
 }

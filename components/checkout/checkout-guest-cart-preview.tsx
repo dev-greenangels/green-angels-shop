@@ -17,7 +17,7 @@ export const CheckoutGuestCartPreview = memo(function CheckoutGuestCartPreview()
   const totalPrice = useCartTotalPrice()
 
   return (
-    <section className="mt-10 rounded-xl border border-border/80 bg-card/95 p-5 shadow-sm sm:p-6">
+    <section className="mt-10 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
       <h3 className="mb-5 font-serif text-lg font-semibold text-foreground">{t('inCart')}</h3>
       <p className="text-base text-foreground">
         <span className="font-medium">{tc('itemCount', { count: inStockItems.length })}</span>
@@ -55,7 +55,7 @@ export const CheckoutGuestCartPreview = memo(function CheckoutGuestCartPreview()
 
         </div>
 
-        <div className="flex items-center justify-between gap-4 rounded-lg bg-muted/40 px-4 py-4 sm:px-5">
+        <div className="flex items-center justify-between gap-4 rounded-lg bg-muted px-4 py-4 sm:px-5">
           <span className="text-sm font-medium text-muted-foreground">{t('grandTotal')}</span>
           <span className="text-xl font-bold tabular-nums text-primary sm:text-2xl">
             {totalPrice.toLocaleString(locale === 'en' ? 'en-GB' : 'uk-UA')} {tc('uah')}

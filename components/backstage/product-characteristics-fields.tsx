@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
 import {
   characteristicsFormFromLegacy,
   emptyCharacteristicsForm,
@@ -61,6 +62,7 @@ export function ProductCharacteristicsFields({
   onChange,
 }: ProductCharacteristicsFieldsProps) {
   const tHints = useTranslations('hints')
+  const { locale: contentLocale } = useBackstageContentLocale()
   const [definitions, setDefinitions] = useState<CharacteristicDefinition[]>([])
   const [loading, setLoading] = useState(true)
   const [pendingCharacteristicId, setPendingCharacteristicId] = useState('')
@@ -69,7 +71,7 @@ export function ProductCharacteristicsFields({
 
   useEffect(() => {
     let cancelled = false
-    void fetchCharacteristicDefinitions()
+    void fetchCharacteristicDefinitions({ locale: contentLocale, edit: false })
       .then((items) => {
         if (cancelled) return
         setDefinitions(items)
@@ -83,9 +85,9 @@ export function ProductCharacteristicsFields({
     return () => {
       cancelled = true
     }
-    // Intentionally once on mount (legacy seed).
+    // Seed from legacy once; refetch labels when content locale changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [contentLocale])
 
   const current = useMemo(() => {
     if (Object.keys(value).length) return value

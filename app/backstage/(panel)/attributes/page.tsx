@@ -10,9 +10,12 @@ import {
   VariantAttributeEditor,
   VariantAttributeListItem,
 } from '@/components/backstage/variant-attribute-editor'
+import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
+import { ContentLocaleBanner, ContentLocaleLabel } from '@/components/backstage/content-locale-banner'
 import { VariantAttributeValuesForm } from '@/components/backstage/variant-attribute-values-form'
 import { VariantLabelOrderForm } from '@/components/backstage/variant-label-order-form'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
@@ -53,6 +56,8 @@ import {
   updateVariantLabelSettings,
   DEFAULT_VARIANT_LABEL_TYPE_ORDER,
 } from '@/lib/backstage/variant-label-settings'
+import { CHARACTERISTIC_ICON_OPTIONS } from '@/lib/characteristics/icons'
+import { cn } from '@/lib/utils'
 
 export default function AttributesPage() {
   const tPages = useTranslations('pages.attributes')
@@ -65,6 +70,8 @@ export default function AttributesPage() {
 
   const tAttrTypes = useTranslations('variantAttributeTypes')
   const tAttrTypeHints = useTranslations('variantAttributeTypeHints')
+  const { locale: contentLocale } = useBackstageContentLocale()
+  const tBanner = useTranslations('contentBanner')
 
   const [items, setItems] = useState<VariantAttribute[]>([])
   const [loading, setLoading] = useState(true)
@@ -78,6 +85,8 @@ export default function AttributesPage() {
   const [createUnit, setCreateUnit] = useState('')
   const [createLegacyId, setCreateLegacyId] = useState('')
   const [createValues, setCreateValues] = useState<ValueDraft[]>(() => [createValueDraft()])
+  const [createShowOnProductPage, setCreateShowOnProductPage] = useState(false)
+  const [createIcon, setCreateIcon] = useState('')
   const [labelTypeOrder, setLabelTypeOrder] = useState<VariantAttributeType[]>(
     () => [...DEFAULT_VARIANT_LABEL_TYPE_ORDER],
   )
@@ -99,6 +108,8 @@ export default function AttributesPage() {
     setCreateUnit('')
     setCreateLegacyId('')
     setCreateValues([createValueDraft()])
+    setCreateShowOnProductPage(false)
+    setCreateIcon('')
   }
 
   const formatValidationError = (code: string): string => {
@@ -115,7 +126,7 @@ export default function AttributesPage() {
     setLoading(true)
     try {
       const [data, labelSettings] = await Promise.all([
-        fetchVariantAttributes(),
+        fetchVariantAttributes({ locale: contentLocale }),
         fetchVariantLabelSettings(),
       ])
       const order = normalizeVariantLabelTypeOrder(labelSettings.labelTypeOrder)
@@ -131,7 +142,7 @@ export default function AttributesPage() {
     } finally {
       setLoading(false)
     }
-  }, [tt])
+  }, [tt, contentLocale])
 
   useEffect(() => {
     void load()
@@ -176,8 +187,10 @@ export default function AttributesPage() {
         description: createDescription.trim() || undefined,
         unit: createUnit.trim() || undefined,
         legacyId: createLegacyId.trim() || undefined,
+        showOnProductPage: createShowOnProductPage,
+        icon: createShowOnProductPage ? createIcon.trim() || null : null,
         values,
-      })
+      }, contentLocale)
       toast.success(tt('attributeCreated'))
       setCreateOpen(false)
       resetCreateForm()
@@ -201,6 +214,8 @@ export default function AttributesPage() {
       legacyId: string | null
       isFilterable: boolean
       participatesInLabel: boolean
+      showOnProductPage: boolean
+      icon: string | null
       values: import('@/lib/backstage/variant-attributes').ValueDraft[]
     },
   ) => {
@@ -236,11 +251,13 @@ export default function AttributesPage() {
         legacyId: payload.legacyId,
         isFilterable: payload.isFilterable,
         participatesInLabel: payload.participatesInLabel,
+        showOnProductPage: payload.showOnProductPage,
+        icon: payload.showOnProductPage ? payload.icon?.trim() || null : null,
         values: cleaned.map((v, index) => ({
           ...v,
           sortOrder: index,
         })),
-      })
+      }, contentLocale)
       toast.success(tt('saved'))
       setItems((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))
     } catch (err) {
@@ -301,6 +318,7 @@ export default function AttributesPage() {
             </Button>
           </div>
         </div>
+        <ContentLocaleBanner />
 
         {loading ? (
           <div className="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
@@ -411,10 +429,10 @@ export default function AttributesPage() {
           </DialogHeader>
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
             <div className="space-y-2">
-              <Label htmlFor="create-name">{tLabels('nameRequired')}</Label>
+              <ContentLocaleLabel htmlFor="create-name">{tLabels('nameRequired')}</ContentLocaleLabel>
               <Input
                 id="create-name"
-                placeholder={tHints('attributeName')}
+                placeholder={tBanner('missingPlaceholder')}
                 value={createName}
                 onChange={(e) => setCreateName(e.target.value)}
               />
@@ -473,6 +491,43 @@ export default function AttributesPage() {
                 placeholder={tHints('optional')}
               />
             </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="create-attr-product-page"
+                checked={createShowOnProductPage}
+                onCheckedChange={(checked) => setCreateShowOnProductPage(checked === true)}
+              />
+              <Label htmlFor="create-attr-product-page" className="font-normal">
+                {tLabels('showOnProductPage')}
+              </Label>
+            </div>
+            {createShowOnProductPage ? (
+              <div className="space-y-2">
+                <Label>{tLabels('productPageIcon')}</Label>
+                <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                  {CHARACTERISTIC_ICON_OPTIONS.map((option) => {
+                    const Icon = option.icon
+                    const active = createIcon === option.name
+                    return (
+                      <button
+                        key={option.name}
+                        type="button"
+                        onClick={() => setCreateIcon(option.name)}
+                        className={cn(
+                          'flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs transition-colors',
+                          active
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border hover:border-primary/30',
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span className="truncate">{option.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : null}
             <VariantAttributeValuesForm
               valueType={createValueType}
               unit={createUnit}

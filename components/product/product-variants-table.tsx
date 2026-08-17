@@ -41,6 +41,8 @@ type ProductVariantsTableProps = {
   fullyOutOfStock: boolean
   onBuy: (variant: ProductVariant, quantity: number, unitPrice: number) => void
   embedded?: boolean
+  selectedVariantId?: string | null
+  onSelectVariant?: (variantId: string) => void
 }
 
 const variantSizeLabelClassName =
@@ -736,12 +738,16 @@ function VariantMobileCard({
   plantName,
   onBuy,
   embedded = false,
+  selected = false,
+  onSelect,
 }: {
   variant: ProductVariant
   plantId: string
   plantName: string
   onBuy: ProductVariantsTableProps['onBuy']
   embedded?: boolean
+  selected?: boolean
+  onSelect?: () => void
 }) {
   const hasShipment = variantHasAvailableFrom(variant) && Boolean(variant.availableFrom)
   const discountLayout = getVariantDiscountLayout(variant)
@@ -886,9 +892,12 @@ function VariantMobileCard({
   return (
     <article
       className={cn(
-        'overflow-hidden rounded-xl border border-primary/15 bg-card shadow-sm',
+        'overflow-hidden rounded-xl border bg-card shadow-sm',
+        selected ? 'border-primary ring-1 ring-primary/25' : 'border-primary/15',
         embedded && 'shadow-md',
+        onSelect && 'cursor-pointer',
       )}
+      onClick={onSelect}
     >
       <div
         className={cn(
@@ -939,10 +948,17 @@ export function ProductVariantsTable({
   fullyOutOfStock,
   onBuy,
   embedded = false,
+  selectedVariantId = null,
+  onSelectVariant,
 }: ProductVariantsTableProps) {
   const t = useTranslations('product')
   const canOrder = isPlantOrderable(variants)
   const { min: priceMin, max: priceMax } = getVariantPriceRange(variants)
+
+  const handleBuy: ProductVariantsTableProps['onBuy'] = (variant, quantity, unitPrice) => {
+    onSelectVariant?.(variant.id)
+    onBuy(variant, quantity, unitPrice)
+  }
 
   const variantsContent = fullyOutOfStock ? (
     <ProductOutOfStockBlock plantId={plantId} plantName={plantName} />
@@ -955,7 +971,9 @@ export function ProductVariantsTable({
           variant={variant}
           plantId={plantId}
           plantName={plantName}
-          onBuy={onBuy}
+          selected={selectedVariantId === variant.id}
+          onSelect={onSelectVariant ? () => onSelectVariant(variant.id) : undefined}
+          onBuy={handleBuy}
         />
       ))}
     </div>
@@ -967,7 +985,9 @@ export function ProductVariantsTable({
           variant={variant}
           plantId={plantId}
           plantName={plantName}
-          onBuy={onBuy}
+          selected={selectedVariantId === variant.id}
+          onSelect={onSelectVariant ? () => onSelectVariant(variant.id) : undefined}
+          onBuy={handleBuy}
         />
       ))}
     </div>

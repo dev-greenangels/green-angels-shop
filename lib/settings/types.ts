@@ -119,6 +119,7 @@ import type { ReviewSortOrder } from '@/lib/reviews/types'
 
 export type HomePageSettings = {
   sectionOrder: HomeSectionKey[]
+  sectionHidden: HomeSectionKey[]
   hero: {
     badge: string
     title: string

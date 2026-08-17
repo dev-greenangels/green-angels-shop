@@ -4,6 +4,18 @@ export interface PriceTier {
   pricePerUnit: number
 }
 
+/** Атрибут / характеристика для блоку на сторінці товару */
+export interface ProductDisplayCharacteristic {
+  id: string
+  slug: string
+  name: string
+  icon: string | null
+  unit: string | null
+  valueType: string
+  displayValue: string
+  sortOrder: number
+}
+
 /** Варіант товару (розмір / маркування) */
 export interface ProductVariant {
   id: string
@@ -22,17 +34,8 @@ export interface ProductVariant {
   salesUnitSymbol?: string | null
   /** Показувати кнопку «Свіжі фото» лише якщо true */
   freshPhotos?: boolean
-}
-
-export interface ProductDisplayCharacteristic {
-  id: string
-  slug: string
-  name: string
-  icon: string | null
-  unit: string | null
-  valueType: string
-  displayValue: string
-  sortOrder: number
+  /** Атрибути з showOnProductPage для цього варіанта */
+  displayAttributes?: ProductDisplayCharacteristic[]
 }
 
 export interface Plant {

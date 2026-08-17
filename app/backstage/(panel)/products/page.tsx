@@ -8,6 +8,8 @@ import Link from 'next/link'
 import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
+import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
+import { ContentLocaleBanner } from '@/components/backstage/content-locale-banner'
 import { CategoryThumbnail } from '@/components/backstage/category-thumbnail'
 import {
   AlertDialog,
@@ -108,6 +110,7 @@ function ProductsPageContent() {
   const tc = useTranslations('common')
   const tAria = useTranslations('aria')
   const tLabels = useTranslations('labels')
+  const { locale: contentLocale } = useBackstageContentLocale()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -172,6 +175,7 @@ function ProductsPageContent() {
         stock: stockFilter,
         page,
         pageSize: PAGE_SIZE,
+        locale: contentLocale,
       })
       setProducts(data.items)
       setTotal(data.total)
@@ -188,7 +192,7 @@ function ProductsPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [search, categoryFilter, publishedFilter, stockFilter, page, tt])
+  }, [search, categoryFilter, publishedFilter, stockFilter, page, tt, contentLocale])
 
   useEffect(() => {
     setSearchInput(urlSearch)
@@ -196,10 +200,10 @@ function ProductsPageContent() {
   }, [urlSearch])
 
   useEffect(() => {
-    void fetchCategoryTree()
+    void fetchCategoryTree(contentLocale, { edit: false })
       .then((tree) => setCategories(flattenCategories(tree)))
       .catch(() => {})
-  }, [])
+  }, [contentLocale])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -380,6 +384,8 @@ function ProductsPageContent() {
             </Button>
           </div>
         </div>
+
+        <ContentLocaleBanner />
 
         <Card>
           <CardContent className="pt-6">

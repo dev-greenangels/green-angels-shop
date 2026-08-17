@@ -350,7 +350,10 @@
     "table": "Tabuľka produktov"
   },
   "contentBanner": {
-    "editing": "Upravujete preklad: {locale}. Slug, cena a obrázky sú spoločné pre všetky jazyky."
+    "editing": "Upravujete preklad: {locale}. Slug, cena a obrázky sú spoločné pre všetky jazyky.",
+    "missingPlaceholder": "Preklad v tomto jazyku chýba",
+    "switchConfirm": "Neuložené zmeny v poliach sa stratia. Prepnúť jazyk obsahu?",
+    "cmsNotTranslated": "Texty úvodnej stránky a kontaktov patria k tomuto nasadeniu, nie k prepínaču jazyka obsahu."
   },
   "validation": {
     "categoryNameRequired": "Zadajte názov kategórie.",

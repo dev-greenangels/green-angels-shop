@@ -42,6 +42,8 @@ export type VariantAttribute = {
   unit: string | null
   isFilterable: boolean
   participatesInLabel: boolean
+  showOnProductPage: boolean
+  icon: string | null
   values: VariantAttributeValue[]
 }
 
@@ -69,6 +71,8 @@ export type CreateVariantAttributePayload = {
   legacyId?: string
   isFilterable?: boolean
   participatesInLabel?: boolean
+  showOnProductPage?: boolean
+  icon?: string | null
   values: VariantAttributeValueInput[]
 }
 
@@ -82,6 +86,8 @@ export type UpdateVariantAttributePayload = {
   sortOrder?: number
   isFilterable?: boolean
   participatesInLabel?: boolean
+  showOnProductPage?: boolean
+  icon?: string | null
   values?: Array<VariantAttributeValueInput & { id?: string }>
 }
 
@@ -130,6 +136,8 @@ export type VariantAttributeEditorSnapshot = {
   legacyId: string | null
   isFilterable: boolean
   participatesInLabel: boolean
+  showOnProductPage: boolean
+  icon: string | null
   values: Array<{
     id?: string
     label: string
@@ -178,6 +186,8 @@ export function snapshotFromAttribute(attribute: VariantAttribute): VariantAttri
     legacyId: attribute.legacyId,
     isFilterable: attribute.isFilterable,
     participatesInLabel: attribute.participatesInLabel,
+    showOnProductPage: attribute.showOnProductPage ?? false,
+    icon: attribute.icon ?? null,
     values: attribute.values.map((value) => draftToValueSnapshot({
       key: value.id,
       id: value.id,
@@ -204,6 +214,8 @@ export function snapshotFromDrafts(
   legacyId: string,
   isFilterable: boolean,
   participatesInLabel: boolean,
+  showOnProductPage: boolean,
+  icon: string | null,
   values: ValueDraft[],
 ): VariantAttributeEditorSnapshot {
   return {
@@ -215,6 +227,8 @@ export function snapshotFromDrafts(
     legacyId: legacyId.trim() || null,
     isFilterable,
     participatesInLabel,
+    showOnProductPage,
+    icon: showOnProductPage ? icon?.trim() || null : null,
     values: values.filter((value) => value.label.trim()).map(draftToValueSnapshot),
   }
 }
@@ -298,6 +312,10 @@ export function normalizeVariantAttribute(attribute: VariantAttribute): VariantA
     valueType: normalizeVariantAttributeType(attribute.valueType),
     description: attribute.description ?? null,
     unit: attribute.unit ?? null,
+    isFilterable: attribute.isFilterable ?? true,
+    participatesInLabel: attribute.participatesInLabel ?? true,
+    showOnProductPage: attribute.showOnProductPage ?? false,
+    icon: attribute.icon ?? null,
     values: (attribute.values ?? []).map((value) => ({
       ...value,
       numericMin: value.numericMin ?? null,
@@ -346,8 +364,15 @@ async function parseError(res: Response): Promise<string> {
   return 'Помилка запиту'
 }
 
-export async function fetchVariantAttributes(): Promise<VariantAttribute[]> {
-  const res = await fetch('/api/backstage/variant-attributes', {
+export async function fetchVariantAttributes(options?: {
+  locale?: string
+  edit?: boolean
+}): Promise<VariantAttribute[]> {
+  const query = new URLSearchParams()
+  if (options?.locale) query.set('locale', options.locale)
+  if (options?.edit === false) query.set('edit', '0')
+  const suffix = query.toString() ? `?${query}` : ''
+  const res = await fetch(`/api/backstage/variant-attributes${suffix}`, {
     credentials: 'include',
     cache: 'no-store',
   })
@@ -357,13 +382,14 @@ export async function fetchVariantAttributes(): Promise<VariantAttribute[]> {
 }
 
 export async function createVariantAttribute(
-  payload: CreateVariantAttributePayload
+  payload: CreateVariantAttributePayload,
+  locale: string,
 ): Promise<VariantAttribute> {
   const res = await fetch('/api/backstage/variant-attributes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ ...payload, locale: 'uk' }),
+    body: JSON.stringify({ ...payload, locale }),
   })
   if (!res.ok) throw new Error(await parseError(res))
   return normalizeVariantAttribute(await res.json())
@@ -371,13 +397,14 @@ export async function createVariantAttribute(
 
 export async function addVariantAttributeValues(
   attributeId: string,
-  values: VariantAttributeValueInput[]
+  values: VariantAttributeValueInput[],
+  locale: string,
 ): Promise<VariantAttribute> {
   const res = await fetch(`/api/backstage/variant-attributes/${attributeId}/values`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ values, locale: 'uk' }),
+    body: JSON.stringify({ values, locale }),
   })
   if (!res.ok) throw new Error(await parseError(res))
   return normalizeVariantAttribute(await res.json())
@@ -385,13 +412,14 @@ export async function addVariantAttributeValues(
 
 export async function updateVariantAttribute(
   attributeId: string,
-  payload: UpdateVariantAttributePayload
+  payload: UpdateVariantAttributePayload,
+  locale: string,
 ): Promise<VariantAttribute> {
   const res = await fetch(`/api/backstage/variant-attributes/${attributeId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ ...payload, locale: 'uk' }),
+    body: JSON.stringify({ ...payload, locale }),
   })
   if (!res.ok) throw new Error(await parseError(res))
   return normalizeVariantAttribute(await res.json())

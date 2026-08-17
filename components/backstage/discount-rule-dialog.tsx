@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { fetchCategoryTree, type CategoryTreeNode } from '@/lib/backstage/categories'
+import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
 import { backstageSectionClassName } from '@/lib/backstage/picker-styles'
 import { saveDiscountRule, type DiscountRuleItem } from '@/lib/backstage/pricing'
 
@@ -92,6 +93,7 @@ export function DiscountRuleDialog({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { locale: contentLocale } = useBackstageContentLocale()
   const [name, setName] = useState('')
   const [type, setType] = useState<'PERCENT' | 'FIXED'>('PERCENT')
   const [value, setValue] = useState('5')
@@ -160,11 +162,11 @@ export function DiscountRuleDialog({
   useEffect(() => {
     if (!open) return
     setCategoriesLoading(true)
-    fetchCategoryTree()
+    fetchCategoryTree(contentLocale, { edit: false })
       .then((tree) => setCategoryOptions(flattenCategoryOptions(tree)))
       .catch(() => setCategoryOptions([]))
       .finally(() => setCategoriesLoading(false))
-  }, [open])
+  }, [open, contentLocale])
 
   const toggleGroup = (id: string) => {
     setGroupIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]))

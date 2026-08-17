@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Loader2, Plus, Save, Trash2 } from 'lucide-react'
 
+import { ContentLocaleLabel } from '@/components/backstage/content-locale-banner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -73,6 +74,7 @@ export function CharacteristicEditor({
   const tLabels = useTranslations('labels')
   const tAria = useTranslations('aria')
   const tValueTypes = useTranslations('valueTypes')
+  const tBanner = useTranslations('contentBanner')
 
   const [name, setName] = useState(definition.name)
   const [valueType, setValueType] = useState(definition.valueType)
@@ -138,8 +140,13 @@ export function CharacteristicEditor({
         <div className="space-y-4 pb-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="char-name">{tLabels('nameRequired')}</Label>
-              <Input id="char-name" value={name} onChange={(e) => setName(e.target.value)} />
+              <ContentLocaleLabel htmlFor="char-name">{tLabels('nameRequired')}</ContentLocaleLabel>
+              <Input
+                id="char-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={tBanner('missingPlaceholder')}
+              />
               <p className="text-xs text-muted-foreground">Slug: {definition.slug}</p>
             </div>
             <div className="space-y-2">
@@ -258,7 +265,7 @@ export function CharacteristicEditor({
                         <Input
                           value={row.label}
                           onChange={(e) => patchOption(row.key, { label: e.target.value })}
-                          placeholder={tHints('optionNamePlaceholder')}
+                          placeholder={tBanner('missingPlaceholder')}
                           className="h-9"
                         />
                         <Input
@@ -384,17 +391,18 @@ export function CreateCharacteristicFields({
   const tHints = useTranslations('hints')
   const tLabels = useTranslations('labels')
   const tValueTypes = useTranslations('valueTypes')
+  const tBanner = useTranslations('contentBanner')
   const showOptions = valueType === 'SELECT' || valueType === 'MULTI_SELECT'
 
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="create-char-name">{tLabels('nameRequired')}</Label>
+        <ContentLocaleLabel htmlFor="create-char-name">{tLabels('nameRequired')}</ContentLocaleLabel>
         <Input
           id="create-char-name"
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
-          placeholder={tHints('characteristicNamePlaceholder')}
+          placeholder={tBanner('missingPlaceholder')}
         />
       </div>
       <div className="space-y-2">

@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { showAddedToCartToast } from '@/lib/cart-toast'
 
@@ -20,6 +21,7 @@ import { getCartLineQuantity } from '@/lib/cart-limits'
 import { useCartActions, useCartItems } from '@/lib/cart-store'
 import { ClientPublicPageBreadcrumbs } from '@/components/client-public-page-breadcrumbs'
 import { getVisiblePlantVariants, isPlantFullyUnavailable } from '@/lib/plant-variants'
+import { mergeProductPageDisplayItems } from '@/lib/product-display'
 import { LISTING_PRODUCT_GRID_CLASS_NAME } from '@/lib/catalog/grid-columns'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import type { CatalogCategoryBreadcrumb } from '@/lib/catalog/categories'
@@ -48,6 +50,23 @@ export function ProductPageView({
   const { addItem, updateQuantity } = useCartActions()
 
   const variants = getVisiblePlantVariants(plant)
+  const [activeVariantId, setActiveVariantId] = useState<string | null>(
+    () => variants[0]?.id ?? null,
+  )
+
+  useEffect(() => {
+    const next = getVisiblePlantVariants(plant)
+    setActiveVariantId((prev) => {
+      if (prev && next.some((variant) => variant.id === prev)) return prev
+      return next[0]?.id ?? null
+    })
+  }, [plant])
+
+  const activeVariant = variants.find((variant) => variant.id === activeVariantId) ?? variants[0] ?? null
+  const displayItems = useMemo(
+    () => mergeProductPageDisplayItems(plant.displayCharacteristics ?? [], activeVariant),
+    [plant.displayCharacteristics, activeVariant],
+  )
   const fullyUnavailable = isPlantFullyUnavailable(variants)
   const breadcrumbItems = productPageBreadcrumbs(
     categoryBreadcrumbs,
@@ -109,7 +128,7 @@ export function ProductPageView({
                 ) : null}
               </div>
 
-              <ProductDisplayCharacteristics items={plant.displayCharacteristics ?? []} />
+              <ProductDisplayCharacteristics items={displayItems} />
             </div>
           </div>
 
@@ -119,6 +138,8 @@ export function ProductPageView({
               plantId={plant.id}
               plantName={plant.name}
               fullyOutOfStock={fullyUnavailable}
+              selectedVariantId={activeVariantId}
+              onSelectVariant={setActiveVariantId}
               onBuy={handleBuy}
             />
             {plant.description ? (

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronRight, Loader2, Search, X } from 'lucide-react'
 
+import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -52,6 +53,7 @@ export function PromoProductVariantPicker({
 
   const selectedIds = new Set(selected.map((item) => item.id))
   const single = mode === 'gift'
+  const { locale: contentLocale } = useBackstageContentLocale()
 
   const runSearch = useCallback(async (query: string) => {
     const trimmed = query.trim()
@@ -67,7 +69,11 @@ export function PromoProductVariantPicker({
     setSearchError(null)
 
     try {
-      const list = await fetchBackstageProducts({ search: trimmed, published: 'all' })
+      const list = await fetchBackstageProducts({
+        search: trimmed,
+        published: 'all',
+        locale: contentLocale,
+      })
       if (requestIdRef.current !== requestId) return
 
       const sliced = Array.isArray(list) ? list.slice(0, 12) : []
@@ -86,7 +92,7 @@ export function PromoProductVariantPicker({
         setLoading(false)
       }
     }
-  }, [])
+  }, [contentLocale])
 
   useEffect(() => {
     if (!open) return
@@ -106,7 +112,7 @@ export function PromoProductVariantPicker({
     setExpandedProductId(productId)
     setVariantsLoading(true)
     try {
-      const detail = await fetchBackstageProduct(productId)
+      const detail = await fetchBackstageProduct(productId, contentLocale, { edit: false })
       setVariants(
         detail.variants.map((v) => ({
           id: v.id,

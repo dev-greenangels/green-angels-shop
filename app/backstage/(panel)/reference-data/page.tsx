@@ -5,6 +5,8 @@ import { Loader2, Plus, Trash2 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
+import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
+import { ContentLocaleBanner } from '@/components/backstage/content-locale-banner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -34,11 +36,23 @@ import type { CommerceDefaultsSettings, CurrencyInfo, UnitOfMeasureInfo } from '
 
 const UNIT_TYPES: UpsertUnitPayload['type'][] = ['COUNT', 'WEIGHT', 'VOLUME', 'LENGTH', 'AREA']
 
-function translationName(row: { translations: Array<{ locale: string; name: string }> }, locale = 'uk') {
-  return row.translations.find((t) => t.locale === locale)?.name ?? row.translations[0]?.name ?? ''
+function translationName(
+  row: { translations: Array<{ locale: string; name: string }> },
+  locale: string,
+) {
+  return row.translations.find((t) => t.locale === locale)?.name ?? ''
+}
+
+function upsertTranslation(
+  translations: Array<{ locale: string; name: string }>,
+  locale: string,
+  name: string,
+) {
+  return [...translations.filter((t) => t.locale !== locale), { locale, name }]
 }
 
 export default function ReferenceDataPage() {
+  const { locale: contentLocale } = useBackstageContentLocale()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [defaults, setDefaults] = useState<CommerceDefaultsSettings | null>(null)
@@ -85,18 +99,15 @@ export default function ReferenceDataPage() {
     const code = window.prompt('Код валюти (ISO 4217), напр. USD')?.trim().toUpperCase()
     if (!code || code.length !== 3) return
     const symbol = window.prompt('Символ, напр. $')?.trim()
-    const nameUk = window.prompt('Назва (uk)')?.trim()
-    if (!symbol || !nameUk) return
+    const name = window.prompt(`Назва (${contentLocale.toUpperCase()})`)?.trim()
+    if (!symbol || !name) return
     const payload: UpsertCurrencyPayload = {
       code,
       symbol,
       decimals: 2,
       isActive: true,
       sortOrder: currencies.length + 1,
-      translations: [
-        { locale: 'uk', name: nameUk },
-        { locale: 'en', name: nameUk },
-      ],
+      translations: [{ locale: contentLocale, name }],
     }
     try {
       await createCurrency(payload)
@@ -109,8 +120,11 @@ export default function ReferenceDataPage() {
 
   const editCurrency = async (row: CurrencyInfo) => {
     const symbol = window.prompt('Символ', row.symbol)?.trim()
-    const nameUk = window.prompt('Назва (uk)', translationName(row))?.trim()
-    if (!symbol || !nameUk) return
+    const name = window.prompt(
+      `Назва (${contentLocale.toUpperCase()})`,
+      translationName(row, contentLocale),
+    )?.trim()
+    if (!symbol || !name) return
     const payload: UpsertCurrencyPayload = {
       code: row.code,
       symbol,
@@ -118,9 +132,7 @@ export default function ReferenceDataPage() {
       decimals: row.decimals,
       isActive: row.isActive,
       sortOrder: row.sortOrder,
-      translations: row.translations.map((t) =>
-        t.locale === 'uk' ? { ...t, name: nameUk } : t,
-      ),
+      translations: upsertTranslation(row.translations, contentLocale, name),
     }
     try {
       await updateCurrency(row.code, payload)
@@ -145,8 +157,8 @@ export default function ReferenceDataPage() {
   const addUnit = async () => {
     const code = window.prompt('Код одиниці, напр. pcs')?.trim().toLowerCase()
     const symbol = window.prompt('Символ, напр. шт')?.trim()
-    const nameUk = window.prompt('Назва (uk)')?.trim()
-    if (!code || !symbol || !nameUk) return
+    const name = window.prompt(`Назва (${contentLocale.toUpperCase()})`)?.trim()
+    if (!code || !symbol || !name) return
     const payload: UpsertUnitPayload = {
       code,
       symbol,
@@ -154,10 +166,7 @@ export default function ReferenceDataPage() {
       decimals: 0,
       isActive: true,
       sortOrder: units.length + 1,
-      translations: [
-        { locale: 'uk', name: nameUk },
-        { locale: 'en', name: nameUk },
-      ],
+      translations: [{ locale: contentLocale, name }],
     }
     try {
       await createUnit(payload)
@@ -170,8 +179,11 @@ export default function ReferenceDataPage() {
 
   const editUnit = async (row: UnitOfMeasureInfo) => {
     const symbol = window.prompt('Символ', row.symbol)?.trim()
-    const nameUk = window.prompt('Назва (uk)', translationName(row))?.trim()
-    if (!symbol || !nameUk) return
+    const name = window.prompt(
+      `Назва (${contentLocale.toUpperCase()})`,
+      translationName(row, contentLocale),
+    )?.trim()
+    if (!symbol || !name) return
     const payload: UpsertUnitPayload = {
       code: row.code,
       symbol,
@@ -179,9 +191,7 @@ export default function ReferenceDataPage() {
       decimals: row.decimals,
       isActive: row.isActive,
       sortOrder: row.sortOrder,
-      translations: row.translations.map((t) =>
-        t.locale === 'uk' ? { ...t, name: nameUk } : t,
-      ),
+      translations: upsertTranslation(row.translations, contentLocale, name),
     }
     try {
       await updateUnit(row.id, payload)
@@ -210,6 +220,7 @@ export default function ReferenceDataPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Довідники</h1>
           <p className="text-sm text-muted-foreground">Валюти та одиниці виміру для каталогу й цін.</p>
         </div>
+        <ContentLocaleBanner />
 
         {loading ? (
           <div className="flex justify-center py-16">
@@ -235,7 +246,7 @@ export default function ReferenceDataPage() {
                     <SelectContent>
                       {currencies.filter((c) => c.isActive).map((c) => (
                         <SelectItem key={c.code} value={c.code}>
-                          {c.code} — {c.symbol} ({translationName(c)})
+                          {c.code} — {c.symbol} ({translationName(c, contentLocale) || c.code})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -262,7 +273,7 @@ export default function ReferenceDataPage() {
                     <SelectContent>
                       {units.filter((u) => u.isActive).map((u) => (
                         <SelectItem key={u.id} value={u.code}>
-                          {u.symbol} — {translationName(u)}
+                          {u.symbol} — {translationName(u, contentLocale) || u.symbol}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -306,7 +317,7 @@ export default function ReferenceDataPage() {
                         <tr key={row.code} className="border-t">
                           <td className="px-4 py-3 font-mono">{row.code}</td>
                           <td className="px-4 py-3">{row.symbol}</td>
-                          <td className="px-4 py-3">{translationName(row)}</td>
+                          <td className="px-4 py-3">{translationName(row, contentLocale)}</td>
                           <td className="px-4 py-3">{row.isActive ? 'Так' : 'Ні'}</td>
                           <td className="px-4 py-3 text-right">
                             <Button type="button" variant="ghost" size="sm" onClick={() => void editCurrency(row)}>
@@ -352,7 +363,7 @@ export default function ReferenceDataPage() {
                           <td className="px-4 py-3 font-mono">{row.code}</td>
                           <td className="px-4 py-3">{row.symbol}</td>
                           <td className="px-4 py-3">{row.type}</td>
-                          <td className="px-4 py-3">{translationName(row)}</td>
+                          <td className="px-4 py-3">{translationName(row, contentLocale)}</td>
                           <td className="px-4 py-3 text-right">
                             <Button type="button" variant="ghost" size="sm" onClick={() => void editUnit(row)}>
                               Редагувати

@@ -18,12 +18,17 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const { id } = await context.params
   const requested = request.nextUrl.searchParams.get('locale')
   const locale = requested && isAppLocale(requested) ? requested : defaultLocale
+  const editParam = request.nextUrl.searchParams.get('edit')
+  const edit = editParam === '0' || editParam === 'false' ? '0' : '1'
 
   try {
-    const res = await fetchBackend(`/products/${id}?locale=${encodeURIComponent(locale)}`, {
-      request,
-      cache: 'no-store',
-    })
+    const res = await fetchBackend(
+      `/products/${id}?locale=${encodeURIComponent(locale)}&edit=${edit}`,
+      {
+        request,
+        cache: 'no-store',
+      },
+    )
     const data = await readBackendJson(res)
     if (!res.ok) return NextResponse.json(data, { status: res.status })
     return NextResponse.json(data)

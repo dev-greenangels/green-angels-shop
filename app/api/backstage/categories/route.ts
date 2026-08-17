@@ -17,9 +17,13 @@ export async function GET(request: NextRequest) {
 
   const requested = request.nextUrl.searchParams.get('locale')
   const locale = requested && isAppLocale(requested) ? requested : defaultLocale
+  const editParam = request.nextUrl.searchParams.get('edit')
+  const edit = editParam === '0' || editParam === 'false' ? '0' : '1'
 
   try {
-    const res = await fetchBackend(`/categories?locale=${encodeURIComponent(locale)}`, {
+    const res = await fetchBackend(
+      `/categories?locale=${encodeURIComponent(locale)}&edit=${edit}`,
+      {
       request,
       cache: 'no-store',
     })

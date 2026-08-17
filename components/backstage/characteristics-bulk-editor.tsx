@@ -5,6 +5,8 @@ import { ArrowLeft, Loader2, Save, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
+import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
+
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -210,6 +212,7 @@ export function CharacteristicsBulkEditor({
   characteristics: CharacteristicDefinition[]
   onClose: () => void
 }) {
+  const { locale: contentLocale } = useBackstageContentLocale()
   const tPages = useTranslations('pages.characteristics')
   const tProducts = useTranslations('pages.products')
   const tActions = useTranslations('actions')
@@ -255,6 +258,7 @@ export function CharacteristicsBulkEditor({
           pageSize: PAGE_SIZE,
           search: search || undefined,
           stock: stockFilter,
+          locale: contentLocale,
         })
 
         setItems((prev) => (replace ? data.items : [...prev, ...data.items]))
@@ -293,7 +297,7 @@ export function CharacteristicsBulkEditor({
         loadingMoreRef.current = false
       }
     },
-    [characteristics, search, stockFilter, tt],
+    [characteristics, search, stockFilter, tt, contentLocale],
   )
 
   useEffect(() => {
@@ -360,7 +364,7 @@ export function CharacteristicsBulkEditor({
 
     setSaving(true)
     try {
-      await bulkUpdateCharacteristicsMatrix(updates)
+      await bulkUpdateCharacteristicsMatrix(updates, contentLocale)
       toast.success(tt('saved'))
 
       const nextBaseline = new Map(baseline)

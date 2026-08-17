@@ -6,6 +6,8 @@ import { toast } from '@/lib/toast'
 import { useTranslations } from 'next-intl'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
+import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
+import { ContentLocaleBanner, ContentLocaleLabel } from '@/components/backstage/content-locale-banner'
 import { CharacteristicsBulkEditor } from '@/components/backstage/characteristics-bulk-editor'
 import {
   CharacteristicEditor,
@@ -40,6 +42,7 @@ export default function CharacteristicsPage() {
   const tHints = useTranslations('hints')
   const tValidation = useTranslations('validation')
   const tt = useTranslations('toast')
+  const { locale: contentLocale } = useBackstageContentLocale()
 
   const [items, setItems] = useState<CharacteristicDefinition[]>([])
   const [loading, setLoading] = useState(true)
@@ -58,7 +61,7 @@ export default function CharacteristicsPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await fetchCharacteristicDefinitions()
+      const data = await fetchCharacteristicDefinitions({ locale: contentLocale })
       setItems(data)
       setSelectedId((prev) => {
         if (prev && data.some((item) => item.id === prev)) return prev
@@ -69,7 +72,7 @@ export default function CharacteristicsPage() {
     } finally {
       setLoading(false)
     }
-  }, [tt])
+  }, [tt, contentLocale])
 
   useEffect(() => {
     void load()
@@ -111,7 +114,7 @@ export default function CharacteristicsPage() {
         unit: createUnit.trim() || undefined,
         isFilterable: createFilterable,
         options: needsOptions ? options : undefined,
-      })
+      }, contentLocale)
       toast.success(tt('characteristicCreated'))
       setCreateOpen(false)
       setCreateName('')
@@ -168,7 +171,7 @@ export default function CharacteristicsPage() {
               })),
             }
           : {}),
-      })
+      }, contentLocale)
       toast.success(tt('saved'))
       setItems((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))
     } catch (err) {
@@ -223,6 +226,7 @@ export default function CharacteristicsPage() {
             </Button>
           </div>
         </div>
+        <ContentLocaleBanner />
 
         {loading ? (
           <div className="flex flex-1 items-center justify-center gap-2 text-muted-foreground">

@@ -76,6 +76,7 @@ function mapListVariants(item: CatalogProductListItem): ProductVariant[] {
     availableFrom: formatAvailableFromDisplay(variant.availableFrom),
     salesUnitSymbol: variant.salesUnitSymbol ?? null,
     priceTiers: mapPriceTiers(variant.price, variant.quantityPrices ?? []),
+    displayAttributes: variant.displayAttributes ?? [],
   }))
 }
 
@@ -90,6 +91,7 @@ function mapVariants(item: CatalogProductDetail): ProductVariant[] {
     availableFrom: formatAvailableFromDisplay(variant.availableFrom),
     salesUnitSymbol: variant.salesUnitSymbol ?? null,
     priceTiers: mapPriceTiers(variant.price, variant.quantityPrices ?? []),
+    displayAttributes: variant.displayAttributes ?? [],
   }))
 }
 

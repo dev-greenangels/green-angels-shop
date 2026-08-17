@@ -8,7 +8,7 @@ import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
-import { ContentLocaleBanner } from '@/components/backstage/content-locale-banner'
+import { ContentLocaleBanner, ContentLocaleLabel } from '@/components/backstage/content-locale-banner'
 import { AdditionalCategoriesPicker } from '@/components/backstage/additional-categories-picker'
 import { CategoryCombobox, type CategoryOption } from '@/components/backstage/category-combobox'
 import {
@@ -120,6 +120,7 @@ export function ProductEditor({
   const tt = useTranslations('toast')
   const th = useTranslations('hints')
   const tl = useTranslations('labels')
+  const tBanner = useTranslations('contentBanner')
   const isEditing = Boolean(productId)
   const productsListHref = resolveProductsReturnTo(returnTo)
   const [isLoading, setIsLoading] = useState(false)
@@ -143,7 +144,7 @@ export function ProductEditor({
   const loadCategories = useCallback(async () => {
     setCategoriesLoading(true)
     try {
-      const tree = await fetchCategoryTree(contentLocale)
+      const tree = await fetchCategoryTree(contentLocale, { edit: false })
       setCategoryOptions(flattenCategoryOptions(tree))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : tt('loadFailed'))
@@ -155,21 +156,21 @@ export function ProductEditor({
   const loadAttributes = useCallback(async () => {
     setAttributesLoading(true)
     try {
-      setAttributes(await fetchVariantAttributes())
+      setAttributes(await fetchVariantAttributes({ locale: contentLocale, edit: false }))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : tt('loadFailed'))
     } finally {
       setAttributesLoading(false)
     }
-  }, [])
+  }, [contentLocale, tt])
 
   useEffect(() => {
     void loadCategories()
     void loadAttributes()
-    void fetchCharacteristicDefinitions()
+    void fetchCharacteristicDefinitions({ locale: contentLocale, edit: false })
       .then(setCharacteristicDefinitions)
       .catch(() => undefined)
-  }, [loadCategories, loadAttributes])
+  }, [loadCategories, loadAttributes, contentLocale])
 
   useEffect(() => {
     if (!productId) return
@@ -179,8 +180,8 @@ export function ProductEditor({
 
     void Promise.all([
       fetchBackstageProduct(productId, contentLocale),
-      fetchVariantAttributes(),
-      fetchCharacteristicDefinitions(),
+      fetchVariantAttributes({ locale: contentLocale, edit: false }),
+      fetchCharacteristicDefinitions({ locale: contentLocale, edit: false }),
     ])
       .then(([detail, variantAttributes, definitions]) => {
         if (cancelled) return
@@ -362,11 +363,12 @@ export function ProductEditor({
                   <CardContent className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <Label htmlFor="name">{tp('productName')}</Label>
+                        <ContentLocaleLabel htmlFor="name">{tp('productName')}</ContentLocaleLabel>
                         <Input
                           id="name"
                           value={form.name}
                           onChange={(e) => patch({ name: e.target.value })}
+                          placeholder={tBanner('missingPlaceholder')}
                           required
                         />
                       </div>

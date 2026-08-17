@@ -7,6 +7,7 @@ import { toast } from '@/lib/toast'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
 import {
   fetchBackstageProductsPage,
   updateProductImages,
@@ -49,6 +50,7 @@ async function uploadCategoryImage(file: File, categoryId: string): Promise<stri
 }
 
 export function ProductsPhotosBulkEditor({ onClose }: { onClose?: () => void }) {
+  const { locale: contentLocale } = useBackstageContentLocale()
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<BackstageProductListItem[]>([])
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -63,6 +65,7 @@ export function ProductsPhotosBulkEditor({ onClose }: { onClose?: () => void }) 
         page: nextPage,
         pageSize: 40,
         search: q.trim() || undefined,
+        locale: contentLocale,
       })
       setItems(data.items)
       setPage(data.page)
@@ -72,7 +75,7 @@ export function ProductsPhotosBulkEditor({ onClose }: { onClose?: () => void }) 
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [contentLocale])
 
   useEffect(() => {
     void load(1, '')
@@ -180,6 +183,7 @@ export function ProductsPhotosBulkEditor({ onClose }: { onClose?: () => void }) 
 }
 
 export function CategoriesPhotosBulkEditor({ onClose }: { onClose?: () => void }) {
+  const { locale: contentLocale } = useBackstageContentLocale()
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<CategoryFlat[]>([])
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -187,14 +191,14 @@ export function CategoriesPhotosBulkEditor({ onClose }: { onClose?: () => void }
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const tree = await fetchCategoryTree()
+      const tree = await fetchCategoryTree(contentLocale, { edit: false })
       setItems(flattenCategoryTree(tree))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося завантажити')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [contentLocale])
 
   useEffect(() => {
     void load()

@@ -30,7 +30,9 @@ export async function GET(request: Request) {
   if (error) return error
 
   const { searchParams } = new URL(request.url)
-  const params = new URLSearchParams({ locale: 'uk' })
+  const params = new URLSearchParams()
+  const locale = searchParams.get('locale')
+  if (locale) params.set('locale', locale)
   const search = searchParams.get('search')
   const categoryId = searchParams.get('categoryId')
   const published = searchParams.get('published')

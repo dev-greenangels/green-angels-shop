@@ -24,7 +24,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CategoryImageField } from '@/components/backstage/category-image-field'
-import { ContentLocaleBanner } from '@/components/backstage/content-locale-banner'
+import { ContentLocaleBanner, ContentLocaleLabel } from '@/components/backstage/content-locale-banner'
 import {
   type CategoryFormValues,
   slugifyCategoryName,
@@ -81,6 +81,7 @@ export function CategoryFormDialog({
   const tValidation = useTranslations('validation')
   const tPages = useTranslations('pages.categories')
   const tt = useTranslations('toast')
+  const tBanner = useTranslations('contentBanner')
 
   useEffect(() => {
     if (!open) return
@@ -139,12 +140,12 @@ export function CategoryFormDialog({
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
           <ContentLocaleBanner />
           <div className="space-y-2">
-            <Label htmlFor="category-name">{tLabels('nameRequired')}</Label>
+            <ContentLocaleLabel htmlFor="category-name">{tLabels('nameRequired')}</ContentLocaleLabel>
             <Input
               id="category-name"
               value={form.name}
               onChange={(e) => patch({ name: e.target.value })}
-              placeholder={tHints('conifers')}
+              placeholder={tBanner('missingPlaceholder')}
             />
           </div>
 

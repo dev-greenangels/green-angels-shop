@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, Plus, RefreshCw, Save, Trash2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
@@ -18,7 +19,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -78,6 +78,7 @@ function stableJson(value: unknown): string {
 }
 
 export default function SettingsPage() {
+  const tBanner = useTranslations('contentBanner')
   const [loading, setLoading] = useState(true)
   const [savingStore, setSavingStore] = useState(false)
   const [savingHome, setSavingHome] = useState(false)
@@ -411,6 +412,9 @@ export default function SettingsPage() {
           </TabsList>
 
           <TabsContent value="store" className="mt-6 space-y-6">
+            <p className="rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+              {tBanner('cmsNotTranslated')}
+            </p>
             {store ? (
               <StoreContactSettingsForm
                 store={store}
@@ -484,9 +488,24 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="home" className="mt-6 space-y-6">
+            <p className="rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+              {tBanner('cmsNotTranslated')}
+            </p>
             <HomeSectionOrderControls
               order={home.sectionOrder}
-              onChange={(sectionOrder) => setHome({ ...home, sectionOrder })}
+              hidden={home.sectionHidden}
+              onChange={({ sectionOrder, sectionHidden }) =>
+                setHome({
+                  ...home,
+                  sectionOrder,
+                  sectionHidden,
+                  reviews: { ...home.reviews, enabled: !sectionHidden.includes('reviews') },
+                  freshPlantPhotos: {
+                    ...home.freshPlantPhotos,
+                    enabled: !sectionHidden.includes('freshPlantPhotos'),
+                  },
+                })
+              }
             />
 
             <Card>
@@ -1046,24 +1065,6 @@ export default function SettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
-                  <div className="space-y-1">
-                    <Label htmlFor="fresh-photos-enabled">Показувати блок</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Якщо вимкнено, блок не відображається на головній.
-                    </p>
-                  </div>
-                  <Switch
-                    id="fresh-photos-enabled"
-                    checked={home.freshPlantPhotos.enabled}
-                    onCheckedChange={(enabled) =>
-                      setHome({
-                        ...home,
-                        freshPlantPhotos: { ...home.freshPlantPhotos, enabled },
-                      })
-                    }
-                  />
-                </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Заголовок</Label>
@@ -1122,21 +1123,6 @@ export default function SettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
-                  <div className="space-y-1">
-                    <Label htmlFor="reviews-enabled">Показувати блок</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Блок зникає, якщо немає схвалених відгуків.
-                    </p>
-                  </div>
-                  <Switch
-                    id="reviews-enabled"
-                    checked={home.reviews.enabled}
-                    onCheckedChange={(enabled) =>
-                      setHome({ ...home, reviews: { ...home.reviews, enabled } })
-                    }
-                  />
-                </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Заголовок</Label>

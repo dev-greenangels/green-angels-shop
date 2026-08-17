@@ -114,8 +114,18 @@ export async function fetchCatalogFilterDefinitions(params?: {
   }
 }
 
-export async function fetchCharacteristicDefinitions(): Promise<CharacteristicDefinition[]> {
-  const res = await fetch('/api/backstage/characteristics', { credentials: 'include', cache: 'no-store' })
+export async function fetchCharacteristicDefinitions(options?: {
+  locale?: string
+  edit?: boolean
+}): Promise<CharacteristicDefinition[]> {
+  const query = new URLSearchParams()
+  if (options?.locale) query.set('locale', options.locale)
+  if (options?.edit === false) query.set('edit', '0')
+  const suffix = query.toString() ? `?${query}` : ''
+  const res = await fetch(`/api/backstage/characteristics${suffix}`, {
+    credentials: 'include',
+    cache: 'no-store',
+  })
   if (!res.ok) throw new Error(await parseError(res))
   const data = (await res.json()) as Array<Partial<CharacteristicDefinition> & Pick<CharacteristicDefinition, 'id' | 'slug' | 'name' | 'valueType' | 'sortOrder' | 'options'>>
   return data.map((item) => ({
@@ -132,21 +142,24 @@ export async function fetchCharacteristicDefinitions(): Promise<CharacteristicDe
   }))
 }
 
-export async function createCharacteristic(payload: {
-  name: string
-  slug?: string
-  valueType: CharacteristicDefinition['valueType']
-  unit?: string
-  isFilterable?: boolean
-  showOnProductPage?: boolean
-  icon?: string
-  options?: Array<{ label: string; slug?: string }>
-}): Promise<CharacteristicDefinition> {
+export async function createCharacteristic(
+  payload: {
+    name: string
+    slug?: string
+    valueType: CharacteristicDefinition['valueType']
+    unit?: string
+    isFilterable?: boolean
+    showOnProductPage?: boolean
+    icon?: string
+    options?: Array<{ label: string; slug?: string }>
+  },
+  locale: string,
+): Promise<CharacteristicDefinition> {
   const res = await fetch('/api/backstage/characteristics', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ ...payload, locale: 'uk' }),
+    body: JSON.stringify({ ...payload, locale }),
   })
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()
@@ -164,12 +177,13 @@ export async function updateCharacteristic(
     sortOrder: number
     options: Array<{ id?: string; label: string; slug?: string; sortOrder?: number }>
   }>,
+  locale: string,
 ): Promise<CharacteristicDefinition> {
   const res = await fetch(`/api/backstage/characteristics/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ ...payload, locale: 'uk' }),
+    body: JSON.stringify({ ...payload, locale }),
   })
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()
@@ -211,8 +225,10 @@ export async function fetchBulkCharacteristicsMatrix(params?: {
   pageSize?: number
   search?: string
   stock?: 'all' | 'in_stock' | 'out_of_stock'
+  locale?: string
 }): Promise<BulkCharacteristicsMatrix> {
-  const query = new URLSearchParams({ locale: 'uk' })
+  const query = new URLSearchParams()
+  if (params?.locale) query.set('locale', params.locale)
   if (params?.page != null) query.set('page', String(params.page))
   if (params?.pageSize != null) query.set('pageSize', String(params.pageSize))
   if (params?.search?.trim()) query.set('search', params.search.trim())
@@ -236,12 +252,13 @@ export async function bulkUpdateCharacteristicsMatrix(
     numberValue?: number
     clear?: boolean
   }>,
+  locale: string,
 ): Promise<{ updated: number }> {
   const res = await fetch('/api/backstage/characteristics/bulk-matrix', {
     method: 'PATCH',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ updates, locale: 'uk' }),
+    body: JSON.stringify({ updates, locale }),
   })
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()

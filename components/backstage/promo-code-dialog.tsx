@@ -29,6 +29,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { fetchCategoryTree, type CategoryTreeNode } from '@/lib/backstage/categories'
+import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
 import { backstageSectionClassName } from '@/lib/backstage/picker-styles'
 import { savePromoCode, type PromoCodeItem } from '@/lib/backstage/pricing'
 
@@ -74,6 +75,7 @@ export function PromoCodeDialog({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { locale: contentLocale } = useBackstageContentLocale()
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -173,11 +175,11 @@ export function PromoCodeDialog({
   useEffect(() => {
     if (!open) return
     setCategoriesLoading(true)
-    fetchCategoryTree()
+    fetchCategoryTree(contentLocale, { edit: false })
       .then((tree) => setCategoryOptions(flattenCategoryOptions(tree)))
       .catch(() => setCategoryOptions([]))
       .finally(() => setCategoriesLoading(false))
-  }, [open])
+  }, [open, contentLocale])
 
   const toggleGroup = (id: string) => {
     setGroupIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]))

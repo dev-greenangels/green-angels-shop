@@ -1,5 +1,8 @@
 import { DEFAULT_HOME_SETTINGS } from '@/lib/settings/defaults'
-import { normalizeHomeSectionOrder } from '@/lib/settings/home-sections'
+import {
+  normalizeHomeSectionOrder,
+  resolveHomeSectionHidden,
+} from '@/lib/settings/home-sections'
 import type { ReviewSortOrder } from '@/lib/reviews/types'
 import type { HomePageSettings } from '@/lib/settings/types'
 
@@ -20,8 +23,15 @@ export function normalizeHomeSettings(
     | (HomePageSettings['reviews'] & { items?: unknown[] })
     | undefined
 
+  const sectionHidden = resolveHomeSectionHidden({
+    sectionHidden: base.sectionHidden,
+    reviewsEnabled: legacyReviews?.enabled,
+    freshPlantPhotosEnabled: base.freshPlantPhotos?.enabled,
+  })
+
   return {
     sectionOrder: normalizeHomeSectionOrder(base.sectionOrder),
+    sectionHidden,
     hero: { ...DEFAULT_HOME_SETTINGS.hero, ...base.hero },
     categories: {
       ...DEFAULT_HOME_SETTINGS.categories,
@@ -50,11 +60,11 @@ export function normalizeHomeSettings(
     freshPlantPhotos: {
       ...DEFAULT_HOME_SETTINGS.freshPlantPhotos,
       ...base.freshPlantPhotos,
-      enabled: base.freshPlantPhotos?.enabled ?? DEFAULT_HOME_SETTINGS.freshPlantPhotos.enabled,
+      enabled: !sectionHidden.includes('freshPlantPhotos'),
       limit: base.freshPlantPhotos?.limit ?? DEFAULT_HOME_SETTINGS.freshPlantPhotos.limit,
     },
     reviews: {
-      enabled: legacyReviews?.enabled ?? DEFAULT_HOME_SETTINGS.reviews.enabled,
+      enabled: !sectionHidden.includes('reviews'),
       title: legacyReviews?.title ?? DEFAULT_HOME_SETTINGS.reviews.title,
       subtitle: legacyReviews?.subtitle ?? DEFAULT_HOME_SETTINGS.reviews.subtitle,
       limit: legacyReviews?.limit ?? DEFAULT_HOME_SETTINGS.reviews.limit,

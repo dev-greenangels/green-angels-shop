@@ -103,8 +103,12 @@ function normalizeCategoryNode(node: CategoryTreeNode): CategoryTreeNode {
   }
 }
 
-export async function fetchCategoryTree(locale = 'uk'): Promise<CategoryTreeNode[]> {
+export async function fetchCategoryTree(
+  locale: string,
+  options?: { edit?: boolean },
+): Promise<CategoryTreeNode[]> {
   const query = new URLSearchParams({ locale })
+  if (options?.edit === false) query.set('edit', '0')
   const res = await fetch(`/api/backstage/categories?${query}`, {
     credentials: 'include',
     cache: 'no-store',
@@ -116,7 +120,7 @@ export async function fetchCategoryTree(locale = 'uk'): Promise<CategoryTreeNode
 
 export async function createCategory(
   payload: CategoryFormValues,
-  locale = 'uk',
+  locale: string,
 ): Promise<CategoryFlat> {
   const res = await fetch('/api/backstage/categories', {
     method: 'POST',
@@ -142,9 +146,10 @@ export async function createCategory(
 export async function patchCategory(
   id: string,
   payload: CategoryPatch,
-  locale = 'uk',
+  locale?: string,
 ): Promise<CategoryFlat> {
-  const body: Record<string, unknown> = { locale }
+  const body: Record<string, unknown> = {}
+  if (locale) body.locale = locale
 
   if (payload.name !== undefined) body.name = payload.name.trim()
   if (payload.slug !== undefined) body.slug = payload.slug.trim().toLowerCase()
@@ -173,7 +178,7 @@ export async function patchCategory(
 export async function updateCategory(
   id: string,
   payload: CategoryFormValues,
-  locale = 'uk',
+  locale: string,
 ): Promise<CategoryFlat> {
   return patchCategory(
     id,

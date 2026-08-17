@@ -18,6 +18,7 @@ import { useTranslations } from 'next-intl'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
+import { ContentLocaleBanner } from '@/components/backstage/content-locale-banner'
 import { CategoryFormDialog, type ParentOption } from '@/components/backstage/category-form-dialog'
 import { CategoryThumbnail } from '@/components/backstage/category-thumbnail'
 import { CategoriesPhotosBulkEditor } from '@/components/backstage/catalog-photos-bulk-editor'
@@ -550,6 +551,8 @@ export default function CategoriesPage() {
             </Button>
           </div>
         </div>
+
+        <ContentLocaleBanner />
 
         <Dialog open={photosBulkOpen} onOpenChange={setPhotosBulkOpen}>
           <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-5xl">

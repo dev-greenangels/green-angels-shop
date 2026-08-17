@@ -348,7 +348,10 @@
     "table": "Products table"
   },
   "contentBanner": {
-    "editing": "Editing translation: {locale}. Slug, price and images are shared across languages."
+    "editing": "Editing translation: {locale}. Slug, price and images are shared across languages.",
+    "missingPlaceholder": "No translation for this language",
+    "switchConfirm": "Unsaved field changes will be lost. Switch content language?",
+    "cmsNotTranslated": "Homepage and contact texts belong to this deploy, not to the content-language switcher."
   },
   "validation": {
     "categoryNameRequired": "Enter a category name.",

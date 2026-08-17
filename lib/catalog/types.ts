@@ -42,6 +42,16 @@ export type CatalogProductVariant = {
   quantityPrices?: CatalogVariantQuantityPrice[]
   salesUnitId?: string | null
   salesUnitSymbol?: string | null
+  displayAttributes?: Array<{
+    id: string
+    slug: string
+    name: string
+    icon: string | null
+    unit: string | null
+    valueType: string
+    displayValue: string
+    sortOrder: number
+  }>
 }
 
 export type CatalogProductDetail = CatalogProductListItem & {

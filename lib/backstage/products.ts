@@ -89,6 +89,16 @@ export type BackstageProductVariant = {
   widthCm: number | null
   heightCm: number | null
   volumetricWeightKg: number | null
+  displayAttributes?: Array<{
+    id: string
+    slug: string
+    name: string
+    icon: string | null
+    unit: string | null
+    valueType: string
+    displayValue: string
+    sortOrder: number
+  }>
 }
 
 export type BackstageProductDetail = BackstageProductListItem & {
@@ -247,7 +257,7 @@ export function buildProductPayload(
   form: ProductFormState,
   attributes: VariantAttribute[],
   characteristicDefinitions: CharacteristicDefinition[] = [],
-  locale = 'uk',
+  locale: string,
 ): ProductPayload {
   const base: ProductPayload = {
     name: form.name.trim(),
@@ -332,6 +342,7 @@ export type BackstageProductsFilters = {
   stock?: 'all' | 'in_stock' | 'out_of_stock'
   page?: number
   pageSize?: number
+  locale?: string
 }
 
 export type PaginatedBackstageProducts = {
@@ -346,6 +357,7 @@ export type BulkProductAction = 'delete' | 'publish' | 'unpublish' | 'set_stock'
 
 function buildProductsQuery(params?: BackstageProductsFilters) {
   const query = new URLSearchParams()
+  if (params?.locale) query.set('locale', params.locale)
   if (params?.search) query.set('search', params.search)
   if (params?.categoryId) query.set('categoryId', params.categoryId)
   if (params?.published && params.published !== 'all') {
@@ -431,9 +443,11 @@ export async function setProductPublished(
 
 export async function fetchBackstageProduct(
   id: string,
-  locale = 'uk',
+  locale: string,
+  options?: { edit?: boolean },
 ): Promise<BackstageProductDetail> {
   const query = new URLSearchParams({ locale })
+  if (options?.edit === false) query.set('edit', '0')
   const res = await fetch(`/api/backstage/products/${id}?${query}`, {
     credentials: 'include',
     cache: 'no-store',

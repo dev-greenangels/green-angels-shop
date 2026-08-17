@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { Loader2, Save, Trash2 } from 'lucide-react'
 
 import { VariantAttributeValuesForm } from '@/components/backstage/variant-attribute-values-form'
+import { ContentLocaleLabel } from '@/components/backstage/content-locale-banner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -29,6 +30,7 @@ import {
   type VariantAttribute,
   type VariantAttributeType,
 } from '@/lib/backstage/variant-attributes'
+import { CHARACTERISTIC_ICON_OPTIONS } from '@/lib/characteristics/icons'
 import { cn } from '@/lib/utils'
 
 export function VariantAttributeEditor({
@@ -48,6 +50,8 @@ export function VariantAttributeEditor({
     legacyId: string | null
     isFilterable: boolean
     participatesInLabel: boolean
+    showOnProductPage: boolean
+    icon: string | null
     values: ValueDraft[]
   }) => Promise<void>
   onDelete: () => Promise<void>
@@ -56,6 +60,7 @@ export function VariantAttributeEditor({
   const tHints = useTranslations('hints')
   const tLabels = useTranslations('labels')
   const tPages = useTranslations('pages.attributes')
+  const tBanner = useTranslations('contentBanner')
   const tAttrTypes = useTranslations('variantAttributeTypes')
   const tAttrTypeHints = useTranslations('variantAttributeTypeHints')
 
@@ -69,6 +74,8 @@ export function VariantAttributeEditor({
   const [legacyId, setLegacyId] = useState(attribute.legacyId ?? '')
   const [isFilterable, setIsFilterable] = useState(attribute.isFilterable)
   const [participatesInLabel, setParticipatesInLabel] = useState(attribute.participatesInLabel)
+  const [showOnProductPage, setShowOnProductPage] = useState(attribute.showOnProductPage)
+  const [icon, setIcon] = useState(attribute.icon ?? '')
   const [values, setValues] = useState<ValueDraft[]>(() => attributeToValueDrafts(attribute))
 
   const showUnit = attributeTypeNeedsUnit(valueType)
@@ -82,6 +89,8 @@ export function VariantAttributeEditor({
     setLegacyId(attribute.legacyId ?? '')
     setIsFilterable(attribute.isFilterable)
     setParticipatesInLabel(attribute.participatesInLabel)
+    setShowOnProductPage(attribute.showOnProductPage)
+    setIcon(attribute.icon ?? '')
     setValues(attributeToValueDrafts(attribute))
   }, [attribute])
 
@@ -99,11 +108,13 @@ export function VariantAttributeEditor({
           legacyId,
           isFilterable,
           participatesInLabel,
+          showOnProductPage,
+          showOnProductPage ? icon.trim() || null : null,
           values,
         ),
         baseline,
       ),
-    [name, slug, valueType, description, unit, legacyId, isFilterable, participatesInLabel, values, baseline],
+    [name, slug, valueType, description, unit, legacyId, isFilterable, participatesInLabel, showOnProductPage, icon, values, baseline],
   )
 
   const handleSave = async () => {
@@ -116,6 +127,8 @@ export function VariantAttributeEditor({
       legacyId: legacyId.trim() || null,
       isFilterable,
       participatesInLabel,
+      showOnProductPage,
+      icon: showOnProductPage ? icon.trim() || null : null,
       values,
     })
   }
@@ -126,8 +139,13 @@ export function VariantAttributeEditor({
         <div className="space-y-4 pb-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="edit-attr-name">{tLabels('nameRequired')}</Label>
-              <Input id="edit-attr-name" value={name} onChange={(e) => setName(e.target.value)} />
+              <ContentLocaleLabel htmlFor="edit-attr-name">{tLabels('nameRequired')}</ContentLocaleLabel>
+              <Input
+                id="edit-attr-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={tBanner('missingPlaceholder')}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-attr-legacy">{tLabels('legacyId')}</Label>
@@ -214,7 +232,44 @@ export function VariantAttributeEditor({
                   {tLabels('inVariantName')}
                 </Label>
               </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="edit-attr-product-page"
+                  checked={showOnProductPage}
+                  onCheckedChange={(checked) => setShowOnProductPage(checked === true)}
+                />
+                <Label htmlFor="edit-attr-product-page" className="font-normal">
+                  {tLabels('showOnProductPage')}
+                </Label>
+              </div>
             </div>
+            {showOnProductPage ? (
+              <div className="space-y-2 sm:col-span-2">
+                <Label>{tLabels('productPageIcon')}</Label>
+                <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                  {CHARACTERISTIC_ICON_OPTIONS.map((option) => {
+                    const Icon = option.icon
+                    const active = icon === option.name
+                    return (
+                      <button
+                        key={option.name}
+                        type="button"
+                        onClick={() => setIcon(option.name)}
+                        className={cn(
+                          'flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs transition-colors',
+                          active
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border hover:border-primary/30',
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span className="truncate">{option.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="border-t border-border/60 pt-4">
@@ -291,6 +346,7 @@ export function VariantAttributeListItem({
         {tAttrTypes(normalizeVariantAttributeType(item.valueType))} · {tStatus('values', { count: item.values.length })}
         {item.legacyId ? ` · ID: ${item.legacyId}` : ''}
         {item.isFilterable ? ` · ${tStatus('filterable')}` : ''}
+        {item.showOnProductPage ? ` · ${tStatus('onProductPage')}` : ''}
       </p>
     </button>
   )

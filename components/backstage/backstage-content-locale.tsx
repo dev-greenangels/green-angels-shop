@@ -58,6 +58,7 @@ export function useBackstageContentLocale() {
 export function BackstageContentLocaleSwitcher({ className }: { className?: string }) {
   const { locale, setLocale } = useBackstageContentLocale()
   const t = useTranslations('common')
+  const tBanner = useTranslations('contentBanner')
 
   return (
     <div
@@ -72,7 +73,13 @@ export function BackstageContentLocaleSwitcher({ className }: { className?: stri
           <button
             key={item}
             type="button"
-            onClick={() => setLocale(item)}
+            onClick={() => {
+              if (item === locale) return
+              if (typeof window !== 'undefined' && !window.confirm(tBanner('switchConfirm'))) {
+                return
+              }
+              setLocale(item)
+            }}
             className={cn(
               'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors',
               active

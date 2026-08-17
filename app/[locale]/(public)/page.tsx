@@ -19,10 +19,15 @@ import {
   fetchBestsellerProducts,
   fetchLowStockProducts,
   fetchNewArrivalProducts,
+  type HomeProductsResult,
 } from '@/lib/catalog/home-products'
 import { buildHomeMetadata } from '@/lib/home/metadata'
 import { EMPTY_REVIEWS_PAGE } from '@/lib/reviews/types'
-import { normalizeHomeSectionOrder, type HomeSectionKey } from '@/lib/settings/home-sections'
+import {
+  isHomeSectionHidden,
+  normalizeHomeSectionOrder,
+  type HomeSectionKey,
+} from '@/lib/settings/home-sections'
 import {
   fetchPublicSiteSettings,
   getHomeSettings,
@@ -45,17 +50,28 @@ export default async function HomePage() {
   const siteSettingsResult = await fetchPublicSiteSettings()
   const home = getHomeSettings(siteSettingsResult)
   const recentlyViewedSettings = getRecentlyViewedSettings(siteSettingsResult)
+  const hidden = home.sectionHidden
+  const show = (key: HomeSectionKey) => !isHomeSectionHidden(hidden, key)
+  const emptyProducts: HomeProductsResult = { plants: [], unavailable: false }
 
   const [categoriesResult, newArrivalsResult, bestsellersResult, lowStockResult, freshPhotosResult, reviewsResult] =
     await Promise.all([
-      fetchCatalogCategories(locale),
-      fetchNewArrivalProducts(home.newArrivals, locale),
-      fetchBestsellerProducts(home.bestsellers, locale),
-      fetchLowStockProducts(home.lowStock, locale),
-      home.freshPlantPhotos.enabled
+      show('categories')
+        ? fetchCatalogCategories(locale)
+        : Promise.resolve({ data: [], unavailable: false }),
+      show('newArrivals')
+        ? fetchNewArrivalProducts(home.newArrivals, locale)
+        : Promise.resolve(emptyProducts),
+      show('bestsellers')
+        ? fetchBestsellerProducts(home.bestsellers, locale)
+        : Promise.resolve(emptyProducts),
+      show('lowStock')
+        ? fetchLowStockProducts(home.lowStock, locale)
+        : Promise.resolve(emptyProducts),
+      show('freshPlantPhotos')
         ? fetchHomeFreshPhotos(home.freshPlantPhotos.limit)
         : Promise.resolve({ items: [], total: 0, page: 1, pageSize: 0, totalPages: 1 }),
-      home.reviews.enabled
+      show('reviews')
         ? fetchHomeReviews({
             page: 1,
             pageSize: home.reviews.limit,
@@ -89,7 +105,9 @@ export default async function HomePage() {
     ),
   }
 
-  const orderedSectionKeys = normalizeHomeSectionOrder(home.sectionOrder)
+  const orderedSectionKeys = normalizeHomeSectionOrder(home.sectionOrder).filter(
+    (key) => show(key),
+  )
 
   return (
     <>

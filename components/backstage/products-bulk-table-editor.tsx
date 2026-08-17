@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { CategoryCombobox, type CategoryOption } from '@/components/backstage/category-combobox'
+import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
 import { VariantAttributePicker } from '@/components/backstage/product-pricing-section'
 import {
   buildProductPayload,
@@ -269,6 +270,7 @@ function applyPersisted(draft: DraftRow, persisted: PersistedDraft | undefined):
 }
 
 export function ProductsBulkTableEditor() {
+  const { locale: contentLocale } = useBackstageContentLocale()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -313,6 +315,7 @@ export function ProductsBulkTableEditor() {
         page: nextPage,
         pageSize: PAGE_SIZE,
         search: q.trim() || undefined,
+        locale: contentLocale,
       })
       const persisted = readPersistedDrafts()
       const nextRows = data.items.map((item) =>
@@ -326,17 +329,20 @@ export function ProductsBulkTableEditor() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [contentLocale])
 
   useEffect(() => {
-    void Promise.all([fetchCategoryTree(), fetchVariantAttributes()])
+    void Promise.all([
+      fetchCategoryTree(contentLocale, { edit: false }),
+      fetchVariantAttributes({ locale: contentLocale, edit: false }),
+    ])
       .then(([tree, attrs]) => {
         setCategoryOptions(flattenCategoryOptions(tree))
         setAttributes(attrs)
       })
       .catch(() => toast.error('Не вдалося завантажити довідники'))
       .finally(() => setCategoriesLoading(false))
-  }, [])
+  }, [contentLocale])
 
   useEffect(() => {
     setSearchInput(urlQ)
@@ -426,8 +432,8 @@ export function ProductsBulkTableEditor() {
     setVariantLoadingId(productId)
     try {
       const [detail, definitions] = await Promise.all([
-        fetchBackstageProduct(productId),
-        fetchCharacteristicDefinitions(),
+        fetchBackstageProduct(productId, contentLocale, { edit: false }),
+        fetchCharacteristicDefinitions({ locale: contentLocale, edit: false }),
       ])
       const form = productDetailToFormState(detail, attributes, definitions)
       const drafts =
@@ -467,8 +473,8 @@ export function ProductsBulkTableEditor() {
     setVariantSavingId(productId)
     try {
       const [detail, definitions] = await Promise.all([
-        fetchBackstageProduct(productId),
-        fetchCharacteristicDefinitions(),
+        fetchBackstageProduct(productId, contentLocale, { edit: false }),
+        fetchCharacteristicDefinitions({ locale: contentLocale, edit: false }),
       ])
       const form = productDetailToFormState(detail, attributes, definitions)
       form.pricingMode = drafts.length > 1 || Object.keys(drafts[0]?.selections ?? {}).length > 0
@@ -498,7 +504,7 @@ export function ProductsBulkTableEditor() {
         form.simpleSku = drafts[0].sku
         form.simpleEan = drafts[0].ean
       }
-      const payload = buildProductPayload(form, attributes, definitions)
+      const payload = buildProductPayload(form, attributes, definitions, contentLocale)
       await updateProduct(productId, payload)
       toast.success('Варіанти збережено')
       setVariantDrafts((prev) => {
@@ -508,8 +514,8 @@ export function ProductsBulkTableEditor() {
       })
       await load(page, search)
       const [refreshed, refreshedDefinitions] = await Promise.all([
-        fetchBackstageProduct(productId),
-        fetchCharacteristicDefinitions(),
+        fetchBackstageProduct(productId, contentLocale, { edit: false }),
+        fetchCharacteristicDefinitions({ locale: contentLocale, edit: false }),
       ])
       const refreshedForm = productDetailToFormState(refreshed, attributes, refreshedDefinitions)
       setVariantDrafts((prev) => ({
@@ -568,8 +574,8 @@ export function ProductsBulkTableEditor() {
       let existing = variantDrafts[addSizeProductId]
       if (!existing) {
         const [detail, definitions] = await Promise.all([
-          fetchBackstageProduct(addSizeProductId),
-          fetchCharacteristicDefinitions(),
+          fetchBackstageProduct(addSizeProductId, contentLocale, { edit: false }),
+          fetchCharacteristicDefinitions({ locale: contentLocale, edit: false }),
         ])
         const form = productDetailToFormState(detail, attributes, definitions)
         existing =
@@ -595,8 +601,8 @@ export function ProductsBulkTableEditor() {
       // Persist immediately so the size exists after reload
       setVariantSavingId(addSizeProductId)
       const [detail, definitions] = await Promise.all([
-        fetchBackstageProduct(addSizeProductId),
-        fetchCharacteristicDefinitions(),
+        fetchBackstageProduct(addSizeProductId, contentLocale, { edit: false }),
+        fetchCharacteristicDefinitions({ locale: contentLocale, edit: false }),
       ])
       const form = productDetailToFormState(detail, attributes, definitions)
       form.pricingMode = 'variants'
@@ -618,7 +624,7 @@ export function ProductsBulkTableEditor() {
           ean: draft.ean,
         }
       })
-      await updateProduct(addSizeProductId, buildProductPayload(form, attributes, definitions))
+      await updateProduct(addSizeProductId, buildProductPayload(form, attributes, definitions, contentLocale))
       toast.success('Розмір додано')
       setVariantDrafts((prev) => {
         const next = { ...prev }
@@ -627,11 +633,11 @@ export function ProductsBulkTableEditor() {
       })
       await load(page, search)
       // reload expanded variants
-      const refreshed = await fetchBackstageProduct(addSizeProductId)
+      const refreshed = await fetchBackstageProduct(addSizeProductId, contentLocale, { edit: false })
       const refreshedForm = productDetailToFormState(
         refreshed,
         attributes,
-        await fetchCharacteristicDefinitions(),
+        await fetchCharacteristicDefinitions({ locale: contentLocale, edit: false }),
       )
       setVariantDrafts((prev) => ({
         ...prev,

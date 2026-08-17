@@ -416,6 +416,7 @@ export function VariantAttributeValuesForm({
   const tAria = useTranslations('aria')
   const tCommon = useTranslations('common')
   const tPages = useTranslations('pages.attributes')
+  const tBanner = useTranslations('contentBanner')
 
   const valueType = normalizeVariantAttributeType(rawValueType)
   const [valueSearch, setValueSearch] = useState('')
@@ -462,9 +463,9 @@ export function VariantAttributeValuesForm({
       max: 'Max',
       hex: 'HEX',
       numericValue: tLabels('numericValue'),
-      namePlaceholder: tHints('variantPlaceholder'),
+      namePlaceholder: tBanner('missingPlaceholder'),
     }),
-    [tLabels, tHints],
+    [tLabels, tHints, tBanner],
   )
 
   const filteredValues = useMemo(() => {

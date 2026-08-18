@@ -250,13 +250,25 @@ function emailRequiredForPhone(
   return !isValidUkrPhone(phone)
 }
 
-/** Extra delivery phone when account/auth phone is not valid for the carrier policy. */
+/**
+ * Extra «UA delivery phone» field: only UA market + carrier lock to +380.
+ * SK / intl delivery must not show or require this second phone.
+ */
+export function isUaDeliveryPhoneLockActive(
+  region: CheckoutMarketRegion = 'ua',
+  deliveryPhonePolicy: PhonePolicy = defaultDeliveryPhonePolicy(region),
+): boolean {
+  return region === 'ua' && deliveryPhonePolicy === 'ua_e164'
+}
+
+/** Extra delivery phone when account/auth phone is not valid for the UA carrier policy. */
 function ordererDeliveryPhoneRequired(
   values: CheckoutFormValues,
   identification?: CheckoutIdentificationState,
   region: CheckoutMarketRegion = 'ua',
   deliveryPhonePolicy: PhonePolicy = defaultDeliveryPhonePolicy(region),
 ): boolean {
+  if (!isUaDeliveryPhoneLockActive(region, deliveryPhonePolicy)) return false
   if (values.isOtherRecipient) return false
   return !isValidDeliveryPhone(values.phone, deliveryPhonePolicy)
 }

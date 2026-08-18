@@ -893,6 +893,10 @@ export default function CheckoutPage() {
       }
       const formWithPromos = { ...formData, promoCodes: effectivePromoCodes }
       const { immediate, dated } = partitionCartByShipmentDate(checkoutableItems)
+      const orderPhoneMarket = {
+        marketRegion: (isSkMarket ? 'sk' : 'ua') as 'sk' | 'ua',
+        deliveryPhonePolicy: marketSettings.deliveryPhonePolicy,
+      }
 
       if (needsShipmentSplitChoice && shipmentSplitMode === 'split') {
         if (!immediate.length || !dated.length) {
@@ -938,6 +942,7 @@ export default function CheckoutPage() {
                   : undefined,
               returnBaseUrl:
                 typeof window !== 'undefined' ? window.location.origin : undefined,
+              ...orderPhoneMarket,
             },
           ),
           buildOrderPayload(
@@ -964,6 +969,7 @@ export default function CheckoutPage() {
                   : undefined,
               returnBaseUrl:
                 typeof window !== 'undefined' ? window.location.origin : undefined,
+              ...orderPhoneMarket,
             },
           ),
           ],
@@ -1006,6 +1012,7 @@ export default function CheckoutPage() {
         vatCountryCode:
           marketSettings.region === 'sk' && buyerType === 'company' ? vatCountryCode : undefined,
         returnBaseUrl: typeof window !== 'undefined' ? window.location.origin : undefined,
+        ...orderPhoneMarket,
       })
       if (!payload.items.length) {
         throw new Error(tCart('emptyTitle'))

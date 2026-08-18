@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Plus, Search, Trash2 } from 'lucide-react'
 
+import { TranslationHint } from '@/components/backstage/content-locale-banner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -96,13 +97,16 @@ function ValueRowFields({
 
   if (valueType === 'UNIVERSAL') {
     return (
-      <div className="grid grid-cols-[1fr_100px_40px] items-center gap-2 px-3 py-2">
-        <Input
-          value={row.label}
-          onChange={(e) => onPatch({ label: e.target.value })}
-          placeholder={labels.namePlaceholder}
-          className="h-9"
-        />
+      <div className="grid grid-cols-[1fr_100px_40px] items-start gap-2 px-3 py-2">
+        <div className="space-y-1">
+          <Input
+            value={row.label}
+            onChange={(e) => onPatch({ label: e.target.value })}
+            placeholder={labels.namePlaceholder}
+            className="h-9"
+          />
+          <TranslationHint hint={row.labelHint} />
+        </div>
         <Input
           value={row.legacyId}
           onChange={(e) => onPatch({ legacyId: e.target.value })}
@@ -127,6 +131,7 @@ function ValueRowFields({
                 placeholder="C3, WRB…"
                 className="h-9"
               />
+              <TranslationHint hint={row.labelHint} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">{labels.packagingKind}</Label>
@@ -208,8 +213,9 @@ function ValueRowFields({
 
   if (valueType === 'RANGE') {
     return (
-      <div className="grid grid-cols-[1fr_72px_72px_80px_40px] items-center gap-2 px-3 py-2">
-        <Input
+      <div className="grid grid-cols-[1fr_72px_72px_80px_40px] items-start gap-2 px-3 py-2">
+        <div className="space-y-1">
+          <Input
           value={row.label}
           onChange={(e) => {
             const label = e.target.value
@@ -225,6 +231,8 @@ function ValueRowFields({
           placeholder="H80-100, H80+…"
           className="h-9"
         />
+          <TranslationHint hint={row.labelHint} />
+        </div>
         <Input
           value={row.numericMin}
           onChange={(e) => {
@@ -258,13 +266,16 @@ function ValueRowFields({
 
   if (valueType === 'COLOR') {
     return (
-      <div className="grid grid-cols-[1fr_120px_80px_40px] items-center gap-2 px-3 py-2">
-        <Input
-          value={row.label}
-          onChange={(e) => onPatch({ label: e.target.value })}
-          placeholder="Жовтий…"
-          className="h-9"
-        />
+      <div className="grid grid-cols-[1fr_120px_80px_40px] items-start gap-2 px-3 py-2">
+        <div className="space-y-1">
+          <Input
+            value={row.label}
+            onChange={(e) => onPatch({ label: e.target.value })}
+            placeholder="Жовтий…"
+            className="h-9"
+          />
+          <TranslationHint hint={row.labelHint} />
+        </div>
         <div className="flex items-center gap-2">
           <ColorSwatch hex={row.colorHex} />
           <Input
@@ -286,8 +297,9 @@ function ValueRowFields({
   }
 
   return (
-    <div className="grid grid-cols-[1fr_88px_80px_40px] items-center gap-2 px-3 py-2">
-      <Input
+    <div className="grid grid-cols-[1fr_88px_80px_40px] items-start gap-2 px-3 py-2">
+      <div className="space-y-1">
+        <Input
         value={row.label}
         onChange={(e) => {
           const label = e.target.value
@@ -303,6 +315,8 @@ function ValueRowFields({
         placeholder={unit ? `500 ${unit}` : '500 грн'}
         className="h-9"
       />
+        <TranslationHint hint={row.labelHint} />
+      </div>
       <Input
         value={row.numericMin}
         onChange={(e) => {

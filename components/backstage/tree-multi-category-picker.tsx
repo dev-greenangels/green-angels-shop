@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/command'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import type { CategoryTreeNode } from '@/lib/backstage/categories'
+import { categoryLabel, type CategoryTreeNode } from '@/lib/backstage/categories'
 import { cn } from '@/lib/utils'
 
 type FlatCategory = {
@@ -30,7 +30,7 @@ function flattenCategoryTree(nodes: CategoryTreeNode[], depth = 0): FlatCategory
   for (const node of nodes) {
     result.push({
       id: node.id,
-      name: node.name,
+      name: categoryLabel(node),
       depth,
       hasChildren: (node.children?.length ?? 0) > 0,
     })
@@ -45,7 +45,7 @@ function collectNodeNames(nodes: CategoryTreeNode[]): Map<string, string> {
   const map = new Map<string, string>()
   const walk = (list: CategoryTreeNode[]) => {
     for (const node of list) {
-      map.set(node.id, node.name)
+      map.set(node.id, categoryLabel(node))
       if (node.children?.length) walk(node.children)
     }
   }

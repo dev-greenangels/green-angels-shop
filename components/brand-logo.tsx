@@ -1,3 +1,7 @@
+'use client'
+
+import { useMarketRegion } from '@/components/providers/market-region-provider'
+import { getMarketBranding } from '@/lib/branding/market-branding'
 import { cn } from '@/lib/utils'
 
 export const LOGO_SRC = '/images/logo.png'
@@ -23,14 +27,17 @@ export function BrandLogo({
   logoSrc,
   variant = 'default',
 }: BrandLogoProps) {
-  const src = logoSrc ?? (variant === 'onDark' ? WHITE_LOGO_SRC : LOGO_SRC)
+  const marketRegion = useMarketRegion()
+  const branding = getMarketBranding(marketRegion)
+  const src = logoSrc ?? (variant === 'onDark' ? branding.footerLogo : branding.headerLogo)
+  const resolvedAlt = marketRegion === 'sk' ? branding.applicationName : alt
   const onDark = variant === 'onDark'
 
   return (
     <span className={cn('inline-flex max-w-full shrink-0 items-center justify-center', className)}>
       <img
         src={src}
-        alt={alt}
+        alt={resolvedAlt}
         width={width}
         height={height}
         className={cn(

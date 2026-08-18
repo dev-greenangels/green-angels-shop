@@ -15,6 +15,7 @@ export const SITEMAP_STATIC_PATHS = [
   '/plants',
   '/promotions',
   '/new-arrivals',
+  '/wholesale',
 ] as const
 
 export type SitemapUrlEntry = {

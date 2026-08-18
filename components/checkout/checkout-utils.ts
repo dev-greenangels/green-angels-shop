@@ -1,9 +1,14 @@
 import { cartLineKey } from '@/lib/cart-store'
 import type { CartItem } from '@/lib/types'
-import type { CheckoutFormValues } from '@/lib/validation/checkout-form'
+import type { PhonePolicy } from '@/lib/settings/market'
+import type {
+  CheckoutFormValues,
+  CheckoutMarketRegion,
+} from '@/lib/validation/checkout-form'
 import {
   formatCheckoutPhoneDisplay,
   formatPhoneDisplay,
+  isUaDeliveryPhoneLockActive,
   isValidUkrPhone,
 } from '@/lib/validation/checkout-form'
 
@@ -84,9 +89,26 @@ export type CheckoutPartySummary = {
   phone: string
 }
 
-function ordererPhoneDisplay(values: CheckoutFormValues): string {
+function shouldUseLockedUaDeliveryPhone(
+  values: CheckoutFormValues,
+  region?: CheckoutMarketRegion,
+  deliveryPhonePolicy?: PhonePolicy,
+): boolean {
+  if (values.isOtherRecipient) return false
+  if (region !== undefined || deliveryPhonePolicy !== undefined) {
+    return isUaDeliveryPhoneLockActive(region ?? 'ua', deliveryPhonePolicy ?? 'ua_e164')
+  }
+  return isValidUkrPhone(values.deliveryPhone)
+}
+
+function ordererPhoneDisplay(
+  values: CheckoutFormValues,
+  region?: CheckoutMarketRegion,
+  deliveryPhonePolicy?: PhonePolicy,
+): string {
+  const allowDeliveryPhone = shouldUseLockedUaDeliveryPhone(values, region, deliveryPhonePolicy)
   if (!values.phone.trim()) {
-    if (!values.isOtherRecipient && values.deliveryPhone.trim()) {
+    if (allowDeliveryPhone && values.deliveryPhone.trim()) {
       return formatPhoneDisplay(values.deliveryPhone)
     }
     return ''
@@ -94,25 +116,31 @@ function ordererPhoneDisplay(values: CheckoutFormValues): string {
   if (isValidUkrPhone(values.phone)) {
     return formatPhoneDisplay(values.phone)
   }
-  if (values.deliveryPhone.trim() && !values.isOtherRecipient) {
+  if (allowDeliveryPhone && values.deliveryPhone.trim()) {
     return formatPhoneDisplay(values.deliveryPhone)
   }
   return formatCheckoutPhoneDisplay(values.phone)
 }
 
 /** Дані замовника (крок 1 + по батькові на доставці, якщо це він же отримувач). */
-export function getCheckoutOrdererSummary(values: CheckoutFormValues): CheckoutPartySummary {
+export function getCheckoutOrdererSummary(
+  values: CheckoutFormValues,
+  region?: CheckoutMarketRegion,
+  deliveryPhonePolicy?: PhonePolicy,
+): CheckoutPartySummary {
   const patronymic = !values.isOtherRecipient ? values.patronymic : undefined
   const name =
     values.firstName.trim() && values.lastName.trim()
       ? formatPersonName(values.lastName, values.firstName, patronymic)
       : ''
-  return { name, phone: ordererPhoneDisplay(values) }
+  return { name, phone: ordererPhoneDisplay(values, region, deliveryPhonePolicy) }
 }
 
 /** Хто фактично отримує посилку (замовник або інший отримувач). */
 export function getCheckoutDeliveryRecipientSummary(
-  values: CheckoutFormValues
+  values: CheckoutFormValues,
+  region?: CheckoutMarketRegion,
+  deliveryPhonePolicy?: PhonePolicy,
 ): CheckoutPartySummary {
   if (values.isOtherRecipient) {
     const name =
@@ -129,16 +157,23 @@ export function getCheckoutDeliveryRecipientSummary(
     return { name, phone }
   }
 
-  return getCheckoutOrdererSummary(values)
+  return getCheckoutOrdererSummary(values, region, deliveryPhonePolicy)
 }
 
 /** Телефон отримувача для API (E.164-готовий рядок до normalizePhoneForApi). */
-export function getCheckoutRecipientPhoneRaw(values: CheckoutFormValues): string {
+export function getCheckoutRecipientPhoneRaw(
+  values: CheckoutFormValues,
+  region?: CheckoutMarketRegion,
+  deliveryPhonePolicy?: PhonePolicy,
+): string {
   if (values.isOtherRecipient) {
     return values.recipientPhone.trim()
   }
   if (isValidUkrPhone(values.phone)) {
     return values.phone.trim()
   }
-  return values.deliveryPhone.trim()
+  if (shouldUseLockedUaDeliveryPhone(values, region, deliveryPhonePolicy) && values.deliveryPhone.trim()) {
+    return values.deliveryPhone.trim()
+  }
+  return values.phone.trim()
 }

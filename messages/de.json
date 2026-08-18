@@ -120,6 +120,7 @@
     "blog": "Blog",
     "reviews": "Bewertungen",
     "favorites": "Favoriten",
+    "wholesale": "Großhandel",
     "about": "Über uns",
     "plantsList": "Pflanzen A–Z",
     "freshPhotos": "Aktuelle Fotos",
@@ -163,10 +164,44 @@
     "intro": "Professionelle Baumschule. Seit 2010 züchten wir mit Sorgfalt hochwertiges Pflanzmaterial.",
     "blog": "Blog",
     "about": "Über uns",
+    "wholesale": "Großhandel",
     "plantsList": "Pflanzen A–Z",
     "contacts": "Kontakt",
     "fullContacts": "Vollständige Kontaktdaten & Öffnungszeiten",
     "socialTitle": "Soziale Medien"
+  },
+  "wholesale": {
+    "seoTitle": "Großhandel für Gartencenter und Baumschulen",
+    "seoDescription": "Großhandelskooperation mit der Baumschule Green Angels. Anfrage senden und B2B-Angebot erhalten.",
+    "submit": "Anfrage senden",
+    "submitting": "Wird gesendet…",
+    "success": "Anfrage gesendet.",
+    "successTitle": "Danke",
+    "successBody": "Wir haben Ihre Angaben erhalten und melden uns mit einem Großhandelsangebot.",
+    "submitError": "Die Anfrage konnte nicht gesendet werden. Bitte später erneut versuchen.",
+    "fields": {
+      "fullName": "Vor- und Nachname",
+      "companyName": "Firmen- / Ladenname",
+      "phone": "Telefon",
+      "email": "E-Mail",
+      "city": "Stadt",
+      "website": "Website oder Social-Link",
+      "message": "Nachricht",
+      "companyIco": "Firmen-ID (IČO)",
+      "companyVatId": "USt-IdNr. (IČ DPH)"
+    },
+    "errors": {
+      "fullName": "Bitte Namen eingeben (mindestens 2 Buchstaben).",
+      "companyName": "Bitte Firmen- oder Ladennamen eingeben.",
+      "phone": "Bitte eine gültige Telefonnummer eingeben.",
+      "email": "Bitte eine gültige E-Mail eingeben.",
+      "city": "Bitte die Stadt eingeben.",
+      "website": "Bitte einen gültigen Link eingeben (https://…).",
+      "message": "Die Nachricht ist zu lang.",
+      "companyIco": "Bitte eine gültige Firmen-ID eingeben.",
+      "companyVatId": "Bitte eine gültige USt-IdNr. eingeben.",
+      "consent": "Die Einwilligung zur Datenverarbeitung ist erforderlich."
+    }
   },
   "auth": {
     "back": "Zurück",
@@ -955,7 +990,13 @@
     "termsLink": "Nutzungsbedingungen",
     "privacyLink": "Datenschutzerklärung",
     "cookiesLink": "Cookie-Richtlinie",
-    "templateNotice": "Dieser Text ist eine Entwurfsvorlage und muss vor Veröffentlichung auf einer Live-Website von einem Rechtsanwalt geprüft werden."
+    "templateNotice": "Dieser Text ist eine Entwurfsvorlage und muss vor Veröffentlichung auf einer Live-Website von einem Rechtsanwalt geprüft werden.",
+    "revisionLine": "Fassung {version}",
+    "sellerTitle": "Angaben zum Verkäufer",
+    "sellerIco": "IČO",
+    "sellerDic": "DIČ",
+    "sellerVat": "IČ DPH",
+    "sellerAddress": "Sitz"
   },
   "cookieConsent": {
     "title": "Wir verwenden Cookies",

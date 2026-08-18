@@ -15,7 +15,9 @@
     "carts": "Carts",
     "users": "Users",
     "blog": "Blog",
+    "legal": "Legal documents",
     "reviews": "Reviews",
+    "wholesaleInquiries": "Wholesale inquiries",
     "promotions": "Promotions",
     "referrals": "Odporúčania",
     "referenceData": "Reference data",
@@ -350,6 +352,7 @@
   "contentBanner": {
     "editing": "Editing translation: {locale}. Slug, price and images are shared across languages.",
     "missingPlaceholder": "No translation for this language",
+    "hintFrom": "Tipp ({locale}):",
     "switchConfirm": "Unsaved field changes will be lost. Switch content language?",
     "cmsNotTranslated": "Homepage and contact texts belong to this deploy, not to the content-language switcher."
   },
@@ -603,6 +606,20 @@
     "COLOR": "Name + HEX for display on site (HEX optional)",
     "NUMBER": "Nominal, quantity: number + unit (optional)"
   },
+  "attributeIcons": {
+    "BareRoot": "Csupasz gyökér",
+    "RootBall": "Gyökérlabda",
+    "StandardStem": "Törzsmagasság",
+    "Container": "Cserép (konténer)",
+    "Height": "Magasság",
+    "Width": "Szélesség",
+    "CrownDiameter": "Koronaátmérő",
+    "TrunkGirth": "Törzskerület",
+    "Age": "Csemete kora",
+    "LeafColor": "Levél színe",
+    "FlowerColor": "Virágzás színe",
+    "Currency": "Pénznem"
+  },
   "semantics": {
     "EXACT": "Exact",
     "MIN": "Minimum",
@@ -610,5 +627,33 @@
     "RANGE": "Range",
     "PLUS": "From (N+)",
     "TEXT": "Text"
+  },
+  "legal": {
+    "title": "Legal documents",
+    "subtitle": "A published revision cannot be edited — changes create a new draft. Checkout and cookies keep working if this section is unavailable.",
+    "newDraft": "New draft",
+    "revisions": "Revisions",
+    "localeHint": "Content locale: {locale}",
+    "empty": "No revisions for this language.",
+    "editor": "Editor",
+    "draftHint": "Drafts can be saved and published. After publish the text is frozen.",
+    "publishedHint": "This revision is locked. Create a new draft to change the text.",
+    "fieldTitle": "Title",
+    "fieldIntro": "Intro",
+    "fieldBody": "Sections",
+    "bodyHint": "Heading on the first line, paragraphs separated by a blank line. Split sections with a --- line.",
+    "placeholderHint": "Storefront texts fill company details from back-office settings. Use '{sellerName}', '{ico}' (IČO), '{dic}' (DIČ), '{icDph}' (IČ DPH), '{legalAddress}'. Do not hardcode IČO.",
+    "publish": "Publish",
+    "draftCreated": "Draft created",
+    "saved": "Draft saved",
+    "published": "Revision published",
+    "loadError": "Could not load documents",
+    "saveError": "Could not save",
+    "types": {
+      "TERMS": "Terms",
+      "PRIVACY": "Privacy",
+      "COOKIES": "Cookies",
+      "RETURNS": "Returns"
+    }
   }
 }

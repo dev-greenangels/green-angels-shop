@@ -19,6 +19,8 @@ import { normalizeLocalizationSettings } from '@/lib/settings/localization.norma
 import { normalizeStoreContactSettings } from '@/lib/settings/store-contact.normalize'
 import { normalizeNavigationSettings } from '@/lib/settings/navigation.normalize'
 import { normalizeMarketSettings } from '@/lib/settings/market'
+import { normalizeWholesalePageSettings } from '@/lib/settings/wholesale.normalize'
+import { defaultWholesalePageSettings } from '@/lib/settings/wholesale'
 import type {
   CartCheckoutSettings,
   CatalogPageSettings,
@@ -29,6 +31,7 @@ import type {
   PublicSiteSettings,
   RecentlyViewedSettings,
   StoreContactSettings,
+  WholesalePageSettings,
 } from '@/lib/settings/types'
 
 export type FetchedPublicSiteSettings = {
@@ -63,6 +66,7 @@ function unavailableSettingsFallback(): FetchedPublicSiteSettings {
       localization: DEFAULT_LOCALIZATION_SETTINGS,
       navigation: DEFAULT_NAVIGATION_SETTINGS,
       market: DEFAULT_MARKET_SETTINGS,
+      wholesale: defaultWholesalePageSettings(DEFAULT_MARKET_SETTINGS.region),
       dispatchCalendar: { enabled: false },
     },
     storeUnavailable: true,
@@ -158,6 +162,14 @@ export function getMarketSettings(
   const settings = 'settings' in fetched ? fetched.settings : fetched
   // Avoid UA-default priceBasis=inc_vat when market payload is missing/partial (SK → ex_vat).
   return normalizeMarketSettings(settings.market ?? {})
+}
+
+export function getWholesalePageSettings(
+  fetched: FetchedPublicSiteSettings | PublicSiteSettings,
+): WholesalePageSettings {
+  const settings = 'settings' in fetched ? fetched.settings : fetched
+  const market = getMarketSettings(fetched)
+  return normalizeWholesalePageSettings(settings.wholesale, market.region)
 }
 
 export function isStoreContactUnavailable(

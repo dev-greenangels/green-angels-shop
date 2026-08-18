@@ -30,6 +30,8 @@ import {
   FileUp,
   CalendarDays,
   Landmark,
+  ScrollText,
+  Warehouse,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -41,10 +43,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { BrandLogo } from '@/components/brand-logo'
-import {
-  BackstageContentLocaleProvider,
-  BackstageContentLocaleSwitcher,
-} from '@/components/backstage/backstage-content-locale'
+import { BackstageContentLocaleSwitcher } from '@/components/backstage/backstage-content-locale'
 import { BackstageUiLocaleSwitcher } from '@/components/backstage/backstage-ui-locale'
 import { cn } from '@/lib/utils'
 import type { BackstageSession } from '@/lib/backstage-auth/types'
@@ -113,7 +112,9 @@ const navGroups: NavGroup[] = [
     labelKey: 'groupContent',
     items: [
       { href: '/backstage/blog', labelKey: 'blog', icon: FileText },
+      { href: '/backstage/legal', labelKey: 'legal', icon: ScrollText },
       { href: '/backstage/reviews', labelKey: 'reviews', icon: MessageSquareQuote },
+      { href: '/backstage/wholesale-inquiries', labelKey: 'wholesaleInquiries', icon: Warehouse },
     ],
   },
   {
@@ -386,8 +387,7 @@ export function AdminLayout({ children, addClassName }: AdminLayoutProps) {
   const breadcrumbs = getBreadcrumbs()
 
   return (
-    <BackstageContentLocaleProvider>
-      <div className="bg-background">
+    <div className="bg-background">
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border lg:block">
           <Sidebar employee={employee} onLogout={handleLogout} />
         </aside>
@@ -450,6 +450,5 @@ export function AdminLayout({ children, addClassName }: AdminLayoutProps) {
           </main>
         </div>
       </div>
-    </BackstageContentLocaleProvider>
   )
 }

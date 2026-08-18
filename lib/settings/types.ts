@@ -275,6 +275,11 @@ export type CatalogPageSettings = {
   freshPhotosLimit: number
 }
 
+export type MediaWatermarkSettings = {
+  productPhotosEnabled: boolean
+  freshPhotosEnabled: boolean
+}
+
 export type {
   RecentlyViewedPageKey,
   RecentlyViewedPageVisibility,
@@ -286,6 +291,8 @@ export type {
   NavigationMenuItemLabels,
   NavigationSettings,
 } from './navigation'
+
+export type { WholesalePageSettings } from './wholesale'
 
 export type {
   CountrySiteCode,
@@ -307,7 +314,10 @@ export type PublicSiteSettings = {
   localization: LocalizationSettings
   navigation: NavigationSettings
   market: import('./market').MarketSettings
+  wholesale?: import('./wholesale').WholesalePageSettings
   dispatchCalendar?: { enabled: boolean }
   /** лише в backstage GET /settings */
   prestaImport?: import('./presta-import').PrestaImportSettings
+  /** лише в backstage GET /settings */
+  mediaWatermark?: MediaWatermarkSettings
 }

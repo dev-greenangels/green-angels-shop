@@ -4,6 +4,7 @@ import type {
   HomePageSettings,
   LocalizationSettings,
   MarketSettings,
+  MediaWatermarkSettings,
   PublicSiteSettings,
   RecentlyViewedSettings,
   StoreContactSettings,
@@ -78,6 +79,19 @@ export async function updateBackstageCatalogSettings(
   return res.json()
 }
 
+export async function updateBackstageMediaWatermarkSettings(
+  payload: Partial<MediaWatermarkSettings>,
+): Promise<MediaWatermarkSettings> {
+  const res = await fetch('/api/backstage/settings/media-watermark', {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
 export async function updateBackstageRecentlyViewedSettings(
   payload: Partial<RecentlyViewedSettings>,
 ): Promise<RecentlyViewedSettings> {
@@ -108,6 +122,19 @@ export async function updateBackstageMarketSettings(
   payload: Partial<MarketSettings>,
 ): Promise<MarketSettings> {
   const res = await fetch('/api/backstage/settings/market', {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function updateBackstageWholesalePageSettings(
+  payload: Partial<import('@/lib/settings/wholesale').WholesalePageSettings>,
+): Promise<import('@/lib/settings/wholesale').WholesalePageSettings> {
+  const res = await fetch('/api/backstage/settings/wholesale', {
     method: 'PATCH',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },

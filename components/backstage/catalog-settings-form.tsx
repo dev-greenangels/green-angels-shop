@@ -1,6 +1,7 @@
 'use client'
 
 import { Save } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import {
   CATALOG_GRID_BREAKPOINTS,
   GRID_COLUMNS_MAX,
@@ -23,6 +25,7 @@ import type {
   CatalogCategoryDisplay,
   CatalogGridColumns,
   CatalogPageSettings,
+  MediaWatermarkSettings,
 } from '@/lib/settings/types'
 import {
   FRESH_PHOTOS_LIMIT_MAX,
@@ -113,29 +116,35 @@ function GridColumnsFields({
 
 export function CatalogSettingsForm({
   catalog,
+  mediaWatermark,
   onChange,
+  onWatermarkChange,
   onSave,
   saving,
   isDirty = false,
 }: {
   catalog: CatalogPageSettings
+  mediaWatermark: MediaWatermarkSettings
   onChange: (next: CatalogPageSettings) => void
+  onWatermarkChange: (next: MediaWatermarkSettings) => void
   onSave: () => void
   saving: boolean
   isDirty?: boolean
 }) {
+  const tWatermarks = useTranslations('pages.settings.watermarks')
   const selected = DISPLAY_OPTIONS.find((option) => option.value === catalog.categoryDisplay)
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Каталог</CardTitle>
-        <CardDescription>
-          Сторінка /catalog відображає категорію з прапорцем «Корінь каталогу». Тут — режим показу
-          підкатегорій і товарів, а також кількість карток у ряд для різних розмірів екрана.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Каталог</CardTitle>
+          <CardDescription>
+            Сторінка /catalog відображає категорію з прапорцем «Корінь каталогу». Тут — режим показу
+            підкатегорій і товарів, а також кількість карток у ряд для різних розмірів екрана.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="catalog-display">Режим відображення на /catalog</Label>
           <Select
@@ -221,11 +230,53 @@ export function CatalogSettingsForm({
           </p>
         </div>
 
-        <Button type="button" onClick={onSave} disabled={saving || !isDirty}>
-          <Save className="mr-2 h-4 w-4" />
-          {saving ? 'Збереження…' : 'Зберегти'}
-        </Button>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{tWatermarks('title')}</CardTitle>
+          <CardDescription>{tWatermarks('description')}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="product-photos-watermark">
+                {tWatermarks('productPhotosLabel')}
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {tWatermarks('productPhotosHint')}
+              </p>
+            </div>
+            <Switch
+              id="product-photos-watermark"
+              checked={mediaWatermark.productPhotosEnabled}
+              onCheckedChange={(productPhotosEnabled) =>
+                onWatermarkChange({ ...mediaWatermark, productPhotosEnabled })
+              }
+            />
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="fresh-photos-watermark">{tWatermarks('freshPhotosLabel')}</Label>
+              <p className="text-sm text-muted-foreground">{tWatermarks('freshPhotosHint')}</p>
+            </div>
+            <Switch
+              id="fresh-photos-watermark"
+              checked={mediaWatermark.freshPhotosEnabled}
+              onCheckedChange={(freshPhotosEnabled) =>
+                onWatermarkChange({ ...mediaWatermark, freshPhotosEnabled })
+              }
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Button type="button" onClick={onSave} disabled={saving || !isDirty}>
+        <Save className="mr-2 h-4 w-4" />
+        {saving ? 'Збереження…' : 'Зберегти'}
+      </Button>
+    </div>
   )
 }

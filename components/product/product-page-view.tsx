@@ -110,7 +110,7 @@ export function ProductPageView({
         </div>
 
         <div className={cn(siteContentShellClassName, 'min-w-0 overflow-x-clip py-8')}>
-          <div className="mb-16 grid min-w-0 gap-8 lg:grid-cols-2 lg:gap-12">
+          <div className="mb-16 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-10 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
             <ProductImageGallery
               images={plant.images}
               productId={plant.id}

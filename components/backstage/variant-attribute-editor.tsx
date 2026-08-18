@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import { Loader2, Save, Trash2 } from 'lucide-react'
 
 import { VariantAttributeValuesForm } from '@/components/backstage/variant-attribute-values-form'
-import { ContentLocaleLabel } from '@/components/backstage/content-locale-banner'
+import { ContentLocaleLabel, TranslationHint } from '@/components/backstage/content-locale-banner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -30,7 +30,7 @@ import {
   type VariantAttribute,
   type VariantAttributeType,
 } from '@/lib/backstage/variant-attributes'
-import { CHARACTERISTIC_ICON_OPTIONS } from '@/lib/characteristics/icons'
+import { VARIANT_ATTRIBUTE_ICON_OPTIONS } from '@/lib/variant-attributes/icons'
 import { cn } from '@/lib/utils'
 
 export function VariantAttributeEditor({
@@ -61,6 +61,7 @@ export function VariantAttributeEditor({
   const tLabels = useTranslations('labels')
   const tPages = useTranslations('pages.attributes')
   const tBanner = useTranslations('contentBanner')
+  const tAttrIcons = useTranslations('attributeIcons')
   const tAttrTypes = useTranslations('variantAttributeTypes')
   const tAttrTypeHints = useTranslations('variantAttributeTypeHints')
 
@@ -146,6 +147,7 @@ export function VariantAttributeEditor({
                 onChange={(e) => setName(e.target.value)}
                 placeholder={tBanner('missingPlaceholder')}
               />
+              <TranslationHint hint={attribute.nameHint} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-attr-legacy">{tLabels('legacyId')}</Label>
@@ -209,6 +211,7 @@ export function VariantAttributeEditor({
                 placeholder={tHints('attributeDescriptionPlaceholder')}
                 className="resize-none"
               />
+              <TranslationHint hint={attribute.descriptionHint} />
               <p className="text-xs text-muted-foreground">{tHints('attributeDescriptionHint')}</p>
             </div>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3 sm:col-span-2">
@@ -246,8 +249,8 @@ export function VariantAttributeEditor({
             {showOnProductPage ? (
               <div className="space-y-2 sm:col-span-2">
                 <Label>{tLabels('productPageIcon')}</Label>
-                <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                  {CHARACTERISTIC_ICON_OPTIONS.map((option) => {
+                <div className="grid grid-cols-4 gap-2">
+                  {VARIANT_ATTRIBUTE_ICON_OPTIONS.map((option) => {
                     const Icon = option.icon
                     const active = icon === option.name
                     return (
@@ -262,8 +265,8 @@ export function VariantAttributeEditor({
                             : 'border-border hover:border-primary/30',
                         )}
                       >
-                        <Icon className="h-4 w-4" />
-                        <span className="truncate">{option.name}</span>
+                        <Icon className="h-10 w-10" />
+                        <span className="line-clamp-2 text-center leading-tight">{tAttrIcons(option.name)}</span>
                       </button>
                     )
                   })}

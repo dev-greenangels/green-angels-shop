@@ -105,6 +105,10 @@ export type BackstageProductDetail = BackstageProductListItem & {
   description: string | null
   metaTitle: string | null
   metaDesc: string | null
+  nameHint?: { locale: string; text: string } | null
+  descriptionHint?: { locale: string; text: string } | null
+  metaTitleHint?: { locale: string; text: string } | null
+  metaDescHint?: { locale: string; text: string } | null
   additionalCategoryIds: string[]
   pricingMode: 'simple' | 'variants'
   variants: BackstageProductVariant[]

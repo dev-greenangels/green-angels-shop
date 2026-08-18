@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { fetchCategoryTree, type CategoryTreeNode } from '@/lib/backstage/categories'
+import { fetchCategoryTree, type CategoryTreeNode, categoryLabel } from '@/lib/backstage/categories'
 import {
   bulkBackstageProducts,
   fetchBackstageProductsPage,
@@ -58,7 +58,7 @@ type StockFilter = 'all' | 'in_stock' | 'out_of_stock'
 function flattenCategories(nodes: CategoryTreeNode[]): Array<{ id: string; name: string }> {
   const result: Array<{ id: string; name: string }> = []
   for (const node of nodes) {
-    result.push({ id: node.id, name: node.name })
+    result.push({ id: node.id, name: categoryLabel(node) })
     result.push(...flattenCategories(node.children))
   }
   return result
@@ -110,7 +110,7 @@ function ProductsPageContent() {
   const tc = useTranslations('common')
   const tAria = useTranslations('aria')
   const tLabels = useTranslations('labels')
-  const { locale: contentLocale } = useBackstageContentLocale()
+  const { locale: contentLocale, ready: contentLocaleReady } = useBackstageContentLocale()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -166,6 +166,7 @@ function ProductsPageContent() {
   const returnToParam = encodeURIComponent(listHref)
 
   const loadProducts = useCallback(async () => {
+    if (!contentLocaleReady) return
     setLoading(true)
     try {
       const data = await fetchBackstageProductsPage({
@@ -192,7 +193,7 @@ function ProductsPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [search, categoryFilter, publishedFilter, stockFilter, page, tt, contentLocale])
+  }, [search, categoryFilter, publishedFilter, stockFilter, page, tt, contentLocale, contentLocaleReady])
 
   useEffect(() => {
     setSearchInput(urlSearch)
@@ -200,10 +201,11 @@ function ProductsPageContent() {
   }, [urlSearch])
 
   useEffect(() => {
+    if (!contentLocaleReady) return
     void fetchCategoryTree(contentLocale, { edit: false })
       .then((tree) => setCategories(flattenCategories(tree)))
       .catch(() => {})
-  }, [contentLocale])
+  }, [contentLocale, contentLocaleReady])
 
   useEffect(() => {
     const timer = setTimeout(() => {

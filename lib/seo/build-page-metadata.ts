@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
 
 import type { AppLocale } from '@/i18n/routing'
+import { getMarketBranding } from '@/lib/branding/market-branding'
 import { OG_LOCALE, buildPageAlternates, type PageAlternates } from '@/lib/seo/page-alternates'
 import { resolveSeoRequestContext } from '@/lib/seo/request-context'
 import { isIndexingAllowed, previewRobotsDirective } from '@/lib/seo/indexing-policy'
+import type { MarketRegion } from '@/lib/settings/market'
 
 export async function buildIndexablePageMetadata(
   locale: string,
@@ -31,6 +33,7 @@ export async function buildIndexablePageMetadata(
     {
       ...fields,
       locale: ctx.locale,
+      marketRegion: ctx.marketRegion,
       robots: indexing ? fields.robots : previewRobotsDirective(),
     },
     alternates,
@@ -43,12 +46,22 @@ export function applyIndexableMetadata(
     description?: string
     images?: string[]
     locale: AppLocale
+    marketRegion: MarketRegion
     siteName?: string
     robots?: Metadata['robots']
   },
   alternates: PageAlternates | null,
 ): Metadata {
-  const image = base.images?.find((url) => Boolean(url?.trim()))
+  const requestedImage = base.images?.find((url) => Boolean(url?.trim()))
+  const image = requestedImage ?? getMarketBranding(base.marketRegion).socialImage
+  const openGraphImage = requestedImage
+    ? { url: image }
+    : {
+        url: image,
+        width: 1200,
+        height: 630,
+        alt: base.siteName ?? base.title,
+      }
   const metadata: Metadata = {
     title: base.title,
     description: base.description,
@@ -67,13 +80,13 @@ export function applyIndexableMetadata(
       type: 'website',
       locale: OG_LOCALE[base.locale],
       siteName: base.siteName,
-      ...(image ? { images: [{ url: image }] } : {}),
+      images: [openGraphImage],
     }
     metadata.twitter = {
-      card: image ? 'summary_large_image' : 'summary',
+      card: 'summary_large_image',
       title: base.title,
       description: base.description,
-      ...(image ? { images: [image] } : {}),
+      images: [image],
     }
   }
 

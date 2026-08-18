@@ -16,7 +16,9 @@
     "carts": "Košíky",
     "users": "Používatelia",
     "blog": "Blog",
+    "legal": "Právne dokumenty",
     "reviews": "Recenzie",
+    "wholesaleInquiries": "Veľkoobchodné dopyty",
     "promotions": "Akcie",
     "referrals": "Odporúčania",
     "referenceData": "Číselníky",
@@ -352,6 +354,7 @@
   "contentBanner": {
     "editing": "Upravujete preklad: {locale}. Slug, cena a obrázky sú spoločné pre všetky jazyky.",
     "missingPlaceholder": "Preklad v tomto jazyku chýba",
+    "hintFrom": "Nápoveda ({locale}):",
     "switchConfirm": "Neuložené zmeny v poliach sa stratia. Prepnúť jazyk obsahu?",
     "cmsNotTranslated": "Texty úvodnej stránky a kontaktov patria k tomuto nasadeniu, nie k prepínaču jazyka obsahu."
   },
@@ -427,7 +430,17 @@
       "tabCatalog": "Katalóg",
       "tabRecentlyViewed": "Naposledy zobrazené",
       "tabCart": "Košík",
-      "tabNovaPoshta": "Nova Poshta"
+      "tabNovaPoshta": "Nova Poshta",
+      "catalogSaveSuccess": "Nastavenia katalógu boli uložené.",
+      "catalogSaveError": "Nepodarilo sa uložiť všetky nastavenia katalógu.",
+      "watermarks": {
+        "title": "Vodoznaky",
+        "description": "Automatické pridávanie vodoznaku nastavte samostatne pre každý typ fotografie.",
+        "productPhotosLabel": "Fotografie produktov",
+        "productPhotosHint": "Pridávať vodoznak do nových fotografií produktov.",
+        "freshPhotosLabel": "Fresh Photos",
+        "freshPhotosHint": "Pridávať vodoznak do nových Fresh Photos."
+      }
     },
     "products": {
       "title": "Produkty",
@@ -605,6 +618,20 @@
     "COLOR": "Názov + HEX na zobrazenie na webe (HEX voliteľné)",
     "NUMBER": "Nominál, množstvo: číslo + jednotka (voliteľné)"
   },
+  "attributeIcons": {
+    "BareRoot": "Holý koreň",
+    "RootBall": "Koreňový bal",
+    "StandardStem": "Výška kmeňa",
+    "Container": "Kvetináč (kontajner)",
+    "Height": "Výška",
+    "Width": "Šírka",
+    "CrownDiameter": "Priemer koruny",
+    "TrunkGirth": "Obvod kmeňa",
+    "Age": "Vek sadenice",
+    "LeafColor": "Farba listov",
+    "FlowerColor": "Farba kvitnutia",
+    "Currency": "Mena"
+  },
   "semantics": {
     "EXACT": "Presné",
     "MIN": "Minimum",
@@ -612,5 +639,33 @@
     "RANGE": "Rozsah",
     "PLUS": "Od (N+)",
     "TEXT": "Text"
+  },
+  "legal": {
+    "title": "Právne dokumenty",
+    "subtitle": "Publikovanú revíziu nemožno upraviť — zmena vytvorí nový koncept. Pokladňa a cookies fungujú aj bez tohto modulu.",
+    "newDraft": "Nový koncept",
+    "revisions": "Revízie",
+    "localeHint": "Jazyk obsahu: {locale}",
+    "empty": "Pre tento jazyk nie sú revízie.",
+    "editor": "Editor",
+    "draftHint": "Koncept môžete uložiť a publikovať. Po publikovaní je text uzamknutý.",
+    "publishedHint": "Táto revízia je uzamknutá. Pre zmenu vytvorte nový koncept.",
+    "fieldTitle": "Názov",
+    "fieldIntro": "Úvod",
+    "fieldBody": "Časti",
+    "bodyHint": "Nadpis v prvom riadku, odseky oddelené prázdnym riadkom. Časti oddeľte riadkom ---.",
+    "placeholderHint": "Na webe sa doplnia firemné údaje z nastavení back office. Použite '{sellerName}', '{ico}' (IČO), '{dic}' (DIČ), '{icDph}' (IČ DPH), '{legalAddress}'. IČO nevpisujte ručne.",
+    "publish": "Publikovať",
+    "draftCreated": "Koncept vytvorený",
+    "saved": "Koncept uložený",
+    "published": "Revízia publikovaná",
+    "loadError": "Dokumenty sa nepodarilo načítať",
+    "saveError": "Nepodarilo sa uložiť",
+    "types": {
+      "TERMS": "Obchodné podmienky",
+      "PRIVACY": "Ochrana údajov",
+      "COOKIES": "Cookies",
+      "RETURNS": "Vrátenie"
+    }
   }
 }

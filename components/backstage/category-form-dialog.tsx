@@ -24,7 +24,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CategoryImageField } from '@/components/backstage/category-image-field'
-import { ContentLocaleBanner, ContentLocaleLabel } from '@/components/backstage/content-locale-banner'
+import { ContentLocaleBanner, ContentLocaleLabel, TranslationHint } from '@/components/backstage/content-locale-banner'
 import {
   type CategoryFormValues,
   slugifyCategoryName,
@@ -58,6 +58,7 @@ export function CategoryFormDialog({
   lockParent,
   categoryId,
   submitLabel,
+  hints,
   onSubmit,
 }: {
   open: boolean
@@ -69,6 +70,13 @@ export function CategoryFormDialog({
   lockParent?: boolean
   categoryId?: string
   submitLabel: string
+  hints?: {
+    name?: { locale: string; text: string } | null
+    description?: { locale: string; text: string } | null
+    footerDescription?: { locale: string; text: string } | null
+    metaTitle?: { locale: string; text: string } | null
+    metaDesc?: { locale: string; text: string } | null
+  }
   onSubmit: (values: CategoryFormValues) => Promise<void>
 }) {
   const [form, setForm] = useState<CategoryFormValues>(emptyForm)
@@ -108,7 +116,7 @@ export function CategoryFormDialog({
     e.preventDefault()
     setError(null)
 
-    if (!form.name.trim()) {
+    if (!form.name.trim() && !categoryId) {
       setError(tValidation('categoryNameRequired'))
       return
     }
@@ -147,6 +155,7 @@ export function CategoryFormDialog({
               onChange={(e) => patch({ name: e.target.value })}
               placeholder={tBanner('missingPlaceholder')}
             />
+            <TranslationHint hint={hints?.name} />
           </div>
 
           <div className="space-y-2">
@@ -178,7 +187,7 @@ export function CategoryFormDialog({
                 {parentOptions.map((option) => (
                   <SelectItem key={option.id} value={option.id}>
                     {'— '.repeat(option.depth)}
-                    {option.name}
+                    {option.name.trim() || tBanner('missingPlaceholder')}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -206,14 +215,15 @@ export function CategoryFormDialog({
           />
 
           <div className="space-y-2">
-            <Label htmlFor="category-description">{tLabels('shortDescription')}</Label>
+            <ContentLocaleLabel htmlFor="category-description">{tLabels('shortDescription')}</ContentLocaleLabel>
             <Textarea
               id="category-description"
               value={form.description}
               onChange={(e) => patch({ description: e.target.value })}
               rows={3}
-              placeholder={tHints('categoryDescription')}
+              placeholder={tBanner('missingPlaceholder')}
             />
+            <TranslationHint hint={hints?.description} />
             <p className="text-xs text-muted-foreground">{tPages('shortDescHint')}</p>
           </div>
 
@@ -225,6 +235,7 @@ export function CategoryFormDialog({
               onChange={(e) => patch({ metaTitle: e.target.value })}
               placeholder={tHints('seoTitle')}
             />
+            <TranslationHint hint={hints?.metaTitle} />
           </div>
 
           <div className="space-y-2">
@@ -236,17 +247,19 @@ export function CategoryFormDialog({
               rows={3}
               placeholder={tHints('seoDesc')}
             />
+            <TranslationHint hint={hints?.metaDesc} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category-footer-description">{tLabels('footerDescription')}</Label>
+            <ContentLocaleLabel htmlFor="category-footer-description">{tLabels('footerDescription')}</ContentLocaleLabel>
             <Textarea
               id="category-footer-description"
               value={form.footerDescription}
               onChange={(e) => patch({ footerDescription: e.target.value })}
               rows={6}
-              placeholder={tHints('footerDescription')}
+              placeholder={tBanner('missingPlaceholder')}
             />
+            <TranslationHint hint={hints?.footerDescription} />
             <p className="text-xs text-muted-foreground">{tPages('footerDescHint')}</p>
           </div>
 

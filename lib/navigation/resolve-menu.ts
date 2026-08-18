@@ -11,6 +11,7 @@ import {
   Percent,
   Sparkles,
   Star,
+  Warehouse,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -25,6 +26,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Star,
   Heart,
   Info,
+  Warehouse,
 }
 
 export function resolveNavigationIcon(icon?: string): LucideIcon | null {

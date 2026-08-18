@@ -19,6 +19,7 @@ export type VariantAttributeValue = {
   id: string
   slug: string
   label: string
+  labelHint?: { locale: string; text: string } | null
   legacyId: string | null
   sortOrder: number
   numericMin: number | null
@@ -35,7 +36,9 @@ export type VariantAttribute = {
   id: string
   slug: string
   name: string
+  nameHint?: { locale: string; text: string } | null
   description: string | null
+  descriptionHint?: { locale: string; text: string } | null
   legacyId: string | null
   sortOrder: number
   valueType: VariantAttributeType
@@ -95,6 +98,7 @@ export type ValueDraft = {
   key: string
   id?: string
   label: string
+  labelHint?: { locale: string; text: string } | null
   legacyId: string
   numericMin: string
   numericMax: string
@@ -115,6 +119,7 @@ export function attributeToValueDrafts(attribute: VariantAttribute): ValueDraft[
     key: v.id,
     id: v.id,
     label: v.label,
+    labelHint: v.labelHint ?? null,
     legacyId: v.legacyId ?? '',
     numericMin: numToDraft(v.numericMin),
     numericMax: numToDraft(v.numericMax),
@@ -272,7 +277,7 @@ export function valueDraftsToPayload(
   values: ValueDraft[],
 ): Array<VariantAttributeValueInput & { id?: string }> {
   return values
-    .filter((v) => v.label.trim())
+    .filter((v) => v.id || v.label.trim())
     .map((v) => {
       const snap = draftToValueSnapshot(v)
       return {
@@ -333,11 +338,12 @@ export function validateValueDraftsForType(
   valueType: VariantAttributeType,
   values: ValueDraft[],
 ): string | null {
-  const filled = values.filter((v) => v.label.trim())
-  if (filled.length === 0) return 'attributeValuesRequired'
+  const kept = values.filter((v) => v.id || v.label.trim())
+  if (kept.length === 0) return 'attributeValuesRequired'
 
-  for (const row of filled) {
+  for (const row of kept) {
     const label = row.label.trim()
+    if (!label) continue
     if (valueType === 'RANGE') {
       const min = parseOptionalNumber(row.numericMin)
       const max = parseOptionalNumber(row.numericMax)

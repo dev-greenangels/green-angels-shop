@@ -17,11 +17,13 @@ import { SessionProvider } from './session-provider'
 import { CatalogSettingsProvider } from './catalog-settings-provider'
 import { CatalogPathsProvider } from './catalog-paths-provider'
 import { LocalizationSettingsProvider } from './localization-settings-provider'
+import { MarketRegionProvider } from './market-region-provider'
 import { NavigationSettingsProvider } from './navigation-settings-provider'
 import { StoreSettingsProvider } from './store-settings-provider'
 import { VatDisplayProvider } from './vat-display-provider'
 import type { VatDisplayPolicy } from '@/lib/pricing/vat-price'
 import { DEFAULT_MARKET_SETTINGS } from '@/lib/settings/market'
+import type { MarketRegion } from '@/lib/settings/market'
 
 const DEFAULT_VAT_DISPLAY_POLICY: VatDisplayPolicy = {
   priceBasis: DEFAULT_MARKET_SETTINGS.priceBasis,
@@ -39,6 +41,7 @@ export function AppProviders({
   initialLocalizationSettings = DEFAULT_LOCALIZATION_SETTINGS,
   initialNavigationSettings = DEFAULT_NAVIGATION_SETTINGS,
   initialCommerceSettings = DEFAULT_COMMERCE_SETTINGS,
+  initialMarketRegion = DEFAULT_MARKET_SETTINGS.region,
   initialCountryOverlay = null,
   initialVatDisplayPolicy = DEFAULT_VAT_DISPLAY_POLICY,
   catalogRootSlug = null,
@@ -52,6 +55,7 @@ export function AppProviders({
   initialLocalizationSettings?: LocalizationSettings
   initialNavigationSettings?: NavigationSettings
   initialCommerceSettings?: PublicCommerceSettings
+  initialMarketRegion?: MarketRegion
   initialCountryOverlay?: CountrySiteOverlay | null
   initialVatDisplayPolicy?: VatDisplayPolicy
   catalogRootSlug?: string | null
@@ -59,6 +63,7 @@ export function AppProviders({
 }) {
   return (
     <CanonicalOriginProvider value={canonicalOrigin}>
+    <MarketRegionProvider value={initialMarketRegion}>
     <CommerceProvider value={initialCommerceSettings}>
     <CountrySiteProvider value={initialCountryOverlay}>
     <VatDisplayProvider value={initialVatDisplayPolicy}>
@@ -80,6 +85,7 @@ export function AppProviders({
     </VatDisplayProvider>
     </CountrySiteProvider>
     </CommerceProvider>
+    </MarketRegionProvider>
     </CanonicalOriginProvider>
   )
 }

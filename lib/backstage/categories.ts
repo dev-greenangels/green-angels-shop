@@ -9,6 +9,13 @@ export type CategoryTreeNode = {
   isCatalogRoot: boolean
   position: number
   name: string
+  /** First filled translation — list/parent picker only, never the SK editor field. */
+  fallbackName?: string | null
+  nameHint?: { locale: string; text: string } | null
+  descriptionHint?: { locale: string; text: string } | null
+  footerDescriptionHint?: { locale: string; text: string } | null
+  metaTitleHint?: { locale: string; text: string } | null
+  metaDescHint?: { locale: string; text: string } | null
   description: string | null
   footerDescription: string | null
   image: string | null
@@ -52,6 +59,12 @@ export type CategoryFormValues = {
 export type CategoryPatch = Partial<CategoryFormValues> & {
   isActive?: boolean
   position?: number
+}
+
+export function categoryLabel(
+  node: Pick<CategoryTreeNode, 'name' | 'slug'> & { fallbackName?: string | null },
+): string {
+  return node.name.trim() || node.fallbackName?.trim() || node.slug
 }
 
 export function slugifyCategoryName(name: string): string {
@@ -151,7 +164,10 @@ export async function patchCategory(
   const body: Record<string, unknown> = {}
   if (locale) body.locale = locale
 
-  if (payload.name !== undefined) body.name = payload.name.trim()
+  if (payload.name !== undefined) {
+    const name = payload.name.trim()
+    if (name) body.name = name
+  }
   if (payload.slug !== undefined) body.slug = payload.slug.trim().toLowerCase()
   if (payload.parentId !== undefined) body.parentId = payload.parentId
   if (payload.image !== undefined) body.image = payload.image

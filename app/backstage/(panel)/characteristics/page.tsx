@@ -42,7 +42,7 @@ export default function CharacteristicsPage() {
   const tHints = useTranslations('hints')
   const tValidation = useTranslations('validation')
   const tt = useTranslations('toast')
-  const { locale: contentLocale } = useBackstageContentLocale()
+  const { locale: contentLocale, ready: contentLocaleReady } = useBackstageContentLocale()
 
   const [items, setItems] = useState<CharacteristicDefinition[]>([])
   const [loading, setLoading] = useState(true)
@@ -59,6 +59,7 @@ export default function CharacteristicsPage() {
   const [bulkOpen, setBulkOpen] = useState(false)
 
   const load = useCallback(async () => {
+    if (!contentLocaleReady) return
     setLoading(true)
     try {
       const data = await fetchCharacteristicDefinitions({ locale: contentLocale })
@@ -72,7 +73,7 @@ export default function CharacteristicsPage() {
     } finally {
       setLoading(false)
     }
-  }, [tt, contentLocale])
+  }, [tt, contentLocale, contentLocaleReady])
 
   useEffect(() => {
     void load()

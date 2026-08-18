@@ -1,10 +1,14 @@
 import { Navigation } from '@/components/navigation'
 import { PublicPageBreadcrumbs } from '@/components/public-page-breadcrumbs'
 import { LegalPageLinks } from '@/components/legal/legal-page-links'
+import { LegalRevisionBody } from '@/components/legal/legal-revision-body'
 import { Link } from '@/i18n/navigation'
 import { staticPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
-import { getTranslations } from 'next-intl/server'
-import { fetchPublicSiteSettings, getStoreSettings, isStoreContactUnavailable } from '@/lib/settings/fetch'
+import { getLocale, getTranslations } from 'next-intl/server'
+import { LegalSellerDetails } from '@/components/legal/legal-seller-details'
+import { fetchCurrentLegalDocument, sellerFromBankDetails } from '@/lib/legal/documents'
+import { resolveCheckoutBankDetails } from '@/lib/settings/company-bank-details'
+import { fetchPublicSiteSettings, getCartCheckoutSettings, getStoreSettings, isStoreContactUnavailable } from '@/lib/settings/fetch'
 import {
   formatStoreAddress,
   getStoreEmails,
@@ -18,9 +22,17 @@ import { cn } from '@/lib/utils'
 import { SERVICE_UNAVAILABLE_MESSAGE } from '@/lib/api/fetch-result'
 
 export default async function TermsPage() {
+  const locale = await getLocale()
   const tNav = await getTranslations('nav')
+  const tLegal = await getTranslations('legalPages')
   const fetched = await fetchPublicSiteSettings()
   const store = getStoreSettings(fetched)
+  const cart = getCartCheckoutSettings(fetched)
+  const bank = resolveCheckoutBankDetails(cart, store)
+  const legalDocument = await fetchCurrentLegalDocument('TERMS', locale)
+  const fallbackSeller = sellerFromBankDetails(bank)
+  const sellerName =
+    legalDocument?.seller?.organizationName || fallbackSeller?.organizationName || ''
   const contactsUnavailable = isStoreContactUnavailable(fetched) || !hasStoreContactInfo(store)
   const address = formatStoreAddress(store)
   const mapsUrl = getStoreMapsUrl(store)
@@ -38,7 +50,7 @@ export default async function TermsPage() {
               items={staticPageBreadcrumbs(tNav('terms'))}
             />
             <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground">
-              Умови використання
+              {legalDocument?.title ?? 'Умови використання'}
             </h1>
           </div>
         </div>
@@ -50,18 +62,30 @@ export default async function TermsPage() {
             </div>
 
             <p className="text-muted-foreground text-lg mb-8">
-              Останнє оновлення: 1 лютого 2024 року
+              {legalDocument
+                ? tLegal('revisionLine', { version: legalDocument.version })
+                : 'Останнє оновлення: 1 лютого 2024 року'}
             </p>
 
+            {legalDocument ? (
+              <LegalRevisionBody
+                document={legalDocument}
+                locale={locale}
+                versionLabel=""
+                fallbackSeller={fallbackSeller}
+              />
+            ) : (
+              <>
+            <LegalSellerDetails seller={fallbackSeller} />
             <section className="mb-8">
               <h2 className="font-serif text-2xl font-semibold text-foreground mb-4">
                 1. Загальні положення
               </h2>
               <div className="text-muted-foreground space-y-4">
                 <p>
-                  Ці Умови використання регулюють відносини між ФОП &quot;Зелені Янголи&quot; 
-                  (далі - &quot;Продавець&quot;) та покупцями товарів через інтернет-магазин 
-                  zeleni-yanholy.ua (далі - &quot;Сайт&quot;).
+                  Ці Умови використання регулюють відносини між{' '}
+                  {sellerName || 'продавцем'} (далі - &quot;Продавець&quot;) та покупцями товарів
+                  через інтернет-магазин (далі - &quot;Сайт&quot;).
                 </p>
                 <p>
                   Оформлюючи замовлення на Сайті, ви підтверджуєте свою згоду з цими 
@@ -177,13 +201,17 @@ export default async function TermsPage() {
                 </p>
               </div>
             </section>
+              </>
+            )}
 
             <section className="mb-8">
               <h2 className="font-serif text-2xl font-semibold text-foreground mb-4">
                 8. Контактна інформація
               </h2>
               <div className="text-muted-foreground space-y-2">
-                <p><strong className="text-foreground">ФОП &quot;Зелені Янголи&quot;</strong></p>
+                {sellerName ? (
+                  <p><strong className="text-foreground">{sellerName}</strong></p>
+                ) : null}
                 {contactsUnavailable ? (
                   <ServiceUnavailableNotice
                     compact

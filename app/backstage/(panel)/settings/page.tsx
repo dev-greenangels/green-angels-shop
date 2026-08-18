@@ -15,6 +15,7 @@ import { HomeSectionOrderControls } from '@/components/backstage/home-section-or
 import { MarketSettingsForm } from '@/components/backstage/market-settings-form'
 import { clearRecentlyViewedSettingsCache } from '@/components/product/recently-viewed-section'
 import { StoreContactSettingsForm } from '@/components/backstage/store-contact-settings-form'
+import { WholesalePageSettingsForm } from '@/components/backstage/wholesale-page-settings-form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -27,9 +28,11 @@ import {
   updateBackstageCatalogSettings,
   updateBackstageHomeSettings,
   updateBackstageMarketSettings,
+  updateBackstageMediaWatermarkSettings,
   updateBackstageRecentlyViewedSettings,
   updateBackstageStoreSettings,
   updateBackstagePrestaImportSettings,
+  updateBackstageWholesalePageSettings,
 } from '@/lib/backstage/settings'
 import { fetchCurrencies } from '@/lib/backstage/reference-data'
 import type { CurrencyInfo } from '@/lib/commerce/types'
@@ -38,13 +41,16 @@ import {
   DEFAULT_CATALOG_SETTINGS,
   DEFAULT_HOME_SETTINGS,
   DEFAULT_MARKET_SETTINGS,
+  DEFAULT_MEDIA_WATERMARK_SETTINGS,
   DEFAULT_RECENTLY_VIEWED_SETTINGS,
 } from '@/lib/settings/defaults'
 import { normalizeCartCheckoutSettings } from '@/lib/settings/cart-checkout.normalize'
 import { normalizeCatalogPageSettings } from '@/lib/settings/catalog.normalize'
 import { normalizeHomeSettings } from '@/lib/settings/home.normalize'
 import { normalizeMarketSettings } from '@/lib/settings/market'
+import { normalizeMediaWatermarkSettings } from '@/lib/settings/media-watermark.normalize'
 import { normalizeStoreContactSettings } from '@/lib/settings/store-contact.normalize'
+import { normalizeWholesalePageSettings } from '@/lib/settings/wholesale.normalize'
 import {
   DEFAULT_PRESTA_IMPORT_SETTINGS,
   normalizePrestaImportSettings,
@@ -58,8 +64,10 @@ import type {
   HomePageSettings,
   HomeStat,
   MarketSettings,
+  MediaWatermarkSettings,
   RecentlyViewedSettings,
   StoreContactSettings,
+  WholesalePageSettings,
 } from '@/lib/settings/types'
 
 function linesToList(value: string): string[] {
@@ -79,6 +87,7 @@ function stableJson(value: unknown): string {
 
 export default function SettingsPage() {
   const tBanner = useTranslations('contentBanner')
+  const tSettings = useTranslations('pages.settings')
   const [loading, setLoading] = useState(true)
   const [savingStore, setSavingStore] = useState(false)
   const [savingHome, setSavingHome] = useState(false)
@@ -87,10 +96,13 @@ export default function SettingsPage() {
   const [savingRecentlyViewed, setSavingRecentlyViewed] = useState(false)
   const [savingPrestaImport, setSavingPrestaImport] = useState(false)
   const [savingMarket, setSavingMarket] = useState(false)
+  const [savingWholesale, setSavingWholesale] = useState(false)
   const [store, setStore] = useState<StoreContactSettings | null>(null)
   const [home, setHome] = useState<HomePageSettings | null>(null)
+  const [wholesale, setWholesale] = useState<WholesalePageSettings | null>(null)
   const [cart, setCart] = useState<CartCheckoutSettings | null>(null)
   const [catalog, setCatalog] = useState<CatalogPageSettings | null>(null)
+  const [mediaWatermark, setMediaWatermark] = useState<MediaWatermarkSettings | null>(null)
   const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewedSettings | null>(null)
   const [prestaImport, setPrestaImport] = useState<PrestaImportSettings | null>(null)
   const [market, setMarket] = useState<MarketSettings | null>(null)
@@ -100,9 +112,11 @@ export default function SettingsPage() {
   const [baselineHome, setBaselineHome] = useState<string | null>(null)
   const [baselineCart, setBaselineCart] = useState<string | null>(null)
   const [baselineCatalog, setBaselineCatalog] = useState<string | null>(null)
+  const [baselineMediaWatermark, setBaselineMediaWatermark] = useState<string | null>(null)
   const [baselineRecentlyViewed, setBaselineRecentlyViewed] = useState<string | null>(null)
   const [baselinePrestaImport, setBaselinePrestaImport] = useState<string | null>(null)
   const [baselineMarket, setBaselineMarket] = useState<string | null>(null)
+  const [baselineWholesale, setBaselineWholesale] = useState<string | null>(null)
 
   const storeDirty = useMemo(
     () => Boolean(store && baselineStore && stableJson(store) !== baselineStore),
@@ -119,6 +133,15 @@ export default function SettingsPage() {
   const catalogDirty = useMemo(
     () => Boolean(catalog && baselineCatalog && stableJson(catalog) !== baselineCatalog),
     [catalog, baselineCatalog],
+  )
+  const mediaWatermarkDirty = useMemo(
+    () =>
+      Boolean(
+        mediaWatermark &&
+          baselineMediaWatermark &&
+          stableJson(mediaWatermark) !== baselineMediaWatermark,
+      ),
+    [mediaWatermark, baselineMediaWatermark],
   )
   const recentlyViewedDirty = useMemo(
     () =>
@@ -140,6 +163,10 @@ export default function SettingsPage() {
     () => Boolean(market && baselineMarket && stableJson(market) !== baselineMarket),
     [market, baselineMarket],
   )
+  const wholesaleDirty = useMemo(
+    () => Boolean(wholesale && baselineWholesale && stableJson(wholesale) !== baselineWholesale),
+    [wholesale, baselineWholesale],
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -153,35 +180,48 @@ export default function SettingsPage() {
       const nextHome = normalizeHomeSettings(data.home)
       const nextCart = normalizeCartCheckoutSettings(data.cart ?? DEFAULT_CART_CHECKOUT_SETTINGS)
       const nextCatalog = normalizeCatalogPageSettings(data.catalog ?? DEFAULT_CATALOG_SETTINGS)
+      const nextMediaWatermark = normalizeMediaWatermarkSettings(
+        data.mediaWatermark ?? DEFAULT_MEDIA_WATERMARK_SETTINGS,
+      )
       const nextRecently = data.recentlyViewed ?? DEFAULT_RECENTLY_VIEWED_SETTINGS
       const nextPresta = normalizePrestaImportSettings(
         data.prestaImport ?? DEFAULT_PRESTA_IMPORT_SETTINGS,
       )
       const nextMarket = normalizeMarketSettings(data.market ?? DEFAULT_MARKET_SETTINGS)
+      const nextWholesale = normalizeWholesalePageSettings(
+        data.wholesale,
+        nextMarket.region,
+      )
       setStore(nextStore)
       setHome(nextHome)
       setCart(nextCart)
       setCatalog(nextCatalog)
+      setMediaWatermark(nextMediaWatermark)
       setRecentlyViewed(nextRecently)
       setPrestaImport(nextPresta)
       setMarket(nextMarket)
+      setWholesale(nextWholesale)
       setCurrencies(currenciesData)
       setBaselineStore(stableJson(nextStore))
       setBaselineHome(stableJson(nextHome))
       setBaselineCart(stableJson(nextCart))
       setBaselineCatalog(stableJson(nextCatalog))
+      setBaselineMediaWatermark(stableJson(nextMediaWatermark))
       setBaselineRecentlyViewed(stableJson(nextRecently))
       setBaselinePrestaImport(stableJson(nextPresta))
       setBaselineMarket(stableJson(nextMarket))
+      setBaselineWholesale(stableJson(nextWholesale))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося завантажити налаштування.')
       setStore(null)
       setHome(null)
       setCart(null)
       setCatalog(null)
+      setMediaWatermark(null)
       setRecentlyViewed(null)
       setPrestaImport(null)
       setMarket(null)
+      setWholesale(null)
     } finally {
       setLoading(false)
       setCurrenciesLoading(false)
@@ -223,19 +263,35 @@ export default function SettingsPage() {
   }
 
   const saveCatalog = async () => {
-    if (!catalog) return
+    if (!catalog || !mediaWatermark || (!catalogDirty && !mediaWatermarkDirty)) return
     setSavingCatalog(true)
-    try {
-      const updated = await updateBackstageCatalogSettings(catalog)
-      const next = normalizeCatalogPageSettings(updated)
-      setCatalog(next)
-      setBaselineCatalog(stableJson(next))
-      toast.success('Налаштування каталогу збережено.')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
-    } finally {
-      setSavingCatalog(false)
+    let saveFailed = false
+
+    if (catalogDirty) {
+      try {
+        const updated = await updateBackstageCatalogSettings(catalog)
+        const next = normalizeCatalogPageSettings(updated)
+        setCatalog(next)
+        setBaselineCatalog(stableJson(next))
+      } catch {
+        saveFailed = true
+      }
     }
+
+    if (mediaWatermarkDirty) {
+      try {
+        const updated = await updateBackstageMediaWatermarkSettings(mediaWatermark)
+        const next = normalizeMediaWatermarkSettings(updated)
+        setMediaWatermark(next)
+        setBaselineMediaWatermark(stableJson(next))
+      } catch {
+        saveFailed = true
+      }
+    }
+
+    if (saveFailed) toast.error(tSettings('catalogSaveError'))
+    else toast.success(tSettings('catalogSaveSuccess'))
+    setSavingCatalog(false)
   }
 
   const saveRecentlyViewed = async () => {
@@ -266,6 +322,22 @@ export default function SettingsPage() {
       toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
     } finally {
       setSavingHome(false)
+    }
+  }
+
+  const saveWholesale = async () => {
+    if (!wholesale) return
+    setSavingWholesale(true)
+    try {
+      const updated = await updateBackstageWholesalePageSettings(wholesale)
+      const next = normalizeWholesalePageSettings(updated, market?.region ?? 'ua')
+      setWholesale(next)
+      setBaselineWholesale(stableJson(next))
+      toast.success('Сторінку гурту збережено.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
+    } finally {
+      setSavingWholesale(false)
     }
   }
 
@@ -402,6 +474,7 @@ export default function SettingsPage() {
           <TabsList>
             <TabsTrigger value="store">Магазин</TabsTrigger>
             <TabsTrigger value="home">Головна сторінка</TabsTrigger>
+            <TabsTrigger value="wholesale">Гурт</TabsTrigger>
             <TabsTrigger value="catalog">Каталог</TabsTrigger>
             <TabsTrigger value="recently-viewed">Останні переглянуті</TabsTrigger>
             <TabsTrigger value="cart">Кошик</TabsTrigger>
@@ -428,13 +501,15 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="catalog" className="mt-6 space-y-6">
-            {catalog ? (
+            {catalog && mediaWatermark ? (
               <CatalogSettingsForm
                 catalog={catalog}
+                mediaWatermark={mediaWatermark}
                 onChange={setCatalog}
+                onWatermarkChange={setMediaWatermark}
                 onSave={() => void saveCatalog()}
                 saving={savingCatalog}
-                isDirty={catalogDirty}
+                isDirty={catalogDirty || mediaWatermarkDirty}
               />
             ) : null}
           </TabsContent>
@@ -1198,6 +1273,22 @@ export default function SettingsPage() {
               )}
               Зберегти головну
             </Button>
+          </TabsContent>
+
+          <TabsContent value="wholesale" className="mt-6 space-y-6">
+            <p className="rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+              {tBanner('cmsNotTranslated')}
+            </p>
+            {wholesale ? (
+              <WholesalePageSettingsForm
+                settings={wholesale}
+                onChange={setWholesale}
+                onSave={() => void saveWholesale()}
+                saving={savingWholesale}
+                isDirty={wholesaleDirty}
+                marketRegion={market?.region ?? 'ua'}
+              />
+            ) : null}
           </TabsContent>
 
           <TabsContent value="presta-import" className="mt-6 space-y-6">

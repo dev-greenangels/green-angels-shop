@@ -21,22 +21,27 @@ import { cn } from '@/lib/utils'
 
 type BackstageContentLocaleContextValue = {
   locale: AppLocale
+  /** False until localStorage locale is applied. Wait before catalog fetches. */
+  ready: boolean
   setLocale: (locale: AppLocale) => void
 }
 
 const BackstageContentLocaleContext = createContext<BackstageContentLocaleContextValue>({
   locale: 'uk',
+  ready: false,
   setLocale: () => {},
 })
 
 export function BackstageContentLocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<AppLocale>('uk')
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     const stored = localStorage.getItem(BACKSTAGE_CONTENT_LOCALE_STORAGE_KEY)
     if (stored && isSupportedLocale(stored)) {
       setLocaleState(stored)
     }
+    setReady(true)
   }, [])
 
   const setLocale = useCallback((next: AppLocale) => {
@@ -45,7 +50,7 @@ export function BackstageContentLocaleProvider({ children }: { children: React.R
   }, [])
 
   return (
-    <BackstageContentLocaleContext.Provider value={{ locale, setLocale }}>
+    <BackstageContentLocaleContext.Provider value={{ locale, ready, setLocale }}>
       {children}
     </BackstageContentLocaleContext.Provider>
   )
@@ -56,7 +61,7 @@ export function useBackstageContentLocale() {
 }
 
 export function BackstageContentLocaleSwitcher({ className }: { className?: string }) {
-  const { locale, setLocale } = useBackstageContentLocale()
+  const { locale, ready, setLocale } = useBackstageContentLocale()
   const t = useTranslations('common')
   const tBanner = useTranslations('contentBanner')
 
@@ -68,7 +73,7 @@ export function BackstageContentLocaleSwitcher({ className }: { className?: stri
     >
       <span className="hidden text-xs text-muted-foreground sm:inline">{t('contentLocale')}</span>
       {SUPPORTED_LOCALES.map((item) => {
-        const active = item === locale
+        const active = ready && item === locale
         return (
           <button
             key={item}

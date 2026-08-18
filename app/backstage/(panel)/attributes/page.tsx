@@ -56,7 +56,7 @@ import {
   updateVariantLabelSettings,
   DEFAULT_VARIANT_LABEL_TYPE_ORDER,
 } from '@/lib/backstage/variant-label-settings'
-import { CHARACTERISTIC_ICON_OPTIONS } from '@/lib/characteristics/icons'
+import { VARIANT_ATTRIBUTE_ICON_OPTIONS } from '@/lib/variant-attributes/icons'
 import { cn } from '@/lib/utils'
 
 export default function AttributesPage() {
@@ -70,8 +70,9 @@ export default function AttributesPage() {
 
   const tAttrTypes = useTranslations('variantAttributeTypes')
   const tAttrTypeHints = useTranslations('variantAttributeTypeHints')
-  const { locale: contentLocale } = useBackstageContentLocale()
+  const { locale: contentLocale, ready: contentLocaleReady } = useBackstageContentLocale()
   const tBanner = useTranslations('contentBanner')
+  const tAttrIcons = useTranslations('attributeIcons')
 
   const [items, setItems] = useState<VariantAttribute[]>([])
   const [loading, setLoading] = useState(true)
@@ -123,10 +124,11 @@ export default function AttributesPage() {
   }
 
   const load = useCallback(async () => {
+    if (!contentLocaleReady) return
     setLoading(true)
     try {
       const [data, labelSettings] = await Promise.all([
-        fetchVariantAttributes({ locale: contentLocale }),
+        fetchVariantAttributes({ locale: contentLocale, edit: true }),
         fetchVariantLabelSettings(),
       ])
       const order = normalizeVariantLabelTypeOrder(labelSettings.labelTypeOrder)
@@ -142,7 +144,7 @@ export default function AttributesPage() {
     } finally {
       setLoading(false)
     }
-  }, [tt, contentLocale])
+  }, [tt, contentLocale, contentLocaleReady])
 
   useEffect(() => {
     void load()
@@ -229,7 +231,7 @@ export default function AttributesPage() {
       toast.error(tValidation('attributeSlugInvalid'))
       return
     }
-    if (cleaned.length === 0) {
+    if (!cleaned.length && !payload.values.some((row) => row.id)) {
       toast.error(tValidation('attributeValuesRequired'))
       return
     }
@@ -375,12 +377,12 @@ export default function AttributesPage() {
               {selected ? (
                 <>
                   <CardHeader className="shrink-0 border-b py-4">
-                    <CardTitle>{selected.name}</CardTitle>
+                    <CardTitle>{selected.name.trim() || selected.slug}</CardTitle>
                     <CardDescription>{tPages('editHint')}</CardDescription>
                   </CardHeader>
                   <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-4">
                     <VariantAttributeEditor
-                      key={selected.id}
+                      key={`${selected.id}:${contentLocale}`}
                       attribute={selected}
                       saving={saving}
                       onSave={(payload) => handleSave(selected.id, payload)}
@@ -504,8 +506,8 @@ export default function AttributesPage() {
             {createShowOnProductPage ? (
               <div className="space-y-2">
                 <Label>{tLabels('productPageIcon')}</Label>
-                <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                  {CHARACTERISTIC_ICON_OPTIONS.map((option) => {
+                <div className="grid grid-cols-4 gap-2">
+                  {VARIANT_ATTRIBUTE_ICON_OPTIONS.map((option) => {
                     const Icon = option.icon
                     const active = createIcon === option.name
                     return (
@@ -520,8 +522,8 @@ export default function AttributesPage() {
                             : 'border-border hover:border-primary/30',
                         )}
                       >
-                        <Icon className="h-4 w-4" />
-                        <span className="truncate">{option.name}</span>
+                        <Icon className="h-10 w-10" />
+                        <span className="line-clamp-2 text-center leading-tight">{tAttrIcons(option.name)}</span>
                       </button>
                     )
                   })}

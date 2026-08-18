@@ -187,8 +187,12 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
         getCheckoutRecipientFieldError(field, mergedForm, fieldOptions),
     )
 
-  const ordererSummary = getCheckoutOrdererSummary(orderer)
-  const deliveryRecipientSummary = getCheckoutDeliveryRecipientSummary(mergedForm)
+  const ordererSummary = getCheckoutOrdererSummary(orderer, marketRegion, deliveryPhonePolicy)
+  const deliveryRecipientSummary = getCheckoutDeliveryRecipientSummary(
+    mergedForm,
+    marketRegion,
+    deliveryPhonePolicy,
+  )
 
   const handleCityChange = (option: { id: string; label: string }) => {
     onPatchShipment({
@@ -628,7 +632,9 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
 
       {showOrdererDeliveryPhone && (
         <div className="space-y-2 rounded-xl bg-muted p-4">
-          <p className="text-sm text-muted-foreground">{t('deliveryPhoneHint')}</p>
+          {deliveryPhonePolicy === 'ua_e164' ? (
+            <p className="text-sm text-muted-foreground">{t('deliveryPhoneHint')}</p>
+          ) : null}
           <RequiredLabel htmlFor={`${idPrefix}-deliveryPhone`}>
             {deliveryPhonePolicy === 'ua_e164' ? tc('phoneUa') : tc('phone')}
           </RequiredLabel>

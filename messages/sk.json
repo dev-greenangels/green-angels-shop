@@ -120,6 +120,7 @@
     "blog": "Blog",
     "reviews": "Recenzie",
     "favorites": "Obľúbené",
+    "wholesale": "Veľkoobchod",
     "about": "O nás",
     "plantsList": "Rastliny A–Z",
     "freshPhotos": "Čerstvé fotky",
@@ -163,10 +164,44 @@
     "intro": "Profesionálna škôlka rastlín. Kvalitný sadbový materiál pestujeme s láskou od roku 2010.",
     "blog": "Blog",
     "about": "O nás",
+    "wholesale": "Veľkoobchod",
     "plantsList": "Rastliny A–Z",
     "contacts": "Kontakty",
     "fullContacts": "Kompletné kontakty a otváracie hodiny",
     "socialTitle": "Sociálne siete"
+  },
+  "wholesale": {
+    "seoTitle": "Veľkoobchod pre záhradné centrá a škôlky",
+    "seoDescription": "Veľkoobchodná spolupráca so škôlkou Green Angels pre záhradné centrá, predajne rastlín a škôlky v EÚ. Odošlite dopyt a získate B2B ponuku.",
+    "submit": "Odoslať dopyt",
+    "submitting": "Odosiela sa…",
+    "success": "Dopyt bol odoslaný.",
+    "successTitle": "Ďakujeme",
+    "successBody": "Údaje sme dostali a ozveme sa vám s veľkoobchodnou ponukou.",
+    "submitError": "Dopyt sa nepodarilo odoslať. Skúste neskôr.",
+    "fields": {
+      "fullName": "Meno a priezvisko",
+      "companyName": "Názov firmy / predajne",
+      "phone": "Telefón",
+      "email": "E-mail",
+      "city": "Mesto",
+      "website": "Web alebo sociálne siete",
+      "message": "Správa",
+      "companyIco": "IČO",
+      "companyVatId": "IČ DPH"
+    },
+    "errors": {
+      "fullName": "Zadajte meno (aspoň 2 písmená).",
+      "companyName": "Zadajte názov firmy alebo predajne.",
+      "phone": "Zadajte platné telefónne číslo.",
+      "email": "Zadajte platný e-mail.",
+      "city": "Zadajte mesto.",
+      "website": "Zadajte platný odkaz (https://…).",
+      "message": "Správa je príliš dlhá.",
+      "companyIco": "Zadajte platné IČO.",
+      "companyVatId": "Zadajte platné IČ DPH.",
+      "consent": "Je potrebný súhlas so spracovaním údajov."
+    }
   },
   "auth": {
     "back": "Späť",
@@ -955,7 +990,13 @@
     "termsLink": "Obchodné podmienky",
     "privacyLink": "Ochrana osobných údajov",
     "cookiesLink": "Zásady používania cookies",
-    "templateNotice": "Tento text je pracovná šablóna a pred zverejnením na produkčnej stránke ho musí schváliť právnik."
+    "templateNotice": "Tento text je pracovná šablóna a pred zverejnením na produkčnej stránke ho musí schváliť právnik.",
+    "revisionLine": "Revízia {version}",
+    "sellerTitle": "Identifikačné údaje predávajúceho",
+    "sellerIco": "IČO",
+    "sellerDic": "DIČ",
+    "sellerVat": "IČ DPH",
+    "sellerAddress": "Sídlo"
   },
   "cookieConsent": {
     "title": "Používame cookies",

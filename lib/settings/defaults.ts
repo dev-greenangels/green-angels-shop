@@ -2,6 +2,7 @@ import type {
   CartCheckoutSettings,
   CatalogPageSettings,
   HomePageSettings,
+  MediaWatermarkSettings,
   StoreContactSettings,
   StoreFooterVisibility,
 } from '@/lib/settings/types'
@@ -212,6 +213,11 @@ export const DEFAULT_CATALOG_SETTINGS: CatalogPageSettings = {
   catalogFilters: { ...DEFAULT_CATALOG_FILTERS_VISIBILITY },
   plantsAlphabetFilters: { ...DEFAULT_PLANTS_ALPHABET_FILTERS_VISIBILITY },
   freshPhotosLimit: 4,
+}
+
+export const DEFAULT_MEDIA_WATERMARK_SETTINGS: MediaWatermarkSettings = {
+  productPhotosEnabled: false,
+  freshPhotosEnabled: false,
 }
 
 export { DEFAULT_RECENTLY_VIEWED_SETTINGS } from '@/lib/settings/recently-viewed'

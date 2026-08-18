@@ -2,8 +2,13 @@ import { getCheckoutRecipientPhoneRaw } from '@/components/checkout/checkout-uti
 import type { CheckoutShipmentSlice } from '@/lib/checkout/shipment-slice'
 import { applyShipmentSliceToForm } from '@/lib/checkout/shipment-slice'
 import { buildPricingQuoteLineItems } from '@/lib/pricing/quote-line-items'
+import { defaultDeliveryPhonePolicy, type PhonePolicy } from '@/lib/settings/market'
 import type { CartItem } from '@/lib/types'
-import type { CheckoutFormValues } from '@/lib/validation/checkout-form'
+import {
+  type CheckoutFormValues,
+  type CheckoutMarketRegion,
+  isUaDeliveryPhoneLockActive,
+} from '@/lib/validation/checkout-form'
 import { isValidEmail, isValidUkrPhone } from '@/lib/validation/register-form'
 
 export type CreateOrderPayload = {
@@ -90,19 +95,30 @@ export function buildOrderPayload(
     buyerType?: 'individual' | 'company'
     vatCountryCode?: string
     returnBaseUrl?: string
+    marketRegion?: CheckoutMarketRegion
+    deliveryPhonePolicy?: PhonePolicy
   },
 ): CreateOrderPayload {
   const deliveryForm = options?.shipmentSlice
     ? applyShipmentSliceToForm(form, options.shipmentSlice)
     : form
   const receiver = getReceiverNames(deliveryForm)
-  const customerPhoneRaw = isValidUkrPhone(form.phone.trim())
-    ? form.phone.trim()
-    : !deliveryForm.isOtherRecipient && deliveryForm.deliveryPhone.trim()
-      ? deliveryForm.deliveryPhone.trim()
-      : form.phone.trim()
+  const uaDeliveryLock = isUaDeliveryPhoneLockActive(
+    options?.marketRegion ?? 'ua',
+    options?.deliveryPhonePolicy ?? defaultDeliveryPhonePolicy(options?.marketRegion ?? 'ua'),
+  )
+  const customerPhoneRaw =
+    isValidUkrPhone(form.phone.trim()) || !uaDeliveryLock
+      ? form.phone.trim()
+      : !deliveryForm.isOtherRecipient && deliveryForm.deliveryPhone.trim()
+        ? deliveryForm.deliveryPhone.trim()
+        : form.phone.trim()
   const customerPhone = normalizePhoneForApi(customerPhoneRaw)
-  const recipientPhoneRaw = getCheckoutRecipientPhoneRaw(deliveryForm)
+  const recipientPhoneRaw = getCheckoutRecipientPhoneRaw(
+    deliveryForm,
+    options?.marketRegion,
+    options?.deliveryPhonePolicy,
+  )
 
   const payload: CreateOrderPayload = {
     items: buildPricingQuoteLineItems(items),

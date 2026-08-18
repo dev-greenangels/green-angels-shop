@@ -7,6 +7,7 @@ import { GA_COUNTRY_HEADER, isCountrySiteCode, type CountrySiteCode } from '@/li
 import { hostnameFromSiteUrl, resolvePublicOrigin } from '@/lib/seo/public-origin'
 import { buildPageAlternates, type PageAlternates } from '@/lib/seo/page-alternates'
 import { fetchPublicSiteSettings, getLocalizationSettings, getMarketSettings } from '@/lib/settings/fetch'
+import type { MarketRegion } from '@/lib/settings/market'
 
 export type SeoRequestContext = {
   locale: AppLocale
@@ -14,6 +15,7 @@ export type SeoRequestContext = {
   availableLocales: AppLocale[]
   xDefaultLocale: AppLocale
   countryCode: CountrySiteCode | null
+  marketRegion: MarketRegion
 }
 
 export async function resolveSeoRequestContext(locale: string): Promise<SeoRequestContext> {
@@ -52,6 +54,7 @@ export async function resolveSeoRequestContext(locale: string): Promise<SeoReque
     availableLocales,
     xDefaultLocale,
     countryCode,
+    marketRegion: market.region,
   }
 }
 

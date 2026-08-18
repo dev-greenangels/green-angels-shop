@@ -19,11 +19,13 @@ import { BrandLogo } from '@/components/brand-logo'
 import { CartBadge } from '@/components/cart-badge'
 import { FavoritesBadge } from '@/components/favorites/favorites-badge'
 import { useSession } from '@/components/providers/session-provider'
+import { useMarketRegion } from '@/components/providers/market-region-provider'
 import { useStoreSettings } from '@/components/providers/store-settings-provider'
 import { SocialLinks } from '@/components/social/social-links'
 import { Button } from '@/components/ui/button'
 import { clearBodyScrollLock } from '@/lib/clear-body-scroll-lock'
 import { buildLogoutHref } from '@/lib/auth/logout-redirect'
+import { getMarketBranding } from '@/lib/branding/market-branding'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import { useCartActions, useCartTotalItems } from '@/lib/cart-store'
 import { useFavoritesCount } from '@/lib/favorites-store'
@@ -64,6 +66,8 @@ export function Navigation() {
   const catalogHref = useCatalogHref()
   const catalogRootSlug = useCatalogRootSlug()
   const navigationSettings = useNavigationSettings()
+  const marketRegion = useMarketRegion()
+  const branding = getMarketBranding(marketRegion)
   const { user, setUser } = useSession()
   const store = useStoreSettings()
   const [searchOpen, setSearchOpen] = useState(false)
@@ -243,6 +247,7 @@ export function Navigation() {
                 >
                   <BrandLogo
                     alt={tc('brand')}
+                    logoSrc={branding.headerLogo}
                     className="opacity-95 hover:opacity-100"
                     imgClassName="max-h-8 object-center"
                   />
@@ -432,6 +437,7 @@ export function Navigation() {
               <Link href="/" className="shrink-0" aria-label={tc('brand')}>
                 <BrandLogo
                   alt={tc('brand')}
+                  logoSrc={branding.headerLogo}
                   className="opacity-95 hover:opacity-100"
                   imgClassName="max-h-9 object-left xl:max-h-10"
                 />

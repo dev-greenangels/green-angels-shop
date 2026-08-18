@@ -120,6 +120,7 @@
     "blog": "Blog",
     "reviews": "Reviews",
     "favorites": "Favorites",
+    "wholesale": "Wholesale",
     "about": "About us",
     "plantsList": "Plants A-Z",
     "freshPhotos": "Fresh photos",
@@ -163,10 +164,44 @@
     "intro": "Professional plant nursery. We grow quality planting material with care since 2010.",
     "blog": "Blog",
     "about": "About us",
+    "wholesale": "Wholesale",
     "plantsList": "Plants A-Z",
     "contacts": "Contacts",
     "fullContacts": "Full contacts & hours",
     "socialTitle": "Social media"
+  },
+  "wholesale": {
+    "seoTitle": "Wholesale for garden centres and nurseries",
+    "seoDescription": "Wholesale cooperation with the Green Angels nursery: terms for garden centres, plant shops and nurseries. Send a request to get a B2B offer.",
+    "submit": "Send request",
+    "submitting": "Sending…",
+    "success": "Request sent.",
+    "successTitle": "Thank you",
+    "successBody": "We received your details and will contact you about a wholesale offer.",
+    "submitError": "Could not send the request. Please try again later.",
+    "fields": {
+      "fullName": "Full name",
+      "companyName": "Company / shop name",
+      "phone": "Phone",
+      "email": "Email",
+      "city": "City",
+      "website": "Website or social link",
+      "message": "Message",
+      "companyIco": "Company ID (IČO)",
+      "companyVatId": "VAT ID (IČ DPH)"
+    },
+    "errors": {
+      "fullName": "Enter your name (at least 2 letters).",
+      "companyName": "Enter the company or shop name.",
+      "phone": "Enter a valid phone number.",
+      "email": "Enter a valid email.",
+      "city": "Enter the city.",
+      "website": "Enter a valid link (https://…).",
+      "message": "The message is too long.",
+      "companyIco": "Enter a valid company ID (IČO).",
+      "companyVatId": "Enter a valid VAT ID.",
+      "consent": "Consent to data processing is required."
+    }
   },
   "auth": {
     "back": "Back",
@@ -955,7 +990,13 @@
     "termsLink": "Terms of use",
     "privacyLink": "Privacy policy",
     "cookiesLink": "Cookie policy",
-    "templateNotice": "This text is a draft template and must be reviewed by a lawyer before publishing on a live site."
+    "templateNotice": "This text is a draft template and must be reviewed by a lawyer before publishing on a live site.",
+    "revisionLine": "Revision {version}",
+    "sellerTitle": "Údaje prodávajícího",
+    "sellerIco": "IČO",
+    "sellerDic": "DIČ",
+    "sellerVat": "IČ DPH",
+    "sellerAddress": "Sídlo"
   },
   "cookieConsent": {
     "title": "We use cookies",

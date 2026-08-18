@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronDown,
   ChevronRight,
@@ -57,6 +57,7 @@ import {
   deleteCategory,
   fetchCategoryTree,
   flattenCategoryTree,
+  categoryLabel,
   setCategoryActive,
   updateCategory,
   type CategoryFormValues,
@@ -150,7 +151,7 @@ function CategoryRow({
         <Checkbox
           checked={isSelected}
           onCheckedChange={(checked) => onToggleSelect(node.id, checked === true)}
-          aria-label={tAria('selectItem', { name: node.name })}
+          aria-label={tAria('selectItem', { name: categoryLabel(node) })}
           className="shrink-0"
         />
 
@@ -172,14 +173,14 @@ function CategoryRow({
 
         <CategoryThumbnail
           src={node.imageUrl}
-          alt={node.name}
+          alt={categoryLabel(node)}
           className="h-12 w-16 shrink-0 rounded-md border border-border"
         />
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className={cn('font-medium', node.isActive ? 'text-foreground' : 'text-muted-foreground')}>
-              {node.name}
+              {categoryLabel(node)}
             </p>
             <Badge
               variant={node.isActive ? 'default' : 'secondary'}
@@ -290,7 +291,7 @@ function CategoryRow({
 }
 
 export default function CategoriesPage() {
-  const { locale: contentLocale } = useBackstageContentLocale()
+  const { locale: contentLocale, ready: contentLocaleReady } = useBackstageContentLocale()
   const tPages = useTranslations('pages.categories')
   const tActions = useTranslations('actions')
   const tCommon = useTranslations('common')
@@ -329,7 +330,7 @@ export default function CategoriesPage() {
       const items: ParentOption[] = []
       for (const node of nodes) {
         if (!excluded.has(node.id)) {
-          items.push({ id: node.id, name: node.name, depth })
+          items.push({ id: node.id, name: categoryLabel(node), depth })
           items.push(...build(node.children, depth + 1))
         }
       }
@@ -339,10 +340,15 @@ export default function CategoriesPage() {
     return build(tree, 0)
   }, [tree, dialogMode, editingNode])
 
+  const loadSeq = useRef(0)
+
   const loadTree = useCallback(async () => {
+    if (!contentLocaleReady) return
+    const seq = ++loadSeq.current
     setLoading(true)
     try {
       const data = await fetchCategoryTree(contentLocale)
+      if (seq !== loadSeq.current) return
       setTree(data)
       // Keep tree collapsed on reload; only prune selection to still-existing ids
       setExpanded((prev) => {
@@ -355,14 +361,15 @@ export default function CategoriesPage() {
         return new Set([...prev].filter((id) => valid.has(id)))
       })
     } catch (err) {
+      if (seq !== loadSeq.current) return
       toast.error(err instanceof Error ? err.message : tt('loadFailed'))
     } finally {
-      setLoading(false)
+      if (seq === loadSeq.current) setLoading(false)
     }
-  }, [contentLocale])
+  }, [contentLocale, contentLocaleReady])
 
   useEffect(() => {
-    // Fresh locale / first load: start fully collapsed
+    setDialogOpen(false)
     setExpanded(new Set())
     void loadTree()
   }, [loadTree])
@@ -687,6 +694,7 @@ export default function CategoriesPage() {
       </div>
 
       <CategoryFormDialog
+        key={`${dialogMode}:${editingNode?.id ?? 'new'}:${contentLocale}`}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         title={dialogMode === 'create' ? tPages('dialogCreateTitle') : tPages('dialogEditTitle')}
@@ -697,6 +705,17 @@ export default function CategoriesPage() {
         parentOptions={parentOptions}
         lockParent={lockParent}
         categoryId={editingNode?.id}
+        hints={
+          editingNode
+            ? {
+                name: editingNode.nameHint,
+                description: editingNode.descriptionHint,
+                footerDescription: editingNode.footerDescriptionHint,
+                metaTitle: editingNode.metaTitleHint,
+                metaDesc: editingNode.metaDescHint,
+              }
+            : undefined
+        }
         submitLabel={dialogMode === 'create' ? tActions('create') : tActions('save')}
         onSubmit={handleSubmit}
       />
@@ -709,7 +728,7 @@ export default function CategoriesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>{tPages('deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteTarget ? tPages('deleteBody', { name: deleteTarget.name }) : null}
+              {deleteTarget ? tPages('deleteBody', { name: categoryLabel(deleteTarget) }) : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

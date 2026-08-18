@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Loader2, Plus, Save, Trash2 } from 'lucide-react'
 
-import { ContentLocaleLabel } from '@/components/backstage/content-locale-banner'
+import { ContentLocaleLabel, TranslationHint } from '@/components/backstage/content-locale-banner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -24,6 +24,7 @@ export type CharacteristicOptionDraft = {
   key: string
   id?: string
   label: string
+  labelHint?: { locale: string; text: string } | null
   slug: string
 }
 
@@ -46,6 +47,7 @@ function definitionToOptionDrafts(definition: CharacteristicDefinition): Charact
     key: option.id,
     id: option.id,
     label: option.label,
+    labelHint: option.labelHint ?? null,
     slug: option.slug,
   }))
 }
@@ -130,7 +132,14 @@ export function CharacteristicEditor({
       isFilterable,
       showOnProductPage,
       icon: showOnProductPage ? icon.trim() || null : null,
-      options: options.filter((row) => row.label.trim()),
+      options: options
+        .filter((row) => row.label.trim())
+        .map((row) => ({
+          key: row.key,
+          id: row.id,
+          label: row.label,
+          slug: row.slug,
+        })),
     })
   }
 
@@ -147,6 +156,7 @@ export function CharacteristicEditor({
                 onChange={(e) => setName(e.target.value)}
                 placeholder={tBanner('missingPlaceholder')}
               />
+              <TranslationHint hint={definition.nameHint} />
               <p className="text-xs text-muted-foreground">Slug: {definition.slug}</p>
             </div>
             <div className="space-y-2">
@@ -268,6 +278,7 @@ export function CharacteristicEditor({
                           placeholder={tBanner('missingPlaceholder')}
                           className="h-9"
                         />
+                        <TranslationHint hint={row.labelHint} />
                         <Input
                           value={row.slug}
                           onChange={(e) => patchOption(row.key, { slug: e.target.value })}

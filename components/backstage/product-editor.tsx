@@ -8,7 +8,7 @@ import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
-import { ContentLocaleBanner, ContentLocaleLabel } from '@/components/backstage/content-locale-banner'
+import { ContentLocaleBanner, ContentLocaleLabel, TranslationHint } from '@/components/backstage/content-locale-banner'
 import { AdditionalCategoriesPicker } from '@/components/backstage/additional-categories-picker'
 import { CategoryCombobox, type CategoryOption } from '@/components/backstage/category-combobox'
 import {
@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { fetchCategoryTree, type CategoryTreeNode } from '@/lib/backstage/categories'
+import { fetchCategoryTree, categoryLabel, type CategoryTreeNode } from '@/lib/backstage/categories'
 import {
   buildProductPayload,
   checkProductSlugAvailable,
@@ -54,7 +54,7 @@ function flattenCategoryOptions(nodes: CategoryTreeNode[], depth = 0): CategoryO
   const result: CategoryOption[] = []
   for (const node of nodes) {
     if (node.isActive) {
-      result.push({ id: node.id, name: node.name, depth })
+      result.push({ id: node.id, name: categoryLabel(node), depth })
       result.push(...flattenCategoryOptions(node.children, depth + 1))
     }
   }
@@ -114,7 +114,7 @@ export function ProductEditor({
   returnTo?: string
 }) {
   const router = useRouter()
-  const { locale: contentLocale } = useBackstageContentLocale()
+  const { locale: contentLocale, ready: contentLocaleReady } = useBackstageContentLocale()
   const tp = useTranslations('pages.products')
   const tv = useTranslations('validation')
   const tt = useTranslations('toast')
@@ -137,11 +137,18 @@ export function ProductEditor({
   >(null)
   const [form, setForm] = useState<ProductFormState>(emptyProductForm)
   const [baseline, setBaseline] = useState<ProductFormState>(emptyProductForm)
+  const [translationHints, setTranslationHints] = useState<{
+    name?: { locale: string; text: string } | null
+    description?: { locale: string; text: string } | null
+    metaTitle?: { locale: string; text: string } | null
+    metaDesc?: { locale: string; text: string } | null
+  }>({})
   const [slugTouched, setSlugTouched] = useState(false)
   const [slugStatus, setSlugStatus] = useState<SlugStatus>('idle')
   const [activeTab, setActiveTab] = useState('content')
 
   const loadCategories = useCallback(async () => {
+    if (!contentLocaleReady) return
     setCategoriesLoading(true)
     try {
       const tree = await fetchCategoryTree(contentLocale, { edit: false })
@@ -151,9 +158,10 @@ export function ProductEditor({
     } finally {
       setCategoriesLoading(false)
     }
-  }, [contentLocale])
+  }, [contentLocale, contentLocaleReady, tt])
 
   const loadAttributes = useCallback(async () => {
+    if (!contentLocaleReady) return
     setAttributesLoading(true)
     try {
       setAttributes(await fetchVariantAttributes({ locale: contentLocale, edit: false }))
@@ -162,18 +170,19 @@ export function ProductEditor({
     } finally {
       setAttributesLoading(false)
     }
-  }, [contentLocale, tt])
+  }, [contentLocale, contentLocaleReady, tt])
 
   useEffect(() => {
+    if (!contentLocaleReady) return
     void loadCategories()
     void loadAttributes()
     void fetchCharacteristicDefinitions({ locale: contentLocale, edit: false })
       .then(setCharacteristicDefinitions)
       .catch(() => undefined)
-  }, [loadCategories, loadAttributes, contentLocale])
+  }, [loadCategories, loadAttributes, contentLocale, contentLocaleReady])
 
   useEffect(() => {
-    if (!productId) return
+    if (!productId || !contentLocaleReady) return
 
     let cancelled = false
     setInitialLoading(true)
@@ -191,6 +200,12 @@ export function ProductEditor({
         const loaded = productDetailToFormState(detail, variantAttributes, definitions)
         setForm(loaded)
         setBaseline(loaded)
+        setTranslationHints({
+          name: detail.nameHint,
+          description: detail.descriptionHint,
+          metaTitle: detail.metaTitleHint,
+          metaDesc: detail.metaDescHint,
+        })
         setSlugTouched(true)
         setSlugStatus('available')
       })
@@ -207,7 +222,7 @@ export function ProductEditor({
     return () => {
       cancelled = true
     }
-  }, [productId, router, contentLocale, productsListHref, tt])
+  }, [productId, router, contentLocale, contentLocaleReady, productsListHref, tt])
 
   const patch = useCallback(
     (patchValues: Partial<ProductFormState>) => {
@@ -371,6 +386,7 @@ export function ProductEditor({
                           placeholder={tBanner('missingPlaceholder')}
                           required
                         />
+                        <TranslationHint hint={translationHints.name} />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="latinName">{tp('latinName')}</Label>
@@ -430,6 +446,7 @@ export function ProductEditor({
                       value={form.description}
                       onChange={(description) => patch({ description })}
                     />
+                    <TranslationHint hint={translationHints.description} />
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -468,6 +485,7 @@ export function ProductEditor({
                         onChange={(e) => patch({ metaTitle: e.target.value })}
                         maxLength={120}
                       />
+                      <TranslationHint hint={translationHints.metaTitle} />
                       <p className="text-xs text-muted-foreground">{form.metaTitle.length}/120</p>
                     </div>
                     <div className="space-y-2">
@@ -480,6 +498,7 @@ export function ProductEditor({
                         rows={4}
                         className="min-h-[100px] text-sm"
                       />
+                      <TranslationHint hint={translationHints.metaDesc} />
                       <p className="text-xs text-muted-foreground">{form.metaDesc.length}/300</p>
                     </div>
                   </CardContent>

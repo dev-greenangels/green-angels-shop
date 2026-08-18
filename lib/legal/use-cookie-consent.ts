@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLocale } from 'next-intl'
 
 import {
   COOKIE_CONSENT_COOKIE_NAME,
@@ -21,8 +22,29 @@ function readCookieValue(name: string): string | null {
   return value ? decodeURIComponent(value) : null
 }
 
+function recordCookieConsentEvent(input: {
+  analytics: boolean
+  locale: string
+  anonymousId: string
+}) {
+  void fetch('/api/legal/consents', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      purpose: 'COOKIES_ANALYTICS',
+      action: input.analytics ? 'GRANTED' : 'WITHDRAWN',
+      locale: input.locale,
+      source: 'COOKIE_BANNER',
+      anonymousConsentId: input.anonymousId,
+      analytics: input.analytics,
+    }),
+  }).catch(() => {})
+}
+
 export function useCookieConsent() {
   const router = useRouter()
+  const locale = useLocale()
   const [consent, setConsent] = useState<CookieConsentValue | null>(null)
   const [hydrated, setHydrated] = useState(false)
 
@@ -33,7 +55,16 @@ export function useCookieConsent() {
 
   const saveConsent = useCallback(
     (analytics: boolean) => {
-      const value: CookieConsentValue = { analytics, updatedAt: new Date().toISOString() }
+      const anonymousId =
+        consent?.anonymousId ||
+        (typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `anon-${Date.now()}`)
+      const value: CookieConsentValue = {
+        analytics,
+        updatedAt: new Date().toISOString(),
+        anonymousId,
+      }
       const secure = typeof window !== 'undefined' && window.location.protocol === 'https:'
       document.cookie = [
         `${COOKIE_CONSENT_COOKIE_NAME}=${encodeURIComponent(serializeCookieConsent(value))}`,
@@ -45,10 +76,11 @@ export function useCookieConsent() {
         .filter(Boolean)
         .join('; ')
       setConsent(value)
+      recordCookieConsentEvent({ analytics, locale, anonymousId })
       router.refresh()
       return value
     },
-    [router],
+    [consent?.anonymousId, locale, router],
   )
 
   return { consent, hydrated, saveConsent }

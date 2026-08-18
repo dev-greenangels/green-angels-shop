@@ -6,6 +6,7 @@ export const COOKIE_CONSENT_MAX_AGE_SECONDS = 60 * 60 * 24 * 180
 export type CookieConsentValue = {
   analytics: boolean
   updatedAt: string
+  anonymousId?: string
 }
 
 export function parseCookieConsent(raw: string | null | undefined): CookieConsentValue | null {
@@ -15,7 +16,8 @@ export function parseCookieConsent(raw: string | null | undefined): CookieConsen
     if (!parsed || typeof parsed !== 'object') return null
     const record = parsed as Record<string, unknown>
     const updatedAt = typeof record.updatedAt === 'string' ? record.updatedAt : new Date().toISOString()
-    return { analytics: Boolean(record.analytics), updatedAt }
+    const anonymousId = typeof record.anonymousId === 'string' ? record.anonymousId : undefined
+    return { analytics: Boolean(record.analytics), updatedAt, anonymousId }
   } catch {
     return null
   }

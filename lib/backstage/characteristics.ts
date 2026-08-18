@@ -2,6 +2,7 @@ export type CharacteristicOption = {
   id: string
   slug: string
   label: string
+  labelHint?: { locale: string; text: string } | null
   sortOrder: number
 }
 
@@ -9,6 +10,7 @@ export type CharacteristicDefinition = {
   id: string
   slug: string
   name: string
+  nameHint?: { locale: string; text: string } | null
   valueType: 'SELECT' | 'MULTI_SELECT' | 'NUMBER' | 'TEXT'
   unit: string | null
   isFilterable: boolean

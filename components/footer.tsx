@@ -4,6 +4,7 @@ import { BrandLogo } from '@/components/brand-logo'
 import { LanguageSwitcher } from '@/components/localization/language-switcher'
 import { SocialLinks } from '@/components/social/social-links'
 import { StoreContactsDisplay } from '@/components/store/store-contacts-display'
+import { getMarketBranding } from '@/lib/branding/market-branding'
 import { fetchCatalogCategories } from '@/lib/catalog/categories'
 import { categoryHref, fetchCatalogRootSlug, resolveCatalogHref } from '@/lib/catalog/paths'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
@@ -35,6 +36,7 @@ export async function Footer() {
   const store = getStoreSettings(siteSettings)
   const localization = getLocalizationSettings(siteSettings)
   const market = getMarketSettings(siteSettings)
+  const branding = getMarketBranding(market.region)
   const isSkMarket = market.region === 'sk'
   const storeUnavailable = isStoreContactUnavailable(siteSettings)
   const showContactsUnavailable = storeUnavailable || !hasStoreContactInfo(store)
@@ -57,6 +59,7 @@ export async function Footer() {
               <BrandLogo
                 alt={tc('brand')}
                 variant="onDark"
+                logoSrc={branding.footerLogo}
                 imgClassName="max-h-20 max-w-[min(300px,85vw)] md:max-h-[4.5rem] md:max-w-[260px]"
               />
             </Link>
@@ -93,6 +96,9 @@ export async function Footer() {
               </Link>
               <Link href="/about" className={linkClassName}>
                 {t('about')}
+              </Link>
+              <Link href="/wholesale" className={linkClassName}>
+                {t('wholesale')}
               </Link>
               <Link href="/contacts" className={linkClassName}>
                 {t('contacts')}

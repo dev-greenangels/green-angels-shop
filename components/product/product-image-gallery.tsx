@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import { FavoriteButton } from '@/components/favorites/favorite-button'
 import { ProductCoverImage } from '@/components/product/product-cover-image'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { resolveThumbUrl } from '@/lib/media/paths'
 import { cn } from '@/lib/utils'
 
@@ -37,12 +38,14 @@ export function ProductImageGallery({
 }: ProductImageGalleryProps) {
   const t = useTranslations('product')
   const [selectedImage, setSelectedImage] = useState(0)
+  const [galleryOpen, setGalleryOpen] = useState(false)
   const [canScrollThumbsPrev, setCanScrollThumbsPrev] = useState(false)
   const [canScrollThumbsNext, setCanScrollThumbsNext] = useState(false)
   const thumbStripRef = useRef<HTMLDivElement>(null)
 
   const hasMultiple = images.length > 1
   const safeIndex = Math.min(selectedImage, Math.max(0, images.length - 1))
+  const selectedImageUrl = images[safeIndex]
 
   const updateThumbScrollState = useCallback(() => {
     const el = thumbStripRef.current
@@ -99,22 +102,29 @@ export function ProductImageGallery({
 
   if (images.length === 0) {
     return (
-      <div className="relative aspect-square w-full max-w-full overflow-hidden rounded-xl bg-muted">
-        <ProductCoverImage src={null} alt={productName} imageClassName="object-cover" />
+      <div className="relative mx-auto aspect-[5/6] w-full max-w-[22rem] overflow-hidden rounded-xl bg-muted lg:mx-0 lg:max-w-full">
+        <ProductCoverImage src={null} alt={productName} imageClassName="object-contain" />
       </div>
     )
   }
 
   return (
-    <div className="min-w-0 w-full max-w-full space-y-4">
-      <div className="relative aspect-square w-full max-w-full overflow-hidden rounded-xl bg-muted">
-        <ProductCoverImage
-          src={images[safeIndex]}
-          alt={productName}
-          imageClassName="object-cover"
-          sizes="(max-width: 1024px) 100vw, 50vw"
-          priority
-        />
+    <div className="mx-auto min-w-0 w-full max-w-[22rem] space-y-4 lg:mx-0 lg:max-w-full">
+      <div className="relative aspect-[5/6] w-full overflow-hidden rounded-xl bg-muted">
+        <button
+          type="button"
+          className="absolute inset-0 z-[1] cursor-zoom-in"
+          onClick={() => setGalleryOpen(true)}
+          aria-label={t('viewPhoto', { alt: productName })}
+        >
+          <ProductCoverImage
+            src={selectedImageUrl}
+            alt={productName}
+            imageClassName="object-cover"
+            sizes="(max-width: 1024px) 100vw, 22rem"
+            priority
+          />
+        </button>
         {isNew ? (
           <Badge className="absolute left-3 top-3 z-[2] bg-primary text-primary-foreground">
             {t('newBadge')}
@@ -209,6 +219,70 @@ export function ProductImageGallery({
           ) : null}
         </div>
       ) : null}
+
+      <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
+        <DialogContent className="flex h-[min(92dvh,60rem)] max-w-[min(96vw,72rem)] flex-col gap-3 overflow-hidden p-3 sm:p-4">
+          <DialogTitle className="sr-only">{t('galleryTitle')}</DialogTitle>
+          <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-muted">
+            <ProductCoverImage
+              src={selectedImageUrl}
+              alt={productName}
+              imageClassName="object-contain"
+              sizes="96vw"
+              priority
+            />
+            {hasMultiple ? (
+              <>
+                <button
+                  type="button"
+                  className={cn(mainNavButtonClassName, 'left-2 h-10 w-10 sm:left-4')}
+                  onClick={goPrev}
+                  aria-label={t('prevPhoto')}
+                >
+                  <ChevronLeft className="h-5 w-5" strokeWidth={2.25} />
+                </button>
+                <button
+                  type="button"
+                  className={cn(mainNavButtonClassName, 'right-2 h-10 w-10 sm:right-4')}
+                  onClick={goNext}
+                  aria-label={t('nextPhoto')}
+                >
+                  <ChevronRight className="h-5 w-5" strokeWidth={2.25} />
+                </button>
+                <span className="absolute bottom-3 left-3 z-[2] rounded-md bg-black/55 px-2 py-1 text-xs font-medium tabular-nums text-white">
+                  {safeIndex + 1} / {images.length}
+                </span>
+              </>
+            ) : null}
+          </div>
+          {hasMultiple ? (
+            <div className="flex shrink-0 justify-center gap-2 overflow-x-auto py-1">
+              {images.map((image, index) => (
+                <button
+                  key={`dialog-${image}-${index}`}
+                  type="button"
+                  onClick={() => setSelectedImage(index)}
+                  aria-label={t('photoN', { n: index + 1 })}
+                  aria-current={index === safeIndex ? 'true' : undefined}
+                  className={cn(
+                    'relative h-14 w-14 shrink-0 overflow-hidden rounded-md border-2 transition sm:h-16 sm:w-16',
+                    index === safeIndex
+                      ? 'border-primary'
+                      : 'border-transparent opacity-70 hover:opacity-100',
+                  )}
+                >
+                  <ProductCoverImage
+                    src={resolveThumbUrl(image)}
+                    alt=""
+                    imageClassName="object-cover"
+                    sizes="64px"
+                  />
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

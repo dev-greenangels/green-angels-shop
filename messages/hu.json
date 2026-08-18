@@ -120,6 +120,7 @@
     "blog": "Blog",
     "reviews": "Értékelések",
     "favorites": "Kedvencek",
+    "wholesale": "Nagykereskedelem",
     "about": "Rólunk",
     "plantsList": "Növények A–Z",
     "freshPhotos": "Friss fotók",
@@ -163,10 +164,44 @@
     "intro": "Professzionális növényiskola. 2010 óta gondosan nevelünk minőségi ültetőanyagot.",
     "blog": "Blog",
     "about": "Rólunk",
+    "wholesale": "Nagykereskedelem",
     "plantsList": "Növények A–Z",
     "contacts": "Kapcsolat",
     "fullContacts": "Teljes elérhetőség és nyitvatartás",
     "socialTitle": "Közösségi média"
+  },
+  "wholesale": {
+    "seoTitle": "Nagykereskedelem kertészeteknek és faiskoláknak",
+    "seoDescription": "Nagykereskedelmi együttműködés a Green Angels faiskolával. Küldjön ajánlatkérést B2B feltételekért.",
+    "submit": "Ajánlatkérés küldése",
+    "submitting": "Küldés…",
+    "success": "Az ajánlatkérés elküldve.",
+    "successTitle": "Köszönjük",
+    "successBody": "Megkaptuk az adatokat, és felvesszük Önnel a kapcsolatot a nagykereskedelmi ajánlattal.",
+    "submitError": "Nem sikerült elküldeni. Próbálja újra később.",
+    "fields": {
+      "fullName": "Teljes név",
+      "companyName": "Cég / üzlet neve",
+      "phone": "Telefon",
+      "email": "E-mail",
+      "city": "Város",
+      "website": "Weboldal vagy közösségi link",
+      "message": "Üzenet",
+      "companyIco": "Cégjegyzékszám (IČO)",
+      "companyVatId": "Adószám (IČ DPH)"
+    },
+    "errors": {
+      "fullName": "Adja meg a nevét (legalább 2 betű).",
+      "companyName": "Adja meg a cég vagy üzlet nevét.",
+      "phone": "Adjon meg érvényes telefonszámot.",
+      "email": "Adjon meg érvényes e-mail-címet.",
+      "city": "Adja meg a várost.",
+      "website": "Adjon meg érvényes linket (https://…).",
+      "message": "Az üzenet túl hosszú.",
+      "companyIco": "Adjon meg érvényes cégazonosítót.",
+      "companyVatId": "Adjon meg érvényes adószámot.",
+      "consent": "Az adatkezeléshez hozzájárulás szükséges."
+    }
   },
   "auth": {
     "back": "Vissza",
@@ -955,7 +990,13 @@
     "termsLink": "Felhasználási feltételek",
     "privacyLink": "Adatvédelmi irányelvek",
     "cookiesLink": "Süti szabályzat",
-    "templateNotice": "Ez a szöveg tervezet sablon, és ügyvész általi felülvizsgálat után tehető közzé az éles oldalon."
+    "templateNotice": "Ez a szöveg tervezet sablon, és ügyvész általi felülvizsgálat után tehető közzé az éles oldalon.",
+    "revisionLine": "{version}. változat",
+    "sellerTitle": "Az eladó adatai",
+    "sellerIco": "IČO",
+    "sellerDic": "DIČ",
+    "sellerVat": "IČ DPH",
+    "sellerAddress": "Székhely"
   },
   "cookieConsent": {
     "title": "Sütiket használunk",

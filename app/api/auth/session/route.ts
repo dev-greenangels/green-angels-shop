@@ -15,6 +15,7 @@ type BackendSessionResponse = {
     firstName: string | null
     lastName: string | null
     role: 'customer' | 'admin'
+    accountType?: 'retail' | 'wholesale'
   }
   profile?: GoogleCheckoutProfile
 }
@@ -37,6 +38,8 @@ export async function GET() {
               id: data.user.id,
               email: data.user.email?.trim() || null,
               role: data.user.role,
+              accountType:
+                data.user.accountType === 'wholesale' ? 'wholesale' : 'retail',
               firstName: data.user.firstName,
               lastName: data.user.lastName,
               phone: data.user.phone,

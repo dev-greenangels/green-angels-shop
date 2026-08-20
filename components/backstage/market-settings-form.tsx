@@ -365,7 +365,7 @@ export function MarketSettingsForm({
                   авторезервація в ABRA.
                 </li>
                 <li>
-                  Packeta API key + sender; GLS MyGLS credentials у backstage.
+                  Packeta: Backstage → Packeta (API key + Sender); GLS MyGLS credentials у backstage.
                 </li>
                 <li>
                   Календар відправок: увімкнути, ліміт/день, відкриті дні тижня, свята.

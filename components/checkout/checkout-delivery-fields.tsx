@@ -10,9 +10,18 @@ import {
   getCheckoutDeliveryRecipientSummary,
   getCheckoutOrdererSummary,
 } from '@/components/checkout/checkout-utils'
-import { CarrierTruckIcon, NovaPoshtaLogo, PickupStoreIcon } from '@/components/checkout/delivery-icons'
+import {
+  CarrierTruckIcon,
+  GlsLogo,
+  NovaPoshtaLogo,
+  PacketaLogo,
+  PickupStoreIcon,
+} from '@/components/checkout/delivery-icons'
 import { NpAsyncSearchCombobox } from '@/components/checkout/np-async-search-combobox'
-import { PacketaPickupPointField } from '@/components/checkout/packeta-pickup-point-field'
+import {
+  PacketaPickupPointField,
+  type PacketaCartFit,
+} from '@/components/checkout/packeta-pickup-point-field'
 import { useStoreSettings } from '@/components/providers/store-settings-provider'
 import {
   formatStoreAddress,
@@ -66,14 +75,14 @@ type DeliveryCountryCode = string
 
 const DELIVERY_OPTIONS: {
   value: CheckoutDeliveryMethod
-  icon: 'nova-poshta' | 'pickup' | 'carrier'
+  icon: 'nova-poshta' | 'pickup' | 'packeta' | 'gls' | 'carrier'
 }[] = [
   { value: 'nova-poshta-branch', icon: 'nova-poshta' },
   { value: 'nova-poshta-address', icon: 'nova-poshta' },
   { value: 'pickup', icon: 'pickup' },
-  { value: 'packeta-box', icon: 'carrier' },
-  { value: 'packeta-courier', icon: 'carrier' },
-  { value: 'gls-courier', icon: 'carrier' },
+  { value: 'packeta-box', icon: 'packeta' },
+  { value: 'packeta-courier', icon: 'packeta' },
+  { value: 'gls-courier', icon: 'gls' },
 ]
 
 export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
@@ -95,6 +104,7 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
   enabledCountrySites,
   enabledDeliveryCountries,
   beforeRecipientSlot,
+  packetaCartFit,
 }: {
   idPrefix: string
   orderer: CheckoutFormValues
@@ -111,6 +121,7 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
   prefilledHint?: string
   marketRegion?: CheckoutMarketRegion
   deliveryPhonePolicy?: PhonePolicy
+  packetaCartFit?: PacketaCartFit
   /** @deprecated Prefer enabledDeliveryCountries from market domain allowlist */
   enabledCountrySites?: Array<{ code: DeliveryCountryCode; enabled: boolean }>
   enabledDeliveryCountries?: DeliveryCountryCode[]
@@ -252,6 +263,10 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
             >
               {opt.icon === 'nova-poshta' ? (
                 <NovaPoshtaLogo />
+              ) : opt.icon === 'packeta' ? (
+                <PacketaLogo />
+              ) : opt.icon === 'gls' ? (
+                <GlsLogo />
               ) : opt.icon === 'carrier' ? (
                 <CarrierTruckIcon />
               ) : (
@@ -347,6 +362,7 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
             country={shipment.deliveryCountryCode || 'sk'}
             value={shipment.postOffice || undefined}
             label={shipment.postOfficeLabel || undefined}
+            cartFit={packetaCartFit}
             onChange={(id, nextLabel, meta) =>
               onPatchShipment({
                 postOffice: id,

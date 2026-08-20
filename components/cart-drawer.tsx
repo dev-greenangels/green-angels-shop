@@ -7,6 +7,7 @@ import { ChevronUp, ShoppingBag } from 'lucide-react'
 import { CartLineRow } from '@/components/cart/cart-line-row'
 import { CartOrderTotalsBreakdown } from '@/components/cart/cart-order-totals-breakdown'
 import { CartPromoGiftLines } from '@/components/cart/cart-promo-gift-lines'
+import { MinOrderPolicyBanner } from '@/components/cart/min-order-policy-banner'
 import { CheckoutPromoCode } from '@/components/checkout/checkout-promo-code'
 import { Button } from '@/components/ui/button'
 import {
@@ -300,6 +301,10 @@ export function CartDrawer() {
                 className="px-2 pb-4"
                 onNavigate={closeCart}
               />
+
+              <div className="px-2 pb-3">
+                <MinOrderPolicyBanner compact />
+              </div>
 
               <div className="h-40 shrink-0" aria-hidden />
             </div>

@@ -514,7 +514,13 @@
     "grandTotal": "Gesamtsumme",
     "inCart": "Im Warenkorb",
     "placeOrder": "Bestellung aufgeben",
-    "placeOrderWithObligation": "Zahlungspflichtig bestellen"
+    "placeOrderWithObligation": "Zahlungspflichtig bestellen",
+    "minOrder": {
+      "hintReject": "Mindestbestellwert: {amount}. Kleinere Bestellungen sind nicht möglich.",
+      "hintFee": "Mindestbestellwert: {amount}. Darunter wird ein Verpackungszuschlag von {fee} berechnet.",
+      "blocked": "Die Warensumme liegt unter dem Minimum {amount}. Bitte weitere Artikel hinzufügen.",
+      "feeApplied": "Unter {amount}: Verpackungszuschlag von {fee} wurde hinzugefügt."
+    }
   },
   "recentlyViewed": {
     "eyebrow": "Ihr Verlauf",
@@ -730,7 +736,10 @@
     },
     "packetaPickupPointLabel": "Packeta Abholstelle",
     "packetaPickupPointUnavailable": "Abholstellen-Auswahl vorübergehend nicht verfügbar",
-    "packetaPickupPointHint": "Die Packeta-Abholstellen-Auswahl wird noch eingerichtet. Bitte kontaktieren Sie den Support, um mit dieser Methode zu bestellen.",
+    "packetaPickupPointPlaceholder": "Ort oder PLZ (mind. 2 Zeichen)",
+    "packetaPickupPointHint": "Ort oder Postleitzahl eingeben und eine Stelle aus der Liste wählen.",
+    "packetaPickupPointSearching": "Packeta-Abholstellen werden gesucht…",
+    "packetaPickupPointEmpty": "Keine Treffer. Bitte anderen Ort oder PLZ versuchen.",
     "changePickupPoint": "Abholstelle ändern",
     "deliveryCountry": "Lieferland",
     "deliveryCountryPlaceholder": "Land auswählen",
@@ -806,6 +815,8 @@
     "preferredShipDateCarrierHint": "Pflanzen werden am gewählten Datum an den Versanddienstleister übergeben.",
     "preferredShipDateSelect": "Datum auswählen",
     "preferredShipDateEmpty": "Keine Versandtermine verfügbar",
+    "preferredShipDateRequired": "Bitte wählen Sie ein Versanddatum",
+    "preferredShipDateRequiredHint": "Pflichtfeld — wählen Sie ein Datum im Kalender.",
     "preferredShipDatePickup": "Abholbereit am",
     "preferredShipDatePickupHint": "Wählen Sie den Tag, an dem Sie die Bestellung aus der Gärtnerei abholen.",
     "preferredShipDatePickupSelect": "Datum wählen",
@@ -849,7 +860,29 @@
     "deliveryEstimateAfterDispatch": "Voraussichtliche Lieferung: 2–3 Werktage nach Versand",
     "vatIdConfirmed": "USt-IdNr. bestätigt",
     "vatIdConfirmedWithZeroDph": "USt-IdNr. bestätigt. 0 % MwSt. angewendet (Reverse Charge).",
-    "vatZeroDphApplied": "0 % MwSt. angewendet (Reverse Charge)."
+    "vatZeroDphApplied": "0 % MwSt. angewendet (Reverse Charge).",
+    "stripe": {
+      "title": "Kartenzahlung",
+      "subtitle": "Geben Sie Ihre Kartendaten ein. Stripe verarbeitet die Zahlung — wir speichern Ihre Kartennummer nicht.",
+      "pay": "{amount} bezahlen",
+      "processing": "Zahlung wird verarbeitet…",
+      "loading": "Zahlungsformular wird geladen…",
+      "error": "Die Zahlung konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.",
+      "splitProgress": "Zahlung {current} von {total}",
+      "secureHint": "Sichere Zahlung über Stripe"
+    },
+    "packetaPickupPointBranches": "Abholstellen",
+    "packetaPickupPointZbox": "Z-BOX",
+    "packetaCityLabel": "Stadt oder PLZ",
+    "packetaCityPlaceholder": "z. B. Bratislava oder 811 01",
+    "packetaCityHint": "Stadt oder PLZ eingeben (min. 2 Zeichen)",
+    "packetaCityEmpty": "Keine Stadt gefunden. Andere Bezeichnung oder PLZ versuchen.",
+    "packetaCitySearching": "Städte werden gesucht…",
+    "packetaCityPointCount": "{count} Punkte",
+    "packetaPointLabel": "Abholstelle / Z-BOX",
+    "packetaPointPlaceholder": "Suche nach Straße, Name oder PLZ",
+    "packetaPointSelectCityFirst": "Zuerst eine Stadt wählen",
+    "packetaPointSearchHint": "Punkt aus der Liste wählen oder Suche verfeinern"
   },
   "product": {
     "newBadge": "Neu",

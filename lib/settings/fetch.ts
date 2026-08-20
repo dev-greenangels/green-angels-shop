@@ -20,7 +20,10 @@ import { normalizeStoreContactSettings } from '@/lib/settings/store-contact.norm
 import { normalizeNavigationSettings } from '@/lib/settings/navigation.normalize'
 import { normalizeMarketSettings } from '@/lib/settings/market'
 import { normalizeWholesalePageSettings } from '@/lib/settings/wholesale.normalize'
-import { defaultWholesalePageSettings } from '@/lib/settings/wholesale'
+import {
+  defaultWholesalePageSettings,
+  resolveWholesalePageSettings,
+} from '@/lib/settings/wholesale'
 import type {
   CartCheckoutSettings,
   CatalogPageSettings,
@@ -166,10 +169,20 @@ export function getMarketSettings(
 
 export function getWholesalePageSettings(
   fetched: FetchedPublicSiteSettings | PublicSiteSettings,
-): WholesalePageSettings {
+): import('@/lib/settings/wholesale').WholesalePageSettings {
   const settings = 'settings' in fetched ? fetched.settings : fetched
   const market = getMarketSettings(fetched)
   return normalizeWholesalePageSettings(settings.wholesale, market.region)
+}
+
+/** Resolved flat CMS for a storefront URL locale (+ pageEnabled). */
+export function getResolvedWholesalePageSettings(
+  fetched: FetchedPublicSiteSettings | PublicSiteSettings,
+  locale: string,
+): import('@/lib/settings/wholesale').ResolvedWholesalePageSettings {
+  const full = getWholesalePageSettings(fetched)
+  const market = getMarketSettings(fetched)
+  return resolveWholesalePageSettings(full, locale, market.region)
 }
 
 export function isStoreContactUnavailable(

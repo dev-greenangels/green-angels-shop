@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Loader2, ShoppingBag } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import { CheckoutContactStep } from '@/components/checkout/checkout-contact-step'
 import { ClientPublicPageBreadcrumbs } from '@/components/client-public-page-breadcrumbs'
@@ -17,13 +17,16 @@ import {
   CheckoutTogetherOrderPreview,
 } from '@/components/checkout/checkout-split-orders-preview'
 import { CheckoutPaymentStep, type CheckoutBuyerType } from '@/components/checkout/checkout-payment-step'
+import { StripePaymentForm } from '@/components/checkout/stripe-payment-form'
 import { CheckoutShipDateField } from '@/components/checkout/checkout-ship-date-field'
 import { CheckoutShippingStep } from '@/components/checkout/checkout-shipping-step'
 import { CheckoutSkBillingFields } from '@/components/checkout/checkout-sk-billing-fields'
 import type { SkCheckoutAuthMode } from '@/components/checkout/checkout-sk-auth-mode-toggle'
 import { CartDrawer } from '@/components/cart-drawer'
+import { formatMinOrderCheckoutMessage } from '@/components/cart/min-order-info-banner'
 import { useCountrySiteOverlay } from '@/components/providers/country-site-provider'
 import { useSession } from '@/components/providers/session-provider'
+import { useFormatPrice } from '@/lib/commerce/use-format-price'
 import { RecentlyViewedSection } from '@/components/product/recently-viewed-section'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import {
@@ -35,6 +38,7 @@ import {
   checkoutPageShellClassName,
   checkoutStepDomId,
   getCheckoutProgressIndex,
+  shopPublicBaseUrl,
   type CheckoutStep,
 } from '@/components/checkout/checkout-utils'
 import { Button } from '@/components/ui/button'
@@ -62,8 +66,16 @@ import {
   useCartPromoCode,
   useCartStore,
 } from '@/lib/cart-store'
-import { createOrders } from '@/lib/orders/create-order'
+import { createOrders, checkoutSuccessSearch } from '@/lib/orders/create-order'
 import { clearCartAfterCheckout } from '@/lib/carts/clear-after-checkout'
+import {
+  clearStripePendingPayments,
+  loadStripePendingPayments,
+  saveStripePendingPayments,
+  stripePaymentsFromCreatedOrders,
+  type StripePendingPayment,
+} from '@/lib/checkout/stripe-pending'
+import { syncStripePayment } from '@/lib/orders/fetch-order-confirmation'
 import { buildPricingQuoteLineItems } from '@/lib/pricing/quote-line-items'
 import { usePricingQuote, promoCodesKey, resolveDisplayedAppliedPromos } from '@/lib/pricing/use-pricing-quote'
 import { tryApplyPromoCode } from '@/lib/pricing/try-apply-promo-code'
@@ -159,10 +171,13 @@ const initialFormData: CheckoutFormValues = {
 
 export default function CheckoutPage() {
   const catalogHref = useCatalogHref()
+  const locale = useLocale()
   const t = useTranslations('checkout')
   const tc = useTranslations('common')
   const tCart = useTranslations('cart')
+  const tMinOrder = useTranslations('cart.minOrder')
   const tp = useTranslations('promo')
+  const formatMoney = useFormatPrice('shelf')
   const router = useRouter()
   const { user } = useSession()
   const items = useCartItems()
@@ -239,6 +254,9 @@ export default function CheckoutPage() {
   const countryOverlay = useCountrySiteOverlay()
   const [isLoading, setIsLoading] = useState(false)
   const [isCompletingOrder, setIsCompletingOrder] = useState(false)
+  const [stripePending, setStripePending] = useState<StripePendingPayment[] | null>(null)
+  const [stripePayIndex, setStripePayIndex] = useState(0)
+  const stripeReturnHandled = useRef(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [shipmentSplitError, setShipmentSplitError] = useState<string | null>(null)
   const [shipmentSplitMode, setShipmentSplitMode] = useState<ShipmentSplitMode>('together')
@@ -290,6 +308,22 @@ export default function CheckoutPage() {
         : undefined,
     enabled: mounted && catalogReady && quoteItemsKey.length > 0 && !isLoading,
   })
+  const allowedDeliveryMethods = useMemo(() => {
+    const fromQuote = pricingQuote?.checkout?.allowedDeliveryMethods
+    if (Array.isArray(fromQuote) && fromQuote.length > 0) {
+      return fromQuote as typeof cartCheckoutSettings.enabledDeliveryMethods
+    }
+    return cartCheckoutSettings.enabledDeliveryMethods
+  }, [pricingQuote?.checkout?.allowedDeliveryMethods, cartCheckoutSettings.enabledDeliveryMethods])
+  const packetaCartFit = useMemo(() => {
+    const envelope = pricingQuote?.cartSizeEnvelope
+    return {
+      longestSideCm: envelope?.maxLongestSideCm,
+      sideSumCm: envelope?.maxSideSumCm,
+      weightKg: pricingQuote?.cartWeightKg,
+      hasMeasuredItem: envelope?.hasMeasuredItem === true,
+    }
+  }, [pricingQuote?.cartSizeEnvelope, pricingQuote?.cartWeightKg])
   const splitQuotesEnabled =
     mounted &&
     catalogReady &&
@@ -359,12 +393,51 @@ export default function CheckoutPage() {
       : pricingQuote?.checkout != null && !pricingQuote.checkout.canPlaceOrder)
   const splitBlockedMessage = useMemo(() => {
     if (!splitCheckoutBlocked) return null
-    const messages = [
-      immediateSplitQuote?.checkout?.belowMinOrderMessage,
-      datedSplitQuote?.checkout?.belowMinOrderMessage,
-    ].filter((message): message is string => Boolean(message))
+    const messages = [immediateSplitQuote?.checkout, datedSplitQuote?.checkout]
+      .map((checkout) =>
+        checkout
+          ? formatMinOrderCheckoutMessage(tMinOrder, formatMoney, {
+              belowMinOrder: checkout.belowMinOrder,
+              canPlaceOrder: checkout.canPlaceOrder,
+              minOrderAmount: checkout.minOrderAmount,
+              belowMinOrderBehavior: checkout.belowMinOrderBehavior,
+              belowMinPackagingFee: checkout.belowMinPackagingFee,
+            })
+          : null,
+      )
+      .filter((message): message is string => Boolean(message))
     return messages.length ? messages.join(' ') : t('shipmentSplit.splitBlockedFallback')
-  }, [splitCheckoutBlocked, immediateSplitQuote, datedSplitQuote, t])
+  }, [
+    splitCheckoutBlocked,
+    immediateSplitQuote,
+    datedSplitQuote,
+    t,
+    tMinOrder,
+    formatMoney,
+  ])
+  const checkoutBlockedMessage = useMemo(() => {
+    if (!checkoutBlocked) return null
+    if (needsShipmentSplitChoice && shipmentSplitMode === 'split') {
+      return splitBlockedMessage
+    }
+    const checkout = pricingQuote?.checkout
+    if (!checkout) return null
+    return formatMinOrderCheckoutMessage(tMinOrder, formatMoney, {
+      belowMinOrder: checkout.belowMinOrder,
+      canPlaceOrder: checkout.canPlaceOrder,
+      minOrderAmount: checkout.minOrderAmount,
+      belowMinOrderBehavior: checkout.belowMinOrderBehavior,
+      belowMinPackagingFee: checkout.belowMinPackagingFee,
+    })
+  }, [
+    checkoutBlocked,
+    needsShipmentSplitChoice,
+    shipmentSplitMode,
+    splitBlockedMessage,
+    pricingQuote,
+    tMinOrder,
+    formatMoney,
+  ])
   const displayedAppliedPromos = useMemo(
     () =>
       resolveDisplayedAppliedPromos(
@@ -395,13 +468,91 @@ export default function CheckoutPage() {
   const [paymentTouched, setPaymentTouched] = useState<
     Partial<Record<CheckoutPaymentFieldKey, boolean>>
   >({})
+  const [preferredShipDateTouched, setPreferredShipDateTouched] = useState(false)
   const phoneInputRef = useRef<HTMLInputElement>(null)
   const deliveryPhoneInputRef = useRef<HTMLInputElement>(null)
   const [sessionHydratedForKey, setSessionHydratedForKey] = useState<string | null>(null)
 
   useEffect(() => {
+    const stored = loadStripePendingPayments()
+    if (stored) {
+      setStripePending(stored.payments)
+      setStripePayIndex(stored.index)
+    }
     setMounted(true)
   }, [])
+
+  const goToCheckoutSuccess = useCallback(
+    (orders: Array<{ orderNumber: string; confirmationToken?: string }>) => {
+      setIsCompletingOrder(true)
+      clearStripePendingPayments()
+      setStripePending(null)
+      router.replace(`/checkout/success?${checkoutSuccessSearch(orders)}`)
+    },
+    [router],
+  )
+
+  const beginStripeCheckout = useCallback((payments: StripePendingPayment[]) => {
+    saveStripePendingPayments(payments, 0)
+    setStripePending(payments)
+    setStripePayIndex(0)
+  }, [])
+
+  const handleStripeOrderPaid = useCallback(() => {
+    if (!stripePending?.length) return
+    const nextIndex = stripePayIndex + 1
+    if (nextIndex >= stripePending.length) {
+      goToCheckoutSuccess(stripePending)
+      return
+    }
+    saveStripePendingPayments(stripePending, nextIndex)
+    setStripePayIndex(nextIndex)
+  }, [goToCheckoutSuccess, stripePayIndex, stripePending])
+
+  useEffect(() => {
+    if (!mounted) return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('stripe_return') !== '1' || stripeReturnHandled.current) return
+    stripeReturnHandled.current = true
+
+    const orderNumber = params.get('order')?.trim()
+    const confirmation = params.get('confirmation')?.trim() ?? ''
+    const stored = loadStripePendingPayments()
+    if (!stored?.payments.length) {
+      if (orderNumber) {
+        goToCheckoutSuccess([{ orderNumber, confirmationToken: confirmation }])
+      }
+      return
+    }
+
+    const startIndex = orderNumber
+      ? stored.payments.findIndex((row) => row.orderNumber === orderNumber)
+      : stored.index
+    const index = startIndex >= 0 ? startIndex : stored.index
+    setStripePending(stored.payments)
+    setStripePayIndex(index)
+
+    const payment = stored.payments[index]
+    if (!payment) return
+
+    let cancelled = false
+    void (async () => {
+      const sync = await syncStripePayment(payment.orderNumber, payment.confirmationToken)
+      if (cancelled) return
+      if (sync?.paymentStatus !== 'success') return
+      const nextIndex = index + 1
+      if (nextIndex >= stored.payments.length) {
+        goToCheckoutSuccess(stored.payments)
+        return
+      }
+      saveStripePendingPayments(stored.payments, nextIndex)
+      setStripePayIndex(nextIndex)
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [goToCheckoutSuccess, mounted])
 
   useEffect(() => {
     if (!mounted) {
@@ -434,7 +585,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     setFormData((current) => {
-      const enabledDelivery = cartCheckoutSettings.enabledDeliveryMethods
+      const enabledDelivery = allowedDeliveryMethods
       const enabledPayment = cartCheckoutSettings.enabledPaymentMethods
       const deliveryMethod = enabledDelivery.includes(current.deliveryMethod)
         ? current.deliveryMethod
@@ -502,7 +653,7 @@ export default function CheckoutPage() {
           : {}),
       }
     })
-  }, [cartCheckoutSettings, marketSettings, countryOverlay?.countryCode])
+  }, [allowedDeliveryMethods, cartCheckoutSettings, marketSettings, countryOverlay?.countryCode])
 
   useEffect(() => {
     if (quoteLoading || !pricingQuote) return
@@ -721,8 +872,17 @@ export default function CheckoutPage() {
         marketRegion: isSkMarket ? 'sk' : 'ua',
         deliveryPhonePolicy: marketSettings.deliveryPhonePolicy,
         authPhonePolicy: marketSettings.authPhonePolicy,
+        requirePreferredShipDate: dispatchCalendarEnabled,
       }),
-    [formData, identification, needsShipmentSplitChoice, shipmentSplitMode, isSkMarket, marketSettings],
+    [
+      formData,
+      identification,
+      needsShipmentSplitChoice,
+      shipmentSplitMode,
+      isSkMarket,
+      marketSettings,
+      dispatchCalendarEnabled,
+    ],
   )
   const canCompletePayment = useMemo(
     () =>
@@ -840,6 +1000,7 @@ export default function CheckoutPage() {
       companyCity: true,
       companyPostalCode: true,
     })
+    setPreferredShipDateTouched(true)
   }, [
     formData.isOtherRecipient,
     formData.splitShipments,
@@ -940,8 +1101,7 @@ export default function CheckoutPage() {
                 marketSettings.region === 'sk' && buyerType === 'company'
                   ? vatCountryCode
                   : undefined,
-              returnBaseUrl:
-                typeof window !== 'undefined' ? window.location.origin : undefined,
+              returnBaseUrl: shopPublicBaseUrl(locale),
               ...orderPhoneMarket,
             },
           ),
@@ -967,14 +1127,21 @@ export default function CheckoutPage() {
                 marketSettings.region === 'sk' && buyerType === 'company'
                   ? vatCountryCode
                   : undefined,
-              returnBaseUrl:
-                typeof window !== 'undefined' ? window.location.origin : undefined,
+              returnBaseUrl: shopPublicBaseUrl(locale),
               ...orderPhoneMarket,
             },
           ),
           ],
           { idempotencyKeys: splitIdempotencyKeys },
         )
+
+        const stripePayments = stripePaymentsFromCreatedOrders(orders)
+        if (stripePayments.length) {
+          await clearCartAfterCheckout()
+          beginStripeCheckout(stripePayments)
+          setIsLoading(false)
+          return
+        }
 
         setIsCompletingOrder(true)
         await clearCartAfterCheckout()
@@ -983,16 +1150,7 @@ export default function CheckoutPage() {
           window.location.href = paymentUrl
           return
         }
-        const query = orders
-          .map((order) => {
-            const parts = [`order=${encodeURIComponent(order.orderNumber)}`]
-            if (order.confirmationToken) {
-              parts.push(`confirmation=${encodeURIComponent(order.confirmationToken)}`)
-            }
-            return parts.join('&')
-          })
-          .join('&')
-        router.replace(`/checkout/success?${query}`)
+        router.replace(`/checkout/success?${checkoutSuccessSearch(orders)}`)
         return
       }
 
@@ -1011,7 +1169,7 @@ export default function CheckoutPage() {
         buyerType: marketSettings.region === 'sk' ? buyerType : undefined,
         vatCountryCode:
           marketSettings.region === 'sk' && buyerType === 'company' ? vatCountryCode : undefined,
-        returnBaseUrl: typeof window !== 'undefined' ? window.location.origin : undefined,
+        returnBaseUrl: shopPublicBaseUrl(locale),
         ...orderPhoneMarket,
       })
       if (!payload.items.length) {
@@ -1021,17 +1179,20 @@ export default function CheckoutPage() {
       const [order] = await createOrders([payload], {
         idempotencyKeys: [submitIdempotencyKey],
       })
+      const stripePayments = stripePaymentsFromCreatedOrders([order])
+      if (stripePayments.length) {
+        await clearCartAfterCheckout()
+        beginStripeCheckout(stripePayments)
+        setIsLoading(false)
+        return
+      }
       setIsCompletingOrder(true)
       await clearCartAfterCheckout()
       if (order.paymentPageUrl) {
         window.location.href = order.paymentPageUrl
         return
       }
-      const successParts = [`order=${encodeURIComponent(order.orderNumber)}`]
-      if (order.confirmationToken) {
-        successParts.push(`confirmation=${encodeURIComponent(order.confirmationToken)}`)
-      }
-      router.replace(`/checkout/success?${successParts.join('&')}`)
+      router.replace(`/checkout/success?${checkoutSuccessSearch([order])}`)
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : t('submitFailed'),
@@ -1042,6 +1203,22 @@ export default function CheckoutPage() {
 
   if (!mounted || !hasHydratedFromServer) {
     return <CheckoutPageSkeleton />
+  }
+
+  const stripePayment = stripePending?.[stripePayIndex]
+  if (stripePayment) {
+    return (
+      <div className={checkoutPageShellClassName}>
+        <div className={cn(checkoutPageContentClassName, siteContentShellClassName, 'py-10 sm:py-16')}>
+          <StripePaymentForm
+            payment={stripePayment}
+            index={stripePayIndex}
+            total={stripePending?.length ?? 1}
+            onPaid={handleStripeOrderPaid}
+          />
+        </div>
+      </div>
+    )
   }
 
   if (isCompletingOrder) {
@@ -1177,11 +1354,12 @@ export default function CheckoutPage() {
                 >
                   <CheckoutShippingStep
                     formData={formData}
-                    enabledDeliveryMethods={cartCheckoutSettings.enabledDeliveryMethods}
+                    enabledDeliveryMethods={allowedDeliveryMethods}
                     marketRegion={isSkMarket ? 'sk' : 'ua'}
                     deliveryPhonePolicy={marketSettings.deliveryPhonePolicy}
                     enabledCountrySites={marketSettings.countrySites}
                     enabledDeliveryCountries={enabledDeliveryCountries}
+                    packetaCartFit={packetaCartFit}
                     identification={identification}
                     contactTouched={contactTouched}
                     shippingTouched={shippingTouched}
@@ -1207,6 +1385,15 @@ export default function CheckoutPage() {
                         compact
                         pickup={formData.deliveryMethod === 'pickup'}
                         enabled={dispatchCalendarEnabled}
+                        required={dispatchCalendarEnabled}
+                        error={
+                          preferredShipDateTouched &&
+                          dispatchCalendarEnabled &&
+                          !formData.preferredShipDate.trim()
+                            ? t('preferredShipDateRequired')
+                            : null
+                        }
+                        onBlur={() => setPreferredShipDateTouched(true)}
                         availableFromDates={checkoutableItems
                           .map((item) => getCartItemShipmentDate(item))
                           .filter((d): d is string => Boolean(d))}
@@ -1240,13 +1427,12 @@ export default function CheckoutPage() {
                                     orderer={formData}
                                     shipment={formData.splitShipments.immediate}
                                     identification={identification}
-                                    enabledDeliveryMethods={
-                                      cartCheckoutSettings.enabledDeliveryMethods
-                                    }
+                                    enabledDeliveryMethods={allowedDeliveryMethods}
                                     marketRegion={isSkMarket ? 'sk' : 'ua'}
                                     deliveryPhonePolicy={marketSettings.deliveryPhonePolicy}
                                     enabledCountrySites={marketSettings.countrySites}
                     enabledDeliveryCountries={enabledDeliveryCountries}
+                                    packetaCartFit={packetaCartFit}
                                     shippingTouched={splitShippingTouched.immediate}
                                     recipientTouched={splitRecipientTouched.immediate}
                                     onPatchShipment={patchImmediateShipment}
@@ -1272,13 +1458,12 @@ export default function CheckoutPage() {
                                     orderer={formData}
                                     shipment={formData.splitShipments.dated}
                                     identification={identification}
-                                    enabledDeliveryMethods={
-                                      cartCheckoutSettings.enabledDeliveryMethods
-                                    }
+                                    enabledDeliveryMethods={allowedDeliveryMethods}
                                     marketRegion={isSkMarket ? 'sk' : 'ua'}
                                     deliveryPhonePolicy={marketSettings.deliveryPhonePolicy}
                                     enabledCountrySites={marketSettings.countrySites}
                     enabledDeliveryCountries={enabledDeliveryCountries}
+                                    packetaCartFit={packetaCartFit}
                                     shippingTouched={splitShippingTouched.dated}
                                     recipientTouched={splitRecipientTouched.dated}
                                     onPatchShipment={patchDatedShipment}
@@ -1372,13 +1557,7 @@ export default function CheckoutPage() {
                   submitError={submitError}
                   shipmentSplitError={shipmentSplitError}
                   onEditOrder={handleEditOrder}
-                  checkoutBlockedMessage={
-                    checkoutBlocked
-                      ? needsShipmentSplitChoice && shipmentSplitMode === 'split'
-                        ? splitBlockedMessage
-                        : pricingQuote?.checkout?.belowMinOrderMessage
-                      : null
-                  }
+                  checkoutBlockedMessage={checkoutBlockedMessage}
                   formId={CHECKOUT_FORM_ID}
                   privacyConsentChecked={privacyConsent}
                   privacyConsentError={privacyConsentTouched && !privacyConsent}

@@ -5,10 +5,12 @@ import { Loader2, Plus, RefreshCw, Save, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
+import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { CartCheckoutSettingsForm } from '@/components/backstage/cart-checkout-settings-form'
 import { CatalogSettingsForm } from '@/components/backstage/catalog-settings-form'
 import { NovaPoshtaSettingsForm } from '@/components/backstage/nova-poshta-settings-form'
+import { PacketaSettingsForm } from '@/components/backstage/packeta-settings-form'
 import { FlexiSettingsForm } from '@/components/backstage/flexi-settings-form'
 import { RecentlyViewedSettingsForm } from '@/components/backstage/recently-viewed-settings-form'
 import { HomeSectionOrderControls } from '@/components/backstage/home-section-order-controls'
@@ -88,6 +90,7 @@ function stableJson(value: unknown): string {
 export default function SettingsPage() {
   const tBanner = useTranslations('contentBanner')
   const tSettings = useTranslations('pages.settings')
+  const { locale: contentLocale, ready: contentLocaleReady } = useBackstageContentLocale()
   const [loading, setLoading] = useState(true)
   const [savingStore, setSavingStore] = useState(false)
   const [savingHome, setSavingHome] = useState(false)
@@ -480,6 +483,7 @@ export default function SettingsPage() {
             <TabsTrigger value="cart">Кошик</TabsTrigger>
             <TabsTrigger value="market">Ринок</TabsTrigger>
             <TabsTrigger value="nova-poshta">Нова Пошта</TabsTrigger>
+            <TabsTrigger value="packeta">Packeta</TabsTrigger>
             <TabsTrigger value="flexi">ABRA Flexi</TabsTrigger>
             <TabsTrigger value="presta-import">Імпорт Presta</TabsTrigger>
           </TabsList>
@@ -556,6 +560,10 @@ export default function SettingsPage() {
 
           <TabsContent value="nova-poshta" className="mt-6 space-y-6">
             <NovaPoshtaSettingsForm />
+          </TabsContent>
+
+          <TabsContent value="packeta" className="mt-6 space-y-6">
+            <PacketaSettingsForm />
           </TabsContent>
 
           <TabsContent value="flexi" className="mt-6 space-y-6">
@@ -1276,12 +1284,10 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="wholesale" className="mt-6 space-y-6">
-            <p className="rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-              {tBanner('cmsNotTranslated')}
-            </p>
-            {wholesale ? (
+            {wholesale && contentLocaleReady ? (
               <WholesalePageSettingsForm
                 settings={wholesale}
+                contentLocale={contentLocale}
                 onChange={setWholesale}
                 onSave={() => void saveWholesale()}
                 saving={savingWholesale}

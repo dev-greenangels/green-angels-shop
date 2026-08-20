@@ -5,6 +5,7 @@ import { PenSquare } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { CartOrderTotalsBreakdown } from '@/components/cart/cart-order-totals-breakdown'
+import { useMinOrderCheckoutMessage } from '@/components/cart/min-order-info-banner'
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
 import { cn } from '@/lib/utils'
 import { useFormatPrice } from '@/lib/commerce/use-format-price'
@@ -145,6 +146,13 @@ function SplitOrderPanel({
 }) {
   const t = useTranslations('checkout.shipmentSplit.splitPreview')
   const tCart = useTranslations('cart')
+  const minOrderBlocked = useMinOrderCheckoutMessage({
+    belowMinOrder: quote?.checkout?.belowMinOrder,
+    canPlaceOrder: quote?.checkout?.canPlaceOrder,
+    minOrderAmount: quote?.checkout?.minOrderAmount,
+    belowMinOrderBehavior: quote?.checkout?.belowMinOrderBehavior,
+    belowMinPackagingFee: quote?.checkout?.belowMinPackagingFee,
+  })
 
   return (
     <div className="rounded-xl bg-muted p-4">
@@ -181,9 +189,9 @@ function SplitOrderPanel({
         </div>
       ) : null}
 
-      {showTotals && quote?.checkout && !quote.checkout.canPlaceOrder && quote.checkout.belowMinOrderMessage ? (
+      {showTotals && quote?.checkout && !quote.checkout.canPlaceOrder && minOrderBlocked ? (
         <p className="mt-2 text-xs text-destructive" role="alert">
-          {t('cannotPlace', { message: quote.checkout.belowMinOrderMessage })}
+          {t('cannotPlace', { message: minOrderBlocked })}
         </p>
       ) : null}
       {showEditOrderButton ? (

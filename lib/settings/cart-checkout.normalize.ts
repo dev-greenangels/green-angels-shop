@@ -148,6 +148,20 @@ export function normalizeCartCheckoutSettings(
     belowMinPackagingFee: Math.max(0, Number(base.belowMinPackagingFee) || 0),
     minOrderAmount:
       base.minOrderAmount != null && base.minOrderAmount > 0 ? base.minOrderAmount : null,
+    belowMinOrderBehavior:
+      base.belowMinOrderBehavior === 'add_packaging_fee' ? 'add_packaging_fee' : 'reject',
+    wholesalerBelowMinPackagingFee: Math.max(
+      0,
+      Number(base.wholesalerBelowMinPackagingFee) || 0,
+    ),
+    wholesalerMinOrderAmount:
+      base.wholesalerMinOrderAmount != null && base.wholesalerMinOrderAmount > 0
+        ? base.wholesalerMinOrderAmount
+        : null,
+    wholesalerBelowMinOrderBehavior:
+      base.wholesalerBelowMinOrderBehavior === 'add_packaging_fee'
+        ? 'add_packaging_fee'
+        : 'reject',
     enabledDeliveryMethods: normalizeMethodList<CheckoutDeliveryMethodSlug>(
       Array.isArray(base.enabledDeliveryMethods)
         ? base.enabledDeliveryMethods.map((m) =>
@@ -176,6 +190,38 @@ export function normalizeCartCheckoutSettings(
           Number.isFinite(divisor) && divisor > 0
             ? divisor
             : DEFAULT_CART_CHECKOUT_SETTINGS.cartWeight.volumetricDivisor,
+      }
+    })(),
+    cartSize: (() => {
+      const cs = base.cartSize ?? DEFAULT_CART_CHECKOUT_SETTINGS.cartSize
+      const allowedSet = new Set(CHECKOUT_DELIVERY_METHODS)
+      const fallback = DEFAULT_CART_CHECKOUT_SETTINGS.cartSize.limits.map((row) => ({ ...row }))
+      const limits = Array.isArray(cs.limits)
+        ? cs.limits
+            .map((row) => {
+              if (!row || typeof row !== 'object') return null
+              if (
+                typeof row.method !== 'string' ||
+                !allowedSet.has(row.method as CheckoutDeliveryMethodSlug)
+              ) {
+                return null
+              }
+              const maxLongestSideCm = Math.max(0, Number(row.maxLongestSideCm) || 0)
+              const maxSideSumCm = Math.max(0, Number(row.maxSideSumCm) || 0)
+              const maxGirthCm = Math.max(0, Number(row.maxGirthCm) || 0)
+              if (maxLongestSideCm <= 0 && maxSideSumCm <= 0 && maxGirthCm <= 0) return null
+              return {
+                method: row.method as CheckoutDeliveryMethodSlug,
+                maxLongestSideCm,
+                maxSideSumCm,
+                maxGirthCm,
+              }
+            })
+            .filter((row): row is NonNullable<typeof row> => Boolean(row))
+        : []
+      return {
+        enabled: cs.enabled === true,
+        limits: limits.length ? limits : fallback,
       }
     })(),
     codFeeAmount: Math.max(0, Number(base.codFeeAmount) || 0),

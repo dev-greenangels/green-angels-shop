@@ -177,3 +177,12 @@ export function getCheckoutRecipientPhoneRaw(
   }
   return values.phone.trim()
 }
+
+/** Shop origin including locale prefix (`localePrefix: always`). Used for PSP return URLs. */
+export function shopPublicBaseUrl(locale: string): string | undefined {
+  if (typeof window === 'undefined') return undefined
+  const origin = window.location.origin.replace(/\/$/, '')
+  const loc = locale.trim()
+  if (!loc) return origin
+  return `${origin}/${loc}`
+}

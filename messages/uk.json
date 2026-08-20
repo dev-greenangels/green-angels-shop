@@ -513,7 +513,13 @@
     "grandTotal": "Загальна сума",
     "inCart": "У кошику",
     "placeOrder": "Оформити замовлення",
-    "placeOrderWithObligation": "Замовляю з обовʼязком оплати"
+    "placeOrderWithObligation": "Замовляю з обовʼязком оплати",
+    "minOrder": {
+      "hintReject": "Мінімальна сума замовлення — {amount}. Менші замовлення не оформлюються.",
+      "hintFee": "Мінімальна сума замовлення — {amount}. Якщо менше — доплата за пакування {fee}.",
+      "blocked": "Сума товарів менша за мінімум {amount}. Додайте товари, щоб оформити замовлення.",
+      "feeApplied": "Сума менша за {amount}: додано доплату за пакування {fee}."
+    }
   },
   "recentlyViewed": {
     "eyebrow": "Ваша історія",
@@ -729,7 +735,10 @@
     },
     "packetaPickupPointLabel": "Видачне місце Packeta",
     "packetaPickupPointUnavailable": "Вибір видачного місця тимчасово недоступний",
-    "packetaPickupPointHint": "Функція вибору видачного місця Packeta ще налаштовується. Зверніться до підтримки для оформлення цим способом.",
+    "packetaPickupPointPlaceholder": "Місто або PSC (мін. 2 символи)",
+    "packetaPickupPointHint": "Введіть місто або поштовий індекс — оберіть пункт зі списку.",
+    "packetaPickupPointSearching": "Шукаємо пункти Packeta…",
+    "packetaPickupPointEmpty": "Нічого не знайдено. Спробуйте інше місто або PSC.",
     "changePickupPoint": "Змінити видачне місце",
     "deliveryCountry": "Країна доставки",
     "deliveryCountryPlaceholder": "Оберіть країну",
@@ -805,6 +814,8 @@
     "preferredShipDateCarrierHint": "Рослини передаються перевізнику в обрану дату.",
     "preferredShipDateSelect": "Оберіть дату",
     "preferredShipDateEmpty": "Немає доступних дат відправки",
+    "preferredShipDateRequired": "Оберіть дату відправки",
+    "preferredShipDateRequiredHint": "Обовʼязкове поле — оберіть дату в календарі.",
     "preferredShipDatePickup": "Дата готовності до самовивозу",
     "preferredShipDatePickupHint": "Оберіть день, коли заберете замовлення зі складу.",
     "preferredShipDatePickupSelect": "Оберіть дату",
@@ -848,7 +859,29 @@
     "deliveryEstimateAfterDispatch": "Орієнтовна доставка: 2–3 робочі дні після відправлення",
     "vatIdConfirmed": "IČ DPH підтверджено",
     "vatIdConfirmedWithZeroDph": "IČ DPH підтверджено. Застосовано 0% DPH (reverse charge).",
-    "vatZeroDphApplied": "Застосовано 0% ПДВ (reverse charge / перенесення податкового обовʼязку)."
+    "vatZeroDphApplied": "Застосовано 0% ПДВ (reverse charge / перенесення податкового обовʼязку).",
+    "stripe": {
+      "title": "Оплата карткою",
+      "subtitle": "Введіть дані картки. Платіж обробляє Stripe — ми не зберігаємо номер картки.",
+      "pay": "Сплатити {amount}",
+      "processing": "Обробляємо платіж…",
+      "loading": "Завантажуємо форму оплати…",
+      "error": "Не вдалося завершити оплату. Спробуйте ще раз.",
+      "splitProgress": "Оплата {current} з {total}",
+      "secureHint": "Безпечна оплата через Stripe"
+    },
+    "packetaPickupPointBranches": "Видачні місця",
+    "packetaPickupPointZbox": "Z-BOX",
+    "packetaCityLabel": "Місто або PSC",
+    "packetaCityPlaceholder": "Напр. Bratislava або 811 01",
+    "packetaCityHint": "Введіть місто або поштовий індекс (мін. 2 символи)",
+    "packetaCityEmpty": "Місто не знайдено. Спробуйте іншу назву або PSC.",
+    "packetaCitySearching": "Шукаємо міста…",
+    "packetaCityPointCount": "{count} пунктів",
+    "packetaPointLabel": "Видачне місце / Z-BOX",
+    "packetaPointPlaceholder": "Пошук за вулицею, назвою або PSC",
+    "packetaPointSelectCityFirst": "Спочатку оберіть місто",
+    "packetaPointSearchHint": "Оберіть пункт зі списку або уточніть пошук"
   },
   "product": {
     "newBadge": "Новинка",

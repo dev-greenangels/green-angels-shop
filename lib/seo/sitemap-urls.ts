@@ -39,9 +39,15 @@ export function collectSitemapPathnames(input: {
   categoryPaths: string[]
   productPaths: string[]
   blogPaths: string[]
+  /** When false, omit /wholesale from static paths */
+  wholesalePageEnabled?: boolean
 }): string[] {
+  const staticPaths =
+    input.wholesalePageEnabled === false
+      ? SITEMAP_STATIC_PATHS.filter((path) => path !== '/wholesale')
+      : SITEMAP_STATIC_PATHS
   return unique([
-    ...SITEMAP_STATIC_PATHS,
+    ...staticPaths,
     ...input.categoryPaths,
     ...input.productPaths,
     ...input.blogPaths,

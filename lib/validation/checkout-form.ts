@@ -126,6 +126,8 @@ export type CheckoutValidationOptions = {
   deliveryPhonePolicy?: PhonePolicy
   /** Login/identity phone policy for checkout contact phone. */
   authPhonePolicy?: PhonePolicy
+  /** Dispatch calendar enabled — preferredShipDate required on shipping step */
+  requirePreferredShipDate?: boolean
 }
 
 function resolveDeliveryPhonePolicy(options?: CheckoutValidationOptions): PhonePolicy {
@@ -421,6 +423,10 @@ export function isShippingStepValid(
     identification &&
     !isGoogleCheckoutProfileComplete(values, identification, { marketRegion: region })
   ) {
+    return false
+  }
+
+  if (options?.requirePreferredShipDate && !values.preferredShipDate.trim()) {
     return false
   }
 

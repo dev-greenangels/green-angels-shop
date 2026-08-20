@@ -1,8 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { Loader2, RefreshCw, Save } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Loader2, RefreshCw } from 'lucide-react'
 import { toast } from '@/lib/toast'
+
+import { FlexiQueueCard } from '@/components/backstage/flexi-queue-card'
+import { FormSaveBar } from '@/components/backstage/form-save-bar'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -80,6 +83,7 @@ const EMPTY: FlexiPublicSettings = {
   deliveryMethodCodes: { ...DEFAULT_DELIVERY_METHOD_CODES },
   defaultCategoryId: '',
   stromRootCode: 'STR_CEN',
+  stromShopRootCode: '',
   syncCategoriesFromStrom: true,
   sizeAttributeId: '',
   webhookUrl: '',
@@ -99,7 +103,7 @@ const EMPTY: FlexiPublicSettings = {
 }
 
 function applyLoadedFlexiSettings(next: FlexiPublicSettings): FlexiPublicSettings {
-  return {
+  const loaded = {
     ...EMPTY,
     ...next,
     fullSyncSchedule: { ...DEFAULT_SCHEDULE, ...next.fullSyncSchedule },
@@ -108,7 +112,47 @@ function applyLoadedFlexiSettings(next: FlexiPublicSettings): FlexiPublicSetting
       ...DEFAULT_DELIVERY_METHOD_CODES,
       ...next.deliveryMethodCodes,
     },
+    stromShopRootCode: next.stromShopRootCode ?? '',
   }
+  const tree = (loaded.stromRootCode || 'STR_CEN').trim()
+  if (!loaded.stromShopRootCode.trim() && tree && tree.toUpperCase() !== 'STR_CEN' && !tree.toUpperCase().startsWith('STR_')) {
+    return { ...loaded, stromRootCode: 'STR_CEN', stromShopRootCode: tree }
+  }
+  return loaded
+}
+
+function editableFlexiSnapshot(
+  settings: FlexiPublicSettings,
+  username: string,
+  password: string,
+  webhookSecKey: string,
+) {
+  return JSON.stringify({
+    enabled: settings.enabled,
+    baseUrl: settings.baseUrl,
+    companyId: settings.companyId,
+    defaultStockCode: settings.defaultStockCode,
+    orderDocTypeCode: settings.orderDocTypeCode,
+    centerCode: settings.centerCode,
+    orderUserStatus: settings.orderUserStatus,
+    issuedInvoiceTypeCode: settings.issuedInvoiceTypeCode,
+    shippingCenikKod: settings.shippingCenikKod,
+    boxesCenikKod: settings.boxesCenikKod,
+    codFeeCenikKod: settings.codFeeCenikKod,
+    deliveryMethodCodes: settings.deliveryMethodCodes,
+    defaultCategoryId: settings.defaultCategoryId,
+    stromRootCode: settings.stromRootCode,
+    stromShopRootCode: settings.stromShopRootCode,
+    syncCategoriesFromStrom: settings.syncCategoriesFromStrom,
+    sizeAttributeId: settings.sizeAttributeId,
+    webhookUrl: settings.webhookUrl,
+    documentSend: settings.documentSend,
+    backupPollEveryHours: settings.backupPollEveryHours,
+    fullSyncSchedule: settings.fullSyncSchedule,
+    username,
+    password,
+    webhookSecKey,
+  })
 }
 
 export function FlexiSettingsForm() {
@@ -120,15 +164,18 @@ export function FlexiSettingsForm() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
+  const [baseline, setBaseline] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const next = await fetchFlexiSettings()
-      setSettings(applyLoadedFlexiSettings(next))
+      const applied = applyLoadedFlexiSettings(next)
+      setSettings(applied)
       setUsername('')
       setPassword('')
       setWebhookSecKey('')
+      setBaseline(editableFlexiSnapshot(applied, '', '', ''))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося завантажити Flexi')
     } finally {
@@ -146,6 +193,11 @@ export function FlexiSettingsForm() {
       fullSyncSchedule: { ...s.fullSyncSchedule, ...patch },
     }))
   }
+
+  const isDirty = useMemo(
+    () => editableFlexiSnapshot(settings, username, password, webhookSecKey) !== baseline,
+    [settings, username, password, webhookSecKey, baseline],
+  )
 
   const save = async () => {
     setSaving(true)
@@ -165,6 +217,7 @@ export function FlexiSettingsForm() {
         deliveryMethodCodes: settings.deliveryMethodCodes,
         defaultCategoryId: settings.defaultCategoryId,
         stromRootCode: settings.stromRootCode,
+        stromShopRootCode: settings.stromShopRootCode,
         syncCategoriesFromStrom: settings.syncCategoriesFromStrom,
         sizeAttributeId: settings.sizeAttributeId,
         webhookUrl: settings.webhookUrl,
@@ -175,9 +228,12 @@ export function FlexiSettingsForm() {
         ...(password ? { password } : {}),
         ...(webhookSecKey ? { webhookSecKey } : {}),
       })
-      setSettings(applyLoadedFlexiSettings(next))
+      const applied = applyLoadedFlexiSettings(next)
+      setSettings(applied)
       setPassword('')
       setWebhookSecKey('')
+      setUsername('')
+      setBaseline(editableFlexiSnapshot(applied, '', '', ''))
       toast.success('Налаштування ABRA Flexi збережено')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Помилка збереження')
@@ -222,8 +278,8 @@ export function FlexiSettingsForm() {
         <CardHeader>
           <CardTitle>ABRA Flexi</CardTitle>
           <CardDescription>
-            Склад, ціни й замовлення для SK-деплою. Soft-degrade: вимкніть для UA.
-            Основний sync — webhook; poll Changes — резерв; повний cenik — за розкладом або кнопкою.
+            Склад, ціни й замовлення для SK. Збереження — кнопка внизу. Автооновлення складається з
+            трьох різних каналів: webhook (живі зміни), підстраховка журналу, рідкий повний прайс.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -493,13 +549,29 @@ export function FlexiSettingsForm() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="flexi-strom-root">Код кореня Strom</Label>
+              <Label htmlFor="flexi-strom-root">Код дерева Strom (Tree in price list)</Label>
               <Input
                 id="flexi-strom-root"
                 value={settings.stromRootCode}
                 onChange={(e) => setSettings((s) => ({ ...s, stromRootCode: e.target.value }))}
                 placeholder="STR_CEN"
               />
+              <p className="text-xs text-muted-foreground">
+                Код дерева ABRA, зазвичай STR_CEN. Не ставте сюди папку Products.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="flexi-strom-shop">Папка каталогу на сайті</Label>
+              <Input
+                id="flexi-strom-shop"
+                value={settings.stromShopRootCode}
+                onChange={(e) => setSettings((s) => ({ ...s, stromShopRootCode: e.target.value }))}
+                placeholder="Products"
+              />
+              <p className="text-xs text-muted-foreground">
+                Код вузла всередині дерева (Products). На сайт піде лише ця гілка; Products стане
+                коренем каталогу. Materials і Non-added items ігноруються.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="flexi-size-attr">Size / Container attribute UUID (опційно)</Label>
@@ -531,10 +603,11 @@ export function FlexiSettingsForm() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Webhook (основний sync)</CardTitle>
+          <CardTitle>Webhook — основний live-sync</CardTitle>
           <CardDescription>
-            Hooks не витрачають денний ліміт REST. Відповідь Nest — 2xx порожнє тіло &lt;15 с, робота в
-            черзі. Вимкнення webhook ≠ вимкнення ERP sync: Changes API poll лишається.
+            Flexi сам надсилає зміни (ціна, залишок, дерево, замовлення). Це не те саме, що розклад
+            прайсу і не те саме, що підстраховка журналу нижче. Вимкнути webhook ≠ зупинити poll /
+            експорт замовлень / checkout.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -558,14 +631,14 @@ export function FlexiSettingsForm() {
               <span className="text-muted-foreground">Статус реєстрації: </span>
               <span className="font-medium">
                 {settings.webhookRegistrationStatus === 'REGISTERED'
-                  ? 'Registered'
+                  ? 'Зареєстровано'
                   : settings.webhookRegistrationStatus === 'DISABLED'
-                    ? 'Disabled'
+                    ? 'Вимкнено'
                     : settings.webhookRegistrationStatus === 'ERROR'
-                      ? 'Error'
+                      ? 'Помилка'
                       : settings.webhookRegistrationStatus === 'UNKNOWN'
-                        ? 'Unknown'
-                        : 'Not registered'}
+                        ? 'Невідомо'
+                        : 'Не зареєстровано'}
               </span>
             </p>
             <p>
@@ -579,7 +652,7 @@ export function FlexiSettingsForm() {
               </p>
             ) : null}
             <p>
-              <span className="text-muted-foreground">Poll cursor (globalVersion / start): </span>
+              <span className="text-muted-foreground">Закладка журналу (курсор): </span>
               {settings.globalVersion}
             </p>
             {settings.webhookLastRegisterAt ? (
@@ -618,23 +691,6 @@ export function FlexiSettingsForm() {
                 placeholder="новий ключ або порожньо"
                 autoComplete="new-password"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="flexi-backup-poll">Backup poll Changes (годин)</Label>
-              <Input
-                id="flexi-backup-poll"
-                type="number"
-                min={0}
-                max={168}
-                value={settings.backupPollEveryHours}
-                onChange={(e) =>
-                  setSettings((s) => ({
-                    ...s,
-                    backupPollEveryHours: Math.max(0, Number(e.target.value) || 0),
-                  }))
-                }
-              />
-              <p className="text-xs text-muted-foreground">0 = вимкнено. Рекомендовано 6.</p>
             </div>
           </div>
 
@@ -690,9 +746,42 @@ export function FlexiSettingsForm() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Розклад повного оновлення цін і залишків</CardTitle>
+          <CardTitle>Підстраховка журналу змін (не розклад прайсу)</CardTitle>
           <CardDescription>
-            Автоматичний рідкий прохід прайсу. Те саме, що кнопка «Оновити ціни й залишки» нижче.
+            Раз на N годин Nest питає Flexi «що нового з закладки». Це запас, якщо webhook не
+            дійшов. Не проходить увесь прайс і не замінює кнопку «Оновити каталог». 0 = вимкнено.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2 max-w-xs">
+            <Label htmlFor="flexi-backup-poll">Інтервал, годин</Label>
+            <Input
+              id="flexi-backup-poll"
+              type="number"
+              min={0}
+              max={168}
+              value={settings.backupPollEveryHours}
+              onChange={(e) =>
+                setSettings((s) => ({
+                  ...s,
+                  backupPollEveryHours: Math.max(0, Number(e.target.value) || 0),
+                }))
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              Якщо webhook живий — ставте 0. Інакше 6–24. Кнопка «Підтягнути журнал» нижче робить
+              те саме вручну.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Розклад повного проходу прайсу</CardTitle>
+          <CardDescription>
+            Окремий важкий job: сторінка за сторінкою весь cenik, лише вже існуючі SKU на сайті.
+            Не журнал змін і не імпорт дерева. Те саме, що кнопка «Пройти весь прайс».
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -792,7 +881,7 @@ export function FlexiSettingsForm() {
         <CardContent className="space-y-4">
           <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground space-y-1">
             <p>
-              Запитів до Flexi сьогодні: {settings.apiCallsToday}
+              Запитів до Flexi сьогодні (доба UTC): {settings.apiCallsToday}
               {settings.apiCallsWarnThreshold
                 ? ` (попередження від ${settings.apiCallsWarnThreshold})`
                 : ''}
@@ -804,9 +893,9 @@ export function FlexiSettingsForm() {
               </p>
             ) : null}
             <p>
-              Останнє оновлення змін:{' '}
+              Останній журнал / повний прайс:{' '}
               {formatDateTimeOrDash(settings.lastSyncAt, locale, 'datetimeSeconds')} (
-              {settings.lastSyncStatus ?? 'never'})
+              {settings.lastSyncStatus ?? 'never'}) — одне поле на обидві дії; дивіться текст нижче.
             </p>
             {settings.lastSyncMessage ? <p>{settings.lastSyncMessage}</p> : null}
             <p>
@@ -824,10 +913,6 @@ export function FlexiSettingsForm() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button type="button" onClick={() => void save()} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Зберегти налаштування
-            </Button>
             <Button
               type="button"
               variant="outline"
@@ -842,10 +927,11 @@ export function FlexiSettingsForm() {
           <div className="space-y-3">
             <div className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 space-y-1">
-                <p className="font-medium">Підтягнути останні зміни</p>
+                <p className="font-medium">Підтягнути журнал змін</p>
                 <p className="text-sm text-muted-foreground">
-                  Резерв, якщо webhook не спрацював: оновлює ціни, залишки й статуси вже відомих
-                  товарів. Нові категорії/товари не створює.
+                  Changes API з закладки: нові версії cenik, складу, замовлень. Якщо в журналі є
+                  strom і увімкнено «категорії з дерева» — може перебудувати дерево. Якщо webhook
+                  працює — рідко потрібна.
                 </p>
               </div>
               <Button
@@ -865,16 +951,16 @@ export function FlexiSettingsForm() {
                 ) : (
                   <RefreshCw className="h-4 w-4" />
                 )}
-                Підтягнути зміни
+                Підтягнути журнал
               </Button>
             </div>
 
             <div className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 space-y-1">
-                <p className="font-medium">Оновити каталог з дерева Flexi</p>
+                <p className="font-medium">Оновити каталог з дерева</p>
                 <p className="text-sm text-muted-foreground">
-                  Будує/оновлює категорії й товари з дерева (Strom): гілка → категорія, лист →
-                  товар, розміри (SKU) → варіанти. Для першого імпорту або після змін у дереві.
+                  Імпорт структури: папка Products → корінь сайту, гілки → категорії, листки →
+                  товари, SKU → варіанти. Для першого завантаження і після змін дерева в ABRA.
                 </p>
               </div>
               <Button
@@ -896,10 +982,10 @@ export function FlexiSettingsForm() {
 
             <div className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 space-y-1">
-                <p className="font-medium">Повне оновлення цін і залишків</p>
+                <p className="font-medium">Пройти весь прайс</p>
                 <p className="text-sm text-muted-foreground">
-                  Проходить увесь прайс Flexi і оновлює ціну/залишок у вже існуючих варіантах за
-                  SKU. Довго й витрачає ліміт API — рідко або за розкладом вище.
+                  Сторінка за сторінкою весь cenik, лише вже існуючі SKU. Не імпорт дерева. Довго й
+                  витрачає ліміт — рідко або за розкладом вище.
                 </p>
               </div>
               <Button
@@ -915,12 +1001,15 @@ export function FlexiSettingsForm() {
                 }
               >
                 {busy === 'full' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Оновити ціни й залишки
+                Пройти весь прайс
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
+      <FlexiQueueCard />
+
+      <FormSaveBar onSave={() => void save()} saving={saving} isDirty={isDirty} sticky />
     </div>
   )
 }

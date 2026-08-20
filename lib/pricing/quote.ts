@@ -23,6 +23,8 @@ export type CheckoutTotalsBreakdown = {
   codFeeAmount?: number
   grandTotal: number
   minOrderAmount: number | null
+  belowMinOrderBehavior?: 'reject' | 'add_packaging_fee'
+  belowMinPackagingFee?: number
   belowMinOrder: boolean
   canPlaceOrder: boolean
   belowMinOrderMessage: string | null
@@ -61,6 +63,15 @@ export type PricingQuote = {
   taxCountryCode?: string | null
   taxRatePercent?: number
   checkout?: CheckoutTotalsBreakdown
+  /** Cart weight (kg) when weight calculation is enabled. */
+  cartWeightKg?: number
+  /** Cart size envelope for carrier / Packeta point filtering. */
+  cartSizeEnvelope?: {
+    maxLongestSideCm: number
+    maxSideSumCm: number
+    maxGirthCm: number
+    hasMeasuredItem: boolean
+  }
 }
 
 export type PricingGiftLine = {

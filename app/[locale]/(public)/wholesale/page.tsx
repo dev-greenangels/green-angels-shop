@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { Navigation } from '@/components/navigation'
@@ -14,7 +15,7 @@ import { buildWholesaleMetadata } from '@/lib/wholesale/metadata'
 import {
   fetchPublicSiteSettings,
   getMarketSettings,
-  getWholesalePageSettings,
+  getResolvedWholesalePageSettings,
 } from '@/lib/settings/fetch'
 import { cn } from '@/lib/utils'
 
@@ -32,7 +33,8 @@ export default async function WholesalePage({ params }: PageProps) {
   setRequestLocale(locale)
   const tNav = await getTranslations('nav')
   const fetched = await fetchPublicSiteSettings()
-  const page = getWholesalePageSettings(fetched)
+  const page = getResolvedWholesalePageSettings(fetched, locale)
+  if (!page.pageEnabled) notFound()
   const market = getMarketSettings(fetched)
   const origin = await resolvePublicOriginFromRequest()
   const appLocale = isAppLocale(locale) ? locale : 'uk'

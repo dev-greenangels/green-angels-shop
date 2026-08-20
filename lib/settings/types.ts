@@ -221,6 +221,9 @@ export type CartCheckoutSettings = {
   minOrderAmount: number | null
   belowMinOrderBehavior: BelowMinOrderBehavior
   belowMinPackagingFee: number
+  wholesalerMinOrderAmount: number | null
+  wholesalerBelowMinOrderBehavior: BelowMinOrderBehavior
+  wholesalerBelowMinPackagingFee: number
   enabledDeliveryMethods: import('@/lib/checkout/methods').CheckoutDeliveryMethodSlug[]
   enabledPaymentMethods: import('@/lib/checkout/methods').CheckoutPaymentMethodSlug[]
   deliveryWeightRules: Array<{
@@ -238,6 +241,16 @@ export type CartCheckoutSettings = {
     useFactKg: boolean
     useVolumetricKg: boolean
     volumetricDivisor: number
+  }
+  /** Макс. довжина / сума сторін / girth по перевізнику (см; 0 = не перевіряти) */
+  cartSize: {
+    enabled: boolean
+    limits: Array<{
+      method: import('@/lib/checkout/methods').CheckoutDeliveryMethodSlug
+      maxLongestSideCm: number
+      maxSideSumCm: number
+      maxGirthCm: number
+    }>
   }
   codFeeAmount: number
   codFeeMode: 'fixed' | 'percent'

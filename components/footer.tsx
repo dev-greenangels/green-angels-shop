@@ -14,6 +14,7 @@ import {
   getLocalizationSettings,
   getMarketSettings,
   getStoreSettings,
+  getWholesalePageSettings,
   isStoreContactUnavailable,
 } from '@/lib/settings/fetch'
 import { hasStoreContactInfo } from '@/lib/settings/store-helpers'
@@ -36,6 +37,7 @@ export async function Footer() {
   const store = getStoreSettings(siteSettings)
   const localization = getLocalizationSettings(siteSettings)
   const market = getMarketSettings(siteSettings)
+  const wholesalePage = getWholesalePageSettings(siteSettings)
   const branding = getMarketBranding(market.region)
   const isSkMarket = market.region === 'sk'
   const storeUnavailable = isStoreContactUnavailable(siteSettings)
@@ -97,9 +99,11 @@ export async function Footer() {
               <Link href="/about" className={linkClassName}>
                 {t('about')}
               </Link>
-              <Link href="/wholesale" className={linkClassName}>
-                {t('wholesale')}
-              </Link>
+              {wholesalePage.pageEnabled ? (
+                <Link href="/wholesale" className={linkClassName}>
+                  {t('wholesale')}
+                </Link>
+              ) : null}
               <Link href="/contacts" className={linkClassName}>
                 {t('contacts')}
               </Link>

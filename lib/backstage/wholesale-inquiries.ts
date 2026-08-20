@@ -64,5 +64,18 @@ export async function updateBackstageWholesaleInquiryStatus(
     body: JSON.stringify({ status }),
   })
   if (!res.ok) throw new Error(await parseError(res))
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ga:wholesale-new-count-refresh'))
+  }
   return res.json()
+}
+
+export async function fetchWholesaleInquiriesNewCount(): Promise<number> {
+  const res = await fetch('/api/backstage/wholesale-inquiries/new-count', {
+    credentials: 'include',
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  const data = (await res.json()) as { count?: unknown }
+  return typeof data.count === 'number' && data.count >= 0 ? data.count : 0
 }

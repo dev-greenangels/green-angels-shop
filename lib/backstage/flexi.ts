@@ -35,6 +35,7 @@ export type FlexiPublicSettings = {
   deliveryMethodCodes: Record<string, string>
   defaultCategoryId: string
   stromRootCode: string
+  stromShopRootCode: string
   syncCategoriesFromStrom: boolean
   sizeAttributeId: string
   webhookUrl: string
@@ -82,6 +83,7 @@ export type FlexiSettingsPatch = Partial<{
   deliveryMethodCodes: Record<string, string>
   defaultCategoryId: string
   stromRootCode: string
+  stromShopRootCode: string
   syncCategoriesFromStrom: boolean
   sizeAttributeId: string
   webhookSecKey: string
@@ -231,6 +233,57 @@ export async function runFlexiStromSync(): Promise<FlexiStromSyncResult> {
 
 export async function runFlexiImport(): Promise<FlexiImportResult> {
   const res = await fetch('/api/backstage/flexi/import-new-products/run', {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export type FlexiQueueSnapshot = {
+  events: Record<string, number>
+  failed: Array<{
+    id: string
+    evidence: string
+    objectId: string
+    changeVersion: number
+    attempts: number
+    lastError: string | null
+    updatedAt: string
+  }>
+  jobs: Record<string, number>
+  cursor: number
+}
+
+export async function fetchFlexiQueue(): Promise<FlexiQueueSnapshot> {
+  const res = await fetch('/api/backstage/flexi/queue', {
+    credentials: 'include',
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function retryFlexiFailedQueue(): Promise<{ ok: boolean; count: number; message: string }> {
+  const res = await fetch('/api/backstage/flexi/queue/retry-failed', {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function skipFlexiFailedQueue(): Promise<{ ok: boolean; count: number; message: string }> {
+  const res = await fetch('/api/backstage/flexi/queue/skip-failed', {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function drainFlexiQueue(): Promise<{ ok: boolean; removed: number; message: string }> {
+  const res = await fetch('/api/backstage/flexi/queue/drain', {
     method: 'POST',
     credentials: 'include',
   })

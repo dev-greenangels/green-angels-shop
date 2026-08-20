@@ -14,7 +14,7 @@ import {
   applyLocalizationOverlay,
 } from '@/lib/country-sites/currency'
 import { isCountrySiteCode, GA_COUNTRY_HEADER } from '@/lib/country-sites/types'
-import { fetchPublicSiteSettings, getCartCheckoutSettings, getCatalogPageSettings, getLocalizationSettings, getMarketSettings, getNavigationSettings, getStoreSettings } from '@/lib/settings/fetch'
+import { fetchPublicSiteSettings, getCartCheckoutSettings, getCatalogPageSettings, getLocalizationSettings, getMarketSettings, getNavigationSettings, getStoreSettings, getWholesalePageSettings } from '@/lib/settings/fetch'
 import { resolvePublicOrigin } from '@/lib/seo/public-origin'
 import { resolveSeoRequestContext } from '@/lib/seo/request-context'
 import { isIndexingAllowed, previewRobotsDirective } from '@/lib/seo/indexing-policy'
@@ -119,7 +119,16 @@ export default async function RootLayout({
   const storeSettings = getStoreSettings(siteSettings)
   const catalogSettings = getCatalogPageSettings(siteSettings)
   const localizationSettings = getLocalizationSettings(siteSettings)
-  const navigationSettings = getNavigationSettings(siteSettings)
+  const wholesalePage = getWholesalePageSettings(siteSettings)
+  const navigationSettingsRaw = getNavigationSettings(siteSettings)
+  const navigationSettings = wholesalePage.pageEnabled
+    ? navigationSettingsRaw
+    : {
+        ...navigationSettingsRaw,
+        items: navigationSettingsRaw.items.map((item) =>
+          item.id === 'wholesale' ? { ...item, visible: false } : item,
+        ),
+      }
   const marketSettings = getMarketSettings(siteSettings)
   const cartCheckoutSettings = getCartCheckoutSettings(siteSettings)
   const analyticsAllowed = process.env.NODE_ENV === 'production' && cookieConsent?.analytics === true

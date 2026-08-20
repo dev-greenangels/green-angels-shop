@@ -16,6 +16,7 @@ type BackendSessionUser = {
   firstName?: string | null
   lastName?: string | null
   role?: 'customer' | 'admin'
+  accountType?: 'retail' | 'wholesale'
 }
 
 function toPublicSession(user: BackendSessionUser): PublicSession | null {
@@ -27,6 +28,7 @@ function toPublicSession(user: BackendSessionUser): PublicSession | null {
     id: user.id,
     email: user.email?.trim() || null,
     role,
+    accountType: user.accountType === 'wholesale' ? 'wholesale' : 'retail',
     firstName: user.firstName ?? null,
     lastName: user.lastName ?? null,
     phone: user.phone ?? null,

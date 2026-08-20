@@ -15,6 +15,7 @@ import {
   isPlantFullyUnavailable,
 } from '@/lib/plant-variants'
 import type { Plant, ProductVariant } from '@/lib/types'
+import { MinOrderPolicyBanner } from '@/components/cart/min-order-policy-banner'
 import { ProductVariantsTable } from '@/components/product/product-variants-table'
 import {
   Dialog,
@@ -128,14 +129,17 @@ export function ProductCardAddToCartDialog({
               {t('variantsLoadError')}
             </p>
           ) : (
-            <ProductVariantsTable
-              embedded
-              variants={variants}
-              plantId={displayPlant.id}
-              plantName={displayPlant.name}
-              fullyOutOfStock={fullyUnavailable}
-              onBuy={handleBuy}
-            />
+            <div className="space-y-3">
+              <MinOrderPolicyBanner compact />
+              <ProductVariantsTable
+                embedded
+                variants={variants}
+                plantId={displayPlant.id}
+                plantName={displayPlant.name}
+                fullyOutOfStock={fullyUnavailable}
+                onBuy={handleBuy}
+              />
+            </div>
           )}
         </div>
       </DialogContent>

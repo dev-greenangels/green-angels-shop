@@ -514,7 +514,13 @@
     "grandTotal": "Végösszeg",
     "inCart": "Kosárban",
     "placeOrder": "Rendelés leadása",
-    "placeOrderWithObligation": "Megrendelés fizetési kötelezettséggel"
+    "placeOrderWithObligation": "Megrendelés fizetési kötelezettséggel",
+    "minOrder": {
+      "hintReject": "A minimális rendelési összeg {amount}. Ennél kisebb rendelés nem adható le.",
+      "hintFee": "A minimális rendelési összeg {amount}. Ennél kisebb összegnél {fee} csomagolási felár kerül felszámításra.",
+      "blocked": "A termékek összege kisebb a minimumnál ({amount}). Adjon hozzá további tételeket a véglegesítéshez.",
+      "feeApplied": "Az összeg kisebb, mint {amount}: {fee} csomagolási felár hozzáadva."
+    }
   },
   "recentlyViewed": {
     "eyebrow": "Előzményei",
@@ -730,7 +736,10 @@
     },
     "packetaPickupPointLabel": "Packeta átvételi pont",
     "packetaPickupPointUnavailable": "Az átvételi pont kiválasztása átmenetileg nem elérhető",
-    "packetaPickupPointHint": "A Packeta átvételi pont kiválasztása még beállítás alatt van. Lépjen kapcsolatba az ügyfélszolgálattal ezzel a móddal való rendeléshez.",
+    "packetaPickupPointPlaceholder": "Város vagy irányítószám (min. 2 karakter)",
+    "packetaPickupPointHint": "Adja meg a várost vagy az irányítószámot, majd válasszon a listából.",
+    "packetaPickupPointSearching": "Packeta pontok keresése…",
+    "packetaPickupPointEmpty": "Nincs találat. Próbáljon másik várost vagy irányítószámot.",
     "changePickupPoint": "Átvételi pont módosítása",
     "deliveryCountry": "Szállítási ország",
     "deliveryCountryPlaceholder": "Válasszon országot",
@@ -806,6 +815,8 @@
     "preferredShipDateCarrierHint": "A növények a kiválasztott napon kerülnek átadásra a fuvarozónak.",
     "preferredShipDateSelect": "Válasszon dátumot",
     "preferredShipDateEmpty": "Nincs elérhető feladási dátum",
+    "preferredShipDateRequired": "Válasszon feladási dátumot",
+    "preferredShipDateRequiredHint": "Kötelező — válasszon dátumot a naptárban.",
     "preferredShipDatePickup": "Átvehetőség dátuma",
     "preferredShipDatePickupHint": "Válassza ki a napot, amikor átveszi a rendelést a kertészetből.",
     "preferredShipDatePickupSelect": "Válasszon dátumot",
@@ -849,7 +860,29 @@
     "deliveryEstimateAfterDispatch": "Becsült kézbesítés: 2–3 munkanap a feladás után",
     "vatIdConfirmed": "Adószám megerősítve",
     "vatIdConfirmedWithZeroDph": "Adószám megerősítve. 0% ÁFA alkalmazva (fordított adózás).",
-    "vatZeroDphApplied": "0% ÁFA alkalmazva (fordított adózás)."
+    "vatZeroDphApplied": "0% ÁFA alkalmazva (fordított adózás).",
+    "stripe": {
+      "title": "Bankkártyás fizetés",
+      "subtitle": "Adja meg a kártyaadatait. A Stripe dolgozza fel a fizetést — a kártyaszámot nem tároljuk.",
+      "pay": "Fizetés: {amount}",
+      "processing": "Fizetés feldolgozása…",
+      "loading": "Fizetési űrlap betöltése…",
+      "error": "A fizetést nem sikerült befejezni. Próbálja újra.",
+      "splitProgress": "{current}. / {total} fizetés",
+      "secureHint": "Biztonságos fizetés a Stripe-pal"
+    },
+    "packetaPickupPointBranches": "Átvételi pontok",
+    "packetaPickupPointZbox": "Z-BOX",
+    "packetaCityLabel": "Város vagy irányítószám",
+    "packetaCityPlaceholder": "pl. Bratislava vagy 811 01",
+    "packetaCityHint": "Írjon be várost vagy irányítószámot (min. 2 karakter)",
+    "packetaCityEmpty": "Nem található város. Próbáljon másik nevet vagy irányítószámot.",
+    "packetaCitySearching": "Városok keresése…",
+    "packetaCityPointCount": "{count} pont",
+    "packetaPointLabel": "Átvételi pont / Z-BOX",
+    "packetaPointPlaceholder": "Keresés utca, név vagy irányítószám alapján",
+    "packetaPointSelectCityFirst": "Először válasszon várost",
+    "packetaPointSearchHint": "Válasszon a listából vagy pontosítsa a keresést"
   },
   "product": {
     "newBadge": "Új",

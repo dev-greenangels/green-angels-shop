@@ -9,6 +9,10 @@ export type CreatedOrder = {
   createdAt: string
   confirmationToken: string
   paymentPageUrl?: string
+  /** Stripe Checkout Session client_secret (Payment Element). */
+  clientSecret?: string
+  /** Stripe publishable key when clientSecret is present. */
+  publishableKey?: string
 }
 
 export type CreateOrderOptions = {
@@ -72,4 +76,18 @@ export async function createOrders(
     )
   }
   return orders
+}
+
+export function checkoutSuccessSearch(
+  orders: Array<{ orderNumber: string; confirmationToken?: string }>,
+): string {
+  return orders
+    .map((order) => {
+      const parts = [`order=${encodeURIComponent(order.orderNumber)}`]
+      if (order.confirmationToken) {
+        parts.push(`confirmation=${encodeURIComponent(order.confirmationToken)}`)
+      }
+      return parts.join('&')
+    })
+    .join('&')
 }

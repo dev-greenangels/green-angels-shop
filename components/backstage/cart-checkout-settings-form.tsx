@@ -33,6 +33,12 @@ import {
   type CheckoutPaymentMethodSlug,
 } from '@/lib/checkout/methods'
 
+const DEFAULT_CART_SIZE_LIMITS: CartCheckoutSettings['cartSize']['limits'] = [
+  { method: 'packeta-box', maxLongestSideCm: 120, maxSideSumCm: 150, maxGirthCm: 0 },
+  { method: 'packeta-courier', maxLongestSideCm: 120, maxSideSumCm: 150, maxGirthCm: 0 },
+  { method: 'gls-courier', maxLongestSideCm: 200, maxSideSumCm: 0, maxGirthCm: 300 },
+]
+
 const ONLINE_CARD_PROVIDER_LABELS: Record<OnlineCardProvider, string> = {
   monopay: 'MonoPay (Plata by Mono)',
   stripe: 'Stripe',
@@ -492,6 +498,114 @@ export function CartCheckoutSettingsForm({
             </div>
           </div>
           <div className="space-y-2 sm:col-span-2">
+            <Label>Макс. габарити доставки (см)</Label>
+            <div className="flex flex-col gap-3 rounded-md border p-3">
+              <div className="flex items-center justify-between gap-4">
+                <Label htmlFor="cart-size-enabled">
+                  Увімкнути фільтр за макс. довжиною / сумою сторін / girth
+                </Label>
+                <Switch
+                  id="cart-size-enabled"
+                  checked={cart.cartSize?.enabled ?? false}
+                  onCheckedChange={(checked) =>
+                    patch({
+                      cartSize: {
+                        enabled: checked,
+                        limits: (cart.cartSize?.limits?.length
+                          ? cart.cartSize.limits
+                          : DEFAULT_CART_SIZE_LIMITS
+                        ).map((row) => ({ ...row })),
+                      },
+                    })
+                  }
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Packeta nadrozměrná: найдовша ≤120, сума сторін ≤150. GLS SK: довжина ≤200, girth
+                (L+2W+2H) ≤300. 0 = не перевіряти поле. Без L/W/H у варіантах методи не ріжуться.
+              </p>
+              {(cart.cartSize?.limits ?? []).map((row, index) => (
+                <div
+                  key={`${row.method}-${index}`}
+                  className="grid gap-2 rounded-md border border-dashed p-2 sm:grid-cols-4"
+                >
+                  <div className="space-y-1 sm:col-span-4">
+                    <Label className="text-xs text-muted-foreground">{row.method}</Label>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Макс. довжина</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={1}
+                      disabled={!cart.cartSize?.enabled}
+                      value={row.maxLongestSideCm}
+                      onChange={(e) => {
+                        const next = [...(cart.cartSize?.limits ?? [])]
+                        next[index] = {
+                          ...row,
+                          maxLongestSideCm: Math.max(0, Number(e.target.value) || 0),
+                        }
+                        patch({
+                          cartSize: {
+                            enabled: cart.cartSize?.enabled ?? false,
+                            limits: next,
+                          },
+                        })
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Макс. сума сторін</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={1}
+                      disabled={!cart.cartSize?.enabled}
+                      value={row.maxSideSumCm}
+                      onChange={(e) => {
+                        const next = [...(cart.cartSize?.limits ?? [])]
+                        next[index] = {
+                          ...row,
+                          maxSideSumCm: Math.max(0, Number(e.target.value) || 0),
+                        }
+                        patch({
+                          cartSize: {
+                            enabled: cart.cartSize?.enabled ?? false,
+                            limits: next,
+                          },
+                        })
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Макс. girth</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={1}
+                      disabled={!cart.cartSize?.enabled}
+                      value={row.maxGirthCm}
+                      onChange={(e) => {
+                        const next = [...(cart.cartSize?.limits ?? [])]
+                        next[index] = {
+                          ...row,
+                          maxGirthCm: Math.max(0, Number(e.target.value) || 0),
+                        }
+                        patch({
+                          cartSize: {
+                            enabled: cart.cartSize?.enabled ?? false,
+                            limits: next,
+                          },
+                        })
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
             <Label>Правила ваги → доставка (JSON)</Label>
             <Textarea
               rows={3}
@@ -638,11 +752,15 @@ export function CartCheckoutSettingsForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>Мінімальна сума замовлення</CardTitle>
+          <CardTitle>Мінімальна сума — роздріб</CardTitle>
+          <CardDescription>
+            Для гостей і клієнтів з роллю «Роздріб» (USER). Валюта деплою; порожньо = без
+            обмеження.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Мінімальна сума товарів (валюта деплою, порожньо = без обмеження)</Label>
+            <Label>Мінімальна сума товарів</Label>
             <Input
               type="number"
               min={0}
@@ -660,7 +778,9 @@ export function CartCheckoutSettingsForm({
             <Select
               value={cart.belowMinOrderBehavior}
               onValueChange={(value) =>
-                patch({ belowMinOrderBehavior: value as CartCheckoutSettings['belowMinOrderBehavior'] })
+                patch({
+                  belowMinOrderBehavior: value as CartCheckoutSettings['belowMinOrderBehavior'],
+                })
               }
             >
               <SelectTrigger>
@@ -681,6 +801,65 @@ export function CartCheckoutSettingsForm({
                 step={1}
                 value={cart.belowMinPackagingFee}
                 onChange={(e) => patch({ belowMinPackagingFee: Number(e.target.value) || 0 })}
+              />
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Мінімальна сума — гурт (WHOLESALER)</CardTitle>
+          <CardDescription>
+            Окремі умови для авторизованих клієнтів з роллю «Гурт». Незалежно від роздрібу.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Мінімальна сума товарів (гурт)</Label>
+            <Input
+              type="number"
+              min={0}
+              step={1}
+              value={cart.wholesalerMinOrderAmount ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value.trim()
+                patch({ wholesalerMinOrderAmount: raw ? Number(raw) : null })
+              }}
+              placeholder="Без обмеження"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Якщо сума менша за мінімум (гурт)</Label>
+            <Select
+              value={cart.wholesalerBelowMinOrderBehavior}
+              onValueChange={(value) =>
+                patch({
+                  wholesalerBelowMinOrderBehavior:
+                    value as CartCheckoutSettings['wholesalerBelowMinOrderBehavior'],
+                })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="reject">Заборонити оформлення</SelectItem>
+                <SelectItem value="add_packaging_fee">Додати суму пакування</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {cart.wholesalerBelowMinOrderBehavior === 'add_packaging_fee' ? (
+            <div className="space-y-2">
+              <Label>Додаткова сума пакування (гурт)</Label>
+              <Input
+                type="number"
+                min={0}
+                step={1}
+                value={cart.wholesalerBelowMinPackagingFee}
+                onChange={(e) =>
+                  patch({ wholesalerBelowMinPackagingFee: Number(e.target.value) || 0 })
+                }
               />
             </div>
           ) : null}

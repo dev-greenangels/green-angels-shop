@@ -36,6 +36,19 @@ export type PublicOrderConfirmation = {
   paymentMethod: string
   paymentStatus: string | null
   comment: string | null
+  buyerType?: string | null
+  taxRegime?: string | null
+  taxRatePercent?: number | null
+  vatCountryCode?: string | null
+  companyLegalName?: string | null
+  companyIco?: string | null
+  companyDic?: string | null
+  companyVatId?: string | null
+  companyStreet?: string | null
+  companyCity?: string | null
+  companyPostalCode?: string | null
+  deliveryPostalCode?: string | null
+  deliveryCountryCode?: string | null
   items: PublicOrderConfirmationItem[]
 }
 
@@ -70,6 +83,31 @@ export async function syncMonopayPayment(
     method: 'POST',
     cache: 'no-store',
     headers: { 'X-Monopay-Sync-Token': token },
+  })
+  if (!res.ok) return null
+  return (await res.json()) as {
+    status: string
+    paymentStatus: string | null
+    synced: boolean
+  }
+}
+
+/** BFF → Nest → Stripe Checkout Session retrieve; updates order when webhook lagged. */
+export async function syncStripePayment(
+  orderNumber: string,
+  confirmationToken?: string,
+): Promise<{ status: string; paymentStatus: string | null; synced: boolean } | null> {
+  const headers: Record<string, string> = {}
+  const token = confirmationToken?.trim() ?? ''
+  if (token) {
+    headers['X-Order-Confirmation-Token'] = token
+  }
+
+  const res = await fetch(`/api/payments/stripe/sync/${encodeURIComponent(orderNumber)}`, {
+    method: 'POST',
+    cache: 'no-store',
+    credentials: 'include',
+    headers,
   })
   if (!res.ok) return null
   return (await res.json()) as {

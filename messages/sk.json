@@ -514,7 +514,13 @@
     "grandTotal": "Celková suma",
     "inCart": "V košíku",
     "placeOrder": "Objednať",
-    "placeOrderWithObligation": "Objednávam s povinnosťou platby"
+    "placeOrderWithObligation": "Objednávam s povinnosťou platby",
+    "minOrder": {
+      "hintReject": "Minimálna suma objednávky je {amount}. Menšie objednávky nie je možné odoslať.",
+      "hintFee": "Minimálna suma objednávky je {amount}. Pri nižšej sume sa účtuje doplatok za balenie {fee}.",
+      "blocked": "Suma tovaru je nižšia ako minimum {amount}. Pridajte tovar, aby ste mohli dokončiť objednávku.",
+      "feeApplied": "Suma je nižšia ako {amount}: bol pridaný doplatok za balenie {fee}."
+    }
   },
   "recentlyViewed": {
     "eyebrow": "Vaša história",
@@ -724,7 +730,10 @@
     },
     "packetaPickupPointLabel": "Výdejné miesto Packeta",
     "packetaPickupPointUnavailable": "Výber výdejného miesta je momentálne nedostupný",
-    "packetaPickupPointHint": "Výber výdejného miesta Packeta sa ešte konfiguruje. Pre objednávku týmto spôsobom kontaktujte podporu.",
+    "packetaPickupPointPlaceholder": "Mesto alebo PSČ (min. 2 znaky)",
+    "packetaPickupPointHint": "Zadajte mesto alebo PSČ a vyberte miesto zo zoznamu.",
+    "packetaPickupPointSearching": "Hľadáme výdajné miesta Packeta…",
+    "packetaPickupPointEmpty": "Nič sa nenašlo. Skúste iné mesto alebo PSČ.",
     "changePickupPoint": "Zmeniť výdejné miesto",
     "deliveryCountry": "Krajina doručenia",
     "deliveryCountryPlaceholder": "Vyberte krajinu",
@@ -800,6 +809,8 @@
     "preferredShipDateCarrierHint": "Rastliny sa odovzdávajú dopravcovi vo vybraný deň.",
     "preferredShipDateSelect": "Vyberte dátum",
     "preferredShipDateEmpty": "Nie sú dostupné dátumy odoslania",
+    "preferredShipDateRequired": "Vyberte dátum odoslania",
+    "preferredShipDateRequiredHint": "Povinné pole — vyberte dátum v kalendári.",
     "preferredShipDatePickup": "Dátum pripravenosti na osobný odber",
     "preferredShipDatePickupHint": "Vyberte deň, kedy si vyzdvihnete objednávku zo skladu.",
     "preferredShipDatePickupSelect": "Vyberte dátum",
@@ -844,12 +855,34 @@
     "vatIdConfirmed": "IČ DPH potvrdené",
     "vatIdConfirmedWithZeroDph": "IČ DPH potvrdené. Aplikované 0% DPH (reverse charge).",
     "vatZeroDphApplied": "Aplikované 0% DPH (reverse charge).",
+    "stripe": {
+      "title": "Platba kartou",
+      "subtitle": "Zadajte údaje karty. Platbu spracúva Stripe — číslo karty neukladáme.",
+      "pay": "Zaplatiť {amount}",
+      "processing": "Spracúvame platbu…",
+      "loading": "Načítavame platobný formulár…",
+      "error": "Platbu sa nepodarilo dokončiť. Skúste to znova.",
+      "splitProgress": "Platba {current} z {total}",
+      "secureHint": "Bezpečná platba cez Stripe"
+    },
     "skGuestContactHintBoth": "Zadajte e-mail, telefón a meno a pokračujte ako hosť.",
     "skGuestContactHintEmail": "Zadajte e-mail a meno a pokračujte ako hosť.",
     "skGuestContactHintPhone": "Zadajte telefón a meno a pokračujte ako hosť.",
     "skGuestContactHintName": "Zadajte meno a pokračujte ako hosť.",
     "softContactHint": "Zadajte e-mail, telefón a meno.",
-    "softContactHintEmailOptional": "Zadajte telefón a meno. E-mail je voliteľný."
+    "softContactHintEmailOptional": "Zadajte telefón a meno. E-mail je voliteľný.",
+    "packetaPickupPointBranches": "Výdajné miesta",
+    "packetaPickupPointZbox": "Z-BOX",
+    "packetaCityLabel": "Mesto alebo PSČ",
+    "packetaCityPlaceholder": "napr. Bratislava alebo 811 01",
+    "packetaCityHint": "Zadajte mesto alebo PSČ (min. 2 znaky)",
+    "packetaCityEmpty": "Mesto sa nenašlo. Skúste iný názov alebo PSČ.",
+    "packetaCitySearching": "Hľadáme mestá…",
+    "packetaCityPointCount": "{count} miest",
+    "packetaPointLabel": "Výdajné miesto / Z-BOX",
+    "packetaPointPlaceholder": "Hľadajte podľa ulice, názvu alebo PSČ",
+    "packetaPointSelectCityFirst": "Najprv vyberte mesto",
+    "packetaPointSearchHint": "Vyberte miesto zo zoznamu alebo upresnite hľadanie"
   },
   "product": {
     "newBadge": "Novinka",

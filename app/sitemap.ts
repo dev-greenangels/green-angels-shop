@@ -9,6 +9,7 @@ import {
   loadSitemapProductPaths,
 } from '@/lib/seo/sitemap-data'
 import { buildSitemapEntries, collectSitemapPathnames } from '@/lib/seo/sitemap-urls'
+import { fetchPublicSiteSettings, getWholesalePageSettings } from '@/lib/settings/fetch'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,16 +18,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (!isIndexingAllowed({ origin: ctx.origin })) return []
 
   const locale = ctx.xDefaultLocale
-  const [categories, blog] = await Promise.all([
+  const [categories, blog, siteSettings] = await Promise.all([
     loadSitemapCategoryPaths(locale),
     loadSitemapBlogPaths(),
+    fetchPublicSiteSettings(),
   ])
   const products = await loadSitemapProductPaths(categories.activeSlugs, locale)
+  const wholesalePage = getWholesalePageSettings(siteSettings)
 
   const pathnames = collectSitemapPathnames({
     categoryPaths: categories.paths,
     productPaths: products.paths,
     blogPaths: blog.paths,
+    wholesalePageEnabled: wholesalePage.pageEnabled,
   })
 
   const lastModifiedByPath = {

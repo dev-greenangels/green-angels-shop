@@ -514,7 +514,13 @@
     "grandTotal": "Grand total",
     "inCart": "In cart",
     "placeOrder": "Place order",
-    "placeOrderWithObligation": "Order with obligation to pay"
+    "placeOrderWithObligation": "Order with obligation to pay",
+    "minOrder": {
+      "hintReject": "Minimum order amount is {amount}. Smaller orders cannot be placed.",
+      "hintFee": "Minimum order amount is {amount}. Below that, a packaging surcharge of {fee} applies.",
+      "blocked": "Product total is below the minimum {amount}. Add more items to checkout.",
+      "feeApplied": "Below {amount}: packaging surcharge of {fee} has been added."
+    }
   },
   "recentlyViewed": {
     "eyebrow": "Your history",
@@ -730,7 +736,10 @@
     },
     "packetaPickupPointLabel": "Packeta pickup point",
     "packetaPickupPointUnavailable": "Pickup point selection is temporarily unavailable",
-    "packetaPickupPointHint": "Packeta pickup point selection is still being configured. Please contact support to place an order with this method.",
+    "packetaPickupPointPlaceholder": "City or postcode (min. 2 characters)",
+    "packetaPickupPointHint": "Enter a city or postcode, then pick a point from the list.",
+    "packetaPickupPointSearching": "Searching Packeta points…",
+    "packetaPickupPointEmpty": "No points found. Try another city or postcode.",
     "changePickupPoint": "Change pickup point",
     "deliveryCountry": "Delivery country",
     "deliveryCountryPlaceholder": "Select country",
@@ -806,6 +815,8 @@
     "preferredShipDateCarrierHint": "Plants are transferred to the carrier on the selected date.",
     "preferredShipDateSelect": "Select a date",
     "preferredShipDateEmpty": "No dispatch dates available",
+    "preferredShipDateRequired": "Please select a dispatch date",
+    "preferredShipDateRequiredHint": "Required — choose a date in the calendar.",
     "preferredShipDatePickup": "Ready for pickup date",
     "preferredShipDatePickupHint": "Choose the day you will collect the order from the nursery.",
     "preferredShipDatePickupSelect": "Select a date",
@@ -849,7 +860,29 @@
     "deliveryEstimateAfterDispatch": "Estimated delivery: 2–3 business days after dispatch",
     "vatIdConfirmed": "VAT ID confirmed",
     "vatIdConfirmedWithZeroDph": "VAT ID confirmed. 0% VAT applied (reverse charge).",
-    "vatZeroDphApplied": "0% VAT applied (reverse charge)."
+    "vatZeroDphApplied": "0% VAT applied (reverse charge).",
+    "stripe": {
+      "title": "Card payment",
+      "subtitle": "Enter your card details. Stripe processes the payment — we never store your card number.",
+      "pay": "Pay {amount}",
+      "processing": "Processing payment…",
+      "loading": "Loading payment form…",
+      "error": "Payment could not be completed. Please try again.",
+      "splitProgress": "Payment {current} of {total}",
+      "secureHint": "Secure payment with Stripe"
+    },
+    "packetaPickupPointBranches": "Pickup points",
+    "packetaPickupPointZbox": "Z-BOX",
+    "packetaCityLabel": "City or ZIP",
+    "packetaCityPlaceholder": "e.g. Bratislava or 811 01",
+    "packetaCityHint": "Enter a city or postal code (min. 2 characters)",
+    "packetaCityEmpty": "No city found. Try another name or ZIP.",
+    "packetaCitySearching": "Searching cities…",
+    "packetaCityPointCount": "{count} points",
+    "packetaPointLabel": "Pickup point / Z-BOX",
+    "packetaPointPlaceholder": "Search by street, name or ZIP",
+    "packetaPointSelectCityFirst": "Select a city first",
+    "packetaPointSearchHint": "Pick a point from the list or refine your search"
   },
   "product": {
     "newBadge": "New",

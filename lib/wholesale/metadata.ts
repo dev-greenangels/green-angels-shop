@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 
-import { fetchPublicSiteSettings, getWholesalePageSettings } from '@/lib/settings/fetch'
+import { fetchPublicSiteSettings, getResolvedWholesalePageSettings } from '@/lib/settings/fetch'
 import { buildIndexablePageMetadata } from '@/lib/seo/build-page-metadata'
 
 export async function buildWholesaleMetadata(locale: string): Promise<Metadata> {
@@ -13,7 +13,10 @@ export async function buildWholesaleMetadata(locale: string): Promise<Metadata> 
 
   try {
     const fetched = await fetchPublicSiteSettings()
-    const page = getWholesalePageSettings(fetched)
+    const page = getResolvedWholesalePageSettings(fetched, locale)
+    if (!page.pageEnabled) {
+      return { robots: { index: false, follow: false } }
+    }
     const title = page.seoTitle.trim() || page.title.trim() || fallbackTitle
     const description = page.seoDescription.trim() || page.intro.trim() || fallbackDescription
     return buildIndexablePageMetadata(locale, '/wholesale', {

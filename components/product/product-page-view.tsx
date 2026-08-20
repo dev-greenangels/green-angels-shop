@@ -6,6 +6,7 @@ import { showAddedToCartToast } from '@/lib/cart-toast'
 
 import { ProductDisplayCharacteristics } from '@/components/product/product-display-characteristics'
 import { ProductImageGallery } from '@/components/product/product-image-gallery'
+import { MinOrderPolicyBanner } from '@/components/cart/min-order-policy-banner'
 
 import { Navigation } from '@/components/navigation'
 import { ProductCard } from '@/components/product-card'
@@ -133,6 +134,7 @@ export function ProductPageView({
           </div>
 
           <div className="mb-16 space-y-6">
+            <MinOrderPolicyBanner />
             <ProductVariantsTable
               variants={variants}
               plantId={plant.id}

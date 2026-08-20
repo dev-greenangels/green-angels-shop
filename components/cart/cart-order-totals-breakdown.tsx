@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 
+import { useMinOrderCheckoutMessage } from '@/components/cart/min-order-info-banner'
 import { useVatDisplayPolicy } from '@/components/providers/vat-display-provider'
 import type { CheckoutTotalsBreakdown } from '@/lib/pricing/quote'
 import {
@@ -98,6 +99,13 @@ export function CartOrderTotalsBreakdown({
   const feesAreExVat = needsGrossDisplay && checkout?.taxAppliesToFees !== false
   const formatMoney = needsGrossDisplay ? formatShelf : formatRaw
   const formatFee = feesAreExVat ? formatShelf : formatRaw
+  const minOrderMessage = useMinOrderCheckoutMessage({
+    belowMinOrder: checkout?.belowMinOrder,
+    canPlaceOrder: checkout?.canPlaceOrder,
+    minOrderAmount: checkout?.minOrderAmount,
+    belowMinOrderBehavior: checkout?.belowMinOrderBehavior,
+    belowMinPackagingFee: checkout?.belowMinPackagingFee,
+  })
 
   const formatShippingAndPackagingLabel = (checkoutTotals: CheckoutTotalsBreakdown) => {
     const deliveryNet =
@@ -175,9 +183,15 @@ export function CartOrderTotalsBreakdown({
         </div>
       ) : null}
 
-      {checkout?.belowMinOrder && checkout.belowMinOrderMessage ? (
-        <p className={cn('text-xs text-destructive', divided && 'py-2.5')}>
-          {checkout.belowMinOrderMessage}
+      {minOrderMessage ? (
+        <p
+          className={cn(
+            'rounded-md border border-amber-200/80 bg-amber-50 px-2 py-1.5 text-xs text-amber-950',
+            checkout?.canPlaceOrder === false && 'border-destructive/40 bg-destructive/5 text-destructive',
+            divided && 'my-1',
+          )}
+        >
+          {minOrderMessage}
         </p>
       ) : null}
 

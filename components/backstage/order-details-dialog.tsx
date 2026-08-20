@@ -333,6 +333,72 @@ export function OrderDetailsDialog({
                   </div>
                 </div>
 
+                {order.buyerType === 'company' ? (
+                  <div className="space-y-2">
+                    <h4 className="font-semibold">B2B / DPH</h4>
+                    <div className="space-y-1 rounded-lg bg-muted/50 p-4 text-sm">
+                      {order.companyLegalName ? (
+                        <p>
+                          <span className="text-muted-foreground">Компанія:</span>{' '}
+                          {order.companyLegalName}
+                        </p>
+                      ) : null}
+                      {order.companyIco ? (
+                        <p>
+                          <span className="text-muted-foreground">IČO:</span> {order.companyIco}
+                        </p>
+                      ) : null}
+                      {order.companyDic ? (
+                        <p>
+                          <span className="text-muted-foreground">DIČ:</span> {order.companyDic}
+                        </p>
+                      ) : null}
+                      {order.companyVatId ? (
+                        <p>
+                          <span className="text-muted-foreground">IČ DPH:</span>{' '}
+                          {order.vatCountryCode ? `${order.vatCountryCode}${order.companyVatId}` : order.companyVatId}
+                        </p>
+                      ) : null}
+                      {order.taxRegime ? (
+                        <p>
+                          <span className="text-muted-foreground">Податковий режим:</span>{' '}
+                          {order.taxRegime}
+                          {order.taxRatePercent != null ? ` (${order.taxRatePercent}%)` : ''}
+                        </p>
+                      ) : null}
+                      {order.viesCheck ? (
+                        <>
+                          <p className="pt-2 font-medium">VIES (на момент замовлення)</p>
+                          <p>
+                            <span className="text-muted-foreground">Статус:</span>{' '}
+                            {order.viesCheck.valid === true
+                              ? 'дійсний'
+                              : order.viesCheck.valid === false
+                                ? 'недійсний'
+                                : 'недоступний'}
+                          </p>
+                          <p>
+                            <span className="text-muted-foreground">Перевірено:</span>{' '}
+                            {formatDateTime(order.viesCheck.checkedAt, locale, 'datetime')}
+                          </p>
+                          {order.viesCheck.requestIdentifier ? (
+                            <p>
+                              <span className="text-muted-foreground">Consultation №:</span>{' '}
+                              {order.viesCheck.requestIdentifier}
+                            </p>
+                          ) : null}
+                          {order.viesCheck.registeredName ? (
+                            <p>
+                              <span className="text-muted-foreground">Назва з VIES:</span>{' '}
+                              {order.viesCheck.registeredName}
+                            </p>
+                          ) : null}
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="space-y-2">
                   <h4 className="font-semibold">ERP sync</h4>
                   <div className="space-y-1 rounded-lg bg-muted/50 p-4 text-sm">

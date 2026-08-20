@@ -24,12 +24,14 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { DELIVERY_METHOD_BACKSTAGE_LABELS, PAYMENT_METHOD_BACKSTAGE_LABELS } from '@/lib/checkout/methods'
 import { clearCartAfterCheckout } from '@/lib/carts/clear-after-checkout'
+import { clearStripePendingPayments } from '@/lib/checkout/stripe-pending'
 import { useFormatPrice } from '@/lib/commerce/use-format-price'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import { downloadOrderConfirmationPdf } from '@/lib/orders/build-order-confirmation-pdf'
 import {
   fetchOrderConfirmation,
   syncMonopayPayment,
+  syncStripePayment,
   type PublicOrderConfirmation,
 } from '@/lib/orders/fetch-order-confirmation'
 import {
@@ -265,6 +267,7 @@ function SuccessContent() {
 
   useEffect(() => {
     void clearCartAfterCheckout()
+    clearStripePendingPayments()
   }, [])
 
   useEffect(() => {
@@ -298,13 +301,28 @@ function SuccessContent() {
             if (!isCardOnline(order.paymentMethod)) return order
             if (order.paymentStatus === 'success') return order
 
-            const sync = await syncMonopayPayment(order.orderNumber, syncToken)
-            if (!sync) return order
+            if (syncToken) {
+              const mono = await syncMonopayPayment(order.orderNumber, syncToken)
+              if (mono) {
+                return {
+                  ...order,
+                  status: mono.status,
+                  paymentStatus: mono.paymentStatus,
+                }
+              }
+            }
+
+            const tokenIndex = orderNumbers.indexOf(order.orderNumber)
+            const stripe = await syncStripePayment(
+              order.orderNumber,
+              tokenIndex >= 0 ? confirmationTokens[tokenIndex] : undefined,
+            )
+            if (!stripe) return order
 
             return {
               ...order,
-              status: sync.status,
-              paymentStatus: sync.paymentStatus,
+              status: stripe.status,
+              paymentStatus: stripe.paymentStatus,
             }
           }),
         )
@@ -343,14 +361,7 @@ function SuccessContent() {
     }
     setPdfLoading(true)
     try {
-      await downloadOrderConfirmationPdf(
-        orders,
-        { ...cartSettings, bankDetails },
-        {
-          region: marketSettings.region,
-          defaultCurrency: marketSettings.defaultCurrency,
-        },
-      )
+      await downloadOrderConfirmationPdf(orders, confirmationTokens[0])
     } catch {
       toast.error('Не вдалося сформувати PDF')
     } finally {

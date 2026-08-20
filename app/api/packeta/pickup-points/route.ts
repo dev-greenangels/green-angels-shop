@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     return NextResponse.json(data)
   } catch {
     return NextResponse.json(
-      { error: 'Не вдалося зʼєднатися з API. Перевірте, що бекенд запущений.' },
+      { error: 'Service temporarily unavailable' },
       { status: 502 },
     )
   }

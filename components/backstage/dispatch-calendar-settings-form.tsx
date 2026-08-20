@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from '@/lib/toast'
 
+import { FormSaveBar } from '@/components/backstage/form-save-bar'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -35,8 +36,41 @@ const EMPTY: DispatchCalendarSettings = {
   externalReservedByDate: {},
 }
 
+function settingsSnapshot(s: DispatchCalendarSettings): string {
+  return JSON.stringify({
+    enabled: s.enabled,
+    blockedWeekdays: s.blockedWeekdays,
+    blackoutDates: s.blackoutDates,
+    horizonDays: s.horizonDays,
+    minLeadDays: s.minLeadDays,
+    dailyCapacity: s.dailyCapacity,
+    externalReservedByDate: s.externalReservedByDate,
+  })
+}
+
+function rebuildReportSlots(
+  report: DispatchDaySlot[],
+  externalReservedByDate: Record<string, number>,
+  dailyCapacity: number,
+): DispatchDaySlot[] {
+  return report.map((row) => {
+    const externalReserved = externalReservedByDate[row.date] ?? 0
+    const used = row.siteCount + externalReserved
+    const remaining =
+      dailyCapacity > 0 ? Math.max(0, dailyCapacity - used) : null
+    return {
+      ...row,
+      externalReserved,
+      used,
+      capacity: dailyCapacity,
+      remaining,
+    }
+  })
+}
+
 export function DispatchCalendarSettingsForm() {
   const [settings, setSettings] = useState<DispatchCalendarSettings>(EMPTY)
+  const [baseline, setBaseline] = useState('')
   const [report, setReport] = useState<DispatchDaySlot[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -44,11 +78,34 @@ export function DispatchCalendarSettingsForm() {
   const [externalDate, setExternalDate] = useState('')
   const [externalCount, setExternalCount] = useState('0')
 
+  const isDirty = useMemo(
+    () => Boolean(baseline) && settingsSnapshot(settings) !== baseline,
+    [baseline, settings],
+  )
+
+  const externalEntries = useMemo(
+    () =>
+      Object.entries(settings.externalReservedByDate)
+        .filter(([, n]) => n > 0)
+        .sort(([a], [b]) => a.localeCompare(b)),
+    [settings.externalReservedByDate],
+  )
+
+  // Preview capacity columns from draft settings (before Save).
+  useEffect(() => {
+    if (loading) return
+    setReport((r) =>
+      rebuildReportSlots(r, settings.externalReservedByDate, settings.dailyCapacity),
+    )
+  }, [loading, settings.externalReservedByDate, settings.dailyCapacity])
+
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const data = await fetchDispatchCalendarAdmin()
-      setSettings({ ...EMPTY, ...data.settings })
+      const next = { ...EMPTY, ...data.settings }
+      setSettings(next)
+      setBaseline(settingsSnapshot(next))
       setReport(data.report)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Помилка завантаження')
@@ -61,10 +118,17 @@ export function DispatchCalendarSettingsForm() {
     void load()
   }, [load])
 
+  const patchSettings = useCallback(
+    (updater: (prev: DispatchCalendarSettings) => DispatchCalendarSettings) => {
+      setSettings(updater)
+    },
+    [],
+  )
+
   const isOpenWeekday = (day: number) => !settings.blockedWeekdays.includes(day)
 
   const toggleWeekday = (day: number, open: boolean) => {
-    setSettings((s) => {
+    patchSettings((s) => {
       const blocked = new Set(s.blockedWeekdays)
       if (open) blocked.delete(day)
       else blocked.add(day)
@@ -72,11 +136,34 @@ export function DispatchCalendarSettingsForm() {
     })
   }
 
+  const addExternalReserve = () => {
+    if (!externalDate) {
+      toast.error('Оберіть дату для резерву 1С')
+      return
+    }
+    const n = Math.max(0, Math.trunc(Number(externalCount) || 0))
+    patchSettings((s) => ({
+      ...s,
+      externalReservedByDate: {
+        ...s.externalReservedByDate,
+        [externalDate]: n,
+      },
+    }))
+    toast.success(
+      n > 0
+        ? `Резерв 1С: ${externalDate} → ${n}`
+        : `Резерв 1С для ${externalDate} скинуто`,
+    )
+    setExternalCount('0')
+  }
+
   const save = async () => {
     setSaving(true)
     try {
       const next = await updateDispatchCalendarAdmin(settings)
-      setSettings({ ...EMPTY, ...next })
+      const normalized = { ...EMPTY, ...next }
+      setSettings(normalized)
+      setBaseline(settingsSnapshot(normalized))
       toast.success('Календар відправок збережено')
       await load()
     } catch (err) {
@@ -101,7 +188,7 @@ export function DispatchCalendarSettingsForm() {
         </div>
         <Switch
           checked={settings.enabled}
-          onCheckedChange={(enabled) => setSettings((s) => ({ ...s, enabled }))}
+          onCheckedChange={(enabled) => patchSettings((s) => ({ ...s, enabled }))}
         />
       </div>
 
@@ -122,13 +209,13 @@ export function DispatchCalendarSettingsForm() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
-          <Label>Ліміт відправок / день</Label>
+          <Label>Ліміт відправок на день</Label>
           <Input
             type="number"
             min={0}
             value={settings.dailyCapacity}
             onChange={(e) =>
-              setSettings((s) => ({
+              patchSettings((s) => ({
                 ...s,
                 dailyCapacity: Math.max(0, Number(e.target.value) || 0),
               }))
@@ -137,34 +224,40 @@ export function DispatchCalendarSettingsForm() {
           <p className="text-xs text-muted-foreground">0 = без ліміту</p>
         </div>
         <div className="space-y-2">
-          <Label>Горизонт (днів)</Label>
+          <Label>Скільки днів наперед показувати</Label>
           <Input
             type="number"
             min={7}
             max={180}
             value={settings.horizonDays}
             onChange={(e) =>
-              setSettings((s) => ({
+              patchSettings((s) => ({
                 ...s,
                 horizonDays: Math.max(7, Number(e.target.value) || 45),
               }))
             }
           />
+          <p className="text-xs text-muted-foreground">
+            Горизонт календаря для клієнта (7–180).
+          </p>
         </div>
         <div className="space-y-2">
-          <Label>Мін. lead (днів)</Label>
+          <Label>Не раніше ніж через (днів)</Label>
           <Input
             type="number"
             min={0}
             max={30}
             value={settings.minLeadDays}
             onChange={(e) =>
-              setSettings((s) => ({
+              patchSettings((s) => ({
                 ...s,
                 minLeadDays: Math.max(0, Number(e.target.value) || 0),
               }))
             }
           />
+          <p className="text-xs text-muted-foreground">
+            Мін. відступ від сьогодні до першої доступної дати (0 = можна сьогодні).
+          </p>
         </div>
       </div>
 
@@ -182,7 +275,7 @@ export function DispatchCalendarSettingsForm() {
             variant="outline"
             onClick={() => {
               if (!blackoutInput) return
-              setSettings((s) => ({
+              patchSettings((s) => ({
                 ...s,
                 blackoutDates: [...new Set([...s.blackoutDates, blackoutInput])].sort(),
               }))
@@ -201,7 +294,7 @@ export function DispatchCalendarSettingsForm() {
                 variant="ghost"
                 size="sm"
                 onClick={() =>
-                  setSettings((s) => ({
+                  patchSettings((s) => ({
                     ...s,
                     blackoutDates: s.blackoutDates.filter((x) => x !== d),
                   }))
@@ -217,7 +310,8 @@ export function DispatchCalendarSettingsForm() {
       <div className="space-y-3">
         <Label>Зовнішній резерв (1С вручну)</Label>
         <p className="text-xs text-muted-foreground">
-          Кількість замовлень на день уже врахованих у 1С (поки немає API).
+          Скільки замовлень на день уже враховано в 1С (поки немає API). Після додавання
+          натисніть «Зберегти» внизу, щоб записати в базу.
         </p>
         <div className="flex flex-wrap items-end gap-2">
           <div className="space-y-1">
@@ -230,7 +324,7 @@ export function DispatchCalendarSettingsForm() {
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">К-сть</Label>
+            <Label className="text-xs">Кількість</Label>
             <Input
               type="number"
               min={0}
@@ -239,28 +333,44 @@ export function DispatchCalendarSettingsForm() {
               className="w-24"
             />
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              if (!externalDate) return
-              const n = Math.max(0, Math.trunc(Number(externalCount) || 0))
-              setSettings((s) => ({
-                ...s,
-                externalReservedByDate: {
-                  ...s.externalReservedByDate,
-                  [externalDate]: n,
-                },
-              }))
-            }}
-          >
-            Записати
+          <Button type="button" variant="outline" onClick={addExternalReserve}>
+            Додати
           </Button>
         </div>
+        <ul className="space-y-1 text-sm">
+          {externalEntries.map(([date, count]) => (
+            <li key={date} className="flex items-center gap-2">
+              <span>
+                {date}: <strong>{count}</strong>
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  patchSettings((s) => {
+                    const next = { ...s.externalReservedByDate }
+                    delete next[date]
+                    return { ...s, externalReservedByDate: next }
+                  })
+                }
+              >
+                Видалити
+              </Button>
+            </li>
+          ))}
+          {externalEntries.length === 0 ? (
+            <li className="text-muted-foreground">Резервів ще немає.</li>
+          ) : null}
+        </ul>
       </div>
 
       <div className="space-y-2">
         <Label>Звіт завантаження (відкриті дні)</Label>
+        <p className="text-xs text-muted-foreground">
+          Колонка «1С/зовн.» оновлюється одразу після «Додати»; у базу — лише після
+          «Зберегти».
+        </p>
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full min-w-[520px] text-left text-sm">
             <thead className="bg-muted/50">
@@ -298,9 +408,13 @@ export function DispatchCalendarSettingsForm() {
         </div>
       </div>
 
-      <Button type="button" onClick={() => void save()} disabled={saving}>
-        {saving ? 'Збереження…' : 'Зберегти'}
-      </Button>
+      <FormSaveBar
+        onSave={() => void save()}
+        saving={saving}
+        isDirty={isDirty}
+        sticky
+        label="Зберегти календар відправок"
+      />
     </div>
   )
 }

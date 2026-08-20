@@ -45,8 +45,12 @@ import {
 import { BrandLogo } from '@/components/brand-logo'
 import { BackstageContentLocaleSwitcher } from '@/components/backstage/backstage-content-locale'
 import { BackstageUiLocaleSwitcher } from '@/components/backstage/backstage-ui-locale'
+import { fetchWholesaleInquiriesNewCount } from '@/lib/backstage/wholesale-inquiries'
 import { cn } from '@/lib/utils'
 import type { BackstageSession } from '@/lib/backstage-auth/types'
+
+const WHOLESALE_NEW_COUNT_EVENT = 'ga:wholesale-new-count-refresh'
+const WHOLESALE_NEW_COUNT_POLL_MS = 60_000
 
 type NavItem = {
   href: string
@@ -188,7 +192,19 @@ function SidebarFooter({
   )
 }
 
-function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
+function formatBadgeCount(count: number): string {
+  return count > 99 ? '99+' : String(count)
+}
+
+function NavLink({
+  item,
+  pathname,
+  badgeCount = 0,
+}: {
+  item: NavItem
+  pathname: string
+  badgeCount?: number
+}) {
   const tNav = useTranslations('nav')
   const active = isNavActive(pathname, item)
 
@@ -203,7 +219,12 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
       )}
     >
       <item.icon className="h-5 w-5 shrink-0" />
-      {tNav(item.labelKey)}
+      <span className="min-w-0 flex-1 truncate">{tNav(item.labelKey)}</span>
+      {badgeCount > 0 ? (
+        <span className="ml-auto shrink-0 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground">
+          {formatBadgeCount(badgeCount)}
+        </span>
+      ) : null}
     </Link>
   )
 }
@@ -213,11 +234,13 @@ function NavGroupSection({
   pathname,
   open,
   onToggle,
+  badgeByHref,
 }: {
   group: NavGroup
   pathname: string
   open: boolean
   onToggle: () => void
+  badgeByHref?: Record<string, number>
 }) {
   const tNav = useTranslations('nav')
   const hasActive = group.items.some((item) => isNavActive(pathname, item))
@@ -242,7 +265,12 @@ function NavGroupSection({
       {open ? (
         <div className="space-y-0.5 pl-1">
           {group.items.map((item) => (
-            <NavLink key={item.href} item={item} pathname={pathname} />
+            <NavLink
+              key={item.href}
+              item={item}
+              pathname={pathname}
+              badgeCount={badgeByHref?.[item.href] ?? 0}
+            />
           ))}
         </div>
       ) : null}
@@ -259,6 +287,7 @@ function Sidebar({
 }) {
   const pathname = usePathname()
   const tCommon = useTranslations('common')
+  const [wholesaleNewCount, setWholesaleNewCount] = useState(0)
 
   const initiallyOpen = useMemo(() => {
     const open: Record<string, boolean> = {}
@@ -281,6 +310,41 @@ function Sidebar({
       return next
     })
   }, [pathname])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const refresh = async () => {
+      try {
+        const count = await fetchWholesaleInquiriesNewCount()
+        if (!cancelled) setWholesaleNewCount(count)
+      } catch {
+        if (!cancelled) setWholesaleNewCount(0)
+      }
+    }
+
+    void refresh()
+    const intervalId = window.setInterval(() => {
+      void refresh()
+    }, WHOLESALE_NEW_COUNT_POLL_MS)
+    const onRefresh = () => {
+      void refresh()
+    }
+    window.addEventListener(WHOLESALE_NEW_COUNT_EVENT, onRefresh)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+      window.removeEventListener(WHOLESALE_NEW_COUNT_EVENT, onRefresh)
+    }
+  }, [])
+
+  const badgeByHref = useMemo(
+    () => ({
+      '/backstage/wholesale-inquiries': wholesaleNewCount,
+    }),
+    [wholesaleNewCount],
+  )
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-sidebar text-sidebar-foreground">
@@ -305,6 +369,7 @@ function Sidebar({
             onToggle={() =>
               setOpenGroups((prev) => ({ ...prev, [group.id]: !prev[group.id] }))
             }
+            badgeByHref={badgeByHref}
           />
         ))}
         <NavLink item={settingsNavItem} pathname={pathname} />

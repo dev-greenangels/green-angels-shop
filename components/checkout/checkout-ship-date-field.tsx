@@ -61,6 +61,9 @@ export function CheckoutShipDateField({
   enabled,
   compact = false,
   pickup = false,
+  required = false,
+  error = null,
+  onBlur,
 }: {
   availableFromDates: string[]
   value: string
@@ -70,6 +73,9 @@ export function CheckoutShipDateField({
   compact?: boolean
   /** Pickup: ready-for-collection wording instead of dispatch/carrier */
   pickup?: boolean
+  required?: boolean
+  error?: string | null
+  onBlur?: () => void
 }) {
   const t = useTranslations('checkout')
   const locale = useLocale()
@@ -95,10 +101,9 @@ export function CheckoutShipDateField({
       .then((res) => {
         if (cancelled) return
         setDates(res.dates)
-        if (!value && res.dates[0]?.date) {
-          onChange(res.dates[0].date)
-        } else if (value && !res.dates.some((d) => d.date === value) && res.dates[0]?.date) {
-          onChange(res.dates[0].date)
+        // Do not auto-select: user must pick. Clear stale value if no longer available.
+        if (value && !res.dates.some((d) => d.date === value)) {
+          onChange('')
         }
       })
       .catch(() => {
@@ -113,6 +118,16 @@ export function CheckoutShipDateField({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh when cart availability changes
   }, [enabled, availableFromDates.join('|')])
 
+  const selectLabel = pickup ? t('preferredShipDatePickupSelect') : t('preferredShipDateSelect')
+  const widthProbes = useMemo(() => {
+    const probes = new Set<string>([selectLabel])
+    if (value) probes.add(formatShipDateLabel(value, locale))
+    for (const d of dates) {
+      probes.add(formatShipDateLabel(d.date, locale))
+    }
+    return [...probes]
+  }, [dates, locale, selectLabel, value])
+
   if (!enabled) return null
 
   const title = pickup ? t('preferredShipDatePickup') : t('preferredShipDate')
@@ -122,29 +137,63 @@ export function CheckoutShipDateField({
       ? t('preferredShipDateCarrierHint')
       : t('preferredShipDateHint')
   const emptyLabel = pickup ? t('preferredShipDatePickupEmpty') : t('preferredShipDateEmpty')
-  const selectLabel = pickup ? t('preferredShipDatePickupSelect') : t('preferredShipDateSelect')
+  const showError = Boolean(error)
+  const displayLabel = selectedDate ? formatShipDateLabel(value, locale) : selectLabel
 
   const calendarButton = loading ? (
     <p className="text-sm text-muted-foreground">…</p>
   ) : dates.length === 0 ? (
     <p className="text-sm text-destructive">{emptyLabel}</p>
   ) : (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (!next) onBlur?.()
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           type="button"
           variant="outline"
           id="preferred-ship-date"
+          aria-invalid={showError || undefined}
+          aria-required={required || undefined}
           className={cn(
             checkoutInputClassName,
-            'h-11 shrink-0 justify-start gap-2 px-3 font-normal shadow-sm',
-            compact ? 'min-w-[12rem] max-w-[18rem]' : 'w-full',
-            !selectedDate && 'text-muted-foreground',
+            'h-11 w-auto shrink-0 justify-start gap-2 px-3 text-left font-normal shadow-none',
+            selectedDate
+              ? 'border-primary/45 bg-primary/[0.08] text-foreground hover:bg-primary/[0.12]'
+              : 'border-border bg-background text-muted-foreground hover:bg-muted/40 hover:text-foreground',
+            open && !showError && 'border-primary/50 ring-2 ring-primary/15',
+            showError &&
+              'border-destructive bg-destructive/[0.04] text-foreground ring-2 ring-destructive/20 focus-visible:ring-destructive/30',
           )}
         >
-          <CalendarIcon className="size-4 shrink-0 text-primary" />
-          <span className="truncate">
-            {selectedDate ? formatShipDateLabel(value, locale) : selectLabel}
+          <CalendarIcon
+            className={cn(
+              'size-4 shrink-0',
+              selectedDate || open ? 'text-primary' : 'text-muted-foreground',
+            )}
+          />
+          <span className="grid justify-items-start">
+            {widthProbes.map((probe) => (
+              <span
+                key={probe}
+                className="invisible col-start-1 row-start-1 whitespace-nowrap"
+                aria-hidden
+              >
+                {probe}
+              </span>
+            ))}
+            <span
+              className={cn(
+                'col-start-1 row-start-1 whitespace-nowrap',
+                selectedDate && 'font-medium text-foreground',
+              )}
+            >
+              {displayLabel}
+            </span>
           </span>
         </Button>
       </PopoverTrigger>
@@ -162,6 +211,7 @@ export function CheckoutShipDateField({
             if (!availableSet.has(iso)) return
             onChange(iso)
             setOpen(false)
+            onBlur?.()
           }}
           disabled={(date) => !availableSet.has(toIsoDate(date))}
           className="rounded-md"
@@ -170,24 +220,42 @@ export function CheckoutShipDateField({
     </Popover>
   )
 
+  const heading = (
+    <div className={compact ? 'min-w-0 flex-1 space-y-0.5' : undefined}>
+      <Label className="text-base font-medium" htmlFor="preferred-ship-date">
+        {title}
+        {required ? <span className="ml-1 text-destructive">*</span> : null}
+      </Label>
+      <p className={cn('text-sm text-muted-foreground', !compact && 'mt-1')}>{hint}</p>
+      <p
+        className={cn(
+          'text-sm text-destructive transition-opacity',
+          showError ? 'opacity-100' : 'pointer-events-none opacity-0',
+        )}
+        aria-hidden={!showError}
+      >
+        {error || '\u00a0'}
+      </p>
+    </div>
+  )
+
   if (compact) {
     return (
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <div className="min-w-0 flex-1 space-y-0.5">
-          <Label className="text-base font-medium">{title}</Label>
-          <p className="text-sm text-muted-foreground">{hint}</p>
-        </div>
+        {heading}
         {calendarButton}
       </div>
     )
   }
 
   return (
-    <div className="space-y-3 rounded-xl border border-border/70 bg-card p-4 shadow-sm">
-      <div>
-        <Label className="text-base font-medium">{title}</Label>
-        <p className="mt-1 text-sm text-muted-foreground">{hint}</p>
-      </div>
+    <div
+      className={cn(
+        'space-y-3 rounded-xl border bg-card p-4 shadow-sm',
+        showError ? 'border-destructive/60' : 'border-border/70',
+      )}
+    >
+      {heading}
       {calendarButton}
     </div>
   )

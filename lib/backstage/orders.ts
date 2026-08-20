@@ -72,6 +72,29 @@ export type BackstageOrderDetail = BackstageOrderListItem & {
   erpLastErrorMessage?: string | null
   erpLastSyncAt?: string | null
   erpSyncedAt?: string | null
+  buyerType?: string | null
+  taxRegime?: string | null
+  taxRatePercent?: number | null
+  taxCountryCode?: string | null
+  vatCountryCode?: string | null
+  companyLegalName?: string | null
+  companyIco?: string | null
+  companyDic?: string | null
+  companyVatId?: string | null
+  companyStreet?: string | null
+  companyCity?: string | null
+  companyPostalCode?: string | null
+  viesCheck?: {
+    valid: boolean | null
+    vatCountryCode: string
+    vatNumber: string
+    checkedAt: string
+    viesRequestDate: string | null
+    requestIdentifier: string | null
+    registeredName: string | null
+    registeredAddress: string | null
+    source: string
+  } | null
   items: BackstageOrderItem[]
 }
 

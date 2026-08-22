@@ -23,6 +23,7 @@ import {
   getSingleUnitSaleTier,
   getVariantPriceRange,
 } from '@/lib/product-pricing'
+import { useProductDisplayImages } from '@/lib/variant-photos/use-variant-photos'
 import { cn } from '@/lib/utils'
 import type { Plant } from '@/lib/types'
 
@@ -52,6 +53,7 @@ export function ProductCard({ plant, layout = 'carousel' }: ProductCardProps) {
   const hasPriceRange = priceMin !== priceMax && !singleUnitSale
   const discountPercent = getPlantMaxDiscountPercent(plant)
   const href = productHrefFromPlant(plant)
+  const displayImages = useProductDisplayImages(plant)
 
   const clearPressing = () => setPressing(false)
 
@@ -93,7 +95,7 @@ export function ProductCard({ plant, layout = 'carousel' }: ProductCardProps) {
           )}
         >
           <ProductCoverImage
-            src={plant.images[0]}
+            src={displayImages[0]}
             alt={plant.name}
             sizes={isGridLayout ? '(max-width: 640px) 50vw, 11rem' : '(max-width: 640px) 58vw, 11rem'}
             imageClassName={cn(

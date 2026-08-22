@@ -1,5 +1,7 @@
 import type { CreateOrderPayload } from '@/lib/checkout/build-order-payload'
 
+export const ONLINE_CARD_UNAVAILABLE_CODE = 'ONLINE_CARD_UNAVAILABLE'
+
 export type CreatedOrder = {
   id: string
   orderNumber: string
@@ -13,6 +15,12 @@ export type CreatedOrder = {
   clientSecret?: string
   /** Stripe publishable key when clientSecret is present. */
   publishableKey?: string
+  paymentExpiresAt?: string | null
+  items?: Array<{
+    productName: string
+    variantLabel?: string | null
+    quantity: number
+  }>
 }
 
 export type CreateOrderOptions = {
@@ -21,6 +29,16 @@ export type CreateOrderOptions = {
 
 export type CreateOrdersOptions = {
   idempotencyKeys?: Array<string | undefined>
+}
+
+export class CreateOrderError extends Error {
+  readonly code?: string
+
+  constructor(message: string, code?: string) {
+    super(message)
+    this.name = 'CreateOrderError'
+    this.code = code
+  }
 }
 
 function newIdempotencyKey(): string {
@@ -37,6 +55,13 @@ function extractErrorMessage(data: unknown, fallback: string): string {
   if (Array.isArray(record.message)) return record.message.join(', ')
   if (typeof record.error === 'string') return record.error
   return fallback
+}
+
+function extractErrorCode(data: unknown): string | undefined {
+  if (!data || typeof data !== 'object') return undefined
+  const record = data as Record<string, unknown>
+  if (typeof record.code === 'string' && record.code.trim()) return record.code.trim()
+  return undefined
 }
 
 export async function createOrder(
@@ -57,7 +82,10 @@ export async function createOrder(
 
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    throw new Error(extractErrorMessage(data, 'Не вдалося оформити замовлення.'))
+    throw new CreateOrderError(
+      extractErrorMessage(data, 'Не вдалося оформити замовлення.'),
+      extractErrorCode(data),
+    )
   }
 
   return data as CreatedOrder

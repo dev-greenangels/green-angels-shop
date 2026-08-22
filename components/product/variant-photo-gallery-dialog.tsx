@@ -147,7 +147,9 @@ export function VariantPhotoGalleryDialog({
   const titleSize =
     variantLabel || (title?.includes(' · ') ? title.split(' · ').slice(1).join(' · ') : undefined)
 
-  if (!activePhoto) return null
+  const emptyMessage = variantLabel
+    ? t('freshPhotosEmptyForSize', { size: variantLabel })
+    : t('freshPhotosEmptyForSizeGeneric')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -168,132 +170,148 @@ export function VariantPhotoGalleryDialog({
           <div className="overflow-hidden rounded-xl bg-background shadow-xl">
             <DialogTitle className="sr-only">{displayTitle}</DialogTitle>
 
-            <div className="relative bg-muted">
-              {hasMultiple ? (
-                <span
-                  className="absolute left-2 top-2 z-10 rounded-md bg-black/55 px-2 py-0.5 text-[11px] font-medium tabular-nums text-white backdrop-blur-sm sm:text-xs"
-                  aria-live="polite"
-                >
-                  {activeIndex + 1} / {photoCount}
-                </span>
-              ) : null}
-
-              <div className="flex min-h-[320px] items-center justify-center sm:min-h-[480px]">
-                <Image
-                  key={activePhoto.id}
-                  src={activePhoto.url}
-                  alt={activePhoto.alt}
-                  width={720}
-                  height={960}
-                  unoptimized
-                  priority
-                  className="max-h-[72vh] w-full object-contain"
-                  sizes="(max-width: 768px) 90vw, 28rem"
-                />
-              </div>
-
-              {hasMultiple ? (
-                <>
-                  <button
-                    type="button"
-                    className={cn(galleryNavButtonClassName, 'left-2 sm:left-3')}
-                    onClick={goPrev}
-                    aria-label={t('prevPhoto')}
-                  >
-                    <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
-                  </button>
-                  <button
-                    type="button"
-                    className={cn(galleryNavButtonClassName, 'right-2 sm:right-3')}
-                    onClick={goNext}
-                    aria-label={t('nextPhoto')}
-                  >
-                    <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
-                  </button>
-                </>
-              ) : null}
-            </div>
-
-            {hasMultiple ? (
-              <div className="relative border-t border-border/60 bg-background px-1 py-2 sm:px-1.5">
-                {canScrollThumbsPrev ? (
-                  <button
-                    type="button"
-                    className={cn(thumbStripNavButtonClassName, 'left-1')}
-                    onClick={() => scrollThumbs('prev')}
-                    aria-label={t('scrollThumbsBack')}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
+            {!activePhoto ? (
+              <div className="space-y-3 p-5 sm:p-6">
+                {titleName ? (
+                  <p className="text-sm font-medium leading-snug text-foreground">
+                    {titleName}
+                    {titleSize ? (
+                      <span className="font-normal text-muted-foreground"> · {titleSize}</span>
+                    ) : null}
+                  </p>
                 ) : null}
+                <p className="text-sm leading-relaxed text-muted-foreground">{emptyMessage}</p>
+              </div>
+            ) : (
+              <>
+                <div className="relative bg-muted">
+                  {hasMultiple ? (
+                    <span
+                      className="absolute left-2 top-2 z-10 rounded-md bg-black/55 px-2 py-0.5 text-[11px] font-medium tabular-nums text-white backdrop-blur-sm sm:text-xs"
+                      aria-live="polite"
+                    >
+                      {activeIndex + 1} / {photoCount}
+                    </span>
+                  ) : null}
 
-                <div
-                  ref={thumbStripRef}
-                  className={cn(
-                    'flex gap-1.5 overflow-x-auto scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-                    canScrollThumbsPrev ? 'pl-7' : 'pl-1',
-                    canScrollThumbsNext ? 'pr-7' : 'pr-1',
-                  )}
-                >
-                  {photos.map((photo, index) => {
-                    const isActive = index === activeIndex
-                    return (
+                  <div className="flex min-h-[320px] items-center justify-center sm:min-h-[480px]">
+                    <Image
+                      key={activePhoto.id}
+                      src={activePhoto.url}
+                      alt={activePhoto.alt}
+                      width={720}
+                      height={960}
+                      unoptimized
+                      priority
+                      className="max-h-[72vh] w-full object-contain"
+                      sizes="(max-width: 768px) 90vw, 28rem"
+                    />
+                  </div>
+
+                  {hasMultiple ? (
+                    <>
                       <button
-                        key={photo.id}
                         type="button"
-                        data-thumb-index={index}
-                        onClick={() => setActiveIndex(index)}
-                        aria-label={t('viewPhoto', { alt: photo.alt })}
-                        aria-current={isActive ? 'true' : undefined}
-                        className={cn(
-                          'relative h-11 w-11 shrink-0 overflow-hidden rounded-md border-2 transition sm:h-12 sm:w-12',
-                          isActive
-                            ? 'border-primary opacity-100 ring-1 ring-primary/30'
-                            : 'border-transparent opacity-65 hover:opacity-100',
-                        )}
+                        className={cn(galleryNavButtonClassName, 'left-2 sm:left-3')}
+                        onClick={goPrev}
+                        aria-label={t('prevPhoto')}
                       >
-                        <Image
-                          src={photo.thumbUrl}
-                          alt=""
-                          fill
-                          unoptimized
-                          sizes="48px"
-                          className="object-cover"
-                        />
+                        <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
                       </button>
-                    )
-                  })}
+                      <button
+                        type="button"
+                        className={cn(galleryNavButtonClassName, 'right-2 sm:right-3')}
+                        onClick={goNext}
+                        aria-label={t('nextPhoto')}
+                      >
+                        <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+                      </button>
+                    </>
+                  ) : null}
                 </div>
 
-                {canScrollThumbsNext ? (
-                  <button
-                    type="button"
-                    className={cn(thumbStripNavButtonClassName, 'right-1')}
-                    onClick={() => scrollThumbs('next')}
-                    aria-label={t('scrollThumbsForward')}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
+                {hasMultiple ? (
+                  <div className="relative border-t border-border/60 bg-background px-1 py-2 sm:px-1.5">
+                    {canScrollThumbsPrev ? (
+                      <button
+                        type="button"
+                        className={cn(thumbStripNavButtonClassName, 'left-1')}
+                        onClick={() => scrollThumbs('prev')}
+                        aria-label={t('scrollThumbsBack')}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                    ) : null}
 
-            <div className="space-y-1 border-t border-border/60 p-3 sm:p-3.5">
-              {titleName ? (
-                <p className="text-xs font-medium leading-snug text-foreground sm:text-sm">
-                  {titleName}
-                  {titleSize ? (
-                    <span className="font-normal text-muted-foreground"> · {titleSize}</span>
+                    <div
+                      ref={thumbStripRef}
+                      className={cn(
+                        'flex gap-1.5 overflow-x-auto scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+                        canScrollThumbsPrev ? 'pl-7' : 'pl-1',
+                        canScrollThumbsNext ? 'pr-7' : 'pr-1',
+                      )}
+                    >
+                      {photos.map((photo, index) => {
+                        const isActive = index === activeIndex
+                        return (
+                          <button
+                            key={photo.id}
+                            type="button"
+                            data-thumb-index={index}
+                            onClick={() => setActiveIndex(index)}
+                            aria-label={t('viewPhoto', { alt: photo.alt })}
+                            aria-current={isActive ? 'true' : undefined}
+                            className={cn(
+                              'relative h-11 w-11 shrink-0 overflow-hidden rounded-md border-2 transition sm:h-12 sm:w-12',
+                              isActive
+                                ? 'border-primary opacity-100 ring-1 ring-primary/30'
+                                : 'border-transparent opacity-65 hover:opacity-100',
+                            )}
+                          >
+                            <Image
+                              src={photo.thumbUrl}
+                              alt=""
+                              fill
+                              unoptimized
+                              sizes="48px"
+                              className="object-cover"
+                            />
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {canScrollThumbsNext ? (
+                      <button
+                        type="button"
+                        className={cn(thumbStripNavButtonClassName, 'right-1')}
+                        onClick={() => scrollThumbs('next')}
+                        aria-label={t('scrollThumbsForward')}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className="space-y-1 border-t border-border/60 p-3 sm:p-3.5">
+                  {titleName ? (
+                    <p className="text-xs font-medium leading-snug text-foreground sm:text-sm">
+                      {titleName}
+                      {titleSize ? (
+                        <span className="font-normal text-muted-foreground"> · {titleSize}</span>
+                      ) : null}
+                    </p>
                   ) : null}
-                </p>
-              ) : null}
-              {photoDateLabel ? (
-                <p className="text-xs text-muted-foreground">
-                  {tCatalog('freshPhotosPhotoFrom')}{' '}
-                  <span className="text-foreground">{photoDateLabel}</span>
-                </p>
-              ) : null}
-            </div>
+                  {photoDateLabel ? (
+                    <p className="text-xs text-muted-foreground">
+                      {tCatalog('freshPhotosPhotoFrom')}{' '}
+                      <span className="text-foreground">{photoDateLabel}</span>
+                    </p>
+                  ) : null}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </DialogContent>

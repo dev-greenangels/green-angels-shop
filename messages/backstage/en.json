@@ -16,6 +16,9 @@
     "carts": "Carts",
     "users": "Users",
     "blog": "Blog",
+    "homePage": "Home page",
+    "about": "About",
+    "wholesalePage": "Wholesale",
     "legal": "Legal documents",
     "reviews": "Reviews",
     "wholesaleInquiries": "Wholesale inquiries",
@@ -54,7 +57,9 @@
     "groups": "{count} groups",
     "rowsAndGroups": "{rows} rows · {groups} groups",
     "customCount": "{count} changes.",
-    "selected": "Selected: {count}"
+    "selected": "Selected: {count}",
+    "retry": "Try again",
+    "loadError": "Failed to load"
   },
   "actions": {
     "save": "Save",
@@ -427,12 +432,15 @@
       "subtitle": "Store contacts and site page content",
       "tabStore": "Store",
       "tabHome": "Home page",
+      "tabAbout": "About",
       "tabCatalog": "Catalog",
       "tabRecentlyViewed": "Recently viewed",
       "tabCart": "Cart",
       "tabNovaPoshta": "Nova Poshta",
       "catalogSaveSuccess": "Catalog settings saved.",
       "catalogSaveError": "Not all catalog settings could be saved.",
+      "aboutSaveSuccess": "About page saved.",
+      "aboutSaveError": "Could not save the About page.",
       "watermarks": {
         "title": "Watermarks",
         "description": "Control automatic watermarking separately for each photo type.",
@@ -441,6 +449,30 @@
         "freshPhotosLabel": "Fresh Photos",
         "freshPhotosHint": "Add a watermark to new Fresh Photos."
       }
+    },
+    "about": {
+      "title": "About",
+      "subtitle": "Public /about page copy and images",
+      "loading": "Loading…",
+      "loadError": "Could not load the About page settings.",
+      "saveSuccess": "About page saved.",
+      "saveError": "Could not save the About page."
+    },
+    "home": {
+      "title": "Home page",
+      "subtitle": "Sections and copy on the storefront home page",
+      "loading": "Loading…",
+      "loadError": "Could not load home page settings.",
+      "saveSuccess": "Home page saved.",
+      "saveError": "Could not save the home page."
+    },
+    "wholesale": {
+      "title": "Wholesale page",
+      "subtitle": "Landing copy and form for B2B clients",
+      "loading": "Loading…",
+      "loadError": "Could not load wholesale page settings.",
+      "saveSuccess": "Wholesale page saved.",
+      "saveError": "Could not save the wholesale page."
     },
     "products": {
       "title": "Products",
@@ -667,5 +699,32 @@
       "COOKIES": "Cookies",
       "RETURNS": "Returns"
     }
+  },
+  "photos": {
+    "sizePickerLabel": "Product size",
+    "sizePickerPlaceholder": "Search product or size…",
+    "sizePickerClear": "Clear",
+    "sizeSearchHint": "Enter at least {count} character",
+    "sizeSearching": "Searching…",
+    "sizeSearchEmpty": "Nothing found",
+    "sizeSearchFailed": "Search failed",
+    "sizeVariantCount": "{count} sizes",
+    "sizeVariantsLoading": "Loading sizes…",
+    "sizeNoVariants": "No sizes",
+    "sizeNoIdentifier": "No EAN/SKU",
+    "uploadTitle": "Add fresh photo",
+    "uploadDescription": "Pick a catalog size and upload a JPEG or WebP. It will appear on the storefront next to that size.",
+    "uploadFileLabel": "Photo file",
+    "uploadFileHint": "JPEG or WebP, up to 15 MB.",
+    "uploadStorageLabel": "Warehouse / location (optional)",
+    "uploadStoragePlaceholder": "e.g. greenhouse 2",
+    "uploadViberLabel": "Send to Viber recipients",
+    "uploadSubmit": "Upload photo",
+    "uploadSubmitting": "Uploading…",
+    "uploadNeedSize": "Select a product size from the list",
+    "uploadNeedFile": "Choose an image file",
+    "uploadNeedIdentifier": "This size has no EAN or SKU — add them on the product first",
+    "uploadSuccess": "Fresh photo added",
+    "uploadFailed": "Could not upload photo"
   }
 }

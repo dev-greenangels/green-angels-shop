@@ -9,6 +9,12 @@ export type StripePendingPayment = {
   publishableKey: string
   totalAmount: number
   currency: string
+  paymentExpiresAt?: string | null
+  items?: Array<{
+    productName: string
+    variantLabel?: string | null
+    quantity: number
+  }>
 }
 
 type StoredPending = {
@@ -43,6 +49,12 @@ export function stripePaymentsFromCreatedOrders(orders: CreatedOrder[]): StripeP
         publishableKey,
         totalAmount: order.totalAmount,
         currency: order.currency,
+        paymentExpiresAt: order.paymentExpiresAt ?? null,
+        items: (order.items ?? []).map((item) => ({
+          productName: item.productName,
+          variantLabel: item.variantLabel ?? null,
+          quantity: item.quantity,
+        })),
       },
     ]
   })

@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
+import { getVisiblePlantVariants } from '@/lib/plant-variants'
+import { hasProductImage } from '@/lib/product-image'
+import type { Plant } from '@/lib/types'
 import {
   mapCatalogPhotoToVariantPhoto,
   type CatalogPhotoItem,
@@ -25,6 +28,15 @@ function setCached(key: string, photos: VariantPhoto[]) {
     if (oldest === undefined) break
     cache.delete(oldest)
   }
+}
+
+function photoRecencyMs(photo: VariantPhoto): number {
+  return Date.parse(photo.photoDate || photo.createdAt || '') || 0
+}
+
+/** Newest first — photoDate, then createdAt. */
+export function sortVariantPhotosNewestFirst(photos: VariantPhoto[]): VariantPhoto[] {
+  return [...photos].sort((a, b) => photoRecencyMs(b) - photoRecencyMs(a))
 }
 
 async function fetchPhotosByEan(ean: string): Promise<VariantPhoto[]> {
@@ -57,7 +69,7 @@ function mergePhotos(eanPhotos: VariantPhoto[], skuPhotos: VariantPhoto[]): Vari
   for (const photo of skuPhotos) {
     if (!byId.has(photo.id)) byId.set(photo.id, photo)
   }
-  return [...byId.values()]
+  return sortVariantPhotosNewestFirst([...byId.values()])
 }
 
 async function fetchVariantPhotos(ean: string, sku: string): Promise<VariantPhoto[]> {
@@ -129,6 +141,64 @@ export function useVariantPhotos(
   return useMemo(() => ({ photos, loading }), [photos, loading])
 }
 
+/**
+ * When the product has no catalog main images, use the newest fresh photo
+ * across visible variants as the cover / gallery image.
+ */
+export function useProductDisplayImages(plant: Plant): string[] {
+  const needsFreshFallback = !hasProductImage(plant.images)
+  const identifiers = useMemo(() => {
+    if (!needsFreshFallback) return [] as Array<{ ean: string; sku: string }>
+    const seen = new Set<string>()
+    const list: Array<{ ean: string; sku: string }> = []
+    for (const variant of getVisiblePlantVariants(plant)) {
+      if (variant.freshPhotos === false) continue
+      const ean = variant.ean?.trim() || ''
+      const sku = variant.sku?.trim() || ''
+      if (!ean && !sku) continue
+      const key = cacheKey(ean, sku)
+      if (seen.has(key)) continue
+      seen.add(key)
+      list.push({ ean, sku })
+    }
+    return list
+  }, [needsFreshFallback, plant])
+
+  const [freshCoverUrl, setFreshCoverUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!needsFreshFallback || identifiers.length === 0) {
+      setFreshCoverUrl(null)
+      return
+    }
+
+    void Promise.all(identifiers.map(({ ean, sku }) => fetchVariantPhotos(ean, sku))).then(
+      (groups) => {
+        if (cancelled) return
+        const byId = new Map<string, VariantPhoto>()
+        for (const photo of groups.flat()) {
+          if (!byId.has(photo.id)) byId.set(photo.id, photo)
+        }
+        const latest = sortVariantPhotosNewestFirst([...byId.values()])[0]
+        setFreshCoverUrl(latest?.url?.trim() || null)
+      },
+    )
+
+    return () => {
+      cancelled = true
+    }
+  }, [needsFreshFallback, identifiers])
+
+  return useMemo(() => {
+    if (!needsFreshFallback) {
+      return plant.images.filter((url) => Boolean(url?.trim()))
+    }
+    if (freshCoverUrl) return [freshCoverUrl]
+    return plant.images.filter((url) => Boolean(url?.trim()))
+  }, [needsFreshFallback, freshCoverUrl, plant.images])
+}
+
 export async function fetchPhotosByEans(eans: string[]): Promise<Record<string, VariantPhoto[]>> {
   const unique = [...new Set(eans.map((e) => e.trim()).filter(Boolean))]
   if (unique.length === 0) return {}
@@ -143,7 +213,9 @@ export async function fetchPhotosByEans(eans: string[]): Promise<Record<string, 
   const data = (await res.json()) as Record<string, CatalogPhotoItem[]>
   const result: Record<string, VariantPhoto[]> = {}
   for (const ean of unique) {
-    const items = Array.isArray(data[ean]) ? data[ean].map(mapCatalogPhotoToVariantPhoto) : []
+    const items = Array.isArray(data[ean])
+      ? sortVariantPhotosNewestFirst(data[ean].map(mapCatalogPhotoToVariantPhoto))
+      : []
     setCached(cacheKey(ean, ''), items)
     result[ean] = items
   }

@@ -11,6 +11,7 @@ import { ProductOutOfStockBlock } from '@/components/product/product-out-of-stoc
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
 import { VariantPhotoGalleryDialog } from '@/components/product/variant-photo-gallery-dialog'
 import { VariantPhotoThumbnail } from '@/components/product/variant-photo-thumbnail'
+import { VariantSizeLabel } from '@/components/product/variant-size-label'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -56,50 +57,6 @@ const variantFieldLabelInlineClassName =
 
 function getVariantSizeCountLabel(count: number, t: ReturnType<typeof useTranslations<'product'>>): string {
   return t('totalSizes', { count })
-}
-
-function splitVariantLabel(label: string): { packaging?: string; sizeLabel: string } {
-  const parts = label.split(' · ').map((part) => part.trim()).filter(Boolean)
-  if (parts.length >= 2) {
-    return {
-      packaging: parts[0],
-      sizeLabel: parts.slice(1).join(' · '),
-    }
-  }
-  return { sizeLabel: label }
-}
-
-function VariantTitleColumn({
-  variant,
-  className,
-}: {
-  variant: ProductVariant
-  className?: string
-}) {
-  const t = useTranslations('product')
-  const { packaging, sizeLabel } = splitVariantLabel(variant.label)
-  const hasShipment = variantHasAvailableFrom(variant) && Boolean(variant.availableFrom)
-
-  return (
-    <div className={cn('min-w-0', className)}>
-      {packaging ? (
-        <p className={cn(variantSizeLabelClassName, 'text-base lg:text-lg')}>{packaging}</p>
-      ) : null}
-      <p
-        className={cn(
-          packaging ? 'mt-0.5 text-sm font-medium text-foreground/90' : variantSizeLabelClassName,
-          !packaging && 'text-base lg:text-lg',
-        )}
-      >
-        {sizeLabel}
-      </p>
-      {hasShipment && variant.availableFrom ? (
-        <p className="mt-1 text-xs font-medium text-amber-900/90 dark:text-amber-100/90">
-          {t('shipmentFrom', { date: variant.availableFrom })}
-        </p>
-      ) : null}
-    </div>
-  )
 }
 
 function ProductVariantsSectionSummary({
@@ -364,13 +321,15 @@ function VariantPhotoControls({
   const showPhotos = variant.freshPhotos !== false
   const { photos } = useVariantPhotos(showPhotos ? variant.ean : null, showPhotos ? variant.sku : null)
 
-  if (!showPhotos || photos.length === 0) return null
+  if (!showPhotos) return null
+
+  const latest = photos[0]
 
   return (
     <>
       <VariantPhotoThumbnail
-        imageUrl={photos[0].thumbUrl}
-        alt={photos[0].alt}
+        imageUrl={latest?.thumbUrl}
+        alt={latest?.alt || variant.label}
         onClick={() => setGalleryOpen(true)}
         className={className}
       />
@@ -689,7 +648,6 @@ function VariantActions({
     <div className="flex items-center gap-2">
       {quantityControl}
       {buyButton}
-      <VariantPhotoControls variant={variant} plantName={plantName} className="ml-auto shrink-0 self-center" />
     </div>
   )
 
@@ -698,9 +656,6 @@ function VariantActions({
       return (
         <div className="flex flex-col gap-2.5">
           {cartHints}
-          <div className="flex justify-end">
-            <VariantPhotoControls variant={variant} plantName={plantName} />
-          </div>
         </div>
       )
     }
@@ -755,7 +710,6 @@ function VariantMobileCard({
 
   const embeddedDesktopMainRow = (
     <div className="flex flex-nowrap items-center gap-3 p-3 sm:gap-4">
-      <VariantPhotoControls variant={variant} plantName={plantName} className="self-center" />
       <div className="shrink-0">
         <AvailabilityBlock variant={variant} hideShipment stackedLabel />
       </div>
@@ -841,14 +795,14 @@ function VariantMobileCard({
 
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex flex-nowrap items-baseline gap-x-5 lg:gap-x-6">
-          <span
+          <VariantSizeLabel
+            label={variant.label}
+            variant={variant}
             className={cn(
               variantSizeLabelClassName,
               'shrink-0 whitespace-nowrap text-base lg:text-lg',
             )}
-          >
-            {variant.label}
-          </span>
+          />
           <AvailabilityBlock
             variant={variant}
             hideShipment
@@ -906,9 +860,12 @@ function VariantMobileCard({
           embedded ? 'px-3.5 py-2.5' : 'px-2 py-2 md:hidden',
         )}
       >
-        <h3 className={cn(variantSizeLabelClassName, embedded && 'text-base sm:text-lg')}>
-          {variant.label}
-        </h3>
+        <div className="flex items-center gap-3">
+          <VariantPhotoControls variant={variant} plantName={plantName} className="shrink-0" />
+          <h3 className={cn(variantSizeLabelClassName, 'min-w-0', embedded && 'text-base sm:text-lg')}>
+            <VariantSizeLabel label={variant.label} variant={variant} />
+          </h3>
+        </div>
       </div>
 
       {embedded ? (

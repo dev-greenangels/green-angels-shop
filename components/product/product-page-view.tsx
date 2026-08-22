@@ -27,6 +27,7 @@ import { LISTING_PRODUCT_GRID_CLASS_NAME } from '@/lib/catalog/grid-columns'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import type { CatalogCategoryBreadcrumb } from '@/lib/catalog/categories'
 import { productPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
+import { useProductDisplayImages } from '@/lib/variant-photos/use-variant-photos'
 import type { Plant, ProductVariant } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -78,6 +79,7 @@ export function ProductPageView({
     Boolean(plant.plantingInstructions?.trim()) ||
     Boolean(plant.lightRequirements?.trim()) ||
     Boolean(plant.careInstructions?.trim())
+  const displayImages = useProductDisplayImages(plant)
 
   useTrackProductView(plant.id)
 
@@ -113,7 +115,7 @@ export function ProductPageView({
         <div className={cn(siteContentShellClassName, 'min-w-0 overflow-x-clip py-8')}>
           <div className="mb-16 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-10 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
             <ProductImageGallery
-              images={plant.images}
+              images={displayImages}
               productId={plant.id}
               productName={plant.name}
               isNew={plant.isNew}

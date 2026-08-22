@@ -11,6 +11,7 @@ import { DiscountedLineTotal, DiscountedUnitPrice } from '@/components/pricing/d
 import { NotifyAvailabilityButton } from '@/components/product/notify-availability-button'
 import { NotifyWhenAvailableModal } from '@/components/product/notify-when-available-modal'
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
+import { VariantSizeLabel } from '@/components/product/variant-size-label'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { isCartItemInStock } from '@/lib/cart-availability'
@@ -92,7 +93,12 @@ export function CartLineRow({
                     <h4 className="truncate text-sm font-medium">{item.plant.name}</h4>
                   </Link>
                   {item.variantLabel ? (
-                    <p className="text-sm font-medium text-muted-foreground">{item.variantLabel}</p>
+                    <VariantSizeLabel
+                      as="p"
+                      label={item.variantLabel}
+                      variant={variant}
+                      className="text-sm font-medium text-muted-foreground"
+                    />
                   ) : null}
                   {variantHasAvailableFrom(variant) && variant.availableFrom ? (
                     <ShipmentDateBadge
@@ -274,7 +280,12 @@ function InStockCartLineRow({
               <p className="truncate text-sm font-medium text-foreground">{item.plant.name}</p>
             </Link>
             {item.variantLabel ? (
-              <p className="text-xs font-medium text-primary">{item.variantLabel}</p>
+              <VariantSizeLabel
+                as="p"
+                label={item.variantLabel}
+                variant={variant}
+                className="text-xs font-medium text-primary"
+              />
             ) : null}
             {shipmentDate ? (
               <ShipmentDateBadge date={shipmentDate} className="mt-1 px-2 py-0.5 text-xs" />
@@ -410,7 +421,12 @@ function InStockCartLineRow({
             </Button>
           </div>
           {item.variantLabel ? (
-            <p className="text-sm font-medium text-primary">{item.variantLabel}</p>
+            <VariantSizeLabel
+              as="p"
+              label={item.variantLabel}
+              variant={variant}
+              className="text-sm font-medium text-primary"
+            />
           ) : null}
           {shipmentDate ? (
             <ShipmentDateBadge date={shipmentDate} className="mt-1 px-2 py-0.5 text-xs" />

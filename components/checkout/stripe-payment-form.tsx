@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { loadStripe, type Stripe } from '@stripe/stripe-js'
 import {
   CheckoutElementsProvider,
@@ -62,11 +62,13 @@ function StripePaymentFormInner({
   index,
   total,
   onPaid,
+  onSessionInvalid,
 }: {
   payment: StripePendingPayment
   index: number
   total: number
   onPaid: () => void
+  onSessionInvalid?: () => void
 }) {
   const t = useTranslations('checkout.stripe')
   const locale = useLocale()
@@ -77,6 +79,11 @@ function StripePaymentFormInner({
   const amountLabel = formatPayAmount(payment.totalAmount, payment.currency, locale)
   const ready = checkoutState.type === 'success'
   const checkout = checkoutState.type === 'success' ? checkoutState.checkout : null
+
+  useEffect(() => {
+    if (checkoutState.type !== 'error') return
+    onSessionInvalid?.()
+  }, [checkoutState.type, onSessionInvalid])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -162,11 +169,15 @@ export function StripePaymentForm({
   index,
   total,
   onPaid,
+  onSessionInvalid,
+  embedded,
 }: {
   payment: StripePendingPayment
   index: number
   total: number
   onPaid: () => void
+  onSessionInvalid?: () => void
+  embedded?: boolean
 }) {
   const t = useTranslations('checkout.stripe')
   const stripePromise = useMemo(
@@ -184,22 +195,27 @@ export function StripePaymentForm({
     [payment.clientSecret],
   )
 
+  const body = (
+    <CheckoutElementsProvider
+      key={payment.clientSecret}
+      stripe={stripePromise}
+      options={options}
+    >
+      <StripePaymentFormInner
+        payment={payment}
+        index={index}
+        total={total}
+        onPaid={onPaid}
+        onSessionInvalid={onSessionInvalid}
+      />
+    </CheckoutElementsProvider>
+  )
+
   return (
-    <div className={cn(checkoutPanelClassName, 'mx-auto max-w-lg')}>
+    <div className={cn(checkoutPanelClassName, embedded ? undefined : 'mx-auto max-w-lg')}>
       <h1 className="mb-1 font-serif text-2xl font-bold text-foreground">{t('title')}</h1>
       <p className="mb-6 text-sm text-muted-foreground">{t('subtitle')}</p>
-      <CheckoutElementsProvider
-        key={payment.clientSecret}
-        stripe={stripePromise}
-        options={options}
-      >
-        <StripePaymentFormInner
-          payment={payment}
-          index={index}
-          total={total}
-          onPaid={onPaid}
-        />
-      </CheckoutElementsProvider>
+      {body}
     </div>
   )
 }

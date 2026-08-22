@@ -35,6 +35,12 @@ export type PublicOrderConfirmation = {
   deliveryHouseNumber: string | null
   paymentMethod: string
   paymentStatus: string | null
+  paymentProvider?: string | null
+  paymentExpiresAt?: string | null
+  canRetry?: boolean
+  clientSecret?: string
+  publishableKey?: string
+  paymentPageUrl?: string
   comment: string | null
   buyerType?: string | null
   taxRegime?: string | null
@@ -52,23 +58,84 @@ export type PublicOrderConfirmation = {
   items: PublicOrderConfirmationItem[]
 }
 
+export type PaymentRetryResult = {
+  orderNumber: string
+  status: string
+  paymentStatus: string | null
+  paymentProvider?: string
+  clientSecret?: string
+  publishableKey?: string
+  paymentPageUrl?: string
+  paymentExpiresAt?: string | null
+}
+
+function confirmationHeaders(confirmationToken?: string): Record<string, string> {
+  const headers: Record<string, string> = {}
+  const token = confirmationToken?.trim() ?? ''
+  if (token) headers['X-Order-Confirmation-Token'] = token
+  return headers
+}
+
 export async function fetchOrderConfirmation(
   orderNumber: string,
   confirmationToken?: string,
 ): Promise<PublicOrderConfirmation | null> {
-  const token = confirmationToken?.trim() ?? ''
-  const headers: Record<string, string> = {}
-  if (token) {
-    headers['X-Order-Confirmation-Token'] = token
-  }
-
   const res = await fetch(`/api/orders/confirmation/${encodeURIComponent(orderNumber)}`, {
     cache: 'no-store',
     credentials: 'include',
-    headers,
+    headers: confirmationHeaders(confirmationToken),
   })
   if (!res.ok) return null
   return (await res.json()) as PublicOrderConfirmation
+}
+
+export async function cancelUnpaidOrder(
+  orderNumber: string,
+  confirmationToken?: string,
+): Promise<{ ok: boolean; status?: string; error?: string }> {
+  const res = await fetch(
+    `/api/orders/confirmation/${encodeURIComponent(orderNumber)}/cancel`,
+    {
+      method: 'POST',
+      cache: 'no-store',
+      credentials: 'include',
+      headers: confirmationHeaders(confirmationToken),
+    },
+  )
+  const data = (await res.json().catch(() => ({}))) as {
+    status?: string
+    error?: string
+    message?: string
+  }
+  if (!res.ok) {
+    return {
+      ok: false,
+      error: data.error || data.message || 'Cancel failed',
+    }
+  }
+  return { ok: true, status: data.status }
+}
+
+export async function retryOrderPayment(
+  orderNumber: string,
+  confirmationToken?: string,
+  returnBaseUrl?: string,
+): Promise<PaymentRetryResult | null> {
+  const res = await fetch(
+    `/api/orders/confirmation/${encodeURIComponent(orderNumber)}/payment/retry`,
+    {
+      method: 'POST',
+      cache: 'no-store',
+      credentials: 'include',
+      headers: {
+        ...confirmationHeaders(confirmationToken),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(returnBaseUrl ? { returnBaseUrl } : {}),
+    },
+  )
+  if (!res.ok) return null
+  return (await res.json()) as PaymentRetryResult
 }
 
 /** BFF → Nest → Mono invoice/status; updates order when webhook lagged. */
@@ -97,17 +164,11 @@ export async function syncStripePayment(
   orderNumber: string,
   confirmationToken?: string,
 ): Promise<{ status: string; paymentStatus: string | null; synced: boolean } | null> {
-  const headers: Record<string, string> = {}
-  const token = confirmationToken?.trim() ?? ''
-  if (token) {
-    headers['X-Order-Confirmation-Token'] = token
-  }
-
   const res = await fetch(`/api/payments/stripe/sync/${encodeURIComponent(orderNumber)}`, {
     method: 'POST',
     cache: 'no-store',
     credentials: 'include',
-    headers,
+    headers: confirmationHeaders(confirmationToken),
   })
   if (!res.ok) return null
   return (await res.json()) as {

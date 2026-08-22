@@ -144,6 +144,19 @@ export async function updateBackstageWholesalePageSettings(
   return res.json()
 }
 
+export async function updateBackstageAboutPageSettings(
+  payload: Partial<import('@/lib/settings/about').AboutPageSettings>,
+): Promise<import('@/lib/settings/about').AboutPageSettings> {
+  const res = await fetch('/api/backstage/settings/about', {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
 export async function updateBackstagePrestaImportSettings(
   payload: Partial<import('@/lib/settings/presta-import').PrestaImportSettings>,
 ): Promise<import('@/lib/settings/presta-import').PrestaImportSettings> {

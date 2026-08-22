@@ -1,12 +1,12 @@
 import type { ProductDisplayCharacteristic, ProductVariant } from '@/lib/types'
 
+/**
+ * Product-page characteristic strip: plant characteristics only.
+ * Size / marking attribute icons render next to the size label, not here.
+ */
 export function mergeProductPageDisplayItems(
   characteristics: ProductDisplayCharacteristic[],
-  variant?: Pick<ProductVariant, 'displayAttributes'> | null,
+  _variant?: Pick<ProductVariant, 'displayAttributes'> | null,
 ): ProductDisplayCharacteristic[] {
-  const extras = (variant?.displayAttributes ?? []).map((item) => ({
-    ...item,
-    id: `attr:${item.id}`,
-  }))
-  return [...characteristics, ...extras]
+  return characteristics
 }

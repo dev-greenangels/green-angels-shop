@@ -15,6 +15,9 @@
     "carts": "Carts",
     "users": "Users",
     "blog": "Blog",
+    "homePage": "Home page",
+    "about": "About",
+    "wholesalePage": "Wholesale",
     "legal": "Legal documents",
     "reviews": "Reviews",
     "wholesaleInquiries": "Wholesale inquiries",
@@ -53,7 +56,9 @@
     "groups": "{count} groups",
     "rowsAndGroups": "{rows} rows · {groups} groups",
     "customCount": "{count} changes.",
-    "selected": "Selected: {count}"
+    "selected": "Selected: {count}",
+    "retry": "Erneut versuchen",
+    "loadError": "Laden fehlgeschlagen"
   },
   "actions": {
     "save": "Save",
@@ -431,6 +436,30 @@
       "tabCart": "Cart",
       "tabNovaPoshta": "Nova Poshta"
     },
+    "about": {
+      "title": "About",
+      "subtitle": "Public /about page copy and images",
+      "loading": "Loading…",
+      "loadError": "Could not load the About page settings.",
+      "saveSuccess": "About page saved.",
+      "saveError": "Could not save the About page."
+    },
+    "home": {
+      "title": "Home page",
+      "subtitle": "Sections and copy on the storefront home page",
+      "loading": "Loading…",
+      "loadError": "Could not load home page settings.",
+      "saveSuccess": "Home page saved.",
+      "saveError": "Could not save the home page."
+    },
+    "wholesale": {
+      "title": "Wholesale page",
+      "subtitle": "Landing copy and form for B2B clients",
+      "loading": "Loading…",
+      "loadError": "Could not load wholesale page settings.",
+      "saveSuccess": "Wholesale page saved.",
+      "saveError": "Could not save the wholesale page."
+    },
     "products": {
       "title": "Products",
       "subtitle": "Manage the product catalog",
@@ -656,5 +685,32 @@
       "COOKIES": "Cookies",
       "RETURNS": "Returns"
     }
+  },
+  "photos": {
+    "sizePickerLabel": "Produktgröße",
+    "sizePickerPlaceholder": "Produkt oder Größe suchen…",
+    "sizePickerClear": "Löschen",
+    "sizeSearchHint": "Mindestens {count} Zeichen eingeben",
+    "sizeSearching": "Suche…",
+    "sizeSearchEmpty": "Nichts gefunden",
+    "sizeSearchFailed": "Suche fehlgeschlagen",
+    "sizeVariantCount": "{count} Gr.",
+    "sizeVariantsLoading": "Größen werden geladen…",
+    "sizeNoVariants": "Keine Größen",
+    "sizeNoIdentifier": "Kein EAN/SKU",
+    "uploadTitle": "Aktuelles Foto hinzufügen",
+    "uploadDescription": "Wählen Sie eine Kataloggröße und laden Sie JPEG oder WebP hoch. Das Foto erscheint neben dieser Größe im Shop.",
+    "uploadFileLabel": "Fotodatei",
+    "uploadFileHint": "JPEG oder WebP, max. 15 MB.",
+    "uploadStorageLabel": "Lager / Standort (optional)",
+    "uploadStoragePlaceholder": "z. B. Gewächshaus 2",
+    "uploadViberLabel": "An Viber-Empfänger senden",
+    "uploadSubmit": "Foto hochladen",
+    "uploadSubmitting": "Wird hochgeladen…",
+    "uploadNeedSize": "Produktgröße aus der Liste wählen",
+    "uploadNeedFile": "Bilddatei auswählen",
+    "uploadNeedIdentifier": "Diese Größe hat kein EAN/SKU — zuerst im Produkt hinterlegen",
+    "uploadSuccess": "Aktuelles Foto hinzugefügt",
+    "uploadFailed": "Foto konnte nicht hochgeladen werden"
   }
 }

@@ -11,6 +11,7 @@ import { PriceWithExVatUnder } from '@/components/commerce/shelf-price-block'
 import { DiscountedUnitPrice } from '@/components/pricing/discounted-price'
 import { ProductCoverImage } from '@/components/product/product-cover-image'
 import { VariantPhotoGalleryDialog } from '@/components/product/variant-photo-gallery-dialog'
+import { VariantSizeLabel } from '@/components/product/variant-size-label'
 import { NotifyAvailabilityButton } from '@/components/product/notify-availability-button'
 import { NotifyWhenAvailableModal } from '@/components/product/notify-when-available-modal'
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
@@ -38,6 +39,7 @@ import {
 } from '@/lib/product-pricing'
 import { cn } from '@/lib/utils'
 import { useVariantPhotos } from '@/lib/variant-photos/use-variant-photos'
+import { hasProductImage, isProductPlaceholderImage } from '@/lib/product-image'
 import type { Plant, ProductVariant } from '@/lib/types'
 export type CatalogDiscountQuantityFilter = {
   minQuantity: number
@@ -154,8 +156,8 @@ function CatalogListProductImage({
   const plantPhotos = useMemo(
     () =>
       plant.images
-        .filter(Boolean)
-          .map((url, index) => ({
+        .filter((url) => Boolean(url?.trim()) && !isProductPlaceholderImage(url))
+        .map((url, index) => ({
           id: `${plant.id}-${index}`,
           url,
           thumbUrl: url,
@@ -164,19 +166,23 @@ function CatalogListProductImage({
     [plant.id, plant.images, plant.name],
   )
   const galleryPhotos = variantPhotos.length > 0 ? variantPhotos : plantPhotos
-  const coverSrc = galleryPhotos[0]?.thumbUrl ?? galleryPhotos[0]?.url ?? plant.images[0]
+  const coverSrc =
+    galleryPhotos[0]?.thumbUrl ??
+    galleryPhotos[0]?.url ??
+    (hasProductImage(plant.images) ? plant.images[0] : undefined)
+  const canOpenGallery = showVariantPhotos || galleryPhotos.length > 0
 
   return (
     <>
       <button
         type="button"
-        onClick={() => galleryPhotos.length > 0 && setGalleryOpen(true)}
-        disabled={galleryPhotos.length === 0}
+        onClick={() => canOpenGallery && setGalleryOpen(true)}
+        disabled={!canOpenGallery}
         aria-label={t('viewPhoto', { alt: plant.name })}
         className={cn(
           'group relative block h-[4.75rem] w-[4.75rem] shrink-0 overflow-hidden rounded-lg bg-muted sm:h-[5.5rem] sm:w-[5.5rem]',
           'border border-transparent transition hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-          galleryPhotos.length === 0 && 'cursor-default',
+          !canOpenGallery && 'cursor-default',
         )}
       >
         <ProductCoverImage
@@ -185,7 +191,7 @@ function CatalogListProductImage({
           sizes="88px"
           imageClassName="object-[center_35%] transition-transform duration-200 group-hover:scale-[1.03]"
         />
-        {galleryPhotos.length > 0 ? (
+        {canOpenGallery ? (
           <>
             <span
               className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent opacity-0 transition group-hover:opacity-100"
@@ -220,7 +226,7 @@ function CatalogListProductImage({
         ) : null}
       </button>
 
-      {galleryPhotos.length > 0 ? (
+      {canOpenGallery ? (
         <VariantPhotoGalleryDialog
           open={galleryOpen}
           onOpenChange={setGalleryOpen}
@@ -517,9 +523,12 @@ function CatalogProductVariantRow({
               {plant.name}
             </h3>
           </Link>
-          <p className="line-clamp-2 font-sans text-xs leading-snug text-muted-foreground sm:text-sm">
-            {packaging ? `${packaging} · ${sizeLabel}` : sizeLabel}
-          </p>
+          <VariantSizeLabel
+            as="p"
+            label={packaging ? `${packaging} · ${sizeLabel}` : sizeLabel}
+            variant={variant}
+            className="line-clamp-2 font-sans text-xs leading-snug text-muted-foreground sm:text-sm"
+          />
           <p className="hidden font-sans text-sm text-muted-foreground sm:block">
             {canOrder ? (
               <>

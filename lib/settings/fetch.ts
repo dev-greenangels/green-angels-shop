@@ -24,6 +24,11 @@ import {
   defaultWholesalePageSettings,
   resolveWholesalePageSettings,
 } from '@/lib/settings/wholesale'
+import { normalizeAboutPageSettings } from '@/lib/settings/about.normalize'
+import {
+  defaultAboutPageSettings,
+  resolveAboutPageCopy,
+} from '@/lib/settings/about'
 import type {
   CartCheckoutSettings,
   CatalogPageSettings,
@@ -70,6 +75,7 @@ function unavailableSettingsFallback(): FetchedPublicSiteSettings {
       navigation: DEFAULT_NAVIGATION_SETTINGS,
       market: DEFAULT_MARKET_SETTINGS,
       wholesale: defaultWholesalePageSettings(DEFAULT_MARKET_SETTINGS.region),
+      about: defaultAboutPageSettings(DEFAULT_MARKET_SETTINGS.region),
       dispatchCalendar: { enabled: false },
     },
     storeUnavailable: true,
@@ -183,6 +189,24 @@ export function getResolvedWholesalePageSettings(
   const full = getWholesalePageSettings(fetched)
   const market = getMarketSettings(fetched)
   return resolveWholesalePageSettings(full, locale, market.region)
+}
+
+export function getAboutPageSettings(
+  fetched: FetchedPublicSiteSettings | PublicSiteSettings,
+): import('@/lib/settings/about').AboutPageSettings {
+  const settings = 'settings' in fetched ? fetched.settings : fetched
+  const market = getMarketSettings(fetched)
+  return normalizeAboutPageSettings(settings.about, market.region)
+}
+
+/** Resolved flat CMS for a storefront URL locale. */
+export function getResolvedAboutPageSettings(
+  fetched: FetchedPublicSiteSettings | PublicSiteSettings,
+  locale: string,
+): import('@/lib/settings/about').AboutPageCmsCopy {
+  const full = getAboutPageSettings(fetched)
+  const market = getMarketSettings(fetched)
+  return resolveAboutPageCopy(full, locale, market.region)
 }
 
 export function isStoreContactUnavailable(

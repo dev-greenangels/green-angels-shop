@@ -32,6 +32,10 @@ import {
   Landmark,
   ScrollText,
   Warehouse,
+  Sprout,
+  Home,
+  Handshake,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -116,6 +120,9 @@ const navGroups: NavGroup[] = [
     labelKey: 'groupContent',
     items: [
       { href: '/backstage/blog', labelKey: 'blog', icon: FileText },
+      { href: '/backstage/home', labelKey: 'homePage', icon: Home },
+      { href: '/backstage/about', labelKey: 'about', icon: Sprout },
+      { href: '/backstage/wholesale', labelKey: 'wholesalePage', icon: Handshake },
       { href: '/backstage/legal', labelKey: 'legal', icon: ScrollText },
       { href: '/backstage/reviews', labelKey: 'reviews', icon: MessageSquareQuote },
       { href: '/backstage/wholesale-inquiries', labelKey: 'wholesaleInquiries', icon: Warehouse },
@@ -383,6 +390,7 @@ function Sidebar({
 export function AdminLayout({ children, addClassName }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [employee, setEmployee] = useState<BackstageSession | null>(null)
+  const [authState, setAuthState] = useState<'checking' | 'ok'>('checking')
   const pathname = usePathname()
   const router = useRouter()
   const tNav = useTranslations('nav')
@@ -405,21 +413,52 @@ export function AdminLayout({ children, addClassName }: AdminLayoutProps) {
 
   useEffect(() => {
     let cancelled = false
-    void fetch('/api/backstage/auth/session', { credentials: 'include' })
-      .then((res) => res.json())
-      .then((data: { user?: BackstageSession | null }) => {
-        if (!cancelled && data.user) setEmployee(data.user)
-      })
-      .catch(() => {})
+    void (async () => {
+      try {
+        const res = await fetch('/api/backstage/auth/session', {
+          credentials: 'include',
+          cache: 'no-store',
+        })
+        const data = (await res.json().catch(() => ({}))) as {
+          user?: BackstageSession | null
+        }
+        if (cancelled) return
+        if (data.user) {
+          setEmployee(data.user)
+          setAuthState('ok')
+          return
+        }
+      } catch {
+        // Fall through to kick
+      }
+      if (cancelled) return
+      // Dead / stale session: clear cookie (session GET already clears when present) + login.
+      await fetch('/api/backstage/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      }).catch(() => null)
+      if (cancelled) return
+      router.replace('/backstage/login')
+      router.refresh()
+    })()
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [router])
 
   const handleLogout = async () => {
     await fetch('/api/backstage/auth/logout', { method: 'POST', credentials: 'include' })
     router.push('/backstage/login')
     router.refresh()
+  }
+
+  if (authState !== 'ok') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
+        <span className="sr-only">{tCommon('loading')}</span>
+      </div>
+    )
   }
 
   const getBreadcrumbs = () => {

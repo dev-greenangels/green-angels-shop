@@ -7,6 +7,7 @@ import type { ReactNode } from 'react'
 import { CartOrderTotalsBreakdown } from '@/components/cart/cart-order-totals-breakdown'
 import { useMinOrderCheckoutMessage } from '@/components/cart/min-order-info-banner'
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
+import { VariantSizeLabel } from '@/components/product/variant-size-label'
 import { cn } from '@/lib/utils'
 import { useFormatPrice } from '@/lib/commerce/use-format-price'
 import { findVariantOnPlant } from '@/lib/cart-limits'
@@ -100,9 +101,14 @@ function OrderItemsList({
                 {plantName}
               </p>
               {variantSize ? (
-                <p className="mt-0.5 truncate text-xs font-medium leading-snug text-primary/90">
-                  {variantSize}
-                </p>
+                <VariantSizeLabel
+                  as="p"
+                  label={variantSize}
+                  variant={
+                    item.variantId ? findVariantOnPlant(item.plant, item.variantId) : null
+                  }
+                  className="mt-0.5 truncate text-xs font-medium leading-snug text-primary/90"
+                />
               ) : null}
             </div>
             <div className="shrink-0 text-right">

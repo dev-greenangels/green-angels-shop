@@ -6,6 +6,7 @@ import { ArrowUpDown, Loader2, Plus, RefreshCw, Square, Trash2, Download } from 
 import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
+import { FreshPhotoUploadCard } from '@/components/backstage/fresh-photo-upload-card'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { InputWithClear } from '@/components/ui/input-with-clear'
@@ -352,6 +353,8 @@ export default function BackstagePhotosPage() {
             Оновити
           </Button>
         </div>
+
+        <FreshPhotoUploadCard onUploaded={() => void loadPhotos()} />
 
         <Card>
           <CardHeader>

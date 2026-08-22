@@ -19,7 +19,7 @@ const sizeC5: ProductDisplayCharacteristic = {
   id: 'attr-size',
   slug: 'size',
   name: 'Контейнер',
-  icon: 'Ruler',
+  icon: 'Container',
   unit: null,
   valueType: 'CONTAINER',
   displayValue: 'C5',
@@ -37,11 +37,10 @@ describe('mergeProductPageDisplayItems', () => {
     assert.deepEqual(items, [height])
   })
 
-  it('appends the selected variant attributes so size changes swap the row value', () => {
+  it('does not append size attributes — those show next to the size label instead', () => {
     const c5 = mergeProductPageDisplayItems([height], { displayAttributes: [sizeC5] })
     const c7 = mergeProductPageDisplayItems([height], { displayAttributes: [sizeC7] })
-    assert.equal(c5[1]?.displayValue, 'C5')
-    assert.equal(c7[1]?.displayValue, 'C7')
-    assert.equal(c5[1]?.icon, 'Ruler')
+    assert.deepEqual(c5, [height])
+    assert.deepEqual(c7, [height])
   })
 })

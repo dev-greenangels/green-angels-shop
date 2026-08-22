@@ -307,6 +307,8 @@ export type {
 
 export type { WholesalePageSettings } from './wholesale'
 
+export type { AboutPageSettings } from './about'
+
 export type {
   CountrySiteCode,
   CountrySiteCurrency,
@@ -328,6 +330,7 @@ export type PublicSiteSettings = {
   navigation: NavigationSettings
   market: import('./market').MarketSettings
   wholesale?: import('./wholesale').WholesalePageSettings
+  about?: import('./about').AboutPageSettings
   dispatchCalendar?: { enabled: boolean }
   /** лише в backstage GET /settings */
   prestaImport?: import('./presta-import').PrestaImportSettings

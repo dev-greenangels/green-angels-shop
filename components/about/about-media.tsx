@@ -11,7 +11,7 @@ type AboutImageProps = {
 
 export function AboutImage({ src, alt, className, priority }: AboutImageProps) {
   return (
-    <div className={cn('relative overflow-hidden rounded-2xl bg-secondary', className)}>
+    <div className={cn('relative overflow-hidden bg-secondary', className)}>
       <Image
         src={src}
         alt={alt}

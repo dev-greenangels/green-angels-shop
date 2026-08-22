@@ -16,6 +16,9 @@
     "carts": "Кошики",
     "users": "Користувачі",
     "blog": "Блог",
+    "homePage": "Головна сторінка",
+    "about": "Про нас",
+    "wholesalePage": "Гурт",
     "legal": "Юридичні документи",
     "reviews": "Відгуки",
     "wholesaleInquiries": "Заявки гурту",
@@ -54,7 +57,9 @@
     "groups": "{count} груп",
     "rowsAndGroups": "{rows} рядків · {groups} груп",
     "customCount": "{count} змін.",
-    "selected": "Обрано: {count}"
+    "selected": "Обрано: {count}",
+    "retry": "Спробувати знову",
+    "loadError": "Помилка завантаження"
   },
   "actions": {
     "save": "Зберегти",
@@ -416,7 +421,7 @@
       "catalogContentDesc": "Назви, описи та SEO категорій і товарів — у базі даних, не в цій формі.",
       "catalogContentHint1": "Перемикач «Контент» (🇺🇦 / 🇬🇧) у шапці визначає мову редагування категорій і товарів. Slug, ціни та фото — спільні.",
       "catalogContentHint2": "Категорії та Товари — EN-переклад через перемикач контенту.",
-      "catalogContentHint3": "Головна сторінка — у «Налаштування → Головна» (поки одна мова).",
+      "catalogContentHint3": "Головна сторінка — у «Контент → Головна сторінка» (поки одна мова).",
       "uiStringsTitle": "Тексти інтерфейсу",
       "uiStringsDesc": "Окремо для магазину (сайт) та бек-офісу. Групи згорнуті — розгорніть потрібний блок.",
       "tabStorefront": "Магазин (сайт)",
@@ -427,12 +432,15 @@
       "subtitle": "Контакти магазину та контент сторінок сайту",
       "tabStore": "Магазин",
       "tabHome": "Головна сторінка",
+      "tabAbout": "Про нас",
       "tabCatalog": "Каталог",
       "tabRecentlyViewed": "Останні переглянуті",
       "tabCart": "Кошик",
       "tabNovaPoshta": "Нова Пошта",
       "catalogSaveSuccess": "Налаштування каталогу збережено.",
       "catalogSaveError": "Не вдалося зберегти всі налаштування каталогу.",
+      "aboutSaveSuccess": "Сторінку «Про нас» збережено.",
+      "aboutSaveError": "Не вдалося зберегти сторінку «Про нас».",
       "watermarks": {
         "title": "Водяні знаки",
         "description": "Окремо керуйте автоматичним додаванням водяного знака до різних типів фото.",
@@ -441,6 +449,30 @@
         "freshPhotosLabel": "Fresh Photos",
         "freshPhotosHint": "Додавати водяний знак до нових Fresh Photos."
       }
+    },
+    "about": {
+      "title": "Про нас",
+      "subtitle": "Текст і зображення публічної сторінки /about",
+      "loading": "Завантаження…",
+      "loadError": "Не вдалося завантажити сторінку «Про нас».",
+      "saveSuccess": "Сторінку «Про нас» збережено.",
+      "saveError": "Не вдалося зберегти сторінку «Про нас»."
+    },
+    "home": {
+      "title": "Головна сторінка",
+      "subtitle": "Блоки та тексти на головній сторінці магазину",
+      "loading": "Завантаження…",
+      "loadError": "Не вдалося завантажити налаштування головної.",
+      "saveSuccess": "Головну сторінку збережено.",
+      "saveError": "Не вдалося зберегти головну сторінку."
+    },
+    "wholesale": {
+      "title": "Сторінка «Гурт»",
+      "subtitle": "Текст лендінгу та форми для гуртових клієнтів",
+      "loading": "Завантаження…",
+      "loadError": "Не вдалося завантажити сторінку «Гурт».",
+      "saveSuccess": "Сторінку «Гурт» збережено.",
+      "saveError": "Не вдалося зберегти сторінку «Гурт»."
     },
     "products": {
       "title": "Товари",
@@ -667,5 +699,32 @@
       "COOKIES": "Cookie",
       "RETURNS": "Повернення"
     }
+  },
+  "photos": {
+    "sizePickerLabel": "Розмір товару",
+    "sizePickerPlaceholder": "Пошук товару або розміру…",
+    "sizePickerClear": "Очистити",
+    "sizeSearchHint": "Введіть мінімум {count} символ",
+    "sizeSearching": "Пошук…",
+    "sizeSearchEmpty": "Нічого не знайдено",
+    "sizeSearchFailed": "Не вдалося виконати пошук",
+    "sizeVariantCount": "{count} розм.",
+    "sizeVariantsLoading": "Завантаження розмірів…",
+    "sizeNoVariants": "Немає розмірів",
+    "sizeNoIdentifier": "Немає EAN/SKU",
+    "uploadTitle": "Додати свіже фото",
+    "uploadDescription": "Оберіть розмір з каталогу та завантажте JPEG або WebP. Фото з’явиться на вітрині біля цього розміру.",
+    "uploadFileLabel": "Файл фото",
+    "uploadFileHint": "JPEG або WebP, до 15 МБ.",
+    "uploadStorageLabel": "Склад / локація (опційно)",
+    "uploadStoragePlaceholder": "Наприклад: теплиця 2",
+    "uploadViberLabel": "Надіслати у Viber отримувачам",
+    "uploadSubmit": "Завантажити фото",
+    "uploadSubmitting": "Завантаження…",
+    "uploadNeedSize": "Оберіть розмір товару зі списку",
+    "uploadNeedFile": "Оберіть файл зображення",
+    "uploadNeedIdentifier": "У цього розміру немає EAN або SKU — спочатку додайте їх у картці товару",
+    "uploadSuccess": "Свіже фото додано",
+    "uploadFailed": "Не вдалося завантажити фото"
   }
 }

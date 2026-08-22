@@ -20,7 +20,7 @@ function NurseryIcon({
       alt={alt}
       width={208}
       height={208}
-      className={cn('rounded-full object-cover', className)}
+      className={cn('object-contain', className)}
     />
   )
 }

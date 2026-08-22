@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Loader2, RefreshCw } from 'lucide-react'
 
 import { DiscountedUnitPrice } from '@/components/pricing/discounted-price'
+import { VariantSizeLabel } from '@/components/product/variant-size-label'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -59,7 +60,12 @@ function ReplacementOptionCard({
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-foreground">{option.plant.name}</p>
-        <p className="text-xs text-primary">{option.variant.label}</p>
+        <VariantSizeLabel
+          as="p"
+          label={option.variant.label}
+          variant={option.variant}
+          className="text-xs font-medium text-primary"
+        />
         <p className="mt-1 text-sm font-semibold text-foreground">
           <DiscountedUnitPrice
             originalPrice={option.variant.basePrice}

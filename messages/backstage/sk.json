@@ -16,6 +16,9 @@
     "carts": "Košíky",
     "users": "Používatelia",
     "blog": "Blog",
+    "homePage": "Domovská stránka",
+    "about": "O nás",
+    "wholesalePage": "Veľkoobchod",
     "legal": "Právne dokumenty",
     "reviews": "Recenzie",
     "wholesaleInquiries": "Veľkoobchodné dopyty",
@@ -54,7 +57,9 @@
     "groups": "{count} skupín",
     "rowsAndGroups": "{rows} riadkov · {groups} skupín",
     "customCount": "{count} zmien.",
-    "selected": "Vybrané: {count}"
+    "selected": "Vybrané: {count}",
+    "retry": "Skúsiť znova",
+    "loadError": "Chyba načítania"
   },
   "actions": {
     "save": "Uložiť",
@@ -427,12 +432,15 @@
       "subtitle": "Kontakty obchodu a obsah stránok webu",
       "tabStore": "Obchod",
       "tabHome": "Domovská stránka",
+      "tabAbout": "O nás",
       "tabCatalog": "Katalóg",
       "tabRecentlyViewed": "Naposledy zobrazené",
       "tabCart": "Košík",
       "tabNovaPoshta": "Nova Poshta",
       "catalogSaveSuccess": "Nastavenia katalógu boli uložené.",
       "catalogSaveError": "Nepodarilo sa uložiť všetky nastavenia katalógu.",
+      "aboutSaveSuccess": "Stránka «O nás» bola uložená.",
+      "aboutSaveError": "Nepodarilo sa uložiť stránku «O nás».",
       "watermarks": {
         "title": "Vodoznaky",
         "description": "Automatické pridávanie vodoznaku nastavte samostatne pre každý typ fotografie.",
@@ -441,6 +449,30 @@
         "freshPhotosLabel": "Fresh Photos",
         "freshPhotosHint": "Pridávať vodoznak do nových Fresh Photos."
       }
+    },
+    "about": {
+      "title": "O nás",
+      "subtitle": "Text a obrázky verejnej stránky /about",
+      "loading": "Načítava sa…",
+      "loadError": "Nepodarilo sa načítať nastavenia stránky «O nás».",
+      "saveSuccess": "Stránka «O nás» bola uložená.",
+      "saveError": "Nepodarilo sa uložiť stránku «O nás»."
+    },
+    "home": {
+      "title": "Domovská stránka",
+      "subtitle": "Bloky a texty na domovskej stránke obchodu",
+      "loading": "Načítava sa…",
+      "loadError": "Nepodarilo sa načítať nastavenia domovskej stránky.",
+      "saveSuccess": "Domovská stránka bola uložená.",
+      "saveError": "Nepodarilo sa uložiť domovskú stránku."
+    },
+    "wholesale": {
+      "title": "Stránka «Veľkoobchod»",
+      "subtitle": "Text landing page a formulára pre B2B klientov",
+      "loading": "Načítava sa…",
+      "loadError": "Nepodarilo sa načítať nastavenia stránky «Veľkoobchod».",
+      "saveSuccess": "Stránka «Veľkoobchod» bola uložená.",
+      "saveError": "Nepodarilo sa uložiť stránku «Veľkoobchod»."
     },
     "products": {
       "title": "Produkty",
@@ -667,5 +699,32 @@
       "COOKIES": "Cookies",
       "RETURNS": "Vrátenie"
     }
+  },
+  "photos": {
+    "sizePickerLabel": "Veľkosť produktu",
+    "sizePickerPlaceholder": "Hľadať produkt alebo veľkosť…",
+    "sizePickerClear": "Vymazať",
+    "sizeSearchHint": "Zadajte aspoň {count} znak",
+    "sizeSearching": "Hľadám…",
+    "sizeSearchEmpty": "Nič sa nenašlo",
+    "sizeSearchFailed": "Hľadanie zlyhalo",
+    "sizeVariantCount": "{count} veľ.",
+    "sizeVariantsLoading": "Načítavam veľkosti…",
+    "sizeNoVariants": "Žiadne veľkosti",
+    "sizeNoIdentifier": "Chýba EAN/SKU",
+    "uploadTitle": "Pridať čerstvú fotku",
+    "uploadDescription": "Vyberte veľkosť z katalógu a nahrajte JPEG alebo WebP. Fotka sa zobrazí pri tejto veľkosti na webe.",
+    "uploadFileLabel": "Súbor fotky",
+    "uploadFileHint": "JPEG alebo WebP, do 15 MB.",
+    "uploadStorageLabel": "Sklad / lokalita (voliteľné)",
+    "uploadStoragePlaceholder": "napr. skleník 2",
+    "uploadViberLabel": "Odoslať Viber príjemcom",
+    "uploadSubmit": "Nahrať fotku",
+    "uploadSubmitting": "Nahrávam…",
+    "uploadNeedSize": "Vyberte veľkosť produktu zo zoznamu",
+    "uploadNeedFile": "Vyberte súbor obrázka",
+    "uploadNeedIdentifier": "Táto veľkosť nemá EAN ani SKU — najprv ich doplňte pri produkte",
+    "uploadSuccess": "Čerstvá fotka pridaná",
+    "uploadFailed": "Fotku sa nepodarilo nahrať"
   }
 }

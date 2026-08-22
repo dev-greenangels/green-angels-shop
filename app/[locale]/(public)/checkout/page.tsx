@@ -17,7 +17,7 @@ import {
   CheckoutTogetherOrderPreview,
 } from '@/components/checkout/checkout-split-orders-preview'
 import { CheckoutPaymentStep, type CheckoutBuyerType } from '@/components/checkout/checkout-payment-step'
-import { StripePaymentForm } from '@/components/checkout/stripe-payment-form'
+import { CheckoutCardPaymentPanel } from '@/components/checkout/checkout-card-payment-panel'
 import { CheckoutShipDateField } from '@/components/checkout/checkout-ship-date-field'
 import { CheckoutShippingStep } from '@/components/checkout/checkout-shipping-step'
 import { CheckoutSkBillingFields } from '@/components/checkout/checkout-sk-billing-fields'
@@ -66,7 +66,7 @@ import {
   useCartPromoCode,
   useCartStore,
 } from '@/lib/cart-store'
-import { createOrders, checkoutSuccessSearch } from '@/lib/orders/create-order'
+import { createOrders, checkoutSuccessSearch, CreateOrderError, ONLINE_CARD_UNAVAILABLE_CODE } from '@/lib/orders/create-order'
 import { clearCartAfterCheckout } from '@/lib/carts/clear-after-checkout'
 import {
   clearStripePendingPayments,
@@ -75,7 +75,7 @@ import {
   stripePaymentsFromCreatedOrders,
   type StripePendingPayment,
 } from '@/lib/checkout/stripe-pending'
-import { syncStripePayment } from '@/lib/orders/fetch-order-confirmation'
+import { syncStripePayment, cancelUnpaidOrder, retryOrderPayment, fetchOrderConfirmation } from '@/lib/orders/fetch-order-confirmation'
 import { buildPricingQuoteLineItems } from '@/lib/pricing/quote-line-items'
 import { usePricingQuote, promoCodesKey, resolveDisplayedAppliedPromos } from '@/lib/pricing/use-pricing-quote'
 import { tryApplyPromoCode } from '@/lib/pricing/try-apply-promo-code'
@@ -474,13 +474,72 @@ export default function CheckoutPage() {
   const [sessionHydratedForKey, setSessionHydratedForKey] = useState<string | null>(null)
 
   useEffect(() => {
-    const stored = loadStripePendingPayments()
-    if (stored) {
-      setStripePending(stored.payments)
-      setStripePayIndex(stored.index)
+    let cancelled = false
+    void (async () => {
+      const stored = loadStripePendingPayments()
+      if (!stored) {
+        setMounted(true)
+        return
+      }
+      const payment = stored.payments[stored.index]
+      if (!payment) {
+        clearStripePendingPayments()
+        setMounted(true)
+        return
+      }
+      const confirmation = await fetchOrderConfirmation(
+        payment.orderNumber,
+        payment.confirmationToken,
+      )
+      if (cancelled) return
+      if (!confirmation) {
+        clearStripePendingPayments()
+        setMounted(true)
+        return
+      }
+      if (confirmation.status === 'CANCELLED') {
+        clearStripePendingPayments()
+        setMounted(true)
+        return
+      }
+      if (confirmation.paymentStatus === 'success') {
+        clearStripePendingPayments()
+        router.replace(
+          `/checkout/success?${checkoutSuccessSearch([
+            {
+              orderNumber: payment.orderNumber,
+              confirmationToken: payment.confirmationToken,
+            },
+          ])}`,
+        )
+        return
+      }
+      if (confirmation.clientSecret && confirmation.publishableKey) {
+        const nextPayments = stored.payments.map((row, i) =>
+          i === stored.index
+            ? {
+                ...row,
+                clientSecret: confirmation.clientSecret!,
+                publishableKey: confirmation.publishableKey!,
+                paymentExpiresAt: confirmation.paymentExpiresAt ?? row.paymentExpiresAt,
+              }
+            : row,
+        )
+        saveStripePendingPayments(nextPayments, stored.index)
+        setStripePending(nextPayments)
+        setStripePayIndex(stored.index)
+      } else if (confirmation.canRetry) {
+        setStripePending(stored.payments)
+        setStripePayIndex(stored.index)
+      } else {
+        clearStripePendingPayments()
+      }
+      setMounted(true)
+    })()
+    return () => {
+      cancelled = true
     }
-    setMounted(true)
-  }, [])
+  }, [router])
 
   const goToCheckoutSuccess = useCallback(
     (orders: Array<{ orderNumber: string; confirmationToken?: string }>) => {
@@ -496,6 +555,7 @@ export default function CheckoutPage() {
     saveStripePendingPayments(payments, 0)
     setStripePending(payments)
     setStripePayIndex(0)
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [])
 
   const handleStripeOrderPaid = useCallback(() => {
@@ -508,6 +568,47 @@ export default function CheckoutPage() {
     saveStripePendingPayments(stripePending, nextIndex)
     setStripePayIndex(nextIndex)
   }, [goToCheckoutSuccess, stripePayIndex, stripePending])
+
+  const handleCancelUnpaidOrder = useCallback(async () => {
+    const payment = stripePending?.[stripePayIndex]
+    if (!payment) return
+    const result = await cancelUnpaidOrder(payment.orderNumber, payment.confirmationToken)
+    if (!result.ok) {
+      throw new Error(result.error || 'Cancel failed')
+    }
+    clearStripePendingPayments()
+    setStripePending(null)
+    router.replace('/cart')
+  }, [router, stripePayIndex, stripePending])
+
+  const handleRetryPayment = useCallback(async () => {
+    const payment = stripePending?.[stripePayIndex]
+    if (!payment) return
+    const retried = await retryOrderPayment(
+      payment.orderNumber,
+      payment.confirmationToken,
+      shopPublicBaseUrl(locale) || undefined,
+    )
+    if (!retried?.clientSecret || !retried.publishableKey) {
+      throw new Error('Retry failed')
+    }
+    const nextPayments = (stripePending ?? []).map((row, i) =>
+      i === stripePayIndex
+        ? {
+            ...row,
+            clientSecret: retried.clientSecret!,
+            publishableKey: retried.publishableKey!,
+            paymentExpiresAt: retried.paymentExpiresAt ?? row.paymentExpiresAt,
+          }
+        : row,
+    )
+    saveStripePendingPayments(nextPayments, stripePayIndex)
+    setStripePending(nextPayments)
+  }, [locale, stripePayIndex, stripePending])
+
+  const handleSessionInvalid = useCallback(() => {
+    clearStripePendingPayments()
+  }, [])
 
   useEffect(() => {
     if (!mounted) return
@@ -1194,8 +1295,14 @@ export default function CheckoutPage() {
       }
       router.replace(`/checkout/success?${checkoutSuccessSearch([order])}`)
     } catch (error) {
+      const onlineCardUnavailable =
+        error instanceof CreateOrderError && error.code === ONLINE_CARD_UNAVAILABLE_CODE
       setSubmitError(
-        error instanceof Error ? error.message : t('submitFailed'),
+        onlineCardUnavailable
+          ? t('onlineCardUnavailable')
+          : error instanceof Error
+            ? error.message
+            : t('submitFailed'),
       )
       setIsLoading(false)
     }
@@ -1210,11 +1317,15 @@ export default function CheckoutPage() {
     return (
       <div className={checkoutPageShellClassName}>
         <div className={cn(checkoutPageContentClassName, siteContentShellClassName, 'py-10 sm:py-16')}>
-          <StripePaymentForm
+          <CheckoutCardPaymentPanel
             payment={stripePayment}
             index={stripePayIndex}
             total={stripePending?.length ?? 1}
+            paymentExpiresAt={stripePayment.paymentExpiresAt}
             onPaid={handleStripeOrderPaid}
+            onCancelOrder={handleCancelUnpaidOrder}
+            onRetry={handleRetryPayment}
+            onSessionInvalid={handleSessionInvalid}
           />
         </div>
       </div>

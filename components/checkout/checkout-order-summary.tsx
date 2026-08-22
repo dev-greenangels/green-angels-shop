@@ -7,6 +7,7 @@ import { Loader2, PenSquare } from 'lucide-react'
 import { CartOrderTotalsBreakdown } from '@/components/cart/cart-order-totals-breakdown'
 import { CartPromoGiftLines } from '@/components/cart/cart-promo-gift-lines'
 import { checkoutPanelClassName } from '@/components/checkout/checkout-utils'
+import { VariantSizeLabel } from '@/components/product/variant-size-label'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -205,9 +206,16 @@ export const CheckoutOrderSummary = memo(function CheckoutOrderSummary({
                         {plantName}
                       </p>
                       {variantSize ? (
-                        <p className="mt-0.5 truncate text-xs font-medium leading-snug text-primary/90">
-                          {variantSize}
-                        </p>
+                        <VariantSizeLabel
+                          as="p"
+                          label={variantSize}
+                          variant={
+                            item.variantId
+                              ? findVariantOnPlant(item.plant, item.variantId)
+                              : null
+                          }
+                          className="mt-0.5 truncate text-xs font-medium leading-snug text-primary/90"
+                        />
                       ) : null}
                     </div>
                     <div className="shrink-0 text-right">

@@ -15,6 +15,9 @@
     "carts": "Carts",
     "users": "Users",
     "blog": "Blog",
+    "homePage": "Home page",
+    "about": "About",
+    "wholesalePage": "Wholesale",
     "legal": "Legal documents",
     "reviews": "Reviews",
     "wholesaleInquiries": "Wholesale inquiries",
@@ -53,7 +56,9 @@
     "groups": "{count} groups",
     "rowsAndGroups": "{rows} rows · {groups} groups",
     "customCount": "{count} changes.",
-    "selected": "Selected: {count}"
+    "selected": "Selected: {count}",
+    "retry": "Try again",
+    "loadError": "Failed to load"
   },
   "actions": {
     "save": "Save",
@@ -430,6 +435,30 @@
       "tabCart": "Cart",
       "tabNovaPoshta": "Nova Poshta"
     },
+    "about": {
+      "title": "About",
+      "subtitle": "Public /about page copy and images",
+      "loading": "Loading…",
+      "loadError": "Could not load the About page settings.",
+      "saveSuccess": "About page saved.",
+      "saveError": "Could not save the About page."
+    },
+    "home": {
+      "title": "Home page",
+      "subtitle": "Sections and copy on the storefront home page",
+      "loading": "Loading…",
+      "loadError": "Could not load home page settings.",
+      "saveSuccess": "Home page saved.",
+      "saveError": "Could not save the home page."
+    },
+    "wholesale": {
+      "title": "Wholesale page",
+      "subtitle": "Landing copy and form for B2B clients",
+      "loading": "Loading…",
+      "loadError": "Could not load wholesale page settings.",
+      "saveSuccess": "Wholesale page saved.",
+      "saveError": "Could not save the wholesale page."
+    },
     "products": {
       "title": "Products",
       "subtitle": "Manage the product catalog",
@@ -655,5 +684,32 @@
       "COOKIES": "Cookies",
       "RETURNS": "Returns"
     }
+  },
+  "photos": {
+    "sizePickerLabel": "Termékméret",
+    "sizePickerPlaceholder": "Termék vagy méret keresése…",
+    "sizePickerClear": "Törlés",
+    "sizeSearchHint": "Legalább {count} karakter",
+    "sizeSearching": "Keresés…",
+    "sizeSearchEmpty": "Nincs találat",
+    "sizeSearchFailed": "A keresés sikertelen",
+    "sizeVariantCount": "{count} méret",
+    "sizeVariantsLoading": "Méreték betöltése…",
+    "sizeNoVariants": "Nincsenek méretek",
+    "sizeNoIdentifier": "Nincs EAN/SKU",
+    "uploadTitle": "Friss fotó hozzáadása",
+    "uploadDescription": "Válasszon katalógusméretet, majd töltsön fel JPEG vagy WebP fájlt. A fotó a méret mellett jelenik meg a webshopban.",
+    "uploadFileLabel": "Fotófájl",
+    "uploadFileHint": "JPEG vagy WebP, max. 15 MB.",
+    "uploadStorageLabel": "Raktár / helyszín (opcionális)",
+    "uploadStoragePlaceholder": "pl. üvegház 2",
+    "uploadViberLabel": "Küldés Viber címzetteknek",
+    "uploadSubmit": "Fotó feltöltése",
+    "uploadSubmitting": "Feltöltés…",
+    "uploadNeedSize": "Válasszon termékméretet a listából",
+    "uploadNeedFile": "Válasszon képfájlt",
+    "uploadNeedIdentifier": "Ehhez a mérethez nincs EAN/SKU — előbb adja meg a terméken",
+    "uploadSuccess": "Friss fotó hozzáadva",
+    "uploadFailed": "A fotó feltöltése nem sikerült"
   }
 }

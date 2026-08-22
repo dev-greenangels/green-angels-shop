@@ -17,6 +17,8 @@ type FavoritesStore = {
   productIds: string[]
   toggle: (productId: string, userId?: string) => Promise<void>
   setProductIds: (productIds: string[]) => void
+  /** Keep only IDs that still exist in catalog; optionally sync removals to server. */
+  pruneToExisting: (existingIds: string[], userId?: string) => Promise<string[]>
   loadFromServer: () => Promise<void>
   mergeGuestWithServer: (userId: string) => Promise<void>
   isFavorite: (productId: string) => boolean
@@ -30,6 +32,29 @@ export const useFavoritesStore = create<FavoritesStore>()(
       isFavorite: (productId) => get().productIds.includes(productId),
 
       setProductIds: (productIds) => set({ productIds }),
+
+      pruneToExisting: async (existingIds, userId) => {
+        const existing = new Set(existingIds)
+        const current = get().productIds
+        const next = current.filter((id) => existing.has(id))
+        const removed = current.filter((id) => !existing.has(id))
+        if (!removed.length) return current
+
+        set({ productIds: next })
+
+        if (userId) {
+          await Promise.allSettled(
+            removed.map((productId) =>
+              fetch(`/api/favorites/${encodeURIComponent(productId)}`, {
+                method: 'DELETE',
+                credentials: 'include',
+              }),
+            ),
+          )
+        }
+
+        return next
+      },
 
       loadFromServer: async () => {
         const ids = await fetchFavoriteIds()
@@ -88,6 +113,7 @@ export function useFavoriteActions() {
       isFavorite: state.isFavorite,
       loadFromServer: state.loadFromServer,
       mergeGuestWithServer: state.mergeGuestWithServer,
+      pruneToExisting: state.pruneToExisting,
     })),
   )
 }

@@ -527,7 +527,7 @@ function CatalogProductVariantRow({
             as="p"
             label={packaging ? `${packaging} · ${sizeLabel}` : sizeLabel}
             variant={variant}
-            className="line-clamp-2 font-sans text-xs leading-snug text-muted-foreground sm:text-sm"
+            className="font-sans text-xs leading-snug text-muted-foreground sm:text-sm"
           />
           <p className="hidden font-sans text-sm text-muted-foreground sm:block">
             {canOrder ? (

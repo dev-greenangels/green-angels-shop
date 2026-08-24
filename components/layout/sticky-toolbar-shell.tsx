@@ -45,6 +45,8 @@ type StickyToolbarShellProps = {
   glass?: boolean
   /** Lock page scroll while any panel is open (default true). */
   lockBodyScroll?: boolean
+  /** Shorter toolbar row (h-10 instead of h-12). */
+  compact?: boolean
 }
 
 /**
@@ -58,6 +60,7 @@ export function StickyToolbarShell({
   innerClassName,
   glass = true,
   lockBodyScroll = true,
+  compact = false,
 }: StickyToolbarShellProps) {
   const [openPanel, setOpenPanel] = useState<string | null>(null)
 
@@ -78,7 +81,7 @@ export function StickyToolbarShell({
     <StickyToolbarContext.Provider value={value}>
       <div className={cn(siteStickyToolbarOuterClassName, outerClassName, className)}>
         {/* Layout slot = row height only; glass expands absolutely over content */}
-        <div className="relative h-12">
+        <div className={cn('relative', compact ? 'h-10' : 'h-12')}>
           <div
             className={cn(
               'absolute inset-x-0 top-0 z-50 overflow-hidden rounded-b-[0.5rem]',

@@ -10,15 +10,9 @@ import {
 import { Loader2, Lock } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
-import {
-  checkoutPanelClassName,
-  shopPublicBaseUrl,
-} from '@/components/checkout/checkout-utils'
+import { checkoutPanelClassName } from '@/components/checkout/checkout-utils'
 import { Button } from '@/components/ui/button'
-import {
-  stripeReturnQuery,
-  type StripePendingPayment,
-} from '@/lib/checkout/stripe-pending'
+import { type StripePendingPayment } from '@/lib/checkout/stripe-pending'
 import { formatMoneyAmount } from '@/lib/commerce/format'
 import { cn } from '@/lib/utils'
 
@@ -50,12 +44,13 @@ const STRIPE_APPEARANCE = {
   },
 }
 
-const STRIPE_FONTS = [
-  {
-    cssSrc:
-      'https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap',
-  },
-]
+function logStripeCheckoutError(context: string, error: unknown): void {
+  if (error instanceof Error) {
+    console.error(`[Stripe checkout] ${context}:`, error.message, error)
+    return
+  }
+  console.error(`[Stripe checkout] ${context}:`, error)
+}
 
 function StripePaymentFormInner({
   payment,
@@ -82,8 +77,9 @@ function StripePaymentFormInner({
 
   useEffect(() => {
     if (checkoutState.type !== 'error') return
+    logStripeCheckoutError('Elements init failed', checkoutState.error)
     onSessionInvalid?.()
-  }, [checkoutState.type, onSessionInvalid])
+  }, [checkoutState, onSessionInvalid])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -91,21 +87,18 @@ function StripePaymentFormInner({
     setSubmitting(true)
     setError(null)
     try {
-      const shopBase = shopPublicBaseUrl(locale)
-      const returnUrl = shopBase
-        ? `${shopBase}/checkout?${stripeReturnQuery(payment)}`
-        : undefined
       const result = await checkout.confirm({
         redirect: 'if_required',
-        ...(returnUrl ? { returnUrl } : {}),
       })
       if (result.type === 'error') {
+        logStripeCheckoutError('confirm returned error', result.error)
         setError(result.error.message || t('error'))
         setSubmitting(false)
         return
       }
       onPaid()
-    } catch {
+    } catch (err) {
+      logStripeCheckoutError('confirm threw', err)
       setError(t('error'))
       setSubmitting(false)
     }
@@ -189,7 +182,6 @@ export function StripePaymentForm({
       clientSecret: payment.clientSecret,
       elementsOptions: {
         appearance: STRIPE_APPEARANCE,
-        fonts: STRIPE_FONTS,
       },
     }),
     [payment.clientSecret],

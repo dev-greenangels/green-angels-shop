@@ -36,6 +36,7 @@ import {
   Home,
   Handshake,
   Loader2,
+  Receipt,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -98,6 +99,7 @@ const navGroups: NavGroup[] = [
     labelKey: 'groupSales',
     items: [
       { href: '/backstage/orders', labelKey: 'orders', icon: ShoppingCart },
+      { href: '/backstage/supplier-invoices', labelKey: 'supplierInvoices', icon: Receipt },
       { href: '/backstage/order-dictionaries', labelKey: 'orderDictionaries', icon: ClipboardList },
       {
         href: '/backstage/dispatch-calendar',

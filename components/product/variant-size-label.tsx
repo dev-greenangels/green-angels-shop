@@ -26,11 +26,16 @@ export function VariantSizeLabel({
   if (!trimmed) return null
 
   return (
-    <Tag className={cn('inline-flex max-w-full items-center gap-1 leading-[inherit]', className)}>
+    <Tag
+      className={cn(
+        'inline-flex min-w-0 max-w-full flex-nowrap items-center gap-1 leading-[inherit]',
+        className,
+      )}
+    >
       {Icon ? (
         <Icon className={cn('shrink-0', iconClassName)} aria-hidden />
       ) : null}
-      <span className={cn('min-w-0', textClassName)}>{trimmed}</span>
+      <span className={cn('min-w-0 truncate', textClassName)}>{trimmed}</span>
     </Tag>
   )
 }

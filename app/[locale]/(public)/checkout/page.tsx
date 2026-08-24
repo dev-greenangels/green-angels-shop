@@ -66,7 +66,7 @@ import {
   useCartPromoCode,
   useCartStore,
 } from '@/lib/cart-store'
-import { createOrders, checkoutSuccessSearch, CreateOrderError, ONLINE_CARD_UNAVAILABLE_CODE } from '@/lib/orders/create-order'
+import { createOrders, checkoutSuccessSearch, checkoutCancelledSearch, CreateOrderError, ONLINE_CARD_UNAVAILABLE_CODE } from '@/lib/orders/create-order'
 import { clearCartAfterCheckout } from '@/lib/carts/clear-after-checkout'
 import {
   clearStripePendingPayments,
@@ -306,7 +306,7 @@ export default function CheckoutPage() {
       isSkMarket && buyerType === 'company' && viesValid != null
         ? viesValid
         : undefined,
-    enabled: mounted && catalogReady && quoteItemsKey.length > 0 && !isLoading,
+    enabled: mounted && catalogReady && quoteItemsKey.length > 0,
   })
   const allowedDeliveryMethods = useMemo(() => {
     const fromQuote = pricingQuote?.checkout?.allowedDeliveryMethods
@@ -328,8 +328,7 @@ export default function CheckoutPage() {
     mounted &&
     catalogReady &&
     needsShipmentSplitChoice &&
-    shipmentSplitMode === 'split' &&
-    !isLoading
+    shipmentSplitMode === 'split'
   const immediateDeliveryMethod =
     formData.splitShipments?.immediate.deliveryMethod ?? formData.deliveryMethod
   const datedDeliveryMethod =
@@ -578,7 +577,7 @@ export default function CheckoutPage() {
     }
     clearStripePendingPayments()
     setStripePending(null)
-    router.replace('/cart')
+    router.replace(`/checkout/cancelled?${checkoutCancelledSearch(payment.orderNumber)}`)
   }, [router, stripePayIndex, stripePending])
 
   const handleRetryPayment = useCallback(async () => {
@@ -596,6 +595,7 @@ export default function CheckoutPage() {
       i === stripePayIndex
         ? {
             ...row,
+            confirmationToken: retried.confirmationToken ?? row.confirmationToken,
             clientSecret: retried.clientSecret!,
             publishableKey: retried.publishableKey!,
             paymentExpiresAt: retried.paymentExpiresAt ?? row.paymentExpiresAt,

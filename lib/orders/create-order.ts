@@ -20,6 +20,7 @@ export type CreatedOrder = {
     productName: string
     variantLabel?: string | null
     quantity: number
+    lineTotal?: number
   }>
 }
 
@@ -118,4 +119,8 @@ export function checkoutSuccessSearch(
       return parts.join('&')
     })
     .join('&')
+}
+
+export function checkoutCancelledSearch(orderNumber: string): string {
+  return `order=${encodeURIComponent(orderNumber.trim())}`
 }

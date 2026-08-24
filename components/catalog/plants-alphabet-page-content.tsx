@@ -25,13 +25,15 @@ import { useCatalogSettings } from '@/components/providers/catalog-settings-prov
 import { emptyCatalogFilters } from '@/lib/catalog/filter-plants'
 import { hasVisibleCatalogFilters } from '@/lib/catalog/filter-visibility'
 import type { CatalogProductsPageMeta } from '@/lib/catalog/products'
-import { plantsActiveFiltersStickyOuterClassName } from '@/lib/catalog/sidebar-panel-styles'
+import {
+  plantsActiveFiltersStickyOuterClassName,
+  plantsAlphabetStickyOuterClassName,
+} from '@/lib/catalog/sidebar-panel-styles'
 import { useCatalogFilterDefinitions } from '@/lib/catalog/use-catalog-filter-definitions'
 import { usePathname, useRouter } from '@/i18n/navigation'
 import {
   siteContentShellClassName,
   siteStickyToolbarInnerClassName,
-  siteStickyToolbarOuterClassName,
 } from '@/lib/layout/site-shell'
 import { formatNumberForLocale } from '@/lib/i18n/intl-locale'
 import { cn } from '@/lib/utils'
@@ -63,8 +65,8 @@ function PlantsAlphabetStickyNav({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <div ref={ref} className={cn(siteStickyToolbarOuterClassName, 'mb-6')}>
-      <div className={siteStickyToolbarInnerClassName}>{children}</div>
+    <div ref={ref} className={cn(plantsAlphabetStickyOuterClassName, 'mb-6')}>
+      <div className={cn(siteStickyToolbarInnerClassName, 'px-3 sm:px-4')}>{children}</div>
     </div>
   )
 }
@@ -180,11 +182,12 @@ export function PlantsAlphabetPageContent() {
           {showFilters ? (
             <PlantsAlphabetActiveFiltersSticky>
               <StickyToolbarShell
+                compact
                 outerClassName="!static top-auto mx-0 mb-0 w-full max-w-none px-0"
                 innerClassName="rounded-none border-0 bg-transparent shadow-none ![backdrop-filter:none] ![-webkit-backdrop-filter:none] dark:bg-transparent"
                 glass={false}
               >
-                <StickyToolbarRow className="px-3 py-1.5 sm:px-4">
+                <StickyToolbarRow className="h-10 px-3 py-1 sm:px-4">
                   <div className="shrink-0 lg:hidden">
                     <CatalogFilterSheet
                       filters={filters}

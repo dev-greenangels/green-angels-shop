@@ -14,6 +14,7 @@ export type StripePendingPayment = {
     productName: string
     variantLabel?: string | null
     quantity: number
+    lineTotal?: number
   }>
 }
 
@@ -54,6 +55,7 @@ export function stripePaymentsFromCreatedOrders(orders: CreatedOrder[]): StripeP
           productName: item.productName,
           variantLabel: item.variantLabel ?? null,
           quantity: item.quantity,
+          lineTotal: item.lineTotal,
         })),
       },
     ]

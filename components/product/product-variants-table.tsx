@@ -710,6 +710,7 @@ function VariantMobileCard({
 
   const embeddedDesktopMainRow = (
     <div className="flex flex-nowrap items-center gap-3 p-3 sm:gap-4">
+      <VariantPhotoControls variant={variant} plantName={plantName} className="shrink-0 self-center" />
       <div className="shrink-0">
         <AvailabilityBlock variant={variant} hideShipment stackedLabel />
       </div>
@@ -760,7 +761,8 @@ function VariantMobileCard({
   const mobileBody = (
     <div className={cn('space-y-3', embedded ? 'space-y-3 p-3.5' : 'space-y-3 p-3')}>
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="flex min-w-0 items-start gap-3">
+          <VariantPhotoControls variant={variant} plantName={plantName} className="shrink-0" />
           <AvailabilityBlock variant={variant} hideShipment stackedLabel />
         </div>
         <VariantPriceColumn variant={variant} stacked />
@@ -861,7 +863,6 @@ function VariantMobileCard({
         )}
       >
         <div className="flex items-center gap-3">
-          <VariantPhotoControls variant={variant} plantName={plantName} className="shrink-0" />
           <h3 className={cn(variantSizeLabelClassName, 'min-w-0', embedded && 'text-base sm:text-lg')}>
             <VariantSizeLabel label={variant.label} variant={variant} />
           </h3>

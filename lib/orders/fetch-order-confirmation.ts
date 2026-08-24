@@ -60,6 +60,7 @@ export type PublicOrderConfirmation = {
 
 export type PaymentRetryResult = {
   orderNumber: string
+  confirmationToken?: string
   status: string
   paymentStatus: string | null
   paymentProvider?: string

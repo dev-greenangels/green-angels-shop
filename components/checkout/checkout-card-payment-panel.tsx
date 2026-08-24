@@ -4,22 +4,16 @@ import { useEffect, useState } from 'react'
 import { Loader2, Lock } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
+import { BrandLogo } from '@/components/brand-logo'
+import { useMarketRegion } from '@/components/providers/market-region-provider'
+import { PaymentDeadlineCountdown } from '@/components/checkout/payment-deadline-countdown'
 import { StripePaymentForm } from '@/components/checkout/stripe-payment-form'
 import { checkoutPanelClassName } from '@/components/checkout/checkout-utils'
 import { Button } from '@/components/ui/button'
 import { formatMoneyAmount } from '@/lib/commerce/format'
+import { getMarketBranding } from '@/lib/branding/market-branding'
 import type { StripePendingPayment } from '@/lib/checkout/stripe-pending'
 import { cn } from '@/lib/utils'
-
-function formatDeadline(iso: string | null | undefined, locale: string): string | null {
-  if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return new Intl.DateTimeFormat(locale, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(d)
-}
 
 export function CheckoutCardPaymentPanel({
   payment,
@@ -42,6 +36,8 @@ export function CheckoutCardPaymentPanel({
 }) {
   const t = useTranslations('checkout.stripe')
   const locale = useLocale()
+  const marketRegion = useMarketRegion()
+  const brandAlt = getMarketBranding(marketRegion).applicationName
   const [cancelling, setCancelling] = useState(false)
   const [retrying, setRetrying] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -50,16 +46,12 @@ export function CheckoutCardPaymentPanel({
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [payment.clientSecret, payment.orderNumber])
 
-  const deadlineLabel = formatDeadline(paymentExpiresAt, locale)
-  const amountLabel = formatMoneyAmount(
-    payment.totalAmount,
-    {
-      code: payment.currency.trim().toUpperCase() || 'EUR',
-      symbol: payment.currency.trim().toUpperCase() || 'EUR',
-      decimals: payment.currency.trim().toUpperCase() === 'HUF' ? 0 : 2,
-    },
-    locale,
-  )
+  const moneyOpts = {
+    code: payment.currency.trim().toUpperCase() || 'EUR',
+    symbol: payment.currency.trim().toUpperCase() || 'EUR',
+    decimals: payment.currency.trim().toUpperCase() === 'HUF' ? 0 : 2,
+  }
+  const amountLabel = formatMoneyAmount(payment.totalAmount, moneyOpts, locale)
 
   const handleCancelOrder = async () => {
     if (cancelling) return
@@ -96,50 +88,64 @@ export function CheckoutCardPaymentPanel({
       className="mx-auto grid w-full max-w-5xl gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)]"
     >
       <aside className={cn(checkoutPanelClassName, 'h-fit space-y-4')}>
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {t('orderCreatedBadge')}
-        </p>
-        <h2 className="font-sans text-2xl font-semibold tracking-tight text-foreground tabular-nums">
-          {t('orderNumber', { number: payment.orderNumber })}
-        </h2>
-        <p className="text-lg font-semibold text-foreground tabular-nums">
-          {t('amountDue', { amount: amountLabel })}
-        </p>
-        {deadlineLabel ? (
-          <div className="rounded-md border border-amber-200/80 bg-amber-50/80 px-3 py-2 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
-            <p className="font-medium">{t('deadline', { time: deadlineLabel })}</p>
-            <p className="mt-1 text-xs opacity-90">{t('deadlineHint')}</p>
-          </div>
-        ) : null}
+        <BrandLogo alt={brandAlt} imgClassName="max-h-10 md:max-h-11" />
+
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-foreground">{t('orderCreatedBadge')}</p>
+          <h2 className="font-sans text-2xl font-semibold tracking-tight text-foreground tabular-nums">
+            {t('orderNumber', { number: payment.orderNumber })}
+          </h2>
+        </div>
+
+        <PaymentDeadlineCountdown paymentExpiresAt={paymentExpiresAt} />
 
         {items.length > 0 ? (
           <div className="space-y-2 border-t border-border/60 pt-4">
             <p className="text-sm font-medium text-foreground">{t('itemsTitle')}</p>
-            <ul className="space-y-2">
-              {items.map((item, i) => (
-                <li
-                  key={`${item.productName}-${i}`}
-                  className="flex items-start justify-between gap-3 text-sm"
-                >
-                  <span className="min-w-0 flex-1 text-foreground">
-                    {item.productName}
-                    {item.variantLabel ? (
-                      <span className="text-muted-foreground"> ({item.variantLabel})</span>
+            <ul className="space-y-3">
+              {items.map((item, i) => {
+                const lineLabel =
+                  typeof item.lineTotal === 'number'
+                    ? formatMoneyAmount(item.lineTotal, moneyOpts, locale)
+                    : null
+                return (
+                  <li
+                    key={`${item.productName}-${i}`}
+                    className="flex items-start justify-between gap-3 text-sm"
+                  >
+                    <span className="min-w-0 flex-1 text-foreground">
+                      {item.productName}
+                      {item.variantLabel ? (
+                        <span className="text-muted-foreground"> ({item.variantLabel})</span>
+                      ) : null}
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        ×{item.quantity}
+                      </span>
+                    </span>
+                    {lineLabel ? (
+                      <span className="shrink-0 tabular-nums font-medium text-foreground">
+                        {lineLabel}
+                      </span>
                     ) : null}
-                  </span>
-                  <span className="shrink-0 tabular-nums text-muted-foreground">
-                    ×{item.quantity}
-                  </span>
-                </li>
-              ))}
+                  </li>
+                )
+              })}
             </ul>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">{t('summaryHint')}</p>
         )}
+
+        <div className="border-t border-border/60 pt-4">
+          <p className="text-lg font-semibold text-foreground tabular-nums">
+            {t('amountDue', { amount: amountLabel })}
+          </p>
+        </div>
       </aside>
 
       <div className="space-y-4">
+        <BrandLogo alt={brandAlt} className="lg:hidden" imgClassName="max-h-9" />
+
         <StripePaymentForm
           payment={payment}
           index={index}

@@ -96,7 +96,12 @@ export function usePricingQuote({
   const requestIdRef = useRef(0)
 
   useEffect(() => {
-    if (!enabled || !itemsKey || !items.length) {
+    if (!enabled) {
+      // Keep last quote visible (e.g. checkout submit) — only pause refetch.
+      return
+    }
+
+    if (!itemsKey || !items.length) {
       setQuote(null)
       setQuoteForPromoCodes([])
       setLoading(false)

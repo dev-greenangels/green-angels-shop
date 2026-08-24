@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import type { StripePendingPayment } from '@/lib/checkout/stripe-pending'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
-import { checkoutSuccessSearch } from '@/lib/orders/create-order'
+import { checkoutSuccessSearch, checkoutCancelledSearch } from '@/lib/orders/create-order'
 import {
   cancelUnpaidOrder,
   fetchOrderConfirmation,
@@ -147,11 +147,11 @@ function CheckoutPayInner() {
 
   const handleCancel = useCallback(async () => {
     if (!payment) return
-    const result = await cancelUnpaidOrder(payment.orderNumber, payment.confirmationToken)
+    const orderNumber = payment.orderNumber
+    const result = await cancelUnpaidOrder(orderNumber, payment.confirmationToken)
     if (!result.ok) throw new Error(result.error || 'cancel failed')
-    setPayment(null)
-    setStatusHint(t('resumeCancelled'))
-  }, [payment, t])
+    router.replace(`/checkout/cancelled?${checkoutCancelledSearch(orderNumber)}`)
+  }, [payment, router])
 
   const handleRetry = useCallback(async () => {
     if (!payment) return
@@ -165,6 +165,7 @@ function CheckoutPayInner() {
     }
     setPayment({
       ...payment,
+      confirmationToken: retried.confirmationToken ?? payment.confirmationToken,
       clientSecret: retried.clientSecret,
       publishableKey: retried.publishableKey,
       paymentExpiresAt: retried.paymentExpiresAt ?? payment.paymentExpiresAt,

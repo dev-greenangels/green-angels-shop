@@ -1,12 +1,12 @@
 'use client'
 
-import { ArrowRight } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { CategoryCoverImage } from '@/components/catalog/category-cover-image'
 import { Card } from '@/components/ui/card'
 import type { CatalogCategory } from '@/lib/catalog/types'
 import { categoryHref } from '@/lib/catalog/paths'
+import { isCategoryPlaceholderImage } from '@/lib/category-image'
 import { intlLocaleForApp } from '@/lib/i18n/intl-locale'
 import { Link } from '@/i18n/navigation'
 import { pressableClassName } from '@/lib/pressable'
@@ -18,10 +18,20 @@ type CategoryCardProps = {
   compact?: boolean
 }
 
+const overlayTextShadowOnImage =
+  '[text-shadow:0_1px_2px_rgba(0,0,0,0.42),0_0_1px_rgba(0,0,0,0.25)]'
+
+const overlayTextShadowStrongOnImage =
+  '[text-shadow:0_1px_3px_rgba(0,0,0,0.58),0_0_2px_rgba(0,0,0,0.4)]'
+
+const overlayTextShadowOnLight =
+  '[text-shadow:0_1px_1px_rgba(255,255,255,0.55)]'
+
 export function CategoryCard({ category, className, compact = false }: CategoryCardProps) {
   const locale = useLocale()
   const t = useTranslations('catalog')
   const numberLocale = intlLocaleForApp(locale)
+  const hasCoverImage = !isCategoryPlaceholderImage(category.image)
   const plantCountLabel = t('plantCount', {
     count: category.plantCount.toLocaleString(numberLocale),
   })
@@ -31,7 +41,7 @@ export function CategoryCard({ category, className, compact = false }: CategoryC
       href={categoryHref(category.slug)}
       className={cn(
         pressableClassName,
-        'group/card block h-full rounded-[0.5rem] outline-none',
+        'group/card block h-full rounded-xl outline-none',
         'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
         '[-webkit-tap-highlight-color:transparent] select-none',
         className,
@@ -39,64 +49,71 @@ export function CategoryCard({ category, className, compact = false }: CategoryC
     >
       <Card
         className={cn(
-          'flex h-24 flex-row gap-0 overflow-hidden rounded-[0.5rem] border-border/50 py-0 shadow-sm',
-          'transition-[box-shadow,border-color] duration-100 ease-out',
-          'hover:border-primary/25 hover:shadow-md',
+          '@container relative aspect-square gap-0 overflow-hidden rounded-xl border-0 p-0 shadow-md',
+          'transition-[box-shadow] duration-200 ease-out hover:shadow-lg',
         )}
       >
-        <div
-          className={cn(
-            'relative shrink-0 self-stretch overflow-hidden bg-muted',
-            compact ? 'w-[38%]' : 'w-[40%] sm:w-[42%]',
-          )}
-        >
-          <CategoryCoverImage
-            src={category.image}
-            alt={category.name}
-            imageClassName="object-cover object-center transition-transform duration-500 ease-out group-hover/card:scale-[1.04]"
+        <CategoryCoverImage
+          src={category.image}
+          alt={category.name}
+          className="absolute inset-0"
+          imageClassName="object-cover object-center transition-transform duration-500 ease-out group-hover/card:scale-[1.05]"
+          logoClassName={compact ? 'p-4' : 'p-6 md:p-8'}
+        />
+
+        {hasCoverImage ? (
+          <div
+            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-black/5 to-black/30"
+            aria-hidden
           />
-        </div>
+        ) : null}
 
         <div
           className={cn(
-            'relative z-[1] -ml-5 flex min-w-0 flex-1 flex-col justify-center rounded-l-none rounded-r-[0.5rem] border-l border-white/25',
-            'bg-white/40 backdrop-blur-md supports-[backdrop-filter]:bg-white/30',
-            'shadow-[-8px_0_20px_rgba(0,0,0,0.06)]',
-            compact ? 'gap-1 p-2.5 pl-5' : 'gap-1.5 p-3 pl-6 sm:pl-7',
+            'absolute inset-x-[8%] bottom-[6%]',
+            compact
+              ? 'text-[clamp(9px,5.6cqw,14px)]'
+              : 'text-[clamp(11px,6.5cqw,17px)]',
           )}
         >
-          <p
+          <div
             className={cn(
-              'font-medium uppercase tracking-[0.14em] text-foreground/55',
-              compact ? 'text-[10px]' : 'text-[11px]',
+              'flex w-full flex-col items-center rounded-[0.2rem] text-center',
+              'gap-[clamp(3px,1.4cqw,7px)] px-[clamp(7px,3.4cqw,14px)] py-[clamp(6px,2.8cqw,11px)]',
+              hasCoverImage
+                ? 'border border-white/70 bg-white/30'
+                : 'border-2 border-white/90 bg-white/88 shadow-sm',
             )}
           >
-            {t('categoryLabel')}
-          </p>
-          <h3
-            className={cn(
-              'line-clamp-2 font-sans font-medium leading-snug text-foreground transition-colors group-hover/card:text-primary',
-              compact ? 'text-base' : 'text-base sm:text-[17px]',
-            )}
-          >
-            {category.name}
-          </h3>
-          <div className="flex items-center justify-between gap-2">
             <p
               className={cn(
-                'min-w-0 truncate text-muted-foreground',
-                compact ? 'text-xs' : 'text-sm',
+                'text-[0.56em] font-[900] uppercase leading-none tracking-[0.08em]',
+                hasCoverImage ? 'text-white/90' : 'text-foreground/60',
+                hasCoverImage ? overlayTextShadowStrongOnImage : overlayTextShadowOnLight,
+              )}
+            >
+              {t('categoryLabel')}
+            </p>
+            <h3
+              className={cn(
+                'line-clamp-2 w-full text-[1em] font-sans font-bold uppercase leading-snug tracking-wide',
+                hasCoverImage
+                  ? 'text-white'
+                  : 'text-foreground transition-colors group-hover/card:text-primary',
+                hasCoverImage ? overlayTextShadowOnImage : overlayTextShadowOnLight,
+              )}
+            >
+              {category.name}
+            </h3>
+            <p
+              className={cn(
+                'text-[0.78em] font-[700] leading-none',
+                hasCoverImage ? 'text-white/70' : 'text-foreground/70',
+                hasCoverImage ? overlayTextShadowStrongOnImage : overlayTextShadowOnLight,
               )}
             >
               {plantCountLabel}
             </p>
-            <ArrowRight
-              className={cn(
-                'shrink-0 text-primary/70 transition-transform duration-200 group-hover/card:translate-x-0.5',
-                compact ? 'h-4 w-4' : 'h-5 w-5',
-              )}
-              aria-hidden
-            />
           </div>
         </div>
       </Card>

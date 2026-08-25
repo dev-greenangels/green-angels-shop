@@ -32,12 +32,14 @@ export function buildWebsiteJsonLd(input: {
 export function buildOrganizationJsonLd(input: {
   origin: string
   name: string
+  legalName?: string
   store: StoreContactSettings
   marketRegion: string
   storeUnavailable: boolean
 }): Record<string, unknown> | null {
   const origin = input.origin.replace(/\/$/, '')
   const name = input.name.trim()
+  const legalName = input.legalName?.trim()
   if (!origin || !name || input.storeUnavailable) return null
 
   const sameAs = Object.values(input.store.social ?? {})
@@ -57,6 +59,7 @@ export function buildOrganizationJsonLd(input: {
     '@context': 'https://schema.org',
     '@type': emitAddress ? ['Organization', 'LocalBusiness'] : 'Organization',
     name,
+    ...(legalName && legalName !== name ? { legalName } : {}),
     url: origin,
     ...(sameAs.length ? { sameAs } : {}),
     ...(safePhone ? { telephone: safePhone } : {}),

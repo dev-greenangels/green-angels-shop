@@ -1,4 +1,5 @@
 import { Clock, Link2, Mail, Phone } from 'lucide-react'
+import { getTranslations } from 'next-intl/server'
 
 import { StoreAddressLink } from '@/components/store/store-address-link'
 import { StoreCompanyDetailsDisplay } from '@/components/store/store-company-details-display'
@@ -138,7 +139,7 @@ function ScheduleBlock({
   )
 }
 
-export function StoreContactsDisplay({
+export async function StoreContactsDisplay({
   store,
   className,
   iconClassName,
@@ -151,10 +152,11 @@ export function StoreContactsDisplay({
   columnsOnDesktop = false,
   scheduleSectionTitle,
   showSocialLinks = false,
-  socialSectionTitle = 'Соцмережі',
+  socialSectionTitle,
   marketRegion = 'ua',
-  companySectionTitle = 'Реквізити компанії',
+  companySectionTitle,
 }: StoreContactsDisplayProps) {
+  const t = await getTranslations('contactsPage')
   const phones = getStorePhones(store)
   const emails = getStoreEmails(store)
   const footerVisibility = filterByFooterVisibility
@@ -176,12 +178,15 @@ export function StoreContactsDisplay({
   const lineVisibility = filterByFooterVisibility ? footerVisibility! : undefined
   const showGroupedContacts = grouped && contactBlocks.length > 0
   const showSocial = showSocialLinks && hasVisibleSocialLinks(store.social)
+  const resolvedScheduleTitle = scheduleSectionTitle ?? t('hours')
+  const resolvedSocialTitle = socialSectionTitle ?? t('social')
+  const resolvedCompanyTitle = companySectionTitle ?? t('companyDetails')
 
   const companySection = resolvedShowCompany ? (
     <StoreCompanyDetailsDisplay
       company={store.companyDetails}
       marketRegion={marketRegion}
-      title={companySectionTitle}
+      title={resolvedCompanyTitle}
       textClassName={textClassName}
       mutedClassName={textClassName ? 'opacity-70' : undefined}
     />
@@ -189,7 +194,7 @@ export function StoreContactsDisplay({
 
   const socialSection = showSocial ? (
     <div className="space-y-3">
-      <p className={cn('font-medium', textClassName)}>{socialSectionTitle}</p>
+      <p className={cn('font-medium', textClassName)}>{resolvedSocialTitle}</p>
       <SocialLinks
         social={store.social}
         iconClassName="border-border bg-muted/50 text-foreground hover:bg-muted"
@@ -200,9 +205,7 @@ export function StoreContactsDisplay({
   const schedulesSection =
     resolvedShowSchedules && schedules.length > 0 ? (
       <div className="space-y-4">
-        {scheduleSectionTitle ? (
-          <h3 className={cn('font-serif text-xl font-semibold', textClassName)}>{scheduleSectionTitle}</h3>
-        ) : null}
+        <h3 className={cn('font-serif text-xl font-semibold', textClassName)}>{resolvedScheduleTitle}</h3>
         <div className={cn(columnsOnDesktop && grouped ? 'grid gap-6 md:grid-cols-2' : 'space-y-3')}>
           {schedules.map((schedule) => (
             <ScheduleBlock
@@ -218,25 +221,26 @@ export function StoreContactsDisplay({
 
   if (columnsOnDesktop && grouped) {
     return (
-      <div className={cn('space-y-6', className)}>
-        {showGroupedContacts ? (
-          <div className="grid gap-6 md:grid-cols-2">
-            {contactBlocks.map((block) => (
-              <ContactBlockDisplay
-                key={block.title}
-                block={block}
-                visibility={lineVisibility}
-                iconClassName={iconClassName}
-                textClassName={textClassName}
-                linkClassName={linkClassName}
-              />
-            ))}
+      <div className={cn('space-y-8', className)}>
+        <div className="grid gap-8 md:grid-cols-2 md:items-start">
+          <div className="space-y-6">
+            {showGroupedContacts
+              ? contactBlocks.map((block) => (
+                  <ContactBlockDisplay
+                    key={block.title}
+                    block={block}
+                    visibility={lineVisibility}
+                    iconClassName={iconClassName}
+                    textClassName={textClassName}
+                    linkClassName={linkClassName}
+                  />
+                ))
+              : null}
+            {socialSection}
           </div>
-        ) : null}
-
-        {socialSection}
+          {companySection}
+        </div>
         {schedulesSection}
-        {companySection}
 
         {resolvedShowAddress ? (
           <StoreAddressLink

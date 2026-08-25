@@ -2,7 +2,9 @@ import Image from 'next/image'
 import { getTranslations } from 'next-intl/server'
 
 import { HomeSectionHeader } from '@/components/home/home-section-header'
+import { pickHomeCmsText } from '@/lib/home/cms-or-translated'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
+import { DEFAULT_HOME_SETTINGS } from '@/lib/settings/defaults'
 import type { HomePageSettings } from '@/lib/settings/types'
 
 const PLACEHOLDER_IMAGE = '/images/category-placeholder.svg'
@@ -23,8 +25,16 @@ export async function NurseryGallerySection({ settings }: NurseryGallerySectionP
       <div className={siteContentShellClassName}>
         <HomeSectionHeader
           eyebrow={t('nurseryEyebrow')}
-          title={settings.title}
-          subtitle={settings.subtitle}
+          title={pickHomeCmsText(
+            settings.title,
+            DEFAULT_HOME_SETTINGS.nurseryGallery.title,
+            t('nurseryTitle'),
+          )}
+          subtitle={pickHomeCmsText(
+            settings.subtitle,
+            DEFAULT_HOME_SETTINGS.nurseryGallery.subtitle,
+            t('nurserySubtitle'),
+          )}
         />
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 lg:grid-rows-2 lg:gap-5">

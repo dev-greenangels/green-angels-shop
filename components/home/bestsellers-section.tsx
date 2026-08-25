@@ -3,6 +3,8 @@ import { getLocale, getTranslations } from 'next-intl/server'
 import { HomeProductRowSection } from '@/components/home/home-product-row-section'
 import { fetchBestsellerProducts, type HomeProductsResult } from '@/lib/catalog/home-products'
 import { fetchCatalogRootSlug, resolveCatalogHref } from '@/lib/catalog/paths'
+import { pickHomeCmsText } from '@/lib/home/cms-or-translated'
+import { DEFAULT_HOME_SETTINGS } from '@/lib/settings/defaults'
 import type { HomePageSettings } from '@/lib/settings/types'
 
 type BestsellersSectionProps = {
@@ -23,8 +25,16 @@ export async function BestsellersSection({
   return (
     <HomeProductRowSection
       id="bestsellers"
-      title={settings.title}
-      subtitle={settings.subtitle}
+      title={pickHomeCmsText(
+        settings.title,
+        DEFAULT_HOME_SETTINGS.bestsellers.title,
+        t('bestsellersTitle'),
+      )}
+      subtitle={pickHomeCmsText(
+        settings.subtitle,
+        DEFAULT_HOME_SETTINGS.bestsellers.subtitle,
+        t('bestsellersSubtitle'),
+      )}
       plants={plants}
       unavailable={unavailable}
       viewAllHref={catalogHref}

@@ -37,6 +37,8 @@ import {
   Handshake,
   Loader2,
   Receipt,
+  Bell,
+  Workflow,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -51,10 +53,12 @@ import { BrandLogo } from '@/components/brand-logo'
 import { BackstageContentLocaleSwitcher } from '@/components/backstage/backstage-content-locale'
 import { BackstageUiLocaleSwitcher } from '@/components/backstage/backstage-ui-locale'
 import { fetchWholesaleInquiriesNewCount } from '@/lib/backstage/wholesale-inquiries'
+import { fetchStockNotificationsPendingCount } from '@/lib/backstage/stock-notifications'
 import { cn } from '@/lib/utils'
 import type { BackstageSession } from '@/lib/backstage-auth/types'
 
 const WHOLESALE_NEW_COUNT_EVENT = 'ga:wholesale-new-count-refresh'
+const STOCK_PENDING_EVENT = 'ga:stock-notify-pending-refresh'
 const WHOLESALE_NEW_COUNT_POLL_MS = 60_000
 
 type NavItem = {
@@ -128,6 +132,7 @@ const navGroups: NavGroup[] = [
       { href: '/backstage/legal', labelKey: 'legal', icon: ScrollText },
       { href: '/backstage/reviews', labelKey: 'reviews', icon: MessageSquareQuote },
       { href: '/backstage/wholesale-inquiries', labelKey: 'wholesaleInquiries', icon: Warehouse },
+      { href: '/backstage/stock-notifications', labelKey: 'stockNotifications', icon: Bell },
     ],
   },
   {
@@ -139,6 +144,7 @@ const navGroups: NavGroup[] = [
       { href: '/backstage/redirects', labelKey: 'redirects', icon: ArrowRightLeft },
       { href: '/backstage/reference-data', labelKey: 'referenceData', icon: Scale },
       { href: '/backstage/tedb', labelKey: 'tedb', icon: Landmark },
+      { href: '/backstage/jobs', labelKey: 'jobs', icon: Workflow },
     ],
   },
 ]
@@ -297,6 +303,7 @@ function Sidebar({
   const pathname = usePathname()
   const tCommon = useTranslations('common')
   const [wholesaleNewCount, setWholesaleNewCount] = useState(0)
+  const [stockPendingCount, setStockPendingCount] = useState(0)
 
   const initiallyOpen = useMemo(() => {
     const open: Record<string, boolean> = {}
@@ -325,10 +332,19 @@ function Sidebar({
 
     const refresh = async () => {
       try {
-        const count = await fetchWholesaleInquiriesNewCount()
-        if (!cancelled) setWholesaleNewCount(count)
+        const [wholesale, stock] = await Promise.all([
+          fetchWholesaleInquiriesNewCount(),
+          fetchStockNotificationsPendingCount(),
+        ])
+        if (!cancelled) {
+          setWholesaleNewCount(wholesale)
+          setStockPendingCount(stock)
+        }
       } catch {
-        if (!cancelled) setWholesaleNewCount(0)
+        if (!cancelled) {
+          setWholesaleNewCount(0)
+          setStockPendingCount(0)
+        }
       }
     }
 
@@ -340,19 +356,22 @@ function Sidebar({
       void refresh()
     }
     window.addEventListener(WHOLESALE_NEW_COUNT_EVENT, onRefresh)
+    window.addEventListener(STOCK_PENDING_EVENT, onRefresh)
 
     return () => {
       cancelled = true
       window.clearInterval(intervalId)
       window.removeEventListener(WHOLESALE_NEW_COUNT_EVENT, onRefresh)
+      window.removeEventListener(STOCK_PENDING_EVENT, onRefresh)
     }
   }, [])
 
   const badgeByHref = useMemo(
     () => ({
       '/backstage/wholesale-inquiries': wholesaleNewCount,
+      '/backstage/stock-notifications': stockPendingCount,
     }),
-    [wholesaleNewCount],
+    [wholesaleNewCount, stockPendingCount],
   )
 
   return (
@@ -407,6 +426,8 @@ export function AdminLayout({ children, addClassName }: AdminLayoutProps) {
     if (segment in { 'add-plant': 1, edit: 1, table: 1 }) {
       return tBread(segment as 'add-plant' | 'edit' | 'table')
     }
+    if (segment === 'stock-notifications') return tNav('stockNotifications')
+    if (segment === 'jobs') return tNav('jobs')
     if (navLabelKeys.has(segment as NavLabelKey)) {
       return tNav(segment as NavLabelKey)
     }

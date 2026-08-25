@@ -7,9 +7,11 @@ import { StarRating } from '@/components/reviews/star-rating'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Link } from '@/i18n/navigation'
+import { pickHomeCmsText } from '@/lib/home/cms-or-translated'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import type { ReviewsPageResult } from '@/lib/reviews/types'
 import { formatReviewDate, getReviewImages } from '@/lib/reviews/utils'
+import { DEFAULT_HOME_SETTINGS } from '@/lib/settings/defaults'
 import type { HomePageSettings } from '@/lib/settings/types'
 import { cn } from '@/lib/utils'
 
@@ -77,8 +79,16 @@ export async function ReviewsSection({ settings, reviews }: ReviewsSectionProps)
       <div className={siteContentShellClassName}>
         <HomeSectionHeader
           eyebrow={t('reviewsEyebrow')}
-          title={settings.title}
-          subtitle={settings.subtitle}
+          title={pickHomeCmsText(
+            settings.title,
+            DEFAULT_HOME_SETTINGS.reviews.title,
+            t('reviewsTitle'),
+          )}
+          subtitle={pickHomeCmsText(
+            settings.subtitle,
+            DEFAULT_HOME_SETTINGS.reviews.subtitle,
+            t('reviewsSubtitle'),
+          )}
           align="left"
           className="mb-6 md:mb-8"
         >

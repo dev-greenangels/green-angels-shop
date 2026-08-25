@@ -8,7 +8,15 @@ import { getLocale, getTranslations } from 'next-intl/server'
 import { LegalSellerDetails } from '@/components/legal/legal-seller-details'
 import { fetchCurrentLegalDocument, sellerFromBankDetails } from '@/lib/legal/documents'
 import { resolveCheckoutBankDetails } from '@/lib/settings/company-bank-details'
-import { fetchPublicSiteSettings, getCartCheckoutSettings, getStoreSettings, isStoreContactUnavailable } from '@/lib/settings/fetch'
+import { getRequestCountrySiteCode } from '@/lib/country-sites/request-country'
+import {
+  fetchPublicSiteSettings,
+  getCartCheckoutSettings,
+  getMarketSettings,
+  getStoreSettings,
+  isStoreContactUnavailable,
+} from '@/lib/settings/fetch'
+import { resolveStoreForCountrySite } from '@/lib/settings/store-contact-country'
 import {
   formatStoreAddress,
   getStoreEmails,
@@ -25,8 +33,15 @@ export default async function TermsPage() {
   const locale = await getLocale()
   const tNav = await getTranslations('nav')
   const tLegal = await getTranslations('legalPages')
-  const fetched = await fetchPublicSiteSettings()
-  const store = getStoreSettings(fetched)
+  const [fetched, countryCode] = await Promise.all([
+    fetchPublicSiteSettings(),
+    getRequestCountrySiteCode(),
+  ])
+  const store = resolveStoreForCountrySite(
+    getStoreSettings(fetched),
+    getMarketSettings(fetched),
+    countryCode,
+  )
   const cart = getCartCheckoutSettings(fetched)
   const bank = resolveCheckoutBankDetails(cart, store)
   const legalDocument = await fetchCurrentLegalDocument('TERMS', locale)

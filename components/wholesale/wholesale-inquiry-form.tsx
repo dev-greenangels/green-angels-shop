@@ -145,8 +145,13 @@ export function WholesaleInquiryForm({
             <p className="text-sm text-destructive">{errors.fullName}</p>
           ) : null}
         </div>
-        <div className="space-y-2">
-          <RequiredLabel htmlFor="wholesale-companyName">{t('fields.companyName')}</RequiredLabel>
+        <div className="space-y-2 min-w-0">
+          <RequiredLabel
+            htmlFor="wholesale-companyName"
+            className="gap-0.5 text-sm leading-snug whitespace-nowrap"
+          >
+            {t('fields.companyName')}
+          </RequiredLabel>
           <InputWithClear
             id="wholesale-companyName"
             autoComplete="organization"

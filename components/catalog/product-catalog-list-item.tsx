@@ -517,9 +517,9 @@ function CatalogProductVariantRow({
       </div>
 
       <div className="min-w-0 max-sm:col-start-2 sm:flex sm:min-w-0 sm:flex-1 sm:items-center sm:gap-4">
-        <div className="flex min-w-0 flex-col justify-center gap-0.5 sm:max-w-[42%] lg:max-w-[36%]">
+        <div className="flex min-w-0 flex-col justify-center gap-0.5 sm:max-w-[52%] lg:max-w-[48%]">
           <Link href={href} className="group/title block min-w-0">
-            <h3 className="line-clamp-2 font-sans text-base font-medium leading-snug text-foreground transition-colors group-hover/title:text-primary sm:line-clamp-1 sm:text-lg sm:leading-[1.25]">
+            <h3 className="line-clamp-2 font-sans text-base font-medium leading-snug text-foreground transition-colors group-hover/title:text-primary sm:text-lg sm:leading-[1.25]">
               {plant.name}
             </h3>
           </Link>
@@ -638,7 +638,7 @@ function CatalogProductUnavailableRow({ plant }: { plant: Plant }) {
         <div className="min-w-0 max-sm:col-start-2 sm:flex sm:min-w-0 sm:flex-1 sm:items-center">
           <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
             <Link href={href} className="group/title min-w-0">
-              <h3 className="line-clamp-2 font-sans text-base font-medium leading-snug text-foreground transition-colors group-hover/title:text-primary sm:line-clamp-1 sm:text-lg sm:leading-[1.25]">
+              <h3 className="line-clamp-2 font-sans text-base font-medium leading-snug text-foreground transition-colors group-hover/title:text-primary sm:text-lg sm:leading-[1.25]">
                 {plant.name}
               </h3>
             </Link>

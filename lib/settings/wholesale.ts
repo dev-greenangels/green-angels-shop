@@ -203,7 +203,10 @@ export function resolveWholesalePageCopy(
   const requested = (SUPPORTED_LOCALES as readonly string[]).includes(locale)
     ? (locale as AppLocale)
     : primary
-  const chain: AppLocale[] = [requested, 'en', primary, ...SUPPORTED_LOCALES]
+  const chain: AppLocale[] =
+    requested === 'uk'
+      ? [requested, 'en', primary, ...SUPPORTED_LOCALES]
+      : [requested, 'en', primary, ...SUPPORTED_LOCALES.filter((locale) => locale !== 'uk')]
   const seen = new Set<AppLocale>()
   for (const loc of chain) {
     if (seen.has(loc)) continue

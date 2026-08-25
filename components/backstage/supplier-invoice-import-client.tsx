@@ -20,19 +20,25 @@ import {
 import { toast } from '@/lib/toast'
 import {
   createSupplierInvoiceInFlexi,
+  createSupplierWarehouseInFlexi,
   DEFAULT_GEMINI_INVOICE_MODEL,
   deleteSupplierInvoiceDraft,
   fetchActiveSupplierInvoiceDraft,
+  fetchSupplierInvoiceDraft,
   GEMINI_INVOICE_MODEL_OPTIONS,
   getStoredDraftId,
   linesToEditablePayload,
   buildInvoiceHeaderForm,
+  rematchSupplierInvoiceLines,
+  updateSupplierInvoiceDraft,
   type InvoiceHeaderForm,
   type CreateInvoiceLine,
   type CreateSupplierInvoicePayload,
   type InvoiceLinePreview,
   type SupplierInvoiceDraftResponse,
   type SupplierInvoiceParseOptions,
+  type WarehouseMovement,
+  type WarehouseVoucherType,
   uploadSupplierInvoiceDraft,
 } from '@/lib/backstage/supplier-invoices'
 
@@ -41,6 +47,7 @@ const STOCK_PRESETS = ['WHMAIN', 'WHGROW', 'WHMAT'] as const
 const STOCK_NONE = '__none__'
 
 type BulkField = 'abraCode' | 'batchNumber' | 'stockCode'
+type DocumentKind = 'invoice' | 'warehouse'
 
 function reindexLines(items: CreateInvoiceLine[]): CreateInvoiceLine[] {
   return items.map((line, i) => ({ ...line, lineIndex: i }))
@@ -84,6 +91,13 @@ export function SupplierInvoiceImportClient() {
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
   const [bulkField, setBulkField] = useState<BulkField>('abraCode')
   const [bulkValue, setBulkValue] = useState('')
+  const [documentKind, setDocumentKind] = useState<DocumentKind>('invoice')
+  const [voucherType, setVoucherType] = useState<WarehouseVoucherType>('STANDARD')
+  const [movement, setMovement] = useState<WarehouseMovement>('prijem')
+  const [warehouseIssueDate, setWarehouseIssueDate] = useState('')
+  const [targetStockCode, setTargetStockCode] = useState('WHMAIN')
+  const [rematchSize, setRematchSize] = useState('CUT')
+  const [rematching, setRematching] = useState(false)
 
   const [options, setOptions] = useState<SupplierInvoiceParseOptions>({
     defaultSizeLabel: 'C2',
@@ -137,6 +151,9 @@ export function SupplierInvoiceImportClient() {
     setPayload(data.createPayload)
     if (data.meta.parsed) {
       setHeader(buildInvoiceHeaderForm(data.meta.parsed, data.createPayload))
+      setWarehouseIssueDate(
+        data.createPayload?.issueDate ?? data.meta.parsed.invoice.issueDate ?? '',
+      )
     } else {
       setHeader(null)
     }
@@ -154,7 +171,6 @@ export function SupplierInvoiceImportClient() {
           hydrateDraft(active)
         } else if (storedId) {
           try {
-            const { fetchSupplierInvoiceDraft } = await import('@/lib/backstage/supplier-invoices')
             const byId = await fetchSupplierInvoiceDraft(storedId)
             if (!cancelled) hydrateDraft(byId)
           } catch {
@@ -213,7 +229,7 @@ export function SupplierInvoiceImportClient() {
         if (i !== index) return line
         const next = { ...line, ...patch }
         if (patch.lineTotal != null) {
-          next.lineTotal = roundMoney(next.lineTotal)
+          next.lineTotal = roundMoney(patch.lineTotal)
           if (next.quantity > 0) {
             next.unitPrice = roundUnitPrice(next.lineTotal / next.quantity)
           }
@@ -274,8 +290,90 @@ export function SupplierInvoiceImportClient() {
     toast.success(t('linesDeleted', { count }))
   }
 
+  const persistLines = async () => {
+    if (!draft?.meta.draftId) return
+    await updateSupplierInvoiceDraft(draft.meta.draftId, lines)
+  }
+
+  const handleRematch = async () => {
+    if (!draft?.meta.draftId) return
+    const size = rematchSize.trim()
+    if (!size) {
+      toast.error(t('rematchSizeRequired'))
+      return
+    }
+    setRematching(true)
+    try {
+      await persistLines()
+      const indexes =
+        selectedIndices.size > 0 ? Array.from(selectedIndices).sort((a, b) => a - b) : undefined
+      const result = await rematchSupplierInvoiceLines(draft.meta.draftId, size, indexes)
+      hydrateDraft(result)
+      setOptions((o) => ({ ...o, defaultSizeLabel: size }))
+      toast.success(
+        t('rematchOk', {
+          count: indexes?.length ?? result.meta.editedLines?.length ?? 0,
+          size,
+        }),
+      )
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('rematchError'))
+    } finally {
+      setRematching(false)
+    }
+  }
+
+  const refreshDraftAfterSend = async (draftId: string) => {
+    try {
+      const fresh = await fetchSupplierInvoiceDraft(draftId)
+      hydrateDraft(fresh)
+    } catch {
+      /* draft may still be usable from memory */
+    }
+  }
+
   const handleSubmit = async () => {
-    if (!draft?.meta.draftId || !payload || !header) return
+    if (!draft?.meta.draftId || !payload) return
+    const draftId = draft.meta.draftId
+
+    if (documentKind === 'warehouse') {
+      if (!warehouseIssueDate.trim()) {
+        toast.error(t('warehouseIssueDateRequired'))
+        return
+      }
+      if (voucherType === 'PREVODKA' && !targetStockCode.trim()) {
+        toast.error(t('prevodkaTargetRequired'))
+        return
+      }
+      if (lines.some((l) => !l.abraCode.trim())) {
+        toast.error(t('abraCodeRequired'))
+        return
+      }
+      setSubmitting(true)
+      try {
+        const result = await createSupplierWarehouseInFlexi(draftId, {
+          voucherType,
+          movement,
+          issueDate: warehouseIssueDate.trim(),
+          stockCode: options.targetStockCode,
+          targetStockCode: voucherType === 'PREVODKA' ? targetStockCode : undefined,
+          lines,
+        })
+        if (result.ok) {
+          toast.success(result.message)
+          await refreshDraftAfterSend(draftId)
+        } else {
+          toast.error(result.message)
+        }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : t('submitError'))
+      } finally {
+        setSubmitting(false)
+      }
+      return
+    }
+
+    if (!header) return
     const nextPayload: CreateSupplierInvoicePayload = {
       ...payload,
       invoiceNumber: header.invoiceNumber.trim(),
@@ -292,13 +390,10 @@ export function SupplierInvoiceImportClient() {
     }
     setSubmitting(true)
     try {
-      const result = await createSupplierInvoiceInFlexi(draft.meta.draftId, nextPayload)
+      const result = await createSupplierInvoiceInFlexi(draftId, nextPayload)
       if (result.ok) {
         toast.success(result.message)
-        setDraft(null)
-        setLines([])
-        setPayload(null)
-        setHeader(null)
+        await refreshDraftAfterSend(draftId)
       } else {
         toast.error(result.message)
       }
@@ -310,13 +405,14 @@ export function SupplierInvoiceImportClient() {
   }
 
   const parsed = draft?.meta.parsed
+  const sends = draft?.meta.sends ?? []
   const totals = useMemo(() => {
     const quantity = lines.reduce((sum, line) => sum + (Number(line.quantity) || 0), 0)
     const amount = lines.reduce((sum, line) => sum + lineAmount(line), 0)
     return { quantity, amount: roundMoney(amount) }
   }, [lines])
 
-  const canSubmit = Boolean(
+  const canSubmitInvoice = Boolean(
     draft &&
       payload &&
       header &&
@@ -327,9 +423,19 @@ export function SupplierInvoiceImportClient() {
       !lines.some((l) => !l.abraCode.trim()),
   )
 
+  const canSubmitWarehouse = Boolean(
+    draft &&
+      lines.length > 0 &&
+      warehouseIssueDate.trim() &&
+      !lines.some((l) => !l.abraCode.trim()) &&
+      (voucherType !== 'PREVODKA' || targetStockCode.trim()),
+  )
+
+  const canSubmit = documentKind === 'invoice' ? canSubmitInvoice : canSubmitWarehouse
+
   return (
     <AdminLayout>
-      <div className={`mx-auto max-w-[1600px] space-y-6 p-4 md:p-6 ${draft && parsed ? 'pb-36 md:pb-32' : ''}`}>
+      <div className={`mx-auto max-w-[1600px] space-y-6 p-4 md:p-6 ${draft && parsed ? 'pb-52 md:pb-48' : ''}`}>
         <div>
           <h1 className="font-display text-2xl font-semibold text-foreground">{t('title')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t('description')}</p>
@@ -615,6 +721,81 @@ export function SupplierInvoiceImportClient() {
                 <CardTitle>{t('linesTitle')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/30 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="select-all-lines-top"
+                      checked={allSelected}
+                      onCheckedChange={(checked) => toggleSelectAll(checked === true)}
+                    />
+                    <Label htmlFor="select-all-lines-top" className="text-sm whitespace-nowrap">
+                      {t('selectAll')}
+                    </Label>
+                  </div>
+                  {someSelected && (
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:gap-3">
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">
+                        {t('selectedCount', { count: selectedIndices.size })}
+                      </span>
+                      <Select
+                        value={bulkField}
+                        onValueChange={(v) => {
+                          setBulkField(v as BulkField)
+                          setBulkValue(v === 'stockCode' ? STOCK_NONE : '')
+                        }}
+                      >
+                        <SelectTrigger className="h-9 w-[140px]">
+                          <SelectValue placeholder={t('bulkColumn')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="abraCode">{t('abraCode')}</SelectItem>
+                          <SelectItem value="batchNumber">{t('batchNumber')}</SelectItem>
+                          <SelectItem value="stockCode">{t('lineStock')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {bulkField === 'stockCode' ? (
+                        <Select value={bulkValue || STOCK_NONE} onValueChange={setBulkValue}>
+                          <SelectTrigger className="h-9 w-[140px]">
+                            <SelectValue placeholder={t('bulkValue')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={STOCK_NONE}>{t('noStock')}</SelectItem>
+                            {STOCK_PRESETS.map((code) => (
+                              <SelectItem key={code} value={code}>
+                                {code}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          className="h-9 w-[160px]"
+                          value={bulkValue}
+                          placeholder={
+                            bulkField === 'batchNumber'
+                              ? t('batchNumberPlaceholder')
+                              : t('abraCodePlaceholder')
+                          }
+                          onChange={(e) => setBulkValue(e.target.value)}
+                        />
+                      )}
+                      <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applyBulkEdit}>
+                        {t('bulkApply')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="h-9"
+                        onClick={deleteSelectedLines}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {t('deleteSelected')}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
                 {lines.map((line, index) => {
                   const preview = (draft.meta.editedLines ?? draft.meta.lines ?? [])[
                     index
@@ -769,50 +950,81 @@ export function SupplierInvoiceImportClient() {
       {!loading && draft && parsed && (
         <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:left-64">
           <div className="mx-auto flex max-w-[1600px] flex-wrap items-end gap-x-4 gap-y-2 px-4 py-3 md:px-6">
-            <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2 sm:gap-3">
-              <div className="flex items-center gap-2 pb-2">
-                <Checkbox
-                  id="select-all-lines"
-                  checked={allSelected}
-                  onCheckedChange={(checked) => toggleSelectAll(checked === true)}
-                />
-                <Label htmlFor="select-all-lines" className="text-sm whitespace-nowrap">
-                  {t('selectAll')}
-                </Label>
+            <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:ml-auto sm:w-auto">
+              <div className="hidden text-sm text-muted-foreground lg:block">
+                {t('totalQuantity')}: {totals.quantity} · {t('totalAmount')}: {totals.amount}
+                {parsed.invoice.currency ? ` ${parsed.invoice.currency}` : ''}
               </div>
-              {someSelected && (
+              <div className="space-y-1">
+                <Label className="text-xs">{t('documentKind')}</Label>
+                <Select
+                  value={documentKind}
+                  onValueChange={(v) => setDocumentKind(v as DocumentKind)}
+                >
+                  <SelectTrigger className="h-9 w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="invoice">{t('documentInvoice')}</SelectItem>
+                    <SelectItem value="warehouse">{t('documentWarehouse')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {documentKind === 'warehouse' && (
                 <>
-                  <span className="pb-2 text-sm text-muted-foreground whitespace-nowrap">
-                    {t('selectedCount', { count: selectedIndices.size })}
-                  </span>
                   <div className="space-y-1">
-                    <Label className="text-xs">{t('bulkColumn')}</Label>
+                    <Label className="text-xs">{t('voucherType')}</Label>
                     <Select
-                      value={bulkField}
+                      value={voucherType}
                       onValueChange={(v) => {
-                        setBulkField(v as BulkField)
-                        setBulkValue(v === 'stockCode' ? STOCK_NONE : '')
+                        const next = v as WarehouseVoucherType
+                        setVoucherType(next)
+                        if (next === 'PREVODKA') setMovement('vydej')
                       }}
                     >
                       <SelectTrigger className="h-9 w-[130px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="abraCode">{t('abraCode')}</SelectItem>
-                        <SelectItem value="batchNumber">{t('batchNumber')}</SelectItem>
-                        <SelectItem value="stockCode">{t('lineStock')}</SelectItem>
+                        <SelectItem value="STANDARD">STANDARD</SelectItem>
+                        <SelectItem value="VYROBA">VÝROBA</SelectItem>
+                        <SelectItem value="PREVODKA">PŘEVODKA</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">{t('bulkValue')}</Label>
-                    {bulkField === 'stockCode' ? (
-                      <Select value={bulkValue || STOCK_NONE} onValueChange={setBulkValue}>
+                    <Label className="text-xs">{t('movement')}</Label>
+                    <Select
+                      value={movement}
+                      onValueChange={(v) => setMovement(v as WarehouseMovement)}
+                      disabled={voucherType === 'PREVODKA'}
+                    >
+                      <SelectTrigger className="h-9 w-[120px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="prijem">{t('movementIn')}</SelectItem>
+                        <SelectItem value="vydej">{t('movementOut')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t('warehouseIssueDate')}</Label>
+                    <Input
+                      type="date"
+                      className="h-9 w-[150px]"
+                      value={warehouseIssueDate}
+                      onChange={(e) => setWarehouseIssueDate(e.target.value)}
+                    />
+                  </div>
+                  {voucherType === 'PREVODKA' && (
+                    <div className="space-y-1">
+                      <Label className="text-xs">{t('targetStockCil')}</Label>
+                      <Select value={targetStockCode} onValueChange={setTargetStockCode}>
                         <SelectTrigger className="h-9 w-[130px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={STOCK_NONE}>{t('noStock')}</SelectItem>
                           {STOCK_PRESETS.map((code) => (
                             <SelectItem key={code} value={code}>
                               {code}
@@ -820,38 +1032,45 @@ export function SupplierInvoiceImportClient() {
                           ))}
                         </SelectContent>
                       </Select>
-                    ) : (
-                      <Input
-                        className="h-9 w-[130px]"
-                        value={bulkValue}
-                        placeholder={
-                          bulkField === 'batchNumber' ? t('batchNumberPlaceholder') : t('abraCodePlaceholder')
-                        }
-                        onChange={(e) => setBulkValue(e.target.value)}
-                      />
-                    )}
-                  </div>
-                  <Button type="button" variant="secondary" size="sm" className="h-9" onClick={applyBulkEdit}>
-                    {t('bulkApply')}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="h-9"
-                    onClick={deleteSelectedLines}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {t('deleteSelected')}
-                  </Button>
+                    </div>
+                  )}
                 </>
               )}
-            </div>
-
-            <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:ml-auto sm:w-auto">
-              <div className="hidden text-sm text-muted-foreground lg:block">
-                {t('totalQuantity')}: {totals.quantity} · {t('totalAmount')}: {totals.amount}
-                {parsed.invoice.currency ? ` ${parsed.invoice.currency}` : ''}
+              <div className="space-y-1">
+                <Label className="text-xs">{t('rematchSize')}</Label>
+                <div className="flex gap-2">
+                  <Select value={rematchSize} onValueChange={setRematchSize}>
+                    <SelectTrigger className="h-9 w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SIZE_PRESETS.map((size) => (
+                        <SelectItem key={size} value={size}>
+                          {size}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    className="h-9 w-[90px]"
+                    value={rematchSize}
+                    onChange={(e) => setRematchSize(e.target.value)}
+                    placeholder="C2"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="h-9"
+                    disabled={rematching || !draft}
+                    onClick={() => void handleRematch()}
+                  >
+                    {rematching ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    {t('rematchSelected')}
+                  </Button>
+                </div>
               </div>
               <Button
                 className="w-full sm:w-auto sm:min-w-[200px]"
@@ -864,10 +1083,29 @@ export function SupplierInvoiceImportClient() {
                 ) : (
                   <Send className="mr-2 h-4 w-4" />
                 )}
-                {t('submitToAbra')}
+                {documentKind === 'warehouse' ? t('submitWarehouse') : t('submitToAbra')}
               </Button>
             </div>
           </div>
+          {sends.length > 0 && (
+            <div className="mx-auto max-w-[1600px] border-t border-border/60 px-4 py-2 md:px-6">
+              <p className="mb-1 text-xs font-medium text-muted-foreground">{t('sendHistory')}</p>
+              <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                {sends
+                  .slice()
+                  .reverse()
+                  .slice(0, 5)
+                  .map((send, i) => (
+                    <li key={`${send.at}-${i}`}>
+                      {send.ok ? '✓' : '✗'} {send.kind}
+                      {send.voucherType ? `/${send.voucherType}` : ''}
+                      {send.nativeKod ? ` · ${send.nativeKod}` : ''} ·{' '}
+                      {new Date(send.at).toLocaleString()}
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </AdminLayout>

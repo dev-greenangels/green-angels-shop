@@ -4,6 +4,8 @@ export type AvailabilityNotifyPayload = {
   name: string
   contactType: 'email' | 'phone'
   contact: string
+  consent: boolean
+  locale: string
 }
 
 export type AvailabilityNotifyDefaults = {
@@ -39,6 +41,8 @@ export async function submitAvailabilityNotify(
   const body = {
     productId: payload.plantId,
     name: payload.name,
+    consent: payload.consent,
+    locale: payload.locale,
     ...(payload.contactType === 'email'
       ? { email: payload.contact.trim() }
       : { phone: payload.contact.trim() }),

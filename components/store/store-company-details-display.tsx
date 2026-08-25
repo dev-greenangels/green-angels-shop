@@ -1,3 +1,5 @@
+import { getTranslations } from 'next-intl/server'
+
 import { cn } from '@/lib/utils'
 import { hasCompanyBankDetails } from '@/lib/settings/company-bank-details'
 import type { CheckoutBankDetails } from '@/lib/settings/types'
@@ -31,30 +33,32 @@ function Row({
   )
 }
 
-export function StoreCompanyDetailsDisplay({
+export async function StoreCompanyDetailsDisplay({
   company,
   marketRegion = 'ua',
   className,
-  title = 'Реквізити компанії',
+  title,
   textClassName,
   mutedClassName,
 }: StoreCompanyDetailsDisplayProps) {
+  const t = await getTranslations('contactsPage')
   if (!hasCompanyBankDetails(company)) return null
 
   const isSk = marketRegion === 'sk'
+  const heading = title ?? t('companyDetails')
 
   return (
     <div className={cn('space-y-3', className)}>
-      {title ? <p className={cn('font-medium', textClassName)}>{title}</p> : null}
+      {heading ? <p className={cn('font-medium', textClassName)}>{heading}</p> : null}
       <div className="space-y-2">
         <Row
-          label={isSk ? 'Obchodné meno' : 'Назва організації / ФОП'}
+          label={isSk ? t('fields.tradeName') : t('fields.organizationName')}
           value={company.organizationName}
           textClassName={textClassName}
           mutedClassName={mutedClassName}
         />
         <Row
-          label={isSk ? 'IČO' : 'ЄДРПОУ / ІПН'}
+          label={isSk ? t('fields.ico') : t('fields.edrpou')}
           value={company.edrpou}
           textClassName={textClassName}
           mutedClassName={mutedClassName}
@@ -62,19 +66,19 @@ export function StoreCompanyDetailsDisplay({
         {isSk ? (
           <>
             <Row
-              label="DIČ"
+              label={t('fields.dic')}
               value={company.dic}
               textClassName={textClassName}
               mutedClassName={mutedClassName}
             />
             <Row
-              label="IČ DPH"
+              label={t('fields.icDph')}
               value={company.icDph}
               textClassName={textClassName}
               mutedClassName={mutedClassName}
             />
             <Row
-              label="BIC / SWIFT"
+              label={t('fields.bic')}
               value={company.bic}
               textClassName={textClassName}
               mutedClassName={mutedClassName}
@@ -82,32 +86,32 @@ export function StoreCompanyDetailsDisplay({
           </>
         ) : (
           <Row
-            label="МФО"
+            label={t('fields.mfo')}
             value={company.mfo}
             textClassName={textClassName}
             mutedClassName={mutedClassName}
           />
         )}
         <Row
-          label="IBAN"
+          label={t('fields.iban')}
           value={company.iban}
           textClassName={textClassName}
           mutedClassName={mutedClassName}
         />
         <Row
-          label={isSk ? 'Banka' : 'Банк'}
+          label={t('fields.bank')}
           value={company.bankName}
           textClassName={textClassName}
           mutedClassName={mutedClassName}
         />
         <Row
-          label={isSk ? 'Sídlo' : 'Юридична адреса'}
+          label={t('fields.legalAddress')}
           value={company.legalAddress}
           textClassName={textClassName}
           mutedClassName={mutedClassName}
         />
         <Row
-          label={isSk ? 'Daňový status' : 'Податковий статус'}
+          label={t('fields.taxStatus')}
           value={company.taxStatus}
           textClassName={textClassName}
           mutedClassName={mutedClassName}

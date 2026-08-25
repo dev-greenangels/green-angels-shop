@@ -4,11 +4,15 @@ import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import { LegalSellerDetails } from '@/components/legal/legal-seller-details'
 import { fetchCurrentLegalDocument, sellerFromBankDetails } from '@/lib/legal/documents'
 import { resolveCheckoutBankDetails } from '@/lib/settings/company-bank-details'
+import { getRequestCountrySiteCode } from '@/lib/country-sites/request-country'
 import {
   fetchPublicSiteSettings,
   getCartCheckoutSettings,
+  getMarketSettings,
   getStoreSettings,
 } from '@/lib/settings/fetch'
+import { resolveStoreForCountrySite } from '@/lib/settings/store-contact-country'
+import { getSupportEmail } from '@/lib/settings/store-helpers'
 import { LegalRevisionBody } from '@/components/legal/legal-revision-body'
 import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
@@ -22,18 +26,17 @@ export default async function ReturnsPage({
   setRequestLocale(locale)
   const t = await getTranslations('returnsPage')
   const tLegal = await getTranslations('legalPages')
-  const settings = await fetchPublicSiteSettings()
-  const store = getStoreSettings(settings)
+  const [settings, countryCode] = await Promise.all([
+    fetchPublicSiteSettings(),
+    getRequestCountrySiteCode(),
+  ])
+  const market = getMarketSettings(settings)
+  const store = resolveStoreForCountrySite(getStoreSettings(settings), market, countryCode)
   const fallbackSeller = sellerFromBankDetails(
     resolveCheckoutBankDetails(getCartCheckoutSettings(settings), store),
   )
   const document = await fetchCurrentLegalDocument('RETURNS', locale)
-  const contactEmail =
-    store.emails?.[0]?.email ||
-    store.contactBlocks
-      ?.flatMap((block) => block.lines)
-      .find((line) => line.type === 'email')?.value ||
-    'info@example.com'
+  const contactEmail = getSupportEmail(store) || 'info@example.com'
 
   return (
     <main className={cn(siteContentShellClassName, 'py-12 md:py-16')}>

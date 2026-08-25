@@ -31,6 +31,7 @@ import {
 import {
   fetchPublicSiteSettings,
   getHomeSettings,
+  getMarketSettings,
   getRecentlyViewedSettings,
 } from '@/lib/settings/fetch'
 
@@ -49,6 +50,7 @@ export default async function HomePage() {
 
   const siteSettingsResult = await fetchPublicSiteSettings()
   const home = getHomeSettings(siteSettingsResult)
+  const market = getMarketSettings(siteSettingsResult)
   const recentlyViewedSettings = getRecentlyViewedSettings(siteSettingsResult)
   const hidden = home.sectionHidden
   const show = (key: HomeSectionKey) => !isHomeSectionHidden(hidden, key)
@@ -113,7 +115,7 @@ export default async function HomePage() {
     <>
       <Navigation />
       <main className="home-page flex-1">
-        <HeroSection settings={home.hero} />
+        <HeroSection settings={home.hero} marketRegion={market.region} />
         {orderedSectionKeys.map((key) => (
           <Fragment key={key}>{sectionRenderers[key]}</Fragment>
         ))}

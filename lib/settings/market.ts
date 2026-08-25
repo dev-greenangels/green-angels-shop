@@ -55,6 +55,16 @@ export type CountrySiteProfile = {
   taxRatePercent: number
   /** @deprecated Checkout taxIncluded derives from market.priceBasis */
   taxIncluded: boolean
+  /**
+   * Public support email for this country host (sk/hu/at).
+   * `null` = fall back to `store.contact`.
+   */
+  supportEmail: string | null
+  /**
+   * Public support phone for this country host.
+   * `null` = fall back to `store.contact` (shared phone across domains).
+   */
+  supportPhone: string | null
 }
 
 export type MarketSettings = {
@@ -139,6 +149,8 @@ export const DEFAULT_COUNTRY_SITES: CountrySiteProfile[] = [
     currency: 'EUR',
     taxRatePercent: 23,
     taxIncluded: true,
+    supportEmail: null,
+    supportPhone: null,
   },
   {
     code: 'hu',
@@ -148,6 +160,8 @@ export const DEFAULT_COUNTRY_SITES: CountrySiteProfile[] = [
     currency: 'HUF',
     taxRatePercent: 27,
     taxIncluded: true,
+    supportEmail: null,
+    supportPhone: null,
   },
   {
     code: 'at',
@@ -157,6 +171,8 @@ export const DEFAULT_COUNTRY_SITES: CountrySiteProfile[] = [
     currency: 'EUR',
     taxRatePercent: 20,
     taxIncluded: true,
+    supportEmail: null,
+    supportPhone: null,
   },
 ]
 
@@ -326,6 +342,22 @@ function asPositiveNumber(value: unknown, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback
 }
 
+function asOptionalContactString(value: unknown, maxLen: number): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim().slice(0, maxLen)
+  return trimmed || null
+}
+
+function normalizeSupportEmail(value: unknown): string | null {
+  const email = asOptionalContactString(value, 254)
+  if (!email || !email.includes('@') || email.includes(' ')) return null
+  return email
+}
+
+function normalizeSupportPhone(value: unknown): string | null {
+  return asOptionalContactString(value, 40)
+}
+
 function normalizeCountrySiteProfile(
   raw: unknown,
   fallback: CountrySiteProfile,
@@ -364,6 +396,8 @@ function normalizeCountrySiteProfile(
       return Number.isFinite(n) && n >= 0 ? n : defaultFromCode.taxRatePercent
     })(),
     taxIncluded: asBool(obj.taxIncluded, defaultFromCode.taxIncluded),
+    supportEmail: normalizeSupportEmail(obj.supportEmail) ?? defaultFromCode.supportEmail,
+    supportPhone: normalizeSupportPhone(obj.supportPhone) ?? defaultFromCode.supportPhone,
   }
 }
 

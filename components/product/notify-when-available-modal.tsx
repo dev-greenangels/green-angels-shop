@@ -1,9 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Bell } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
+import { AuthConsentNotice } from '@/components/auth/auth-consent-notice'
+
+import { useMarketRegion } from '@/components/providers/market-region-provider'
 import { submitAvailabilityNotify } from '@/components/product/submit-availability-notify'
 import { notifyAvailabilityButtonClassName } from '@/components/product/notify-availability-button'
 import { Button } from '@/components/ui/button'
@@ -16,12 +19,22 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  fetchPublicSiteSettingsFromApiRoute,
+  getMarketSettings,
+} from '@/lib/settings/fetch'
+import {
+  phonePlaceholderForPolicy,
+  type PhonePolicy,
+} from '@/lib/settings/market'
 import { cn } from '@/lib/utils'
 import {
+  formatCheckoutPhoneDisplay,
   formatPhoneDisplay,
-  sanitizeCyrillicName,
   sanitizeEmail,
-  sanitizeRecipientPhoneInput,
+  sanitizeNotifyName,
+  sanitizeNotifyPhoneInput,
   validateNotifyEmail,
   validateNotifyName,
   validateNotifyPhone,
@@ -42,6 +55,11 @@ export function NotifyWhenAvailableModal({
 }: NotifyWhenAvailableModalProps) {
   const t = useTranslations('product')
   const tc = useTranslations('common')
+  const locale = useLocale()
+  const marketRegion = useMarketRegion()
+  const [phonePolicy, setPhonePolicy] = useState<PhonePolicy>(
+    marketRegion === 'sk' ? 'sk_e164' : 'ua_e164',
+  )
   const [name, setName] = useState('')
   const [contactType, setContactType] = useState<'email' | 'phone'>('email')
   const [contact, setContact] = useState('')
@@ -49,6 +67,19 @@ export function NotifyWhenAvailableModal({
   const [submitted, setSubmitted] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [consent, setConsent] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    void fetchPublicSiteSettingsFromApiRoute().then((result) => {
+      if (cancelled) return
+      setPhonePolicy(getMarketSettings(result).authPhonePolicy)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [open])
 
   const resetForm = () => {
     setName('')
@@ -57,6 +88,7 @@ export function NotifyWhenAvailableModal({
     setSubmitted(false)
     setSuccessMessage(null)
     setError(null)
+    setConsent(false)
   }
 
   const handleOpenChange = (next: boolean) => {
@@ -75,7 +107,10 @@ export function NotifyWhenAvailableModal({
     setError(null)
 
     const trimmedName = name.trim()
-    const nameError = validateNotifyName(trimmedName)
+    const nameError = validateNotifyName(trimmedName, marketRegion, {
+      required: tc('requiredField'),
+      invalid: t('notifyNameInvalid'),
+    })
     if (nameError) {
       setError(nameError)
       return
@@ -83,10 +118,21 @@ export function NotifyWhenAvailableModal({
 
     const contactError =
       contactType === 'email'
-        ? validateNotifyEmail(contact)
-        : validateNotifyPhone(contact)
+        ? validateNotifyEmail(contact, {
+            required: tc('requiredField'),
+            invalid: tc('invalidEmail'),
+          })
+        : validateNotifyPhone(contact, phonePolicy, {
+            required: tc('requiredField'),
+            invalid: t('notifyPhoneInvalid'),
+          })
     if (contactError) {
       setError(contactError)
+      return
+    }
+
+    if (!consent) {
+      setError(t('notifyConsentRequired'))
       return
     }
 
@@ -99,6 +145,8 @@ export function NotifyWhenAvailableModal({
           name: trimmedName,
           contactType,
           contact: contact.trim(),
+          consent: true,
+          locale,
         },
         {
           submitFailed: t('notifySubmitFailed'),
@@ -113,6 +161,9 @@ export function NotifyWhenAvailableModal({
       setIsSubmitting(false)
     }
   }
+
+  const phoneDisplay =
+    phonePolicy === 'ua_e164' ? formatPhoneDisplay(contact) : formatCheckoutPhoneDisplay(contact)
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -143,7 +194,7 @@ export function NotifyWhenAvailableModal({
               <Input
                 id="notify-name"
                 value={name}
-                onChange={(e) => setName(sanitizeCyrillicName(e.target.value))}
+                onChange={(e) => setName(sanitizeNotifyName(e.target.value, marketRegion))}
                 placeholder={t('notifyNamePlaceholder')}
                 autoComplete="name"
               />
@@ -187,22 +238,41 @@ export function NotifyWhenAvailableModal({
                 id="notify-contact"
                 type={contactType === 'email' ? 'email' : 'tel'}
                 inputMode={contactType === 'email' ? 'email' : 'tel'}
-                value={contactType === 'phone' ? formatPhoneDisplay(contact) : contact}
+                value={contactType === 'phone' ? phoneDisplay : contact}
                 onChange={(e) =>
                   setContact(
                     contactType === 'email'
                       ? sanitizeEmail(e.target.value)
-                      : sanitizeRecipientPhoneInput(e.target.value),
+                      : sanitizeNotifyPhoneInput(e.target.value, phonePolicy),
                   )
                 }
                 placeholder={
-                  contactType === 'email' ? t('notifyEmailPlaceholder') : t('notifyPhonePlaceholder')
+                  contactType === 'email'
+                    ? t('notifyEmailPlaceholder')
+                    : phonePlaceholderForPolicy(phonePolicy)
                 }
                 autoComplete={contactType === 'email' ? 'email' : 'tel'}
               />
             </div>
 
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="notify-consent"
+                checked={consent}
+                onCheckedChange={(checked) => setConsent(checked === true)}
+                className="mt-0.5"
+                aria-invalid={Boolean(error && !consent)}
+              />
+              <div className="min-w-0 space-y-1">
+                <AuthConsentNotice
+                  text={t.raw('notifyConsentTemplate') as string}
+                  className="text-sm leading-relaxed text-muted-foreground"
+                />
+                <p className="text-xs text-muted-foreground">{t('notifyConsentHint')}</p>
+              </div>
+            </div>
 
             <Button
               type="submit"

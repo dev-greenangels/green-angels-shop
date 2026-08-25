@@ -8,7 +8,8 @@ import { getMarketBranding } from '@/lib/branding/market-branding'
 import { fetchCatalogCategories } from '@/lib/catalog/categories'
 import { categoryHref, fetchCatalogRootSlug, resolveCatalogHref } from '@/lib/catalog/paths'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
-import { hasHiddenFooterContacts } from '@/lib/settings/store-contact-lines'
+import { resolvePublicCompanyName } from '@/lib/settings/company-name'
+import { getRequestCountrySiteCode } from '@/lib/country-sites/request-country'
 import {
   fetchPublicSiteSettings,
   getLocalizationSettings,
@@ -17,6 +18,7 @@ import {
   getWholesalePageSettings,
   isStoreContactUnavailable,
 } from '@/lib/settings/fetch'
+import { resolveStoreForCountrySite } from '@/lib/settings/store-contact-country'
 import { hasStoreContactInfo } from '@/lib/settings/store-helpers'
 import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
@@ -28,15 +30,16 @@ export async function Footer() {
   const te = await getTranslations('errors')
   const year = new Date().getFullYear()
 
-  const [siteSettings, categoriesResult, catalogRootSlug] = await Promise.all([
+  const [siteSettings, categoriesResult, catalogRootSlug, countryCode] = await Promise.all([
     fetchPublicSiteSettings(),
     fetchCatalogCategories(locale),
     fetchCatalogRootSlug(locale),
+    getRequestCountrySiteCode(),
   ])
 
-  const store = getStoreSettings(siteSettings)
   const localization = getLocalizationSettings(siteSettings)
   const market = getMarketSettings(siteSettings)
+  const store = resolveStoreForCountrySite(getStoreSettings(siteSettings), market, countryCode)
   const wholesalePage = getWholesalePageSettings(siteSettings)
   const branding = getMarketBranding(market.region)
   const isSkMarket = market.region === 'sk'
@@ -128,33 +131,30 @@ export async function Footer() {
           </div>
 
           <div>
-            <h3 className="mb-5 font-serif text-xl font-semibold md:text-2xl">{t('contactsTitle')}</h3>
+            <h3 className="mb-5 font-serif text-xl font-semibold md:text-2xl">
+              <Link
+                href="/contacts"
+                className="transition-colors hover:text-primary-foreground/90"
+              >
+                {t('contactsTitle')}
+              </Link>
+            </h3>
             {showContactsUnavailable ? (
               <p className="text-base leading-relaxed text-primary-foreground/85">
                 {te('serviceUnavailable')}
               </p>
             ) : (
-              <>
-                <StoreContactsDisplay
-                  store={store}
-                  grouped
-                  filterByFooterVisibility
-                  visibility={store.footer}
-                  marketRegion={market.region}
-                  socialSectionTitle={t('socialTitle')}
-                  iconClassName="text-primary-foreground"
-                  textClassName="text-base text-primary-foreground/85"
-                  linkClassName="text-base text-primary-foreground/85 hover:text-primary-foreground"
-                />
-                {hasHiddenFooterContacts(store.footer) ? (
-                  <Link
-                    href="/contacts"
-                    className="mt-3 inline-block text-base text-primary-foreground/85 underline-offset-4 transition-colors hover:text-primary-foreground hover:underline"
-                  >
-                    {t('fullContacts')}
-                  </Link>
-                ) : null}
-              </>
+              <StoreContactsDisplay
+                store={store}
+                grouped
+                filterByFooterVisibility
+                visibility={store.footer}
+                marketRegion={market.region}
+                socialSectionTitle={t('socialTitle')}
+                iconClassName="text-primary-foreground"
+                textClassName="text-base text-primary-foreground/85"
+                linkClassName="text-base text-primary-foreground/85 hover:text-primary-foreground"
+              />
             )}
           </div>
         </div>
@@ -167,7 +167,12 @@ export async function Footer() {
             'flex flex-col gap-4 py-6 text-base text-primary-foreground/70 sm:flex-row sm:items-center sm:justify-between md:py-8',
           )}
         >
-          <p className="text-center sm:text-left">{tc('copyright', { year })}</p>
+          <p className="text-center sm:text-left">
+            {tc('copyright', {
+              year,
+              company: resolvePublicCompanyName(store, tc('brand')),
+            })}
+          </p>
           {localization.showLanguageSwitcher ? (
             <LanguageSwitcher variant="footer" className="justify-center sm:justify-end" />
           ) : null}

@@ -1,3 +1,6 @@
+import type { Metadata } from 'next'
+import { getTranslations } from 'next-intl/server'
+
 import { Navigation } from '@/components/navigation'
 import { PublicPageBreadcrumbs } from '@/components/public-page-breadcrumbs'
 import { ReviewsPageContent } from '@/components/reviews/reviews-page-content'
@@ -7,12 +10,23 @@ import type { ReviewsPageResult } from '@/lib/reviews/types'
 import { REVIEWS_PAGE_SIZE } from '@/lib/reviews/types'
 import { staticPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
-import { getTranslations } from 'next-intl/server'
+import { buildIndexablePageMetadata } from '@/lib/seo/build-page-metadata'
 import { cn } from '@/lib/utils'
 
-export const metadata = {
-  title: 'Відгуки · Зелені Янголи',
-  description: 'Відгуки клієнтів про розсадник Зелені Янголи.',
+type PageProps = {
+  params: Promise<{ locale: string }>
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'reviews' })
+  const tCommon = await getTranslations({ locale, namespace: 'common' })
+  const siteName = tCommon('brand')
+  return buildIndexablePageMetadata(locale, '/reviews', {
+    title: `${t('pageTitle')} · ${siteName}`,
+    description: t('pageDescription', { brand: siteName }),
+    siteName,
+  })
 }
 
 async function loadPublishedReviewsPage(): Promise<ReviewsPageResult> {
@@ -29,9 +43,10 @@ async function loadPublishedReviewsPage(): Promise<ReviewsPageResult> {
   }
 }
 
-export default async function ReviewsPage() {
-  const tNav = await getTranslations('nav')
-  const tReviews = await getTranslations('reviews')
+export default async function ReviewsPage({ params }: PageProps) {
+  const { locale } = await params
+  const tNav = await getTranslations({ locale, namespace: 'nav' })
+  const tReviews = await getTranslations({ locale, namespace: 'reviews' })
   const initialPage = await loadPublishedReviewsPage()
 
   return (
@@ -44,10 +59,10 @@ export default async function ReviewsPage() {
             items={staticPageBreadcrumbs(tNav('reviews'))}
           />
           <div className="mb-6 max-w-2xl">
-            <h1 className="font-serif text-4xl font-bold text-foreground md:text-5xl">Відгуки</h1>
-            <p className="mt-2 text-lg text-muted-foreground">
-              Що кажуть наші клієнти про якість рослин та сервіс.
-            </p>
+            <h1 className="font-serif text-4xl font-bold text-foreground md:text-5xl">
+              {tReviews('pageTitle')}
+            </h1>
+            <p className="mt-2 text-lg text-muted-foreground">{tReviews('pageSubtitle')}</p>
             <p className="mt-2 text-sm text-muted-foreground/90">{tReviews('moderationHint')}</p>
           </div>
           <ReviewsPageContent initialPage={initialPage} />

@@ -8,11 +8,14 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { buildFaqCategories } from '@/lib/faq/content'
+import { getRequestCountrySiteCode } from '@/lib/country-sites/request-country'
 import {
   fetchPublicSiteSettings,
+  getMarketSettings,
   getStoreSettings,
   isStoreContactUnavailable,
 } from '@/lib/settings/fetch'
+import { resolveStoreForCountrySite } from '@/lib/settings/store-contact-country'
 import { hasStoreContactInfo } from '@/lib/settings/store-helpers'
 import { ServiceUnavailableNotice } from '@/components/ui/service-unavailable-notice'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
@@ -23,8 +26,15 @@ import { getTranslations } from 'next-intl/server'
 
 export default async function FAQPage() {
   const tNav = await getTranslations('nav')
-  const fetched = await fetchPublicSiteSettings()
-  const store = getStoreSettings(fetched)
+  const [fetched, countryCode] = await Promise.all([
+    fetchPublicSiteSettings(),
+    getRequestCountrySiteCode(),
+  ])
+  const store = resolveStoreForCountrySite(
+    getStoreSettings(fetched),
+    getMarketSettings(fetched),
+    countryCode,
+  )
   const contactsUnavailable = isStoreContactUnavailable(fetched) || !hasStoreContactInfo(store)
   const faqCategories = buildFaqCategories(store)
 

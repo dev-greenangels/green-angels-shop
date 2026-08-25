@@ -377,8 +377,10 @@ export function MarketSettingsForm({
             <CardHeader>
               <CardTitle>Домени вітрини</CardTitle>
               <CardDescription>
-                Профілі green-angels.sk / .hu / .at: мови та валюта домену. Хости задаються в env
-                через GA_COUNTRY_HOSTS. Куди можна доставляти — у блоці «Куди доставляємо» нижче.
+                Профілі green-angels.sk / .hu / .at: мови, валюта та контакти домену. Хости
+                задаються в env через GA_COUNTRY_HOSTS. Куди можна доставляти — у блоці «Куди
+                доставляємо» нижче. Email/телефон домену опційні: порожньо = спільні з Налаштування
+                → Контакти.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -443,6 +445,39 @@ export function MarketSettingsForm({
                           <SelectItem value="HUF">HUF</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email підтримки (домен)</Label>
+                      <Input
+                        type="email"
+                        value={site.supportEmail ?? ''}
+                        placeholder="порожньо = з Контактів магазину"
+                        onChange={(e) =>
+                          patchCountrySite(site.code, {
+                            supportEmail: e.target.value || null,
+                          })
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Показується на .sk / .hu / .at замість спільного email з Налаштування →
+                        Контакти.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Телефон підтримки (домен)</Label>
+                      <Input
+                        type="tel"
+                        value={site.supportPhone ?? ''}
+                        placeholder="порожньо = спільний телефон"
+                        onChange={(e) =>
+                          patchCountrySite(site.code, {
+                            supportPhone: e.target.value || null,
+                          })
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Залиште порожнім, якщо один номер на всі домени.
+                      </p>
                     </div>
                   </div>
                   <div className="space-y-2">

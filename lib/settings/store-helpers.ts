@@ -19,7 +19,7 @@ export function getStoreMapsUrl(
   return store.mapsUrl?.trim() ?? ''
 }
 
-export function getStoreMapsEmbedUrl(store: StoreContactSettings): string {
+export function getStoreMapsEmbedUrl(store: StoreContactSettings, locale = 'uk'): string {
   if (store.mapsEmbedUrl?.trim()) {
     return store.mapsEmbedUrl.trim()
   }
@@ -27,7 +27,8 @@ export function getStoreMapsEmbedUrl(store: StoreContactSettings): string {
   const address = formatStoreAddress(store)
   if (!address) return ''
 
-  return `https://maps.google.com/maps?q=${encodeURIComponent(address)}&hl=uk&z=15&output=embed`
+  const hl = locale.trim() || 'uk'
+  return `https://maps.google.com/maps?q=${encodeURIComponent(address)}&hl=${encodeURIComponent(hl)}&z=15&output=embed`
 }
 
 export function phoneHref(phone: string): string {

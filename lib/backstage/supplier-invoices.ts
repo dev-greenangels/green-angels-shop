@@ -96,9 +96,21 @@ export type SupplierInvoiceDraftMeta = {
   lines: InvoiceLinePreview[] | null
   editedLines: InvoiceLinePreview[] | null
   supplierMatch: { abraRef: string | null; matchConfidence: MatchConfidence } | null
-  status: 'uploaded' | 'parsed' | 'submitted'
+  status: 'uploaded' | 'parsed' | 'submitted' | 'submitted-invoice' | 'submitted-warehouse'
+  sends?: SupplierInvoiceSendRecord[]
   createdAt: string
   parsedAt: string | null
+}
+
+export type SupplierInvoiceSendRecord = {
+  kind: 'invoice' | 'warehouse'
+  at: string
+  ok: boolean
+  externalId?: string
+  nativeKod?: string
+  message: string
+  voucherType?: string
+  movement?: string
 }
 
 export type CreateInvoiceLine = {
@@ -183,6 +195,27 @@ export type CreateFakturaPrijataResult = {
   message: string
 }
 
+export type WarehouseVoucherType = 'STANDARD' | 'VYROBA' | 'PREVODKA'
+export type WarehouseMovement = 'prijem' | 'vydej'
+
+export type CreateWarehouseDocumentPayload = {
+  voucherType: WarehouseVoucherType
+  movement: WarehouseMovement
+  issueDate: string
+  stockCode?: string
+  targetStockCode?: string
+  note?: string
+  lines: CreateInvoiceLine[]
+}
+
+export type CreateWarehouseDocumentResult = {
+  ok: boolean
+  externalId?: string
+  nativeId?: string
+  nativeKod?: string
+  message: string
+}
+
 const DRAFT_STORAGE_KEY = 'supplierInvoiceDraftId'
 
 async function parseError(res: Response): Promise<string> {
@@ -257,11 +290,27 @@ export async function updateSupplierInvoiceDraft(
   draftId: string,
   editedLines: CreateInvoiceLine[],
 ): Promise<SupplierInvoiceDraftResponse> {
+  const body = {
+    editedLines: editedLines.map((line) => ({
+      lineIndex: line.lineIndex,
+      rawName: line.rawName,
+      abraCode: line.abraCode ?? '',
+      productId: line.productId,
+      variantId: line.variantId,
+      quantity: line.quantity,
+      unitPrice: line.unitPrice,
+      lineTotal: line.lineTotal,
+      batchNumber: line.batchNumber,
+      stockCode: line.stockCode,
+      vatRate: line.vatRate,
+      displayName: line.displayName,
+    })),
+  }
   const res = await fetch(`/api/backstage/supplier-invoices/drafts/${encodeURIComponent(draftId)}`, {
     method: 'PATCH',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ editedLines }),
+    body: JSON.stringify(body),
   })
   if (!res.ok) throw new Error(await parseError(res))
   const data = (await res.json()) as { meta: SupplierInvoiceDraftMeta; createPayload: CreateSupplierInvoicePayload | null }
@@ -330,8 +379,79 @@ export async function createSupplierInvoiceInFlexi(
   )
   const data = (await res.json()) as CreateFakturaPrijataResult & { message?: string }
   if (!res.ok) throw new Error(typeof data.message === 'string' ? data.message : await parseError(res))
-  if (data.ok) setStoredDraftId(null)
+  // Keep draft id — same PDF can also send warehouse docs / rematch.
   return data
+}
+
+export async function createSupplierWarehouseInFlexi(
+  draftId: string,
+  payload: CreateWarehouseDocumentPayload,
+): Promise<CreateWarehouseDocumentResult> {
+  const body: CreateWarehouseDocumentPayload = {
+    voucherType: payload.voucherType,
+    movement: payload.movement,
+    issueDate: payload.issueDate,
+    stockCode: payload.stockCode,
+    targetStockCode: payload.targetStockCode,
+    note: payload.note,
+    lines: payload.lines.map((line) => ({
+      lineIndex: line.lineIndex,
+      rawName: line.rawName,
+      abraCode: line.abraCode,
+      productId: line.productId,
+      variantId: line.variantId,
+      quantity: line.quantity,
+      unitPrice: line.unitPrice,
+      lineTotal: line.lineTotal,
+      batchNumber: line.batchNumber,
+      stockCode: line.stockCode,
+      vatRate: line.vatRate,
+      displayName: line.displayName,
+    })),
+  }
+
+  const res = await fetch(
+    `/api/backstage/supplier-invoices/drafts/${encodeURIComponent(draftId)}/warehouse`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  )
+  const data = (await res.json()) as CreateWarehouseDocumentResult & { message?: string }
+  if (!res.ok) throw new Error(typeof data.message === 'string' ? data.message : await parseError(res))
+  return data
+}
+
+export async function rematchSupplierInvoiceLines(
+  draftId: string,
+  sizeLabel: string,
+  lineIndexes?: number[],
+): Promise<SupplierInvoiceDraftResponse> {
+  const res = await fetch(
+    `/api/backstage/supplier-invoices/drafts/${encodeURIComponent(draftId)}/rematch`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sizeLabel,
+        ...(lineIndexes && lineIndexes.length > 0 ? { lineIndexes } : {}),
+      }),
+    },
+  )
+  if (!res.ok) throw new Error(await parseError(res))
+  const data = (await res.json()) as {
+    meta: SupplierInvoiceDraftMeta
+    createPayload: CreateSupplierInvoicePayload | null
+  }
+  const existing = await fetchSupplierInvoiceDraft(draftId)
+  return {
+    meta: data.meta,
+    pdfBase64: existing.pdfBase64,
+    createPayload: data.createPayload,
+  }
 }
 
 export function linesToEditablePayload(

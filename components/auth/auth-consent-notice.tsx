@@ -13,12 +13,18 @@ type AuthConsentNoticeProps = {
 
 /**
  * Renders auth consent copy with {terms}/{privacy}/{cookies} replaced by locale links.
+ * Empty or Ukrainian default CMS text falls back to the active UI locale template.
  */
 export function AuthConsentNotice({ text, className }: AuthConsentNoticeProps) {
   const t = useTranslations('auth')
   const tl = useTranslations('legalPages')
 
-  const source = (text?.trim() || DEFAULT_AUTH_CONSENT_TEXT).trim()
+  const trimmedCms = text?.trim() ?? ''
+  const source = (
+    !trimmedCms || trimmedCms === DEFAULT_AUTH_CONSENT_TEXT
+      ? t('consentTemplate')
+      : trimmedCms
+  ).trim()
 
   const nodes = useMemo(() => {
     const labels: Record<string, string> = {

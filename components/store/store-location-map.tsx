@@ -1,3 +1,5 @@
+import { getLocale, getTranslations } from 'next-intl/server'
+
 import { getStoreMapsEmbedUrl, getStoreMapsUrl } from '@/lib/settings/store-helpers'
 import type { StoreContactSettings } from '@/lib/settings/types'
 import { cn } from '@/lib/utils'
@@ -8,20 +10,23 @@ type StoreLocationMapProps = {
   title?: string
 }
 
-export function StoreLocationMap({
+export async function StoreLocationMap({
   store,
   className,
-  title = 'Розташування на карті',
+  title,
 }: StoreLocationMapProps) {
-  const embedUrl = getStoreMapsEmbedUrl(store)
+  const locale = await getLocale()
+  const t = await getTranslations('contactsPage')
+  const embedUrl = getStoreMapsEmbedUrl(store, locale)
   const mapsUrl = getStoreMapsUrl(store)
+  const mapTitle = title?.trim() || t('mapTitle')
 
   if (!embedUrl) return null
 
   return (
-    <div className={cn('overflow-hidden rounded-xl border border-border/60', className)}>
+    <div className={cn('overflow-hidden rounded-xl border border-border/60 bg-background/70', className)}>
       <iframe
-        title={title}
+        title={mapTitle}
         src={embedUrl}
         className="aspect-[16/10] w-full border-0 md:aspect-[21/9]"
         loading="lazy"
@@ -36,7 +41,7 @@ export function StoreLocationMap({
             rel="noopener noreferrer"
             className="text-primary underline-offset-4 hover:underline"
           >
-            Відкрити в Google Maps
+            {t('openInMaps')}
           </a>
         </p>
       ) : null}

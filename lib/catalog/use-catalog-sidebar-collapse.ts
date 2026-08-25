@@ -17,6 +17,24 @@ const HEIGHT_SNAP_PX = 16
 const COMPACT_ENTER_BELOW_PX = 46
 const COMPACT_EXIT_ABOVE_PX = 58
 
+function readCatalogSidebarStickyTopPx(): number {
+  if (typeof window === 'undefined') return catalogSidebarStickyTopPx
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue('--site-header-offset')
+    .trim()
+  if (!raw) return catalogSidebarStickyTopPx
+  const gapPx = 8
+  if (raw.endsWith('rem')) {
+    const rem = Number.parseFloat(raw)
+    if (Number.isFinite(rem)) return Math.round(rem * 16) + gapPx
+  }
+  if (raw.endsWith('px')) {
+    const px = Number.parseFloat(raw)
+    if (Number.isFinite(px)) return Math.round(px) + gapPx
+  }
+  return catalogSidebarStickyTopPx
+}
+
 export type CatalogSidebarCollapseState = {
   maxHeightPx: number | null
   compact: boolean
@@ -24,10 +42,10 @@ export type CatalogSidebarCollapseState = {
   filterStuck: boolean
 }
 
-function getCategoryFullMaxHeight(): number {
+function getCategoryFullMaxHeight(stickyTop: number): number {
   return Math.max(
     CATALOG_CATEGORY_COMPACT_HEIGHT_PX,
-    window.innerHeight - catalogSidebarStickyTopPx - 28,
+    window.innerHeight - stickyTop - 28,
   )
 }
 
@@ -41,9 +59,9 @@ function readCollapseState(
 ): CatalogSidebarCollapseState {
   const sentinel = filterStickyRoot.querySelector<HTMLElement>(FILTER_STICKY_SENTINEL)
   const filterTop = filterStickyRoot.getBoundingClientRect().top
-  const stickyTop = catalogSidebarStickyTopPx
+  const stickyTop = readCatalogSidebarStickyTopPx()
   const gap = CATALOG_SIDEBAR_STICKY_GAP_PX
-  const fullMax = getCategoryFullMaxHeight()
+  const fullMax = getCategoryFullMaxHeight(stickyTop)
   const filterStuck = sentinel
     ? sentinel.getBoundingClientRect().top < stickyTop
     : filterTop < stickyTop

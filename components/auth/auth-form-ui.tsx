@@ -1,15 +1,18 @@
 import { Label } from '@/components/ui/label'
 import { Link } from '@/i18n/navigation'
+import { cn } from '@/lib/utils'
 
 export function RequiredLabel({
   htmlFor,
   children,
+  className,
 }: {
   htmlFor: string
   children: React.ReactNode
+  className?: string
 }) {
   return (
-    <Label htmlFor={htmlFor} className="gap-0.5">
+    <Label htmlFor={htmlFor} className={cn('gap-0.5', className)}>
       {children}
       <span className="text-destructive" aria-hidden="true">
         {' '}

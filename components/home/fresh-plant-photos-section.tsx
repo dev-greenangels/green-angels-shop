@@ -6,7 +6,9 @@ import { HomeSectionHeader } from '@/components/home/home-section-header'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import { PRODUCT_CARD_CAROUSEL_SLOT_CLASS } from '@/lib/catalog/product-card-layout'
+import { pickHomeCmsText } from '@/lib/home/cms-or-translated'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
+import { DEFAULT_HOME_SETTINGS } from '@/lib/settings/defaults'
 import type { HomePageSettings } from '@/lib/settings/types'
 import type { CatalogPhotoItem } from '@/lib/variant-photos/types'
 import { cn } from '@/lib/utils'
@@ -27,8 +29,16 @@ export async function FreshPlantPhotosSection({ settings, photos }: FreshPlantPh
       <div className={siteContentShellClassName}>
         <HomeSectionHeader
           eyebrow={t('freshPhotosEyebrow')}
-          title={settings.title}
-          subtitle={settings.subtitle}
+          title={pickHomeCmsText(
+            settings.title,
+            DEFAULT_HOME_SETTINGS.freshPlantPhotos.title,
+            t('freshPhotosTitle'),
+          )}
+          subtitle={pickHomeCmsText(
+            settings.subtitle,
+            DEFAULT_HOME_SETTINGS.freshPlantPhotos.subtitle,
+            t('freshPhotosSubtitle'),
+          )}
           align="left"
           className="mb-6 md:mb-8"
         >

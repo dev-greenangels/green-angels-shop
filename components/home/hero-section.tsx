@@ -1,22 +1,37 @@
 import { ArrowRight, Camera, Sprout, Truck } from 'lucide-react'
+import { getTranslations } from 'next-intl/server'
 
 import { Button } from '@/components/ui/button'
+import { pickHomeCmsText } from '@/lib/home/cms-or-translated'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
+import { DEFAULT_HOME_SETTINGS } from '@/lib/settings/defaults'
+import type { MarketRegion } from '@/lib/settings/market'
 import type { HomePageSettings } from '@/lib/settings/types'
 import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
 
 type HeroSectionProps = {
   settings: HomePageSettings['hero']
+  marketRegion: MarketRegion
 }
 
-const HERO_HIGHLIGHTS = [
-  { icon: Camera, label: 'Актуальні фото' },
-  { icon: Sprout, label: 'Власний розсадник' },
-  { icon: Truck, label: 'Доставка по Україні' },
-] as const
+export async function HeroSection({ settings, marketRegion }: HeroSectionProps) {
+  const t = await getTranslations('home')
+  const title = pickHomeCmsText(settings.title, DEFAULT_HOME_SETTINGS.hero.title, t('heroTitle'))
+  const titleAccent = pickHomeCmsText(
+    settings.titleAccent,
+    DEFAULT_HOME_SETTINGS.hero.titleAccent,
+    t('heroTitleAccent'),
+  )
+  const highlights = [
+    { icon: Camera, label: t('heroHighlightPhotos') },
+    { icon: Sprout, label: t('heroHighlightNursery') },
+    {
+      icon: Truck,
+      label: marketRegion === 'sk' ? t('heroHighlightDeliverySk') : t('heroHighlightDeliveryUa'),
+    },
+  ] as const
 
-export function HeroSection({ settings }: HeroSectionProps) {
   return (
     <section className="relative min-h-[460px] w-full overflow-hidden sm:min-h-[500px] lg:min-h-[560px]">
       <div className={cn(siteContentShellClassName, 'relative z-10')}>
@@ -24,17 +39,17 @@ export function HeroSection({ settings }: HeroSectionProps) {
           <div className="relative w-full max-w-xl lg:max-w-[34rem]">
             <div className="relative px-1 py-1 sm:px-2">
               <h1 className="font-serif text-4xl font-medium leading-[1.12] text-foreground sm:text-5xl lg:text-[3.1rem]">
-                <span className="lg:whitespace-nowrap">{settings.title}</span>
-                {settings.titleAccent ? (
+                <span className="lg:whitespace-nowrap">{title}</span>
+                {titleAccent ? (
                   <>
                     <br />
-                    <span className="font-medium text-primary">{settings.titleAccent}</span>
+                    <span className="font-medium text-primary">{titleAccent}</span>
                   </>
                 ) : null}
               </h1>
 
               <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2.5">
-                {HERO_HIGHLIGHTS.map(({ icon: Icon, label }) => (
+                {highlights.map(({ icon: Icon, label }) => (
                   <div key={label} className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Icon className="h-4 w-4 text-primary" strokeWidth={2} aria-hidden />
                     <span className="font-medium">{label}</span>
@@ -49,7 +64,11 @@ export function HeroSection({ settings }: HeroSectionProps) {
                   className="h-12 rounded-xl px-7 text-base font-semibold shadow-md shadow-primary/25 transition-transform hover:-translate-y-0.5"
                 >
                   <Link href={settings.primaryCtaHref}>
-                    {settings.primaryCtaLabel}
+                    {pickHomeCmsText(
+                      settings.primaryCtaLabel,
+                      DEFAULT_HOME_SETTINGS.hero.primaryCtaLabel,
+                      t('heroPrimaryCta'),
+                    )}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
@@ -59,7 +78,13 @@ export function HeroSection({ settings }: HeroSectionProps) {
                   asChild
                   className="h-12 rounded-xl border-foreground/15 bg-white/80 px-7 text-base font-semibold hover:bg-white"
                 >
-                  <Link href={settings.secondaryCtaHref}>{settings.secondaryCtaLabel}</Link>
+                  <Link href={settings.secondaryCtaHref}>
+                    {pickHomeCmsText(
+                      settings.secondaryCtaLabel,
+                      DEFAULT_HOME_SETTINGS.hero.secondaryCtaLabel,
+                      t('heroSecondaryCta'),
+                    )}
+                  </Link>
                 </Button>
               </div>
             </div>

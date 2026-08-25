@@ -1,3 +1,7 @@
+import type { Metadata } from 'next'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
+
+import { BrandLogo } from '@/components/brand-logo'
 import { Navigation } from '@/components/navigation'
 import { PublicPageBreadcrumbs } from '@/components/public-page-breadcrumbs'
 import { ServiceUnavailableNotice } from '@/components/ui/service-unavailable-notice'
@@ -5,31 +9,46 @@ import { StoreAddressLink } from '@/components/store/store-address-link'
 import { StoreContactsDisplay } from '@/components/store/store-contacts-display'
 import { StoreLocationMap } from '@/components/store/store-location-map'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { SERVICE_UNAVAILABLE_MESSAGE } from '@/lib/api/fetch-result'
 import { staticPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
+import { buildContactsMetadata } from '@/lib/contacts/metadata'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
-import { getTranslations } from 'next-intl/server'
+import { resolvePublicCompanyName } from '@/lib/settings/company-name'
+import { getRequestCountrySiteCode } from '@/lib/country-sites/request-country'
 import {
   fetchPublicSiteSettings,
   getMarketSettings,
   getStoreSettings,
   isStoreContactUnavailable,
 } from '@/lib/settings/fetch'
+import { resolveStoreForCountrySite } from '@/lib/settings/store-contact-country'
 import { hasStoreContactInfo } from '@/lib/settings/store-helpers'
 import { cn } from '@/lib/utils'
 import { Link } from '@/i18n/navigation'
 
-export const metadata = {
-  title: 'Контакти · Зелені Янголи',
-  description: 'Адреса, телефони, email та графік роботи розсадника «Зелені Янголи».',
+type PageProps = {
+  params: Promise<{ locale: string }>
 }
 
-export default async function ContactsPage() {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale } = await params
+  return buildContactsMetadata(locale)
+}
+
+export default async function ContactsPage({ params }: PageProps) {
+  const { locale } = await params
+  setRequestLocale(locale)
+  const t = await getTranslations('contactsPage')
   const tNav = await getTranslations('nav')
-  const fetched = await fetchPublicSiteSettings()
-  const store = getStoreSettings(fetched)
+  const tCommon = await getTranslations('common')
+  const te = await getTranslations('errors')
+  const [fetched, countryCode] = await Promise.all([
+    fetchPublicSiteSettings(),
+    getRequestCountrySiteCode(),
+  ])
   const market = getMarketSettings(fetched)
+  const store = resolveStoreForCountrySite(getStoreSettings(fetched), market, countryCode)
   const contactsUnavailable = isStoreContactUnavailable(fetched) || !hasStoreContactInfo(store)
+  const company = resolvePublicCompanyName(store, tCommon('brand'))
 
   return (
     <>
@@ -41,10 +60,18 @@ export default async function ContactsPage() {
               className="mb-4"
               items={staticPageBreadcrumbs(tNav('contacts'))}
             />
-            <h1 className="font-serif text-3xl font-bold text-foreground md:text-4xl">Контакти</h1>
-            <p className="mt-3 max-w-2xl text-muted-foreground">
-              Звʼяжіться з нами зручним способом або відвідайте садовий центр за графіком роботи.
-            </p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+              <BrandLogo
+                alt={company}
+                imgClassName="max-h-16 w-auto max-w-[220px] object-contain"
+              />
+              <div>
+                <h1 className="font-serif text-3xl font-bold text-foreground md:text-4xl">
+                  {t('title')}
+                </h1>
+                <p className="mt-3 max-w-2xl text-muted-foreground">{t('subtitle')}</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -52,15 +79,17 @@ export default async function ContactsPage() {
           <div className="mx-auto max-w-4xl space-y-8">
             {contactsUnavailable ? (
               <ServiceUnavailableNotice
-                title="Контакти тимчасово недоступні"
-                message={SERVICE_UNAVAILABLE_MESSAGE}
+                title={t('unavailableTitle')}
+                message={te('serviceUnavailable')}
                 className="mx-auto max-w-lg"
               />
             ) : (
               <>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="font-serif text-2xl">Розсадник «Зелені Янголи»</CardTitle>
+                    <CardTitle className="font-serif text-2xl">
+                      {t('nurseryTitle', { company })}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <StoreContactsDisplay
@@ -70,12 +99,11 @@ export default async function ContactsPage() {
                       showAddress={false}
                       showSocialLinks
                       marketRegion={market.region}
-                      scheduleSectionTitle="Графік роботи"
                     />
                   </CardContent>
                 </Card>
 
-                <div className="space-y-4">
+                <div className="space-y-4 rounded-2xl border border-primary/10 bg-[rgba(232,240,227,0.48)] p-4 shadow-sm sm:p-5">
                   <StoreAddressLink store={store} />
                   <StoreLocationMap store={store} />
                 </div>
@@ -83,11 +111,13 @@ export default async function ContactsPage() {
             )}
 
             <p className="text-center text-sm text-muted-foreground">
-              Питання щодо доставки та оплати — на сторінці{' '}
-              <Link href="/shipping" className="text-primary underline-offset-4 hover:underline">
-                Доставка та оплата
-              </Link>
-              .
+              {t.rich('shippingHint', {
+                link: (chunks) => (
+                  <Link href="/shipping" className="text-primary underline-offset-4 hover:underline">
+                    {chunks}
+                  </Link>
+                ),
+              })}
             </p>
           </div>
         </div>

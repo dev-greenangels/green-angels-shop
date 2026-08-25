@@ -32,11 +32,13 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   return buildBlogListingMetadata(locale, { page: parsePage(page) })
 }
 
-export default async function BlogPage({ searchParams }: PageProps) {
-  const tNav = await getTranslations('nav')
-  const params = await searchParams
-  const page = parsePage(params.page)
-  const sort = parseSort(params.sort)
+export default async function BlogPage({ params, searchParams }: PageProps) {
+  const { locale } = await params
+  const tNav = await getTranslations({ locale, namespace: 'nav' })
+  const tBlog = await getTranslations({ locale, namespace: 'blog' })
+  const query = await searchParams
+  const page = parsePage(query.page)
+  const sort = parseSort(query.sort)
 
   let unavailable = false
   let result = {
@@ -63,20 +65,20 @@ export default async function BlogPage({ searchParams }: PageProps) {
             items={staticPageBreadcrumbs(tNav('blog'))}
           />
           <div className="mb-10 max-w-2xl">
-            <h1 className="font-serif text-4xl font-bold text-foreground md:text-5xl">Блог</h1>
-            <p className="mt-3 text-lg text-muted-foreground">
-              Поради з догляду за рослинами, новини розсадника та корисні матеріали для садівників.
-            </p>
+            <h1 className="font-serif text-4xl font-bold text-foreground md:text-5xl">
+              {tBlog('listingTitle')}
+            </h1>
+            <p className="mt-3 text-lg text-muted-foreground">{tBlog('listingDescription')}</p>
           </div>
 
           {unavailable ? (
             <ServiceUnavailableNotice
-              title="Блог тимчасово недоступний"
+              title={tBlog('unavailableTitle')}
               message={SERVICE_UNAVAILABLE_MESSAGE}
               className="mx-auto max-w-lg"
             />
           ) : result.items.length === 0 ? (
-            <p className="py-16 text-center text-muted-foreground">Статей поки немає. Загляньте пізніше.</p>
+            <p className="py-16 text-center text-muted-foreground">{tBlog('emptyListing')}</p>
           ) : (
             <BlogPostsGrid
               posts={result.items}

@@ -24,7 +24,13 @@ import {
 import { formatDateTimeOrDash } from '@/lib/i18n/format-datetime'
 import { cn } from '@/lib/utils'
 
-const TYPES: LegalBackstageDocument['type'][] = ['TERMS', 'PRIVACY', 'COOKIES', 'RETURNS']
+const TYPES: LegalBackstageDocument['type'][] = [
+  'TERMS',
+  'PRIVACY',
+  'COOKIES',
+  'RETURNS',
+  'MARKETING_CONSENT',
+]
 
 function sectionsToText(sections: LegalBackstageRevision['sections']) {
   return sections

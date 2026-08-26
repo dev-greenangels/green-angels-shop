@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { BrandLogo } from '@/components/brand-logo'
 import { Navigation } from '@/components/navigation'
+import { NewsletterSignupForm } from '@/components/legal/newsletter-signup-form'
 import { PublicPageBreadcrumbs } from '@/components/public-page-breadcrumbs'
 import { ServiceUnavailableNotice } from '@/components/ui/service-unavailable-notice'
 import { StoreAddressLink } from '@/components/store/store-address-link'
@@ -109,6 +110,10 @@ export default async function ContactsPage({ params }: PageProps) {
                 </div>
               </>
             )}
+
+            <div className="rounded-2xl border border-primary/10 bg-background/80 p-4 shadow-sm sm:p-6">
+              <NewsletterSignupForm />
+            </div>
 
             <p className="text-center text-sm text-muted-foreground">
               {t.rich('shippingHint', {

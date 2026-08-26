@@ -54,6 +54,8 @@ export type CreateOrderPayload = {
   createAccount?: boolean
   privacyConsent?: boolean
   privacyConsentVersion?: string
+  marketingConsent?: boolean
+  marketingRevisionId?: string
 }
 
 function normalizePhoneForApi(phone: string): string {
@@ -90,6 +92,8 @@ export function buildOrderPayload(
     createAccount?: boolean
     privacyConsent?: boolean
     privacyConsentVersion?: string
+    marketingConsent?: boolean
+    marketingRevisionId?: string
     companyVatId?: string
     countryCode?: 'sk' | 'hu' | 'at'
     buyerType?: 'individual' | 'company'
@@ -237,6 +241,8 @@ export function buildOrderPayload(
   if (options?.createAccount) payload.createAccount = true
   if (options?.privacyConsent) payload.privacyConsent = true
   if (options?.privacyConsentVersion) payload.privacyConsentVersion = options.privacyConsentVersion
+  if (options?.marketingConsent) payload.marketingConsent = true
+  if (options?.marketingRevisionId) payload.marketingRevisionId = options.marketingRevisionId
 
   return payload
 }

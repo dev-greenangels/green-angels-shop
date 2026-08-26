@@ -4,6 +4,7 @@ import { memo, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 import { Loader2, PenSquare } from 'lucide-react'
 
+import { MarketingConsentCheckbox } from '@/components/legal/marketing-consent-checkbox'
 import { CartOrderTotalsBreakdown } from '@/components/cart/cart-order-totals-breakdown'
 import { CartPromoGiftLines } from '@/components/cart/cart-promo-gift-lines'
 import { checkoutPanelClassName } from '@/components/checkout/checkout-utils'
@@ -46,6 +47,10 @@ type CheckoutOrderSummaryProps = {
   privacyConsentError?: boolean
   privacyConsentLabel?: string | null
   onPrivacyConsentChange?: (checked: boolean) => void
+  marketingConsentChecked?: boolean
+  marketingConsentFallbackLabel?: string
+  onMarketingConsentChange?: (checked: boolean) => void
+  onMarketingRevisionId?: (revisionId: string | undefined) => void
   showCreateAccountOption?: boolean
   createAccountChecked?: boolean
   onCreateAccountChange?: (checked: boolean) => void
@@ -101,6 +106,10 @@ export const CheckoutOrderSummary = memo(function CheckoutOrderSummary({
   privacyConsentError = false,
   privacyConsentLabel: _privacyConsentLabel = null,
   onPrivacyConsentChange,
+  marketingConsentChecked = false,
+  marketingConsentFallbackLabel = '',
+  onMarketingConsentChange,
+  onMarketingRevisionId,
   showCreateAccountOption = false,
   createAccountChecked = false,
   onCreateAccountChange,
@@ -108,6 +117,7 @@ export const CheckoutOrderSummary = memo(function CheckoutOrderSummary({
   useObligationToPayLabel = false,
 }: CheckoutOrderSummaryProps) {
   const t = useTranslations('cart')
+  const tMarketing = useTranslations('marketingConsent')
   const tc = useTranslations('common')
   const reverseCharge = isReverseChargeCheckout(quote?.checkout, quote)
   const formatMoney = useFormatPrice('raw')
@@ -352,6 +362,13 @@ export const CheckoutOrderSummary = memo(function CheckoutOrderSummary({
         {privacyConsentError ? (
           <p className="text-xs text-destructive">{t('privacyConsentRequired')}</p>
         ) : null}
+        <MarketingConsentCheckbox
+          id="checkout-marketing-consent"
+          checked={marketingConsentChecked}
+          onCheckedChange={(checked) => onMarketingConsentChange?.(checked)}
+          fallbackLabel={marketingConsentFallbackLabel || tMarketing('checkboxFallback')}
+          onRevisionId={onMarketingRevisionId}
+        />
         <Button type="submit" form={formId} size="lg" disabled={!canSubmit} className="w-full">
           {isLoading ? (
             <>

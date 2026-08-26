@@ -1537,5 +1537,23 @@
         }
       ]
     }
+  },
+  "marketingConsent": {
+    "formTitle": "Novinky a nabídky",
+    "formSubtitle": "Přihlaste se k odběru — odděleně od e-mailů o objednávkách. Souhlas můžete kdykoli odvolat.",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "vy@example.com",
+    "emailRequired": "Zadejte e-mail",
+    "consentRequired": "Potvrďte souhlas s marketingem",
+    "checkboxFallback": "Chci dostávat marketingové e-maily.",
+    "submit": "Přihlásit se",
+    "submitting": "Odesíláme…",
+    "signupSuccess": "Odběr byl přihlášen.",
+    "signupError": "Odběr se nepodařilo přihlásit. Zkuste později.",
+    "unsubscribeTitle": "Odhlášení z odběru",
+    "unsubscribeLoading": "Zpracováváme…",
+    "unsubscribeSuccess": "Byli jste odhlášeni z marketingových e-mailů.",
+    "unsubscribeError": "Odhlášení selhalo. Odkaz může být neplatný.",
+    "unsubscribeMissingToken": "V odkazu chybí token pro odhlášení."
   }
 }

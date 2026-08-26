@@ -1536,5 +1536,23 @@
         }
       ]
     }
+  },
+  "marketingConsent": {
+    "formTitle": "Новини та пропозиції",
+    "formSubtitle": "Підпишіться на розсилку — окремо від листів про замовлення. Згоду можна відкликати в будь-який час.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "emailRequired": "Вкажіть email",
+    "consentRequired": "Потрібно підтвердити згоду на розсилку",
+    "checkboxFallback": "Я хочу отримувати маркетингові повідомлення електронною поштою.",
+    "submit": "Підписатися",
+    "submitting": "Надсилаємо…",
+    "signupSuccess": "Підписку оформлено.",
+    "signupError": "Не вдалося оформити підписку. Спробуйте пізніше.",
+    "unsubscribeTitle": "Відписка від розсилки",
+    "unsubscribeLoading": "Обробляємо запит…",
+    "unsubscribeSuccess": "Ви відписані від маркетингових листів.",
+    "unsubscribeError": "Не вдалося відписатися. Посилання могло застаріти.",
+    "unsubscribeMissingToken": "У посиланні немає токена відписки."
   }
 }

@@ -1537,5 +1537,23 @@
         }
       ]
     }
+  },
+  "marketingConsent": {
+    "formTitle": "News und Angebote",
+    "formSubtitle": "Newsletter abonnieren — getrennt von Bestell-E-Mails. Jederzeit widerrufbar.",
+    "emailLabel": "E-Mail",
+    "emailPlaceholder": "sie@example.com",
+    "emailRequired": "E-Mail eingeben",
+    "consentRequired": "Bitte Marketing-Einwilligung bestätigen",
+    "checkboxFallback": "Ich möchte Marketing-E-Mails erhalten.",
+    "submit": "Abonnieren",
+    "submitting": "Wird gesendet…",
+    "signupSuccess": "Anmeldung erfolgreich.",
+    "signupError": "Anmeldung fehlgeschlagen. Bitte später erneut versuchen.",
+    "unsubscribeTitle": "Abmeldung",
+    "unsubscribeLoading": "Wird verarbeitet…",
+    "unsubscribeSuccess": "Sie wurden von Marketing-E-Mails abgemeldet.",
+    "unsubscribeError": "Abmeldung fehlgeschlagen. Link möglicherweise abgelaufen.",
+    "unsubscribeMissingToken": "Abmelde-Token fehlt."
   }
 }

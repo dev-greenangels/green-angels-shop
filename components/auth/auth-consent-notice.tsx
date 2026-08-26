@@ -22,7 +22,7 @@ export function AuthConsentNotice({ text, className }: AuthConsentNoticeProps) {
   const trimmedCms = text?.trim() ?? ''
   const source = (
     !trimmedCms || trimmedCms === DEFAULT_AUTH_CONSENT_TEXT
-      ? t('consentTemplate')
+      ? (t.raw('consentTemplate') as string)
       : trimmedCms
   ).trim()
 

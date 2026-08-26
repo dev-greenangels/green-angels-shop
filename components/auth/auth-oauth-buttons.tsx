@@ -1,6 +1,7 @@
 'use client'
 
 import { Loader2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 
@@ -13,6 +14,8 @@ export function AuthOAuthButtons({
   disabled?: boolean
   onGoogleClick: () => void
 }) {
+  const t = useTranslations('auth')
+
   return (
     <Button
       type="button"
@@ -43,7 +46,7 @@ export function AuthOAuthButtons({
           />
         </svg>
       )}
-      Вхід через Google
+      {t('signInWithGoogle')}
     </Button>
   )
 }

@@ -26,6 +26,7 @@
     "continueShopping": "Continue shopping",
     "back": "Back",
     "next": "Next",
+    "or": "nebo",
     "continue": "Continue",
     "save": "Save",
     "saving": "Saving…",
@@ -155,10 +156,10 @@
     "shippingSk": "Doprava a platba",
     "faq": "FAQ",
     "terms": "Terms of use",
-    "termsSk": "Všeobecné obchodné podmienky (VOP)",
+    "termsSk": "Všeobecné obchodní podmínky (VOP)",
     "privacy": "Privacy policy",
-    "privacySk": "Zásady ochrany osobných údajov",
-    "returnsSk": "Reklamačný poriadok",
+    "privacySk": "Zásady ochrany osobních údajů",
+    "returnsSk": "Reklamační řád",
     "cookies": "Cookie policy",
     "admin": "Administration",
     "intro": "Professional plant nursery. We grow quality planting material with care since 2010.",
@@ -206,7 +207,15 @@
   "auth": {
     "back": "Back",
     "authTitle": "Sign in or register",
-    "authSubtitle": "One step: Google or phone. If the number is new, we will create an account after verification.",
+    "authSubtitle": "One step: sign in.",
+    "authSubtitleNeutral": "One step: sign in.",
+    "authSubtitleEmailOnly": "Confirm your email — we will send a code to your inbox.",
+    "authSubtitlePhoneOnly": "Confirm your phone — we will send an SMS code.",
+    "authSubtitleEmailPhone": "Sign in with email (inbox code) or phone (SMS).",
+    "authSubtitleGoogleOnly": "Sign in with Google.",
+    "authSubtitleGoogleEmail": "Sign in with Google or email (inbox code).",
+    "authSubtitleGooglePhone": "Sign in with Google or phone (SMS).",
+    "authSubtitleGoogleEmailPhone": "Sign in with Google, email (inbox code) or phone (SMS).",
     "loginTitle": "Sign in",
     "loginSubtitle": "Google or phone number with SMS or email verification.",
     "loginHint": "Sign in with Google, phone (SMS) or email (code to your inbox).",
@@ -231,7 +240,16 @@
     },
     "otpChannelsDisabled": "SMS and email OTP are disabled in settings. Contact the administrator.",
     "consentFallback": "By signing in, you agree to the terms of use and privacy policy.",
-    "consentTemplate": "Přihlášením nebo registrací souhlasíte s {terms} a {privacy}. Seznamte se také s {cookies}."
+    "consentTemplate": "Přihlášením nebo registrací souhlasíte s {terms} a {privacy}. Seznamte se také s {cookies}.",
+    "signInWithGoogle": "Přihlásit se přes Google",
+    "heroStats": {
+      "varietiesValue": "170+",
+      "varietiesLabel": "druhů rostlin",
+      "clientsValue": "5000+",
+      "clientsLabel": "klientů",
+      "experienceValue": "14",
+      "experienceLabel": "let zkušeností"
+    }
   },
   "account": {
     "title": "My account",
@@ -578,7 +596,9 @@
     "heroHighlightPhotos": "Aktuální fotky",
     "heroHighlightNursery": "Vlastní školka",
     "heroHighlightDeliveryUa": "Doručení po Ukrajině",
-    "heroHighlightDeliverySk": "Doručení po Slovensku"
+    "heroHighlightDeliverySk": "Doručení po Slovensku",
+    "heroHighlightDeliveryTo": "Doručení: {country}",
+    "heroWholesaleCta": "Velkoobchodní spolupráce"
   },
   "contactsPage": {
     "title": "Kontakty",

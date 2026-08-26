@@ -114,9 +114,9 @@ export default async function AboutPage({ params }: PageProps) {
                 {page.productLines.map((line, index) => (
                   <Card
                     key={`${line.title}-${index}`}
-                    className="overflow-hidden border-border/60 shadow-sm"
+                    className="overflow-hidden border-border/60 py-0 shadow-sm"
                   >
-                    <CardContent className="flex flex-col items-center gap-6 p-6 sm:flex-row sm:items-center md:p-8">
+                    <CardContent className="flex flex-col items-center gap-4 p-4 sm:flex-row sm:items-center sm:p-5">
                       {line.imageUrl ? (
                         <AboutImage
                           src={line.imageUrl}

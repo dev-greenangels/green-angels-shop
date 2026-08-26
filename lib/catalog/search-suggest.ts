@@ -36,13 +36,16 @@ export const SEARCH_SUGGEST_MIN_LENGTH = 2
 
 export { buildSearchPageHref, normalizeSearchQuery }
 
-export async function fetchSearchSuggestions(query: string): Promise<SearchSuggestResult> {
+export async function fetchSearchSuggestions(
+  query: string,
+  locale: string,
+): Promise<SearchSuggestResult> {
   const trimmed = normalizeSearchQuery(query)
   if (trimmed.length < SEARCH_SUGGEST_MIN_LENGTH) {
     return EMPTY_SEARCH_SUGGEST
   }
 
-  const params = new URLSearchParams({ q: trimmed })
+  const params = new URLSearchParams({ q: trimmed, locale })
   const res = await fetch(`/api/catalog/search?${params}`, { cache: 'no-store' })
   if (!res.ok) {
     return EMPTY_SEARCH_SUGGEST

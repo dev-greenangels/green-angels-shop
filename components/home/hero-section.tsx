@@ -1,35 +1,51 @@
-import { ArrowRight, Camera, Sprout, Truck } from 'lucide-react'
+import { ArrowRight, Camera, Handshake, Sprout, Truck } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 
 import { Button } from '@/components/ui/button'
+import { resolveHeroDeliveryCountryCode } from '@/lib/home/hero-delivery-label'
 import { pickHomeCmsText } from '@/lib/home/cms-or-translated'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
+import type { CountrySiteCode } from '@/lib/country-sites/types'
 import { DEFAULT_HOME_SETTINGS } from '@/lib/settings/defaults'
-import type { MarketRegion } from '@/lib/settings/market'
+import type { MarketSettings } from '@/lib/settings/market'
 import type { HomePageSettings } from '@/lib/settings/types'
 import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
 
 type HeroSectionProps = {
   settings: HomePageSettings['hero']
-  marketRegion: MarketRegion
+  market: MarketSettings
+  hostCountryCode?: CountrySiteCode | null
+  wholesaleEnabled?: boolean
 }
 
-export async function HeroSection({ settings, marketRegion }: HeroSectionProps) {
+export async function HeroSection({
+  settings,
+  market,
+  hostCountryCode = null,
+  wholesaleEnabled = false,
+}: HeroSectionProps) {
   const t = await getTranslations('home')
+  const tCheckout = await getTranslations('checkout')
   const title = pickHomeCmsText(settings.title, DEFAULT_HOME_SETTINGS.hero.title, t('heroTitle'))
   const titleAccent = pickHomeCmsText(
     settings.titleAccent,
     DEFAULT_HOME_SETTINGS.hero.titleAccent,
     t('heroTitleAccent'),
   )
+
+  const deliveryCountryCode = resolveHeroDeliveryCountryCode(market, hostCountryCode)
+  const deliveryLabel =
+    market.region === 'ua'
+      ? t('heroHighlightDeliveryUa')
+      : t('heroHighlightDeliveryTo', {
+          country: tCheckout(`deliveryCountries.${deliveryCountryCode}`),
+        })
+
   const highlights = [
     { icon: Camera, label: t('heroHighlightPhotos') },
     { icon: Sprout, label: t('heroHighlightNursery') },
-    {
-      icon: Truck,
-      label: marketRegion === 'sk' ? t('heroHighlightDeliverySk') : t('heroHighlightDeliveryUa'),
-    },
+    { icon: Truck, label: deliveryLabel },
   ] as const
 
   return (
@@ -86,6 +102,19 @@ export async function HeroSection({ settings, marketRegion }: HeroSectionProps) 
                     )}
                   </Link>
                 </Button>
+                {wholesaleEnabled ? (
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    asChild
+                    className="h-12 rounded-xl border border-dashed border-primary/35 bg-primary/[0.06] px-6 text-base font-semibold text-primary hover:bg-primary/10 hover:text-primary"
+                  >
+                    <Link href="/wholesale">
+                      <Handshake className="mr-2 h-5 w-5" />
+                      {t('heroWholesaleCta')}
+                    </Link>
+                  </Button>
+                ) : null}
               </div>
             </div>
           </div>

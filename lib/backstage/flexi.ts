@@ -109,6 +109,10 @@ export type FlexiStromSyncResult = {
   productsUpserted: number
   variantsUpserted: number
   orphansCreated: number
+  skippedMissingCategories?: number
+  skippedMissingProducts?: number
+  skippedMissingVariants?: number
+  journalAbsorbed?: number
   message: string
   errors: string[]
 }
@@ -222,10 +226,14 @@ export async function runFlexiFullSync(): Promise<FlexiSyncResult> {
   return res.json()
 }
 
-export async function runFlexiStromSync(): Promise<FlexiStromSyncResult> {
+export async function runFlexiStromSync(opts?: {
+  createMissing?: boolean
+}): Promise<FlexiStromSyncResult> {
   const res = await fetch('/api/backstage/flexi/sync-strom/run', {
     method: 'POST',
     credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ createMissing: opts?.createMissing !== false }),
   })
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()
@@ -286,6 +294,61 @@ export async function drainFlexiQueue(): Promise<{ ok: boolean; removed: number;
   const res = await fetch('/api/backstage/flexi/queue/drain', {
     method: 'POST',
     credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export type FlexiBacklogDryRunReport = {
+  openByEvidence: Record<string, number>
+  catalogOpen: number
+  orderOpen: number
+  unsupportedOpen: number
+  changeVersionMinMax: [number, number] | null
+  flexiOrdersEmpty: boolean | null
+  wouldClose: {
+    catalog: number
+    orders: number
+    unsupportedSkippable: number
+    adresar: number
+  }
+  dryRunHash: string
+  cursor: number
+}
+
+export type FlexiBacklogTier = 'T1' | 'T2' | 'T3'
+
+export type FlexiBacklogCleanupResult = {
+  ok: boolean
+  tier: FlexiBacklogTier
+  closedCount: number
+  countsByEvidence: Record<string, number>
+  cursorBefore: number
+  cursorAfter: number
+  pollStart: number
+  lastSafeCursor: number
+  dryRunHash: string
+  message: string
+}
+
+export async function fetchFlexiBacklogDryRun(): Promise<FlexiBacklogDryRunReport> {
+  const res = await fetch('/api/backstage/flexi/backlog/dry-run', {
+    credentials: 'include',
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function closeFlexiBacklogTier(opts: {
+  tier: FlexiBacklogTier
+  dryRunHash: string
+}): Promise<FlexiBacklogCleanupResult> {
+  const res = await fetch('/api/backstage/flexi/backlog/close', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(opts),
   })
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()

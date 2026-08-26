@@ -36,6 +36,7 @@ import {
   useCatalogFilterDefinitions,
   type CatalogFilterScope,
 } from '@/lib/catalog/use-catalog-filter-definitions'
+import { useDefaultCurrency } from '@/components/providers/commerce-provider'
 import { cn } from '@/lib/utils'
 
 export type CatalogFiltersState = CatalogFilters
@@ -100,6 +101,7 @@ export function FilterSidebarContent({
   collapseContainerGroupsByDefault = false,
 }: FilterSidebarProps) {
   const t = useTranslations('filter')
+  const currency = useDefaultCurrency()
   const { definitions, priceBounds, loading, isRefreshing } = useCatalogFilterDefinitions(
     filterScope,
     filters,
@@ -141,7 +143,10 @@ export function FilterSidebarContent({
       >
       {showPrice ? (
       <section className="space-y-3 border-b border-border/60 pb-4">
-        <h3 className="text-sm font-semibold">{t('price')}</h3>
+        <h3 className="text-sm font-semibold">
+          {t('price')}
+          <span className="ml-1.5 font-normal text-muted-foreground">({currency.symbol})</span>
+        </h3>
         <CatalogPriceFilter
           filters={filters}
           bounds={priceBounds}

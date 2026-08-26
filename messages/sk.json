@@ -26,6 +26,7 @@
     "continueShopping": "Pokračovať v nákupe",
     "back": "Späť",
     "next": "Ďalej",
+    "or": "alebo",
     "continue": "Pokračovať",
     "save": "Uložiť",
     "saving": "Ukladá sa…",
@@ -206,7 +207,15 @@
   "auth": {
     "back": "Späť",
     "authTitle": "Prihlásenie alebo registrácia",
-    "authSubtitle": "Jeden krok: Google alebo telefón. Ak je číslo nové, po overení vytvoríme účet.",
+    "authSubtitle": "Jeden krok: prihlásenie.",
+    "authSubtitleNeutral": "Jeden krok: prihlásenie.",
+    "authSubtitleEmailOnly": "Overte email — pošleme kód do schránky.",
+    "authSubtitlePhoneOnly": "Overte telefón — pošleme kód SMS.",
+    "authSubtitleEmailPhone": "Prihláste sa cez email (kód do schránky) alebo telefón (SMS).",
+    "authSubtitleGoogleOnly": "Prihláste sa cez Google.",
+    "authSubtitleGoogleEmail": "Prihláste sa cez Google alebo email (kód do schránky).",
+    "authSubtitleGooglePhone": "Prihláste sa cez Google alebo telefón (SMS).",
+    "authSubtitleGoogleEmailPhone": "Prihláste sa cez Google, email (kód do schránky) alebo telefón (SMS).",
     "loginTitle": "Prihlásenie",
     "loginSubtitle": "Google alebo telefónne číslo s overením cez SMS alebo e-mail.",
     "loginHint": "Prihláste sa cez Google, telefón (SMS) alebo e-mail (kód do schránky).",
@@ -231,7 +240,16 @@
     },
     "otpChannelsDisabled": "SMS a e-mail OTP sú v nastaveniach vypnuté. Kontaktujte administrátora.",
     "consentFallback": "Prihlásením súhlasíte s podmienkami používania a zásadami ochrany súkromia.",
-    "consentTemplate": "Prihlásením alebo registráciou súhlasíte s {terms} a {privacy}. Tiež sa oboznámte s {cookies}."
+    "consentTemplate": "Prihlásením alebo registráciou súhlasíte s {terms} a {privacy}. Tiež sa oboznámte s {cookies}.",
+    "signInWithGoogle": "Prihlásenie cez Google",
+    "heroStats": {
+      "varietiesValue": "170+",
+      "varietiesLabel": "druhov rastlín",
+      "clientsValue": "5000+",
+      "clientsLabel": "klientov",
+      "experienceValue": "14",
+      "experienceLabel": "rokov skúseností"
+    }
   },
   "account": {
     "title": "Môj účet",
@@ -578,7 +596,9 @@
     "heroHighlightPhotos": "Aktuálne fotky",
     "heroHighlightNursery": "Vlastná škôlka",
     "heroHighlightDeliveryUa": "Doručenie po Ukrajine",
-    "heroHighlightDeliverySk": "Doručenie po Slovensku"
+    "heroHighlightDeliverySk": "Doručenie po Slovensku",
+    "heroHighlightDeliveryTo": "Doručenie: {country}",
+    "heroWholesaleCta": "Veľkoobchodná spolupráca"
   },
   "contactsPage": {
     "title": "Kontakty",

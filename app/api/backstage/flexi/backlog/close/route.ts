@@ -7,20 +7,14 @@ export async function POST(request: Request) {
   const { error } = await requireBackstageSession(request)
   if (error) return error
 
-  let createMissing = true
-  try {
-    const body = (await request.json().catch(() => ({}))) as { createMissing?: boolean }
-    if (body?.createMissing === false) createMissing = false
-  } catch {
-    createMissing = true
-  }
+  const body = await request.json().catch(() => ({}))
 
   try {
-    const res = await fetchBackend('/backstage/flexi/sync-strom/run', {
+    const res = await fetchBackend('/backstage/flexi/backlog/close', {
       request,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ createMissing }),
+      body: JSON.stringify(body),
     })
     const data = await readBackendJson(res)
     if (!res.ok) return NextResponse.json(data, { status: res.status })

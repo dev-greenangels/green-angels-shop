@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useId, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
-import { Loader2, Mic, Search, X } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { Loader2, Search, X } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -72,6 +72,7 @@ export function SiteSearchField({
 }: SiteSearchFieldProps) {
   const t = useTranslations('search')
   const tc = useTranslations('common')
+  const locale = useLocale()
   const router = useRouter()
   const listboxId = useId()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -135,7 +136,7 @@ export function SiteSearchField({
     setLoading(true)
 
     const timer = window.setTimeout(() => {
-      void fetchSearchSuggestions(trimmed)
+      void fetchSearchSuggestions(trimmed, locale)
         .then((data) => {
           if (!cancelled) setResult(data)
         })
@@ -148,7 +149,7 @@ export function SiteSearchField({
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [showPanel, trimmed])
+  }, [showPanel, trimmed, locale])
 
   const navigateTo = (href: string) => {
     onNavigate?.()
@@ -415,7 +416,7 @@ export function SiteSearchField({
           }}
           className={cn(
             'h-9 w-full pl-9 text-base',
-            showClear ? 'pr-16' : 'pr-10',
+            showClear ? 'pr-9' : 'pr-3',
             inputClassName,
           )}
         />
@@ -424,7 +425,7 @@ export function SiteSearchField({
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute right-9 top-1/2 z-10 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            className="absolute right-0.5 top-1/2 z-10 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             aria-label={t('clearSearch')}
             onMouseDown={(event) => event.preventDefault()}
             onClick={handleClear}
@@ -432,16 +433,6 @@ export function SiteSearchField({
             <X className="h-4 w-4" />
           </Button>
         ) : null}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="absolute right-0.5 top-1/2 z-10 h-8 w-8 -translate-y-1/2 text-muted-foreground"
-          aria-label={t('voiceSearch')}
-          disabled
-        >
-          <Mic className="h-4 w-4" />
-        </Button>
       </div>
     </>
   )

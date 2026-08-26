@@ -26,6 +26,7 @@
     "continueShopping": "Vásárlás folytatása",
     "back": "Vissza",
     "next": "Tovább",
+    "or": "vagy",
     "continue": "Folytatás",
     "save": "Mentés",
     "saving": "Mentés…",
@@ -152,13 +153,13 @@
     "perennials": "Évelők",
     "shrubs": "Cserjék",
     "shipping": "Szállítás és fizetés",
-    "shippingSk": "Doprava a platba",
+    "shippingSk": "Szállítás és fizetés",
     "faq": "GYIK",
     "terms": "Felhasználási feltételek",
-    "termsSk": "Všeobecné obchodné podmienky (VOP)",
+    "termsSk": "Általános szerződési feltételek (ÁSZF)",
     "privacy": "Adatvédelmi irányelvek",
-    "privacySk": "Zásady ochrany osobných údajov",
-    "returnsSk": "Reklamačný poriadok",
+    "privacySk": "Személyes adatok védelmi irányelvei",
+    "returnsSk": "Reklamációs eljárás",
     "cookies": "Süti szabályzat",
     "admin": "Adminisztráció",
     "intro": "Professzionális növényiskola. 2010 óta gondosan nevelünk minőségi ültetőanyagot.",
@@ -206,7 +207,15 @@
   "auth": {
     "back": "Vissza",
     "authTitle": "Bejelentkezés vagy regisztráció",
-    "authSubtitle": "Egy lépés: Google vagy telefon. Ha a szám új, ellenőrzés után létrehozzuk a fiókot.",
+    "authSubtitle": "Egy lépés: bejelentkezés.",
+    "authSubtitleNeutral": "Egy lépés: bejelentkezés.",
+    "authSubtitleEmailOnly": "Erősítse meg e-mailjét — kódot küldünk a postaládájába.",
+    "authSubtitlePhoneOnly": "Erősítse meg telefonját — SMS-kódot küldünk.",
+    "authSubtitleEmailPhone": "Jelentkezzen be e-maillel (kód a postaládába) vagy telefonnal (SMS).",
+    "authSubtitleGoogleOnly": "Bejelentkezés Google-fiókkal.",
+    "authSubtitleGoogleEmail": "Bejelentkezés Google-lel vagy e-maillel (kód a postaládába).",
+    "authSubtitleGooglePhone": "Bejelentkezés Google-lel vagy telefonnal (SMS).",
+    "authSubtitleGoogleEmailPhone": "Bejelentkezés Google-lel, e-maillel (kód a postaládába) vagy telefonnal (SMS).",
     "loginTitle": "Bejelentkezés",
     "loginSubtitle": "Google vagy telefonszám SMS- vagy e-mail ellenőrzéssel.",
     "loginHint": "Jelentkezzen be Google-fiókkal, telefonnal (SMS) vagy e-maillel (kód a postaládájába).",
@@ -231,7 +240,16 @@
     },
     "otpChannelsDisabled": "Az SMS- és e-mail OTP ki van kapcsolva a beállításokban. Lépjen kapcsolatba az adminisztrátorral.",
     "consentFallback": "Bejelentkezéssel elfogadja a felhasználási feltételeket és az adatvédelmi irányelveket.",
-    "consentTemplate": "Bejelentkezéssel vagy regisztrációval elfogadja a {terms} és a {privacy} feltételeit. Ismerje meg a {cookies} is."
+    "consentTemplate": "Bejelentkezéssel vagy regisztrációval elfogadja a {terms} és a {privacy} feltételeit. Ismerje meg a {cookies} is.",
+    "signInWithGoogle": "Bejelentkezés Google-fiókkal",
+    "heroStats": {
+      "varietiesValue": "170+",
+      "varietiesLabel": "növényfajta",
+      "clientsValue": "5000+",
+      "clientsLabel": "ügyfél",
+      "experienceValue": "14",
+      "experienceLabel": "év tapasztalat"
+    }
   },
   "account": {
     "title": "Fiókom",
@@ -578,7 +596,9 @@
     "heroHighlightPhotos": "Aktuális fotók",
     "heroHighlightNursery": "Saját faiskola",
     "heroHighlightDeliveryUa": "Szállítás Ukrajnában",
-    "heroHighlightDeliverySk": "Szállítás Szlovákiában"
+    "heroHighlightDeliverySk": "Szállítás Szlovákiában",
+    "heroHighlightDeliveryTo": "Szállítás: {country}",
+    "heroWholesaleCta": "Nagykereskedelmi együttműködés"
   },
   "contactsPage": {
     "title": "Kapcsolat",

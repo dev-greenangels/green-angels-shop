@@ -769,8 +769,9 @@ export function FlexiSettingsForm() {
               }
             />
             <p className="text-xs text-muted-foreground">
-              Якщо webhook живий — ставте 0. Інакше 6–24. Кнопка «Підтягнути журнал» нижче робить
-              те саме вручну.
+              Якщо webhook живий — ставте 0. Інакше 6–24. Ручний знімок («Оновити існуючі» /
+              «Імпорт з ABRA») теж закриває журнал каталогу. Кнопка «Наздогнати журнал» у ремонті —
+              лише якщо webhook відстав і знімка ще не було.
             </p>
           </div>
         </CardContent>
@@ -874,8 +875,9 @@ export function FlexiSettingsForm() {
         <CardHeader>
           <CardTitle>Дії синхронізації</CardTitle>
           <CardDescription>
-            У повсякденні достатньо webhook (автоматично). Кнопки нижче — для ручного запуску або
-            першого налаштування.
+            У повсякденні достатньо webhook. Дві кнопки нижче — ручний знімок з дерева ABRA (ті самі
+            поля: назви, Text above/below, описи, ціни, сток). Після успіху журнал каталогу
+            закривається, щоб webhook не ганяв той самий backlog знову.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -889,7 +891,7 @@ export function FlexiSettingsForm() {
             </p>
             {apiNearLimit ? (
               <p className="text-amber-700 dark:text-amber-400">
-                Близько до денного ліміту — рідше запускайте повне оновлення цін/залишків.
+                Близько до денного ліміту — рідше запускайте ручний імпорт.
               </p>
             ) : null}
             <p>
@@ -927,11 +929,11 @@ export function FlexiSettingsForm() {
           <div className="space-y-3">
             <div className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 space-y-1">
-                <p className="font-medium">Підтягнути журнал змін</p>
+                <p className="font-medium">Оновити існуючі</p>
                 <p className="text-sm text-muted-foreground">
-                  Changes API з закладки: нові версії cenik, складу, замовлень. Якщо в журналі є
-                  strom і увімкнено «категорії з дерева» — може перебудувати дерево. Якщо webhook
-                  працює — рідко потрібна.
+                  Ті самі дані з дерева ABRA (категорії: назви, Text above/below; товари: описи,
+                  ціни, сток, розміри) — лише для сутностей, що вже є на сайті. Нових категорій /
+                  товарів / SKU не створює.
                 </p>
               </div>
               <Button
@@ -940,52 +942,23 @@ export function FlexiSettingsForm() {
                 className="shrink-0"
                 disabled={Boolean(busy)}
                 onClick={() =>
-                  void run('poll', async () => {
-                    const r = await runFlexiPollChanges()
+                  void run('strom-update', async () => {
+                    const r = await runFlexiStromSync({ createMissing: false })
                     return { ok: r.ok, message: r.message }
                   })
                 }
               >
-                {busy === 'poll' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-                Підтягнути журнал
+                {busy === 'strom-update' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Оновити існуючі
               </Button>
             </div>
 
-            <div className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-2 rounded-lg border border-primary/30 p-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 space-y-1">
-                <p className="font-medium">Оновити каталог з дерева</p>
+                <p className="font-medium">Імпорт з ABRA</p>
                 <p className="text-sm text-muted-foreground">
-                  Імпорт структури: папка Products → корінь сайту, гілки → категорії, листки →
-                  товари, SKU → варіанти. Для першого завантаження і після змін дерева в ABRA.
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="shrink-0"
-                disabled={Boolean(busy)}
-                onClick={() =>
-                  void run('strom', async () => {
-                    const r = await runFlexiStromSync()
-                    return { ok: r.ok, message: r.message }
-                  })
-                }
-              >
-                {busy === 'strom' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Оновити каталог
-              </Button>
-            </div>
-
-            <div className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0 space-y-1">
-                <p className="font-medium">Пройти весь прайс</p>
-                <p className="text-sm text-muted-foreground">
-                  Сторінка за сторінкою весь cenik, лише вже існуючі SKU. Не імпорт дерева. Довго й
-                  витрачає ліміт — рідко або за розкладом вище.
+                  Створює відсутні категорії / товари / варіанти (нові товари — unpublished) і
+                  оновлює існуючі. Для першого завантаження і після нових папок у дереві ABRA.
                 </p>
               </div>
               <Button
@@ -994,17 +967,78 @@ export function FlexiSettingsForm() {
                 className="shrink-0"
                 disabled={Boolean(busy)}
                 onClick={() =>
-                  void run('full', async () => {
-                    const r = await runFlexiFullSync()
+                  void run('strom-import', async () => {
+                    const r = await runFlexiStromSync({ createMissing: true })
                     return { ok: r.ok, message: r.message }
                   })
                 }
               >
-                {busy === 'full' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Пройти весь прайс
+                {busy === 'strom-import' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Імпорт з ABRA
               </Button>
             </div>
           </div>
+
+          <details className="rounded-lg border p-3">
+            <summary className="cursor-pointer text-sm font-medium">
+              Ремонт і додатково (журнал / повний прайс)
+            </summary>
+            <div className="mt-3 space-y-3">
+              <div className="flex flex-col gap-2 rounded-lg border border-dashed p-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 space-y-1">
+                  <p className="font-medium">Наздогнати журнал змін</p>
+                  <p className="text-sm text-muted-foreground">
+                    Changes API з курсора — якщо webhook відстав і ви ще не робили ручний знімок
+                    вище. Коли webhook живий — рідко потрібно.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="shrink-0"
+                  disabled={Boolean(busy)}
+                  onClick={() =>
+                    void run('poll', async () => {
+                      const r = await runFlexiPollChanges()
+                      return { ok: r.ok, message: r.message }
+                    })
+                  }
+                >
+                  {busy === 'poll' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  Наздогнати журнал
+                </Button>
+              </div>
+
+              <div className="flex flex-col gap-2 rounded-lg border border-dashed p-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 space-y-1">
+                  <p className="font-medium">Пройти весь прайс</p>
+                  <p className="text-sm text-muted-foreground">
+                    Сторінка за сторінкою весь cenik, лише вже існуючі SKU. Довго й витрачає ліміт —
+                    зазвичай достатньо «Оновити існуючі». Також є розклад вище.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="shrink-0"
+                  disabled={Boolean(busy)}
+                  onClick={() =>
+                    void run('full', async () => {
+                      const r = await runFlexiFullSync()
+                      return { ok: r.ok, message: r.message }
+                    })
+                  }
+                >
+                  {busy === 'full' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Пройти весь прайс
+                </Button>
+              </div>
+            </div>
+          </details>
         </CardContent>
       </Card>
       <FlexiQueueCard />

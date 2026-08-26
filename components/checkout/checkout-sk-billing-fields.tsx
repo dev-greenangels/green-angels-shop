@@ -116,30 +116,13 @@ export function CheckoutSkBillingFields({
 
       {requireCompanyFields ? (
         <div className="space-y-4 rounded-lg border border-border/80 bg-muted p-4 shadow-sm">
-          <div className="space-y-2">
-            <RequiredLabel htmlFor="sk-company-legal-name">{t('companyLegalName')}</RequiredLabel>
-            <InputWithClear
-              id="sk-company-legal-name"
-              autoComplete="organization"
-              placeholder={t('companyPlaceholder')}
-              className={cn(
-                checkoutInputClassName,
-                showPaymentError('companyLegalName') && 'border-destructive/80 ring-destructive/30',
-              )}
-              value={formData.companyLegalName}
-              onBlur={() => onBlurPaymentField('companyLegalName')}
-              onChange={(e) => onPatchForm({ companyLegalName: e.target.value })}
-              onClear={() => onPatchForm({ companyLegalName: '' })}
-            />
-            <FieldHint
-              id="sk-company-legal-name-error"
-              show={Boolean(paymentTouched.companyLegalName)}
-              message={getCheckoutPaymentFieldError('companyLegalName', formData, {
-                requireCompanyFields,
-                marketRegion: 'sk',
-              })}
-            />
-          </div>
+          <CheckoutVatIdField
+            countryCode={vatCountryCode}
+            onCountryCodeChange={onVatCountryCodeChange}
+            value={vatId}
+            onChange={onVatIdChange}
+            onViesResult={onViesResult}
+          />
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <RequiredLabel htmlFor="sk-company-ico">{t('ico')}</RequiredLabel>
@@ -184,6 +167,30 @@ export function CheckoutSkBillingFields({
             </div>
           </div>
           <div className="space-y-2">
+            <RequiredLabel htmlFor="sk-company-legal-name">{t('companyLegalName')}</RequiredLabel>
+            <InputWithClear
+              id="sk-company-legal-name"
+              autoComplete="organization"
+              placeholder={t('companyPlaceholder')}
+              className={cn(
+                checkoutInputClassName,
+                showPaymentError('companyLegalName') && 'border-destructive/80 ring-destructive/30',
+              )}
+              value={formData.companyLegalName}
+              onBlur={() => onBlurPaymentField('companyLegalName')}
+              onChange={(e) => onPatchForm({ companyLegalName: e.target.value })}
+              onClear={() => onPatchForm({ companyLegalName: '' })}
+            />
+            <FieldHint
+              id="sk-company-legal-name-error"
+              show={Boolean(paymentTouched.companyLegalName)}
+              message={getCheckoutPaymentFieldError('companyLegalName', formData, {
+                requireCompanyFields,
+                marketRegion: 'sk',
+              })}
+            />
+          </div>
+          <div className="space-y-2">
             <RequiredLabel htmlFor="sk-company-street">{t('companyStreet')}</RequiredLabel>
             <InputWithClear
               id="sk-company-street"
@@ -208,29 +215,6 @@ export function CheckoutSkBillingFields({
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <RequiredLabel htmlFor="sk-company-city">{t('companyCity')}</RequiredLabel>
-              <InputWithClear
-                id="sk-company-city"
-                autoComplete="address-level2"
-                className={cn(
-                  checkoutInputClassName,
-                  showPaymentError('companyCity') && 'border-destructive/80 ring-destructive/30',
-                )}
-                value={formData.companyCity}
-                onBlur={() => onBlurPaymentField('companyCity')}
-                onChange={(e) => onPatchForm({ companyCity: e.target.value })}
-                onClear={() => onPatchForm({ companyCity: '' })}
-              />
-              <FieldHint
-                id="sk-company-city-error"
-                show={Boolean(paymentTouched.companyCity)}
-                message={getCheckoutPaymentFieldError('companyCity', formData, {
-                  requireCompanyFields,
-                  marketRegion: 'sk',
-                })}
-              />
-            </div>
-            <div className="space-y-2">
               <RequiredLabel htmlFor="sk-company-psc">{t('companyPostalCode')}</RequiredLabel>
               <InputWithClear
                 id="sk-company-psc"
@@ -254,15 +238,30 @@ export function CheckoutSkBillingFields({
                 })}
               />
             </div>
+            <div className="space-y-2">
+              <RequiredLabel htmlFor="sk-company-city">{t('companyCity')}</RequiredLabel>
+              <InputWithClear
+                id="sk-company-city"
+                autoComplete="address-level2"
+                className={cn(
+                  checkoutInputClassName,
+                  showPaymentError('companyCity') && 'border-destructive/80 ring-destructive/30',
+                )}
+                value={formData.companyCity}
+                onBlur={() => onBlurPaymentField('companyCity')}
+                onChange={(e) => onPatchForm({ companyCity: e.target.value })}
+                onClear={() => onPatchForm({ companyCity: '' })}
+              />
+              <FieldHint
+                id="sk-company-city-error"
+                show={Boolean(paymentTouched.companyCity)}
+                message={getCheckoutPaymentFieldError('companyCity', formData, {
+                  requireCompanyFields,
+                  marketRegion: 'sk',
+                })}
+              />
+            </div>
           </div>
-
-          <CheckoutVatIdField
-            countryCode={vatCountryCode}
-            onCountryCodeChange={onVatCountryCodeChange}
-            value={vatId}
-            onChange={onVatIdChange}
-            onViesResult={onViesResult}
-          />
           {showReverseChargeHint ? (
             <p className="text-sm font-medium text-primary">{t('vatZeroDphApplied')}</p>
           ) : null}

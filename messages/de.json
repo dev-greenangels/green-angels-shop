@@ -26,6 +26,7 @@
     "continueShopping": "Weiter einkaufen",
     "back": "Zurück",
     "next": "Weiter",
+    "or": "oder",
     "continue": "Fortfahren",
     "save": "Speichern",
     "saving": "Wird gespeichert…",
@@ -152,13 +153,13 @@
     "perennials": "Stauden",
     "shrubs": "Sträucher",
     "shipping": "Versand & Zahlung",
-    "shippingSk": "Doprava a platba",
+    "shippingSk": "Versand und Zahlung",
     "faq": "Häufige Fragen",
     "terms": "Nutzungsbedingungen",
-    "termsSk": "Všeobecné obchodné podmienky (VOP)",
+    "termsSk": "Allgemeine Geschäftsbedingungen (AGB)",
     "privacy": "Datenschutzerklärung",
-    "privacySk": "Zásady ochrany osobných údajov",
-    "returnsSk": "Reklamačný poriadok",
+    "privacySk": "Richtlinie zum Schutz personenbezogener Daten",
+    "returnsSk": "Reklamationsverfahren",
     "cookies": "Cookie-Richtlinie",
     "admin": "Verwaltung",
     "intro": "Professionelle Baumschule. Seit 2010 züchten wir mit Sorgfalt hochwertiges Pflanzmaterial.",
@@ -206,7 +207,15 @@
   "auth": {
     "back": "Zurück",
     "authTitle": "Anmelden oder registrieren",
-    "authSubtitle": "Ein Schritt: Google oder Telefon. Bei neuer Nummer erstellen wir nach der Verifizierung ein Konto.",
+    "authSubtitle": "Ein Schritt: Anmeldung.",
+    "authSubtitleNeutral": "Ein Schritt: Anmeldung.",
+    "authSubtitleEmailOnly": "Bestätigen Sie Ihre E-Mail — wir senden einen Code ins Postfach.",
+    "authSubtitlePhoneOnly": "Bestätigen Sie Ihre Telefonnummer — wir senden einen SMS-Code.",
+    "authSubtitleEmailPhone": "Melden Sie sich per E-Mail (Code im Postfach) oder Telefon (SMS) an.",
+    "authSubtitleGoogleOnly": "Mit Google anmelden.",
+    "authSubtitleGoogleEmail": "Mit Google oder E-Mail (Code im Postfach) anmelden.",
+    "authSubtitleGooglePhone": "Mit Google oder Telefon (SMS) anmelden.",
+    "authSubtitleGoogleEmailPhone": "Mit Google, E-Mail (Code im Postfach) oder Telefon (SMS) anmelden.",
     "loginTitle": "Anmelden",
     "loginSubtitle": "Google oder Telefonnummer mit SMS- oder E-Mail-Verifizierung.",
     "loginHint": "Melden Sie sich mit Google, Telefon (SMS) oder E-Mail (Code ins Postfach) an.",
@@ -231,7 +240,16 @@
     },
     "otpChannelsDisabled": "SMS- und E-Mail-OTP sind in den Einstellungen deaktiviert. Wenden Sie sich an den Administrator.",
     "consentFallback": "Mit der Anmeldung stimmen Sie den Nutzungsbedingungen und der Datenschutzerklärung zu.",
-    "consentTemplate": "Mit der Anmeldung oder Registrierung stimmen Sie den {terms} und der {privacy} zu. Bitte lesen Sie auch die {cookies}."
+    "consentTemplate": "Mit der Anmeldung oder Registrierung stimmen Sie den {terms} und der {privacy} zu. Bitte lesen Sie auch die {cookies}.",
+    "signInWithGoogle": "Mit Google anmelden",
+    "heroStats": {
+      "varietiesValue": "170+",
+      "varietiesLabel": "Pflanzensorten",
+      "clientsValue": "5000+",
+      "clientsLabel": "Kunden",
+      "experienceValue": "14",
+      "experienceLabel": "Jahre Erfahrung"
+    }
   },
   "account": {
     "title": "Mein Konto",
@@ -578,7 +596,9 @@
     "heroHighlightPhotos": "Aktuelle Fotos",
     "heroHighlightNursery": "Eigene Baumschule",
     "heroHighlightDeliveryUa": "Lieferung in der Ukraine",
-    "heroHighlightDeliverySk": "Lieferung in der Slowakei"
+    "heroHighlightDeliverySk": "Lieferung in der Slowakei",
+    "heroHighlightDeliveryTo": "Lieferung: {country}",
+    "heroWholesaleCta": "Großhandelspartnerschaft"
   },
   "contactsPage": {
     "title": "Kontakt",

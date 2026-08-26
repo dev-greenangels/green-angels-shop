@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, LogOut, Mail, Phone } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
 import { AuthOAuthButtons } from '@/components/auth/auth-oauth-buttons'
@@ -22,6 +22,7 @@ import {
 } from '@/lib/checkout-customer-lookup'
 import { startGoogleOAuth } from '@/lib/auth/google-oauth-client'
 import { isGoogleOAuthConfigured } from '@/lib/auth/google-oauth'
+import { hardRedirectToInternalPath } from '@/lib/auth/post-auth-redirect'
 import { useOAuthReturn, type OAuthReturnPayload } from '@/lib/auth/use-oauth-return'
 import { cn } from '@/lib/utils'
 import { isValidEmail, sanitizeEmail } from '@/lib/validation/register-form'
@@ -123,6 +124,7 @@ export function AuthPhoneFlow({
 }) {
   const t = useTranslations('auth')
   const tc = useTranslations('common')
+  const locale = useLocale()
   const router = useRouter()
   const { user, setUser } = useSession()
 
@@ -147,6 +149,22 @@ export function AuthPhoneFlow({
   const [codeError, setCodeError] = useState<string | null>(null)
 
   const isLoggedIn = Boolean(user)
+
+  const finishAuthSuccess = useCallback(
+    (target: string) => {
+      if (purpose === 'login') {
+        hardRedirectToInternalPath(target, locale)
+        return
+      }
+      onSuccess(target)
+    },
+    [locale, onSuccess, purpose],
+  )
+
+  useEffect(() => {
+    if (purpose !== 'login' || !user) return
+    hardRedirectToInternalPath(redirectTo, locale)
+  }, [purpose, user, redirectTo, locale])
 
   useEffect(() => {
     if (marketProp) {
@@ -230,10 +248,9 @@ export function AuthPhoneFlow({
       setUser(payload.user)
       if (payload.user.phone) setPhone(payload.user.phone)
       if (payload.user.email) setEmail(payload.user.email)
-      router.refresh()
-      onSuccess(redirectTo)
+      finishAuthSuccess(redirectTo)
     },
-    [onSuccess, redirectTo, router, setUser],
+    [finishAuthSuccess, redirectTo, setUser],
   )
 
   useOAuthReturn(completeGoogleAuth)
@@ -292,8 +309,7 @@ export function AuthPhoneFlow({
         setUser(sessionUser)
       }
 
-      router.refresh()
-      onSuccess(redirectTo)
+      finishAuthSuccess(redirectTo)
       toast.success(tc('welcome'))
     } catch (e) {
       setCodeError(mapAuthError(e, 'signInError'))
@@ -343,6 +359,14 @@ export function AuthPhoneFlow({
       : null
 
   if (isLoggedIn && user) {
+    if (purpose === 'login') {
+      return (
+        <p className="text-center text-sm text-muted-foreground" aria-live="polite">
+          {tc('redirecting')}
+        </p>
+      )
+    }
+
     return (
       <div className="space-y-4 rounded-lg border border-primary/30 bg-primary/10 p-4">
         <div>

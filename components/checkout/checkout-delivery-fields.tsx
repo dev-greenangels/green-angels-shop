@@ -1,6 +1,13 @@
 'use client'
 
-import { memo, useMemo, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import {
+  memo,
+  useEffect,
+  useMemo,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from 'react'
 import { Clock, MapPin, Phone, User } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
@@ -45,6 +52,7 @@ import {
   searchNpStreets,
   searchNpWarehouses,
 } from '@/lib/nova-poshta/api'
+import { deliveryCountryFlag } from '@/lib/checkout/delivery-country-flags'
 import { cn } from '@/lib/utils'
 import {
   formatPhoneDisplay,
@@ -166,6 +174,29 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
     return ['sk', 'hu', 'at', 'cz', 'de']
   }, [enabledDeliveryCountries, enabledCountrySites, shipment.deliveryCountryCode])
 
+  const resolvedDeliveryCountry = useMemo(() => {
+    const normalized = (shipment.deliveryCountryCode || '').toLowerCase()
+    if (normalized && countryOptions.includes(normalized)) {
+      return normalized
+    }
+    return countryOptions[0] ?? ''
+  }, [shipment.deliveryCountryCode, countryOptions])
+
+  useEffect(() => {
+    if (!isSk || countryOptions.length <= 1) return
+    const normalized = (shipment.deliveryCountryCode || '').toLowerCase()
+    if (!normalized || !countryOptions.includes(normalized)) {
+      const next = countryOptions[0]
+      if (next && normalized !== next) {
+        onPatchShipment({
+          deliveryCountryCode: next,
+          postOffice: '',
+          postOfficeLabel: '',
+        })
+      }
+    }
+  }, [isSk, countryOptions, shipment.deliveryCountryCode, onPatchShipment])
+
   const pickupAddress = formatStoreAddress(store)
   const pickupMapsUrl = getStoreMapsUrl(store)
   const pickupHours = formatStoreHoursInline(store)
@@ -284,45 +315,61 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
             <RequiredLabel htmlFor={`${idPrefix}-delivery-country`}>
               {t('deliveryCountry')}
             </RequiredLabel>
-            <Select
-              value={shipment.deliveryCountryCode || undefined}
-              onValueChange={(value) => {
-                onPatchShipment({
-                  deliveryCountryCode: value as DeliveryCountryCode,
-                  // Packeta points are country-specific.
-                  postOffice: '',
-                  postOfficeLabel: '',
-                })
-                onBlurField('deliveryCountryCode')
-              }}
-            >
-              <SelectTrigger
+            {countryOptions.length === 1 ? (
+              <div
                 id={`${idPrefix}-delivery-country`}
-                className={cn(
-                  'w-full sm:w-max sm:min-w-[var(--delivery-country-min-w,12rem)]',
-                  showShippingError('deliveryCountryCode') &&
-                    'border-destructive/80 ring-destructive/30',
-                )}
-                style={
-                  {
-                    ['--delivery-country-min-w' as string]: `${Math.max(
-                      12,
-                      ...countryOptions.map((code) => t(`deliveryCountries.${code}`).length + 4),
-                    )}ch`,
-                  } as CSSProperties
-                }
-                aria-invalid={showShippingError('deliveryCountryCode')}
+                className="inline-flex min-h-10 items-center gap-2 rounded-lg border-2 border-primary/35 bg-primary/[0.08] px-3 py-2 text-sm font-semibold text-foreground shadow-sm"
               >
-                <SelectValue placeholder={t('deliveryCountryPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                {countryOptions.map((code) => (
-                  <SelectItem key={code} value={code}>
-                    {t(`deliveryCountries.${code}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <span aria-hidden className="text-base leading-none">
+                  {deliveryCountryFlag(countryOptions[0]!)}
+                </span>
+                <span>{t(`deliveryCountries.${countryOptions[0]}`)}</span>
+              </div>
+            ) : (
+              <Select
+                value={resolvedDeliveryCountry}
+                onValueChange={(value) => {
+                  onPatchShipment({
+                    deliveryCountryCode: value as DeliveryCountryCode,
+                    postOffice: '',
+                    postOfficeLabel: '',
+                  })
+                  onBlurField('deliveryCountryCode')
+                }}
+              >
+                <SelectTrigger
+                  id={`${idPrefix}-delivery-country`}
+                  className={cn(
+                    'w-full border-2 sm:w-max sm:min-w-[var(--delivery-country-min-w,12rem)]',
+                    shipment.deliveryCountryCode &&
+                      'border-primary/35 bg-primary/[0.06] font-medium',
+                    showShippingError('deliveryCountryCode') &&
+                      'border-destructive/80 ring-destructive/30',
+                  )}
+                  style={
+                    {
+                      ['--delivery-country-min-w' as string]: `${Math.max(
+                        12,
+                        ...countryOptions.map((code) => t(`deliveryCountries.${code}`).length + 4),
+                      )}ch`,
+                    } as CSSProperties
+                  }
+                  aria-invalid={showShippingError('deliveryCountryCode')}
+                >
+                  <SelectValue placeholder={t('deliveryCountryPlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {countryOptions.map((code) => (
+                    <SelectItem key={code} value={code}>
+                      <span className="flex items-center gap-2">
+                        <span aria-hidden>{deliveryCountryFlag(code)}</span>
+                        <span>{t(`deliveryCountries.${code}`)}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <FieldHint
             id={`${idPrefix}-delivery-country-error`}

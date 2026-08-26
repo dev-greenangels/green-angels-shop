@@ -3,12 +3,13 @@
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import { CheckoutCardPaymentPanel } from '@/components/checkout/checkout-card-payment-panel'
 import {
   checkoutPageContentClassName,
   checkoutPageShellClassName,
+  shopPublicBaseUrl,
 } from '@/components/checkout/checkout-utils'
 import { Button } from '@/components/ui/button'
 import type { StripePendingPayment } from '@/lib/checkout/stripe-pending'
@@ -50,6 +51,7 @@ function confirmationFromQuery(
 function CheckoutPayInner() {
   const t = useTranslations('checkout.stripe')
   const tCommon = useTranslations('common')
+  const locale = useLocale()
   const router = useRouter()
   const searchParams = useSearchParams()
   const orderNumber = searchParams.get('order')?.trim() ?? ''
@@ -100,7 +102,7 @@ function CheckoutPayInner() {
         const retried = await retryOrderPayment(
           orderNumber,
           confirmationToken,
-          typeof window !== 'undefined' ? window.location.origin : undefined,
+          shopPublicBaseUrl(locale),
         )
         if (retried?.paymentPageUrl) {
           window.location.href = retried.paymentPageUrl
@@ -130,7 +132,7 @@ function CheckoutPayInner() {
     } finally {
       setLoading(false)
     }
-  }, [confirmationToken, orderNumber, router, t])
+  }, [confirmationToken, locale, orderNumber, router, t])
 
   useEffect(() => {
     void load()

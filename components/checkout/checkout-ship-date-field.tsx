@@ -161,11 +161,11 @@ export function CheckoutShipDateField({
           aria-required={required || undefined}
           className={cn(
             checkoutInputClassName,
-            'h-11 w-auto shrink-0 justify-start gap-2 px-3 text-left font-normal shadow-none',
+            'h-11 min-w-[11rem] justify-start gap-2.5 px-4 text-left font-normal shadow-sm',
             selectedDate
-              ? 'border-primary/45 bg-primary/[0.08] text-foreground hover:bg-primary/[0.12]'
-              : 'border-border bg-background text-muted-foreground hover:bg-muted/40 hover:text-foreground',
-            open && !showError && 'border-primary/50 ring-2 ring-primary/15',
+              ? 'border-2 border-primary/45 bg-primary/[0.08] text-foreground hover:bg-primary/[0.12]'
+              : 'border-2 border-dashed border-primary/45 bg-primary/[0.05] font-medium text-foreground hover:border-primary/60 hover:bg-primary/[0.08]',
+            open && !showError && 'border-primary ring-2 ring-primary/20',
             showError &&
               'border-destructive bg-destructive/[0.04] text-foreground ring-2 ring-destructive/20 focus-visible:ring-destructive/30',
           )}
@@ -214,7 +214,7 @@ export function CheckoutShipDateField({
             onBlur?.()
           }}
           disabled={(date) => !availableSet.has(toIsoDate(date))}
-          className="rounded-md"
+          className="rounded-md [&_.rdp-day:not(.rdp-disabled)_button]:ring-1 [&_.rdp-day:not(.rdp-disabled)_button]:ring-primary/25 [&_.rdp-day:not(.rdp-disabled)_button]:hover:ring-primary/45"
         />
       </PopoverContent>
     </Popover>

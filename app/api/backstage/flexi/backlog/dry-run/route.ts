@@ -3,24 +3,14 @@ import { NextResponse } from 'next/server'
 import { fetchBackend, readBackendJson } from '@/lib/api/backend-fetch'
 import { requireBackstageSession } from '@/lib/backstage-auth/require-session'
 
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   const { error } = await requireBackstageSession(request)
   if (error) return error
 
-  let createMissing = true
   try {
-    const body = (await request.json().catch(() => ({}))) as { createMissing?: boolean }
-    if (body?.createMissing === false) createMissing = false
-  } catch {
-    createMissing = true
-  }
-
-  try {
-    const res = await fetchBackend('/backstage/flexi/sync-strom/run', {
+    const res = await fetchBackend('/backstage/flexi/backlog/dry-run', {
       request,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ createMissing }),
+      cache: 'no-store',
     })
     const data = await readBackendJson(res)
     if (!res.ok) return NextResponse.json(data, { status: res.status })

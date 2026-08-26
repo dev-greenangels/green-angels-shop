@@ -26,6 +26,7 @@
     "continueShopping": "Продовжити покупки",
     "back": "Назад",
     "next": "Далі",
+    "or": "або",
     "continue": "Продовжити",
     "save": "Зберегти",
     "saving": "Збереження…",
@@ -152,13 +153,13 @@
     "perennials": "Багаторічники",
     "shrubs": "Чагарники",
     "shipping": "Доставка та оплата",
-    "shippingSk": "Doprava a platba",
+    "shippingSk": "Доставка та оплата",
     "faq": "Часті питання",
     "terms": "Умови використання",
-    "termsSk": "Všeobecné obchodné podmienky (VOP)",
+    "termsSk": "Загальні умови продажу (VOP)",
     "privacy": "Політика конфіденційності",
-    "privacySk": "Zásady ochrany osobných údajov",
-    "returnsSk": "Reklamačný poriadok",
+    "privacySk": "Політика захисту персональних даних",
+    "returnsSk": "Рекламаційний порядок",
     "cookies": "Політика Cookie",
     "admin": "Адміністрування",
     "intro": "Професійний розсадник рослин. Вирощуємо якісний посадковий матеріал з любов'ю та турботою з 2010 року.",
@@ -205,7 +206,15 @@
   "auth": {
     "back": "Назад",
     "authTitle": "Вхід або реєстрація",
-    "authSubtitle": "Один крок: Google або телефон. Якщо номер новий — створимо акаунт після підтвердження.",
+    "authSubtitle": "Один крок: авторизація.",
+    "authSubtitleNeutral": "Один крок: авторизація.",
+    "authSubtitleEmailOnly": "Підтвердіть email — надішлемо код на пошту.",
+    "authSubtitlePhoneOnly": "Підтвердіть телефон — надішлемо код SMS.",
+    "authSubtitleEmailPhone": "Увійдіть через email (код на пошту) або телефон (SMS).",
+    "authSubtitleGoogleOnly": "Увійдіть через Google.",
+    "authSubtitleGoogleEmail": "Увійдіть через Google або email (код на пошту).",
+    "authSubtitleGooglePhone": "Увійдіть через Google або телефон (SMS).",
+    "authSubtitleGoogleEmailPhone": "Увійдіть через Google, email (код на пошту) або телефон (SMS).",
     "loginTitle": "Вхід в акаунт",
     "loginSubtitle": "Google або номер телефону з підтвердженням SMS або email.",
     "loginHint": "Увійдіть через Google, телефон (SMS) або email (код на пошту).",
@@ -230,7 +239,16 @@
     },
     "otpChannelsDisabled": "OTP через SMS і email вимкнено в налаштуваннях. Зверніться до адміністратора.",
     "consentFallback": "Авторизуючись, ви погоджуєтесь з умовами використання та політикою конфіденційності.",
-    "consentTemplate": "Авторизуючись або реєструючись, ви погоджуєтесь з {terms} та {privacy}. Також ознайомтесь з {cookies}."
+    "consentTemplate": "Авторизуючись або реєструючись, ви погоджуєтесь з {terms} та {privacy}. Також ознайомтесь з {cookies}.",
+    "signInWithGoogle": "Вхід через Google",
+    "heroStats": {
+      "varietiesValue": "170+",
+      "varietiesLabel": "сортів рослин",
+      "clientsValue": "5000+",
+      "clientsLabel": "клієнтів",
+      "experienceValue": "14",
+      "experienceLabel": "років досвіду"
+    }
   },
   "account": {
     "title": "Особистий кабінет",
@@ -577,7 +595,9 @@
     "heroHighlightPhotos": "Актуальні фото",
     "heroHighlightNursery": "Власний розсадник",
     "heroHighlightDeliveryUa": "Доставка по Україні",
-    "heroHighlightDeliverySk": "Доставка по Словаччині"
+    "heroHighlightDeliverySk": "Доставка по Словаччині",
+    "heroHighlightDeliveryTo": "Доставка: {country}",
+    "heroWholesaleCta": "Співпраця (гурт)"
   },
   "contactsPage": {
     "title": "Контакти",

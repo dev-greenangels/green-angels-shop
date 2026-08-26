@@ -28,11 +28,13 @@ import {
   normalizeHomeSectionOrder,
   type HomeSectionKey,
 } from '@/lib/settings/home-sections'
+import { getRequestCountrySiteCode } from '@/lib/country-sites/request-country'
 import {
   fetchPublicSiteSettings,
   getHomeSettings,
   getMarketSettings,
   getRecentlyViewedSettings,
+  getWholesalePageSettings,
 } from '@/lib/settings/fetch'
 
 export async function generateMetadata({
@@ -51,6 +53,8 @@ export default async function HomePage() {
   const siteSettingsResult = await fetchPublicSiteSettings()
   const home = getHomeSettings(siteSettingsResult)
   const market = getMarketSettings(siteSettingsResult)
+  const wholesalePage = getWholesalePageSettings(siteSettingsResult)
+  const hostCountryCode = await getRequestCountrySiteCode()
   const recentlyViewedSettings = getRecentlyViewedSettings(siteSettingsResult)
   const hidden = home.sectionHidden
   const show = (key: HomeSectionKey) => !isHomeSectionHidden(hidden, key)
@@ -115,7 +119,12 @@ export default async function HomePage() {
     <>
       <Navigation />
       <main className="home-page flex-1">
-        <HeroSection settings={home.hero} marketRegion={market.region} />
+        <HeroSection
+          settings={home.hero}
+          market={market}
+          hostCountryCode={hostCountryCode}
+          wholesaleEnabled={wholesalePage.pageEnabled}
+        />
         {orderedSectionKeys.map((key) => (
           <Fragment key={key}>{sectionRenderers[key]}</Fragment>
         ))}

@@ -24,6 +24,18 @@ export function formatMoneyAmount(
   }
 }
 
+/** Digits only — for compact filter steppers where symbol is shown in the section title. */
+export function formatMoneyAmountDigits(
+  amount: number,
+  decimals: number,
+  locale: string,
+): string {
+  return new Intl.NumberFormat(intlLocaleForApp(locale), {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(amount)
+}
+
 /**
  * When display currency is not EUR, append the EUR amount in parentheses.
  * `eurAmount` must be the pre-FX amount already in EUR.

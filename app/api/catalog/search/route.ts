@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 import { getBackendApiUrl } from '@/lib/api/backend-url'
+import { defaultLocale, isAppLocale } from '@/i18n/routing'
 import {
   EMPTY_SEARCH_SUGGEST,
   SEARCH_SUGGEST_MIN_LENGTH,
@@ -43,6 +44,7 @@ function resolveProductImage(imageUrl: string | null | undefined) {
 
 function buildSuggestions(
   query: string,
+  locale: string,
   categories: SearchCategoryHit[],
   products: SearchProductHit[],
 ): SearchSuggestionItem[] {
@@ -56,7 +58,8 @@ function buildSuggestions(
     suggestions.push({ label, href })
   }
 
-  add(`Шукати «${query}»`, buildSearchPageHref(query))
+  const searchQueryLabel = searchQueryLabelForLocale(locale, query)
+  add(searchQueryLabel, buildSearchPageHref(query))
 
   for (const category of categories) {
     if (suggestions.length >= MAX_SUGGESTIONS) break
@@ -72,15 +75,30 @@ function buildSuggestions(
   return suggestions
 }
 
-export async function GET(request: Request) {
-  const query = normalizeSearchQuery(new URL(request.url).searchParams.get('q'))
+function searchQueryLabelForLocale(locale: string, query: string): string {
+  const labels: Record<string, string> = {
+    uk: `Шукати «${query}»`,
+    sk: `Hľadať «${query}»`,
+    cs: `Hledat «${query}»`,
+    en: `Search «${query}»`,
+    de: `Suchen «${query}»`,
+    hu: `Keresés: «${query}»`,
+  }
+  return labels[locale] ?? labels.en!
+}
+
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const query = normalizeSearchQuery(searchParams.get('q'))
+  const requestedLocale = searchParams.get('locale')
+  const locale = requestedLocale && isAppLocale(requestedLocale) ? requestedLocale : defaultLocale
   if (query.length < SEARCH_SUGGEST_MIN_LENGTH) {
     return NextResponse.json(EMPTY_SEARCH_SUGGEST)
   }
 
   const backend = getBackendApiUrl()
   const productParams = new URLSearchParams({
-    locale: 'uk',
+    locale,
     published: 'true',
     search: query,
     pageSize: String(MAX_PRODUCTS),
@@ -88,7 +106,7 @@ export async function GET(request: Request) {
   })
   const categoryParams = new URLSearchParams({
     q: query,
-    locale: 'uk',
+    locale,
     limit: String(MAX_CATEGORIES),
   })
 
@@ -127,7 +145,7 @@ export async function GET(request: Request) {
     }))
 
     const result: SearchSuggestResult = {
-      suggestions: buildSuggestions(query, categoryHits, productHits),
+      suggestions: buildSuggestions(query, locale, categoryHits, productHits),
       categories: categoryHits,
       products: productHits,
     }

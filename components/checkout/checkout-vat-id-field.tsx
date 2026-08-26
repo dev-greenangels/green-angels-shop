@@ -214,7 +214,7 @@ export function CheckoutVatIdField({
       <Label htmlFor="checkout-ic-dph">{t('vatIdLabel')}</Label>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         {onCountryCodeChange ? (
-          <Select value={countryCode} onValueChange={handleCountryChange}>
+          <Select value={countryCode || 'SK'} onValueChange={handleCountryChange}>
             <SelectTrigger className="w-full sm:w-28">
               <SelectValue />
             </SelectTrigger>

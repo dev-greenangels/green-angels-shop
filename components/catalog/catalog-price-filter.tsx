@@ -2,11 +2,12 @@
 
 import { Minus, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
-import { FormattedPrice } from '@/components/commerce/formatted-price'
+import { useDefaultCurrency } from '@/components/providers/commerce-provider'
+import { formatMoneyAmountDigits } from '@/lib/commerce/format'
 import {
   adjustCatalogPriceRange,
   resolveCatalogPriceRange,
@@ -27,6 +28,7 @@ const BOUND_BTN_CLASS =
 
 type PriceBoundStepperProps = {
   value: number
+  formattedValue: string
   decreaseLabel: string
   increaseLabel: string
   canDecrease: boolean
@@ -37,7 +39,7 @@ type PriceBoundStepperProps = {
 }
 
 function PriceBoundStepper({
-  value,
+  formattedValue,
   decreaseLabel,
   increaseLabel,
   canDecrease,
@@ -62,7 +64,7 @@ function PriceBoundStepper({
       <span
         className="min-w-0 flex-1 truncate text-center text-xs font-medium tabular-nums"
       >
-        <FormattedPrice amount={value} className="inline" />
+        {formattedValue}
       </span>
       <Button
         type="button"
@@ -81,7 +83,11 @@ function PriceBoundStepper({
 
 export function CatalogPriceFilter({ filters, bounds, onFilterChange }: CatalogPriceFilterProps) {
   const t = useTranslations('filter')
+  const locale = useLocale()
+  const currency = useDefaultCurrency()
   const disabled = bounds.max <= bounds.min
+  const formatDigits = (amount: number) =>
+    formatMoneyAmountDigits(amount, currency.decimals, locale)
 
   const resolved = resolveCatalogPriceRange(filters.price, bounds)
   const [localRange, setLocalRange] = useState<[number, number]>([resolved.min, resolved.max])
@@ -117,6 +123,7 @@ export function CatalogPriceFilter({ filters, bounds, onFilterChange }: CatalogP
       <div className="flex items-center gap-1.5">
         <PriceBoundStepper
           value={min}
+          formattedValue={formatDigits(min)}
           decreaseLabel={t('priceDecreaseMin')}
           increaseLabel={t('priceIncreaseMin')}
           canDecrease={min > bounds.min}
@@ -127,6 +134,7 @@ export function CatalogPriceFilter({ filters, bounds, onFilterChange }: CatalogP
         <span className="shrink-0 text-xs text-muted-foreground">—</span>
         <PriceBoundStepper
           value={max}
+          formattedValue={formatDigits(max)}
           decreaseLabel={t('priceDecreaseMax')}
           increaseLabel={t('priceIncreaseMax')}
           canDecrease={max > min}
@@ -147,8 +155,8 @@ export function CatalogPriceFilter({ filters, bounds, onFilterChange }: CatalogP
         className="py-0.5 [&_[data-slot=slider-thumb]]:size-3 [&_[data-slot=slider-thumb]]:hover:ring-2 [&_[data-slot=slider-thumb]]:focus-visible:ring-2 [&_[data-slot=slider-track]]:h-1"
       />
       <div className="flex justify-between text-[11px] text-muted-foreground tabular-nums">
-        <FormattedPrice amount={bounds.min} />
-        <FormattedPrice amount={bounds.max} />
+        <span>{formatDigits(bounds.min)}</span>
+        <span>{formatDigits(bounds.max)}</span>
       </div>
     </div>
   )

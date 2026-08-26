@@ -22,7 +22,6 @@ import { useCatalogHref } from '@/components/providers/catalog-paths-provider'
 import { useSession } from '@/components/providers/session-provider'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { DELIVERY_METHOD_BACKSTAGE_LABELS, PAYMENT_METHOD_BACKSTAGE_LABELS } from '@/lib/checkout/methods'
 import { clearCartAfterCheckout } from '@/lib/carts/clear-after-checkout'
 import { clearStripePendingPayments } from '@/lib/checkout/stripe-pending'
 import { useFormatPrice } from '@/lib/commerce/use-format-price'
@@ -58,23 +57,6 @@ function formatPersonName(last: string, first: string, patronymic?: string | nul
   return [last, first, patronymic?.trim()].filter(Boolean).join(' ')
 }
 
-function formatDeliveryAddress(order: PublicOrderConfirmation): string {
-  if (order.deliveryMethod === 'pickup') return 'Самовивіз'
-  if (order.deliveryMethod === 'nova-poshta-branch') {
-    return [order.deliveryCity, order.deliveryBranch].filter(Boolean).join(', ')
-  }
-  if (order.deliveryMethod === 'nova-poshta-address') {
-    return [
-      order.deliveryCity,
-      order.deliveryStreet,
-      order.deliveryHouseNumber ? `буд. ${order.deliveryHouseNumber}` : null,
-    ]
-      .filter(Boolean)
-      .join(', ')
-  }
-  return [order.deliveryCity, order.deliveryBranch, order.deliveryStreet].filter(Boolean).join(', ')
-}
-
 function isBankTransfer(paymentMethod: string) {
   return paymentMethod === 'bank-transfer' || paymentMethod === 'bank-transfer-legal'
 }
@@ -83,36 +65,83 @@ function isCardOnline(paymentMethod: string) {
   return paymentMethod === 'card-online'
 }
 
-function paymentStatusLabel(paymentStatus: string | null | undefined) {
-  switch (paymentStatus) {
-    case 'success':
-      return 'Оплачено'
-    case 'processing':
-    case 'created':
-      return 'Очікує підтвердження оплати'
-    case 'failure':
-    case 'expired':
-    case 'reversed':
-      return 'Оплату не завершено'
-    default:
-      return null
-  }
+function isDobierka(paymentMethod: string) {
+  return paymentMethod === 'dobierka'
 }
 
 function hasBankDetails(bank: CartCheckoutSettings['bankDetails']) {
   return hasCompanyBankDetails(bank)
 }
 
-async function copyText(value: string, label: string) {
-  try {
-    await navigator.clipboard.writeText(value)
-    toast.success(`${label} скопійовано`)
-  } catch {
-    toast.error('Не вдалося скопіювати')
+type SuccessTranslator = ReturnType<typeof useTranslations<'checkout'>>
+
+function formatDeliveryAddress(order: PublicOrderConfirmation, t: SuccessTranslator): string {
+  if (order.deliveryMethod === 'pickup') return t('pickup')
+  if (order.deliveryMethod === 'nova-poshta-branch') {
+    return [order.deliveryCity, order.deliveryBranch].filter(Boolean).join(', ')
+  }
+  if (order.deliveryMethod === 'nova-poshta-address') {
+    return [
+      order.deliveryCity,
+      order.deliveryStreet,
+      order.deliveryHouseNumber
+        ? t('housePrefix', { n: order.deliveryHouseNumber })
+        : null,
+    ]
+      .filter(Boolean)
+      .join(', ')
+  }
+  return [order.deliveryCity, order.deliveryBranch, order.deliveryStreet].filter(Boolean).join(', ')
+}
+
+function paymentStatusLabel(paymentStatus: string | null | undefined, t: SuccessTranslator) {
+  switch (paymentStatus) {
+    case 'success':
+      return t('paymentStatusPaid')
+    case 'processing':
+    case 'created':
+      return t('paymentStatusPending')
+    case 'failure':
+    case 'expired':
+    case 'reversed':
+      return t('paymentStatusFailed')
+    default:
+      return null
   }
 }
 
-function CopyableRow({ label, value }: { label: string; value?: string | null }) {
+function deliveryMethodLabel(method: string, t: SuccessTranslator) {
+  const key = `deliveryMethods.${method}`
+  return t.has(key) ? t(key as Parameters<SuccessTranslator>[0]) : method
+}
+
+function paymentMethodLabel(method: string, t: SuccessTranslator) {
+  const key = `paymentMethods.${method}`
+  return t.has(key) ? t(key as Parameters<SuccessTranslator>[0]) : method
+}
+
+async function copyText(
+  value: string,
+  label: string,
+  t: SuccessTranslator,
+) {
+  try {
+    await navigator.clipboard.writeText(value)
+    toast.success(t('copied', { label }))
+  } catch {
+    toast.error(t('copyFailed'))
+  }
+}
+
+function CopyableRow({
+  label,
+  value,
+  t,
+}: {
+  label: string
+  value?: string | null
+  t: SuccessTranslator
+}) {
   if (!value?.trim()) return null
   return (
     <div className="flex items-start justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2">
@@ -125,8 +154,8 @@ function CopyableRow({ label, value }: { label: string; value?: string | null })
         variant="ghost"
         size="icon"
         className="shrink-0"
-        onClick={() => void copyText(value, label)}
-        aria-label={`Копіювати ${label}`}
+        onClick={() => void copyText(value, label, t)}
+        aria-label={t('copyAria', { label })}
       >
         <Copy className="h-4 w-4" />
       </Button>
@@ -137,19 +166,21 @@ function CopyableRow({ label, value }: { label: string; value?: string | null })
 function OrderCard({
   order,
   formatMoney,
+  t,
 }: {
   order: PublicOrderConfirmation
   formatMoney: (amount: number) => string
+  t: SuccessTranslator
 }) {
   return (
     <div className="space-y-4 rounded-xl bg-muted/30 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs text-muted-foreground">Номер замовлення</p>
+          <p className="text-xs text-muted-foreground">{t('orderNumber')}</p>
           <p className="font-mono text-lg font-bold text-foreground">{order.orderNumber}</p>
           {isCardOnline(order.paymentMethod) ? (
             <p className="mt-1 text-xs text-muted-foreground">
-              {paymentStatusLabel(order.paymentStatus) ?? 'Онлайн-оплата'}
+              {paymentStatusLabel(order.paymentStatus, t) ?? t('paymentStatusOnline')}
             </p>
           ) : null}
         </div>
@@ -174,23 +205,22 @@ function OrderCard({
       <div className="space-y-1 text-sm">
         {order.productsSubtotal != null ? (
           <div className="flex justify-between gap-3">
-            <span className="text-muted-foreground">Товари</span>
+            <span className="text-muted-foreground">{t('products')}</span>
             <span className="tabular-nums">{formatMoney(order.productsSubtotal)}</span>
           </div>
         ) : null}
         {(() => {
-          const shipping =
-            (order.deliveryAmount ?? 0) + (order.packagingAmount ?? 0)
+          const shipping = (order.deliveryAmount ?? 0) + (order.packagingAmount ?? 0)
           if (shipping <= 0) return null
           return (
             <div className="flex justify-between gap-3">
-              <span className="text-muted-foreground">Доставка та пакування</span>
+              <span className="text-muted-foreground">{t('shippingAndPackaging')}</span>
               <span className="tabular-nums">{formatMoney(shipping)}</span>
             </div>
           )
         })()}
         <div className="flex justify-between gap-3 font-semibold">
-          <span>Разом</span>
+          <span>{t('total')}</span>
           <span className="tabular-nums text-primary">{formatMoney(order.totalAmount)}</span>
         </div>
       </div>
@@ -200,7 +230,7 @@ function OrderCard({
       <div className="grid gap-3 text-sm sm:grid-cols-2">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Отримувач
+            {t('recipient')}
           </p>
           <p className="mt-1 font-medium text-foreground">
             {formatPersonName(
@@ -213,23 +243,19 @@ function OrderCard({
         </div>
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Доставка
+            {t('delivery')}
           </p>
           <p className="mt-1 font-medium text-foreground">
-            {DELIVERY_METHOD_BACKSTAGE_LABELS[
-              order.deliveryMethod as keyof typeof DELIVERY_METHOD_BACKSTAGE_LABELS
-            ] ?? order.deliveryMethod}
+            {deliveryMethodLabel(order.deliveryMethod, t)}
           </p>
-          <p className="text-muted-foreground">{formatDeliveryAddress(order)}</p>
+          <p className="text-muted-foreground">{formatDeliveryAddress(order, t)}</p>
         </div>
         <div className="sm:col-span-2">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Оплата
+            {t('payment')}
           </p>
           <p className="mt-1 font-medium text-foreground">
-            {PAYMENT_METHOD_BACKSTAGE_LABELS[
-              order.paymentMethod as keyof typeof PAYMENT_METHOD_BACKSTAGE_LABELS
-            ] ?? order.paymentMethod}
+            {paymentMethodLabel(order.paymentMethod, t)}
           </p>
         </div>
       </div>
@@ -237,8 +263,72 @@ function OrderCard({
   )
 }
 
+type NextStep = { title: string; description: string }
+
+function resolvePaymentNextSteps(
+  orders: PublicOrderConfirmation[],
+  t: SuccessTranslator,
+): NextStep[] {
+  const primary = orders[0]
+  if (!primary) {
+    return [
+      { title: t('nextGeneric1Title'), description: t('nextGeneric1Body') },
+      { title: t('nextGeneric2Title'), description: t('nextGeneric2Body') },
+    ]
+  }
+
+  if (isCardOnline(primary.paymentMethod)) {
+    if (primary.paymentStatus === 'success') {
+      return [
+        { title: t('nextCardPaid1Title'), description: t('nextCardPaid1Body') },
+        { title: t('nextCardPaid2Title'), description: t('nextCardPaid2Body') },
+        { title: t('nextCardPaid3Title'), description: t('nextCardPaid3Body') },
+      ]
+    }
+    return [
+      { title: t('nextCardPending1Title'), description: t('nextCardPending1Body') },
+      { title: t('nextCardPending2Title'), description: t('nextCardPending2Body') },
+    ]
+  }
+
+  if (isBankTransfer(primary.paymentMethod)) {
+    return [
+      { title: t('nextBank1Title'), description: t('nextBank1Body') },
+      { title: t('nextBank2Title'), description: t('nextBank2Body') },
+      { title: t('nextBank3Title'), description: t('nextBank3Body') },
+    ]
+  }
+
+  if (isDobierka(primary.paymentMethod)) {
+    return [
+      { title: t('nextCod1Title'), description: t('nextCod1Body') },
+      { title: t('nextCod2Title'), description: t('nextCod2Body') },
+      { title: t('nextCod3Title'), description: t('nextCod3Body') },
+    ]
+  }
+
+  return [
+    { title: t('nextGeneric1Title'), description: t('nextGeneric1Body') },
+    { title: t('nextGeneric2Title'), description: t('nextGeneric2Body') },
+  ]
+}
+
+function resolveSuccessSubtitle(orders: PublicOrderConfirmation[], t: SuccessTranslator) {
+  const primary = orders[0]
+  if (!primary) return t('successSubtitle')
+  if (isCardOnline(primary.paymentMethod)) {
+    return primary.paymentStatus === 'success'
+      ? t('successSubtitleCardPaid')
+      : t('successSubtitleCardPending')
+  }
+  if (isBankTransfer(primary.paymentMethod)) return t('successSubtitleBank')
+  if (isDobierka(primary.paymentMethod)) return t('successSubtitleCod')
+  return t('successSubtitle')
+}
+
 function SuccessContent() {
   const t = useTranslations('checkout')
+  const tCommon = useTranslations('common')
   const catalogHref = useCatalogHref()
   const searchParams = useSearchParams()
   const { user } = useSession()
@@ -295,7 +385,6 @@ function SuccessContent() {
           (item): item is PublicOrderConfirmation => Boolean(item),
         )
 
-        // BFF: if card-online and not yet success, ask Nest to reconcile with Mono.
         const reconciled = await Promise.all(
           loaded.map(async (order) => {
             if (!isCardOnline(order.paymentMethod)) return order
@@ -338,10 +427,6 @@ function SuccessContent() {
     }
   }, [orderNumbers, confirmationTokens, syncToken])
 
-  const nextSteps = cartSettings.nextSteps?.length
-    ? cartSettings.nextSteps
-    : DEFAULT_CART_CHECKOUT_SETTINGS.nextSteps
-
   const bankDetails = resolveCheckoutBankDetails(cartSettings, storeSettings)
 
   const showBankBlock =
@@ -353,17 +438,19 @@ function SuccessContent() {
   )
 
   const isSk = marketSettings.region === 'sk'
+  const nextSteps = resolvePaymentNextSteps(orders, t)
+  const subtitle = loading ? t('successSubtitle') : resolveSuccessSubtitle(orders, t)
 
   const handleDownloadPdf = async () => {
     if (!orders.length) {
-      toast.error('Немає даних замовлення для PDF')
+      toast.error(t('pdfNoOrderData'))
       return
     }
     setPdfLoading(true)
     try {
       await downloadOrderConfirmationPdf(orders, confirmationTokens[0])
     } catch {
-      toast.error('Не вдалося сформувати PDF')
+      toast.error(t('pdfFailed'))
     } finally {
       setPdfLoading(false)
     }
@@ -374,7 +461,7 @@ function SuccessContent() {
       <header className="border-b bg-background">
         <div className={cn(siteContentShellClassName, 'py-4')}>
           <Link href="/" className="flex items-center gap-2">
-            <BrandLogo alt="Зелені Янголи" />
+            <BrandLogo alt={tCommon('brand')} />
           </Link>
         </div>
       </header>
@@ -393,11 +480,9 @@ function SuccessContent() {
               <CheckCircle2 className="h-10 w-10 text-primary" />
             </div>
             <h1 className="mb-3 font-serif text-2xl font-bold text-foreground lg:text-4xl">
-              Замовлення оформлено!
+              {t('successTitle')}
             </h1>
-            <p className="text-lg text-muted-foreground">
-              Дякуємо за ваше замовлення. Очікуйте на відвантаження.
-            </p>
+            <p className="text-lg text-muted-foreground">{subtitle}</p>
           </div>
 
           <div className="mb-6 flex flex-wrap justify-center gap-3">
@@ -413,7 +498,7 @@ function SuccessContent() {
                 ) : (
                   <Download className="mr-2 h-4 w-4" />
                 )}
-                Завантажити PDF
+                {t('downloadPdf')}
               </Button>
             ) : null}
           </div>
@@ -423,12 +508,14 @@ function SuccessContent() {
               <p className="text-sm text-muted-foreground">{t('successLoadingDetails')}</p>
             ) : orders.length ? (
               orders.map((order) => (
-                <OrderCard key={order.id} order={order} formatMoney={formatMoney} />
+                <OrderCard key={order.id} order={order} formatMoney={formatMoney} t={t} />
               ))
             ) : (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  {orderNumbers.length > 1 ? t('successOrderNumbersLabel') : t('successOrderNumberLabel')}
+                  {orderNumbers.length > 1
+                    ? t('successOrderNumbersLabel')
+                    : t('successOrderNumberLabel')}
                 </p>
                 <div className="space-y-1">
                   {(orderNumbers.length ? orderNumbers : ['ZY-00000000']).map((orderNumber) => (
@@ -445,43 +532,41 @@ function SuccessContent() {
           {showBankBlock ? (
             <div className="mb-8 space-y-3 rounded-xl border bg-background p-6">
               <h2 className="font-serif text-lg font-semibold text-foreground">
-                Реквізити для оплати
+                {t('bankDetailsTitle')}
               </h2>
+              <CopyableRow label={t('bankRecipient')} value={bankDetails.organizationName} t={t} />
               <CopyableRow
-                label="Одержувач"
-                value={bankDetails.organizationName}
-              />
-              <CopyableRow
-                label={isSk ? 'IČO' : 'ЄДРПОУ / ІПН'}
+                label={isSk ? t('bankIco') : t('bankEdrpou')}
                 value={bankDetails.edrpou}
+                t={t}
               />
               {isSk ? (
                 <>
-                  <CopyableRow label="DIČ" value={bankDetails.dic} />
-                  <CopyableRow label="IČ DPH" value={bankDetails.icDph} />
+                  <CopyableRow label={t('bankDic')} value={bankDetails.dic} t={t} />
+                  <CopyableRow label={t('bankIcDph')} value={bankDetails.icDph} t={t} />
                 </>
               ) : null}
-              <CopyableRow label="IBAN" value={bankDetails.iban} />
-              <CopyableRow label="Банк" value={bankDetails.bankName} />
+              <CopyableRow label={t('bankIban')} value={bankDetails.iban} t={t} />
+              <CopyableRow label={t('bankName')} value={bankDetails.bankName} t={t} />
               {isSk ? (
-                <CopyableRow label="BIC / SWIFT" value={bankDetails.bic} />
+                <CopyableRow label={t('bankBic')} value={bankDetails.bic} t={t} />
               ) : (
-                <CopyableRow label="МФО" value={bankDetails.mfo} />
+                <CopyableRow label={t('bankMfo')} value={bankDetails.mfo} t={t} />
               )}
               <CopyableRow
-                label="Юридична адреса"
+                label={t('bankLegalAddress')}
                 value={bankDetails.legalAddress}
+                t={t}
               />
-              <CopyableRow
-                label="Податковий статус"
-                value={bankDetails.taxStatus}
-              />
-              <CopyableRow label="Призначення платежу" value={paymentPurpose} />
+              <CopyableRow label={t('bankTaxStatus')} value={bankDetails.taxStatus} t={t} />
+              <CopyableRow label={t('bankPaymentPurpose')} value={paymentPurpose} t={t} />
             </div>
           ) : null}
 
           <div className="mb-8 rounded-xl border bg-background p-6 lg:p-8">
-            <h2 className="mb-4 font-serif text-lg font-semibold text-foreground">Що далі?</h2>
+            <h2 className="mb-4 font-serif text-lg font-semibold text-foreground">
+              {t('whatNext')}
+            </h2>
             <div className="space-y-4">
               {nextSteps.map((step, index) => (
                 <div key={`${step.title}-${index}`} className="flex gap-4">
@@ -500,21 +585,20 @@ function SuccessContent() {
           <div className="mb-8 rounded-xl border bg-background p-6">
             <div className="mb-4 flex items-center gap-3">
               <Truck className="h-5 w-5 text-primary" />
-              <h3 className="font-medium text-foreground">Інформація про доставку</h3>
+              <h3 className="font-medium text-foreground">{t('deliveryInfoTitle')}</h3>
             </div>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
                 <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                Рослини ретельно пакуються для безпечної доставки у картонні коробки з
-                маркуванням верх / низ / крихке або палети чи обрешетування.
+                {t('deliveryInfoPacking')}
               </li>
               <li className="flex items-start gap-2">
                 <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                Доставка здійснюється Новою Поштою.
+                {isSk ? t('deliveryInfoCarrierSk') : t('deliveryInfoCarrierUa')}
               </li>
               <li className="flex items-start gap-2">
                 <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                При отриманні огляньте рослини та перевірте комплектацію
+                {t('deliveryInfoInspect')}
               </li>
             </ul>
           </div>
@@ -524,15 +608,12 @@ function SuccessContent() {
               <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                 <div className="flex-1">
                   <h3 className="mb-1 font-serif font-semibold text-foreground">
-                    Створіть акаунт
+                    {t('createAccountTitle')}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Відстежуйте замовлення, зберігайте улюблені рослини та отримуйте
-                    персональні знижки
-                  </p>
+                  <p className="text-sm text-muted-foreground">{t('createAccountBody')}</p>
                 </div>
                 <Button asChild>
-                  <Link href="/auth/login">Увійти або зареєструватися</Link>
+                  <Link href="/auth/login">{t('createAccountCta')}</Link>
                 </Button>
               </div>
             </div>
@@ -542,13 +623,13 @@ function SuccessContent() {
             <Button asChild variant="outline" size="lg">
               <Link href="/">
                 <Home className="mr-2 h-4 w-4" />
-                На головну
+                {t('home')}
               </Link>
             </Button>
             <Button asChild size="lg">
               <Link href={catalogHref}>
                 <ShoppingBag className="mr-2 h-4 w-4" />
-                Продовжити покупки
+                {t('continueShopping')}
               </Link>
             </Button>
           </div>
@@ -559,17 +640,18 @@ function SuccessContent() {
 }
 
 export default function CheckoutSuccessPage() {
+  const tCommon = useTranslations('common')
   return (
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-transparent">
           <div className="text-center">
             <BrandLogo
-              alt="Зелені Янголи"
+              alt={tCommon('brand')}
               className="mx-auto mb-4 animate-pulse"
               imgClassName="opacity-70"
             />
-            <p className="text-muted-foreground">Завантаження...</p>
+            <p className="text-muted-foreground">{tCommon('loading')}</p>
           </div>
         </div>
       }

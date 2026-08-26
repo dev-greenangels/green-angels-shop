@@ -1273,5 +1273,194 @@
     "exclVat": "{amount} без ПДВ",
     "exclVatColon": "без ПДВ: {amount}",
     "inclVat": "з ПДВ"
+  },
+  "shippingPage": {
+    "title": "Доставка та оплата",
+    "deliveryTitle": "Способи доставки",
+    "costsTitle": "Вартість доставки",
+    "costsOrderCol": "Спосіб",
+    "costsPriceCol": "Вартість",
+    "costsCarrierTariff": "За тарифами перевізника",
+    "costsFreePickup": "Без додаткової плати за доставку",
+    "paymentTitle": "Способи оплати",
+    "packingTitle": "Упаковка рослин",
+    "packingIntro": "Ми дбаємо про те, щоб рослини дісталися до вас у найкращому стані:",
+    "packingItems": [
+      "Фіксація кореневої системи для запобігання пошкодженню",
+      "Захист крони спеціальною сіткою або папером",
+      "Використання вологоутримуючих матеріалів",
+      "Надійні коробки з маркуванням «Обережно, рослини»"
+    ],
+    "pickupUnavailableTitle": "Адреса самовивозу тимчасово недоступна",
+    "addressLabel": "Адреса",
+    "methods": {
+      "nova-poshta": {
+        "title": "Нова Пошта",
+        "description": "Доставка у відділення або адресна доставка по Україні.",
+        "eta": "Термін: 1–3 дні",
+        "tracking": "Відстеження посилки онлайн"
+      },
+      "packeta": {
+        "title": "Packeta (Zásilkovna)",
+        "description": "Видача на пункті / Z-BOX або кур’єр — залежно від способу в кошику.",
+        "eta": "Термін залежить від країни доставки",
+        "tracking": "Відстеження посилки онлайн"
+      },
+      "gls": {
+        "title": "GLS",
+        "description": "Кур’єрська доставка на адресу.",
+        "eta": "Термін залежить від країни доставки",
+        "tracking": "Відстеження посилки онлайн"
+      },
+      "pickup": {
+        "title": "Самовивіз",
+        "description": "Заберіть замовлення особисто з нашого розсадника."
+      }
+    },
+    "payments": {
+      "card-online": {
+        "title": "Карткою онлайн",
+        "descriptionUa": "Visa, Mastercard та інші способи через захищену оплату (MonoPay).",
+        "descriptionSk": "Visa, Mastercard та інші способи через захищену оплату (Stripe), у валюті вітрини (EUR / HUF)."
+      },
+      "bank-transfer": {
+        "title": "Банківський переказ",
+        "descriptionUa": "Оплата за реквізитами на рахунок продавця (грн).",
+        "descriptionSk": "Оплата банківським переказом за IBAN (EUR / HUF)."
+      },
+      "bank-transfer-legal": {
+        "title": "Безготівковий (юр. особа)",
+        "descriptionUa": "Для юридичних осіб з ПДВ або без.",
+        "descriptionSk": "Для юридичних осіб / B2B з реквізитами компанії."
+      },
+      "dobierka": {
+        "title": "Оплата при отриманні (dobierka)",
+        "description": "Готівка або картка при видачі / кур’єру — якщо спосіб увімкнено на вітрині."
+      }
+    }
+  },
+  "termsFallback": {
+    "title": "Умови використання",
+    "updated": "Останнє оновлення: 1 лютого 2024 року",
+    "contactHeading": "8. Контактна інформація",
+    "contactAddress": "Адреса",
+    "contactPhone": "Телефон ({label})",
+    "contactEmail": "Email ({label})",
+    "contactsUnavailableTitle": "Контактна інформація тимчасово недоступна",
+    "sellerFallback": "продавцем",
+    "ua": {
+      "sections": [
+        {
+          "heading": "1. Загальні положення",
+          "body": [
+            "Ці Умови використання регулюють відносини між {sellerName} (далі — «Продавець») та покупцями товарів через інтернет-магазин (далі — «Сайт»).",
+            "Оформлюючи замовлення на Сайті, ви підтверджуєте свою згоду з цими Умовами використання та зобов’язуєтесь їх дотримуватись."
+          ]
+        },
+        {
+          "heading": "2. Оформлення замовлення",
+          "body": [
+            "Замовлення оформлюються через Сайт, по телефону або електронною поштою.",
+            "Після оформлення замовлення на вказану вами електронну адресу надходить підтвердження з деталями замовлення.",
+            "Продавець залишає за собою право відмовити у виконанні замовлення у випадку відсутності товару на складі або неможливості зв’язатися з покупцем."
+          ]
+        },
+        {
+          "heading": "3. Ціни та оплата",
+          "body": [
+            "Усі ціни на Сайті вказані в українських гривнях та включають ПДВ, якщо інше прямо не зазначено.",
+            "Продавець може змінювати ціни без попередження. Ціна замовлення фіксується на момент його оформлення.",
+            "Доступні способи оплати відображаються на етапі оформлення замовлення (зокрема картка онлайн, банківський переказ)."
+          ]
+        },
+        {
+          "heading": "4. Доставка",
+          "body": [
+            "Доставка здійснюється способами, доступними в кошику (зокрема Нова Пошта або самовивіз — залежно від налаштувань магазину).",
+            "Терміни доставки залежать від обраного способу та регіону.",
+            "Вартість доставки розраховується відповідно до тарифів перевізника та залежить від ваги й габаритів замовлення."
+          ]
+        },
+        {
+          "heading": "5. Повернення та обмін",
+          "body": [
+            "Покупець має право повернути або обміняти товар належної якості протягом 14 днів з моменту отримання, якщо товар не був у використанні та збережено його товарний вигляд — з урахуванням особливостей живих рослин.",
+            "Для рослин повернення приймається насамперед у випадку пошкодження при транспортуванні або невідповідності сорту. Претензії приймаються протягом 24 годин з моменту отримання з наданням фото.",
+            "Вартість зворотної доставки оплачується покупцем, крім випадків повернення товару неналежної якості."
+          ]
+        },
+        {
+          "heading": "6. Гарантії",
+          "body": [
+            "Продавець гарантує якість посадкового матеріалу на момент продажу.",
+            "Гарантія не поширюється на пошкодження рослин внаслідок неправильного догляду, несприятливих погодних умов або механічних пошкоджень після отримання."
+          ]
+        },
+        {
+          "heading": "7. Конфіденційність",
+          "body": [
+            "Обробка персональних даних здійснюється згідно з Політикою конфіденційності та Законом України «Про захист персональних даних».",
+            "Дані використовуються для виконання замовлення та зв’язку з вами; третім особам передаються лише в обсязі, необхідному для доставки, оплати чи обліку."
+          ]
+        }
+      ]
+    },
+    "sk": {
+      "sections": [
+        {
+          "heading": "1. Všeobecné ustanovenia",
+          "body": [
+            "Tieto obchodné podmienky upravujú kúpu tovaru v internetovom obchode medzi {sellerName} (ďalej „Predávajúci“) a kupujúcimi.",
+            "Odoslaním objednávky kupujúci potvrdzuje, že sa s podmienkami oboznámil a súhlasí s nimi."
+          ]
+        },
+        {
+          "heading": "2. Objednávka",
+          "body": [
+            "Objednávky sa uzatvárajú cez web, telefón alebo e-mail.",
+            "Po odoslaní objednávky zasielame potvrdenie na uvedený e-mail.",
+            "Predávajúci môže objednávku odmietnuť pri nedostupnosti tovaru alebo nemožnosti kontaktovať kupujúceho."
+          ]
+        },
+        {
+          "heading": "3. Ceny a platba",
+          "body": [
+            "Ceny sú uvedené v mene obchodu (EUR / HUF) a zahŕňajú DPH, ak nie je uvedené inak.",
+            "Cena sa fixuje v okamihu odoslania objednávky.",
+            "Dostupné spôsoby platby sú zobrazené v pokladni (napr. karta online cez Stripe, bankový prevod, dobierka — podľa nastavení)."
+          ]
+        },
+        {
+          "heading": "4. Doprava",
+          "body": [
+            "Doprava prebieha spôsobmi dostupnými v pokladni (napr. Packeta, GLS, osobný odber — podľa nastavení obchodu).",
+            "Termíny závisia od zvoleného spôsobu a krajiny doručenia.",
+            "Cena dopravy sa počíta podľa taríf dopravcu a hmotnosti / rozmerov."
+          ]
+        },
+        {
+          "heading": "5. Odstúpenie a reklamácie",
+          "body": [
+            "Spotrebiteľ má právo odstúpiť od zmluvy uzatvorenej na diaľku v lehote 14 dní v súlade s právom EÚ/SR — s možnými výnimkami pre tovar podliehajúci skaze (vrátane živých rastlín), podľa aktuálneho reklamačného poriadku.",
+            "Poškodenie pri preprave hláste čo najskôr s fotodokumentáciou.",
+            "Náklady na vrátenie znáša kupujúci, okrem vád tovaru."
+          ]
+        },
+        {
+          "heading": "6. Záruka",
+          "body": [
+            "Predávajúci zodpovedá za kvalitu sadbového materiálu v čase predaja.",
+            "Záruka sa nevzťahuje na poškodenie po prevzatí vplyvom nesprávnej starostlivosti alebo počasia."
+          ]
+        },
+        {
+          "heading": "7. Ochrana údajov",
+          "body": [
+            "Spracúvanie osobných údajov upravuje Politika ochrany osobných údajov a platné právne predpisy EÚ/SR.",
+            "Údaje používame na splnenie objednávky a komunikáciu; tretím stranám ich poskytujeme len v nevyhnutnom rozsahu."
+          ]
+        }
+      ]
+    }
   }
 }

@@ -1274,5 +1274,194 @@
     "exclVat": "{amount} ÁFA nélkül",
     "exclVatColon": "ÁFA nélkül: {amount}",
     "inclVat": "ÁFA-val"
+  },
+  "shippingPage": {
+    "title": "Szállítás és fizetés",
+    "deliveryTitle": "Szállítási módok",
+    "costsTitle": "Szállítási díjak",
+    "costsOrderCol": "Mód",
+    "costsPriceCol": "Díj",
+    "costsCarrierTariff": "A futárszolgálat díjszabása szerint",
+    "costsFreePickup": "Nincs extra szállítási díj",
+    "paymentTitle": "Fizetési módok",
+    "packingTitle": "Növények csomagolása",
+    "packingIntro": "Gondosan csomagolunk, hogy a növények a lehető legjobb állapotban érkezzenek:",
+    "packingItems": [
+      "Gyökérlabda rögzítése a sérülés elkerülésére",
+      "Korona védelme hálóval vagy papírral",
+      "Nedvességmegtartó anyagok",
+      "Strapabíró dobozok „Törékeny — növények” jelöléssel"
+    ],
+    "pickupUnavailableTitle": "Az átvételi cím átmenetileg nem elérhető",
+    "addressLabel": "Cím",
+    "methods": {
+      "nova-poshta": {
+        "title": "Nova Poshta",
+        "description": "Fiókba vagy címre Ukrajnában.",
+        "eta": "Általában 1–3 nap",
+        "tracking": "Online csomagkövetés"
+      },
+      "packeta": {
+        "title": "Packeta",
+        "description": "Átvételi pont / Z-BOX vagy futár — a pénztárban választott mód szerint.",
+        "eta": "Az idő a célországtól függ",
+        "tracking": "Online csomagkövetés"
+      },
+      "gls": {
+        "title": "GLS",
+        "description": "Futárszállítás a címére.",
+        "eta": "Az idő a célországtól függ",
+        "tracking": "Online csomagkövetés"
+      },
+      "pickup": {
+        "title": "Személyes átvétel",
+        "description": "Vegye át a rendelést személyesen a faiskolánkban."
+      }
+    },
+    "payments": {
+      "card-online": {
+        "title": "Kártyás online",
+        "descriptionUa": "Visa, Mastercard és más módok MonoPay-jel.",
+        "descriptionSk": "Visa, Mastercard és más módok Stripe-on, a bolt pénznemében (EUR / HUF)."
+      },
+      "bank-transfer": {
+        "title": "Banki átutalás",
+        "descriptionUa": "Fizetés az eladó számlájára (UAH).",
+        "descriptionSk": "Átutalás IBAN-ra (EUR / HUF)."
+      },
+      "bank-transfer-legal": {
+        "title": "Átutalás (cég)",
+        "descriptionUa": "Cégeknek, ÁFA-val vagy anélkül.",
+        "descriptionSk": "Cégeknek / B2B cégadatokkal."
+      },
+      "dobierka": {
+        "title": "Utánvét",
+        "description": "Készpénz vagy kártya átvételkor — ha a mód be van kapcsolva."
+      }
+    }
+  },
+  "termsFallback": {
+    "title": "Felhasználási feltételek",
+    "updated": "Utolsó frissítés: 2024. február 1.",
+    "contactHeading": "8. Kapcsolat",
+    "contactAddress": "Cím",
+    "contactPhone": "Telefon ({label})",
+    "contactEmail": "E-mail ({label})",
+    "contactsUnavailableTitle": "A kapcsolati adatok átmenetileg nem érhetők el",
+    "sellerFallback": "az eladó",
+    "ua": {
+      "sections": [
+        {
+          "heading": "1. General",
+          "body": [
+            "These Terms govern the relationship between {sellerName} (“Seller”) and customers of the online shop (“Site”).",
+            "By placing an order you confirm that you accept these Terms."
+          ]
+        },
+        {
+          "heading": "2. Ordering",
+          "body": [
+            "Orders may be placed via the Site, phone, or email.",
+            "After ordering we send a confirmation to your email.",
+            "The Seller may refuse an order if goods are unavailable or the customer cannot be contacted."
+          ]
+        },
+        {
+          "heading": "3. Prices and payment",
+          "body": [
+            "Prices are shown in Ukrainian hryvnia and include VAT unless stated otherwise.",
+            "Prices may change without notice; the order price is fixed when placed.",
+            "Available payment methods are shown at checkout (e.g. card online, bank transfer)."
+          ]
+        },
+        {
+          "heading": "4. Delivery",
+          "body": [
+            "Delivery uses methods available in the cart (e.g. Nova Poshta or pickup — depending on store settings).",
+            "Timing depends on the method and region.",
+            "Delivery cost follows carrier tariffs and depends on weight and size."
+          ]
+        },
+        {
+          "heading": "5. Returns",
+          "body": [
+            "You may return unused goods of satisfactory quality within 14 days of receipt, subject to rules for live plants.",
+            "Plant returns are accepted primarily for transport damage or variety mismatch; claims within 24 hours with photos.",
+            "Return shipping is paid by the buyer except for defective goods."
+          ]
+        },
+        {
+          "heading": "6. Warranty",
+          "body": [
+            "The Seller warrants planting material quality at sale.",
+            "Warranty excludes post-delivery damage from improper care, weather, or mechanical damage."
+          ]
+        },
+        {
+          "heading": "7. Privacy",
+          "body": [
+            "Personal data is processed under the Privacy Policy and applicable Ukrainian law.",
+            "Data is used to fulfil orders and communicate; shared with third parties only as needed for delivery, payment, or accounting."
+          ]
+        }
+      ]
+    },
+    "sk": {
+      "sections": [
+        {
+          "heading": "1. General",
+          "body": [
+            "These Terms govern purchases between {sellerName} (“Seller”) and customers of the online shop.",
+            "By submitting an order you confirm you have read and accept these Terms."
+          ]
+        },
+        {
+          "heading": "2. Ordering",
+          "body": [
+            "Orders may be placed via the website, phone, or email.",
+            "We send an order confirmation to the email provided.",
+            "The Seller may refuse an order if goods are unavailable or the customer cannot be contacted."
+          ]
+        },
+        {
+          "heading": "3. Prices and payment",
+          "body": [
+            "Prices are shown in the store currency (EUR / HUF) and include VAT unless stated otherwise.",
+            "The price is fixed when the order is placed.",
+            "Available payment methods appear at checkout (e.g. card via Stripe, bank transfer, cash on delivery — as configured)."
+          ]
+        },
+        {
+          "heading": "4. Delivery",
+          "body": [
+            "Delivery uses methods available at checkout (e.g. Packeta, GLS, pickup — as configured).",
+            "Timing depends on the method and destination country.",
+            "Delivery cost follows carrier tariffs and weight / dimensions."
+          ]
+        },
+        {
+          "heading": "5. Withdrawal and complaints",
+          "body": [
+            "Consumers may withdraw from a distance contract within 14 days under EU/SK law — with possible exceptions for perishable goods (including live plants), per the returns policy.",
+            "Report transport damage promptly with photos.",
+            "Return shipping is paid by the buyer except for defective goods."
+          ]
+        },
+        {
+          "heading": "6. Warranty",
+          "body": [
+            "The Seller is responsible for planting material quality at sale.",
+            "Warranty excludes post-collection damage from improper care or weather."
+          ]
+        },
+        {
+          "heading": "7. Privacy",
+          "body": [
+            "Personal data is processed under the Privacy Policy and applicable EU/SK law.",
+            "We use data to fulfil orders and communicate; we share it with third parties only as necessary."
+          ]
+        }
+      ]
+    }
   }
 }

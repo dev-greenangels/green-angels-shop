@@ -27,7 +27,7 @@ type PickupPoint = {
   street: string
   city: string
   zip: string
-  kind?: 'branch' | 'box'
+  kind?: 'branch' | 'box' | 'carrier'
 }
 
 type CityOption = {
@@ -333,7 +333,11 @@ export function PacketaPickupPointField({
   }, [points, pointQuery])
 
   const branches = useMemo(
-    () => filteredPoints.filter((p) => (p.kind ?? 'branch') === 'branch'),
+    () =>
+      filteredPoints.filter((p) => {
+        const kind = p.kind ?? 'branch'
+        return kind === 'branch' || kind === 'carrier'
+      }),
     [filteredPoints],
   )
   const boxes = useMemo(() => filteredPoints.filter((p) => p.kind === 'box'), [filteredPoints])

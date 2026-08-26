@@ -3,6 +3,8 @@ export type PacketaAdminSettings = {
   configured: boolean
   senderLabel: string
   includeZbox: boolean
+  includeCarrierPoints?: boolean
+  carrierPointIds?: number[]
   zboxMaxLongestSideCm: number
   zboxMaxSideSumCm: number
   branchMaxLongestSideCm: number

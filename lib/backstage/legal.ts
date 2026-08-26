@@ -16,7 +16,7 @@ export type LegalBackstageRevision = {
 
 export type LegalBackstageDocument = {
   id: string
-  type: 'TERMS' | 'PRIVACY' | 'COOKIES' | 'RETURNS'
+  type: 'TERMS' | 'PRIVACY' | 'COOKIES' | 'RETURNS' | 'MARKETING_CONSENT'
   revisions: LegalBackstageRevision[]
 }
 

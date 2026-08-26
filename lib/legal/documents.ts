@@ -2,7 +2,13 @@ import 'server-only'
 
 import { fetchBackend, readBackendJson } from '@/lib/api/backend-fetch'
 
-export const LEGAL_DOCUMENT_TYPES = ['TERMS', 'PRIVACY', 'COOKIES', 'RETURNS'] as const
+export const LEGAL_DOCUMENT_TYPES = [
+  'TERMS',
+  'PRIVACY',
+  'COOKIES',
+  'RETURNS',
+  'MARKETING_CONSENT',
+] as const
 export type LegalDocumentType = (typeof LEGAL_DOCUMENT_TYPES)[number]
 
 export type LegalDocumentSection = {

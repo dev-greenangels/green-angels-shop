@@ -1000,7 +1000,8 @@
     "packetaPointLabel": "Abholstelle / Z-BOX",
     "packetaPointPlaceholder": "Suche nach Straße, Name oder PLZ",
     "packetaPointSelectCityFirst": "Zuerst eine Stadt wählen",
-    "packetaPointSearchHint": "Punkt aus der Liste wählen oder Suche verfeinern"
+    "packetaPointSearchHint": "Punkt aus der Liste wählen oder Suche verfeinern",
+    "marketingConsentFallback": "Ich möchte Marketing-E-Mails erhalten."
   },
   "product": {
     "newBadge": "Neu",
@@ -1274,5 +1275,23 @@
     "exclVat": "{amount} exkl. MwSt.",
     "exclVatColon": "exkl. MwSt.: {amount}",
     "inclVat": "inkl. MwSt."
+  },
+  "marketingConsent": {
+    "formTitle": "News und Angebote",
+    "formSubtitle": "Newsletter abonnieren — getrennt von Bestell-E-Mails. Jederzeit widerrufbar.",
+    "emailLabel": "E-Mail",
+    "emailPlaceholder": "sie@example.com",
+    "emailRequired": "E-Mail eingeben",
+    "consentRequired": "Bitte Marketing-Einwilligung bestätigen",
+    "checkboxFallback": "Ich möchte Marketing-E-Mails erhalten.",
+    "submit": "Abonnieren",
+    "submitting": "Wird gesendet…",
+    "signupSuccess": "Anmeldung erfolgreich.",
+    "signupError": "Anmeldung fehlgeschlagen. Bitte später erneut versuchen.",
+    "unsubscribeTitle": "Abmeldung",
+    "unsubscribeLoading": "Wird verarbeitet…",
+    "unsubscribeSuccess": "Sie wurden von Marketing-E-Mails abgemeldet.",
+    "unsubscribeError": "Abmeldung fehlgeschlagen. Link möglicherweise abgelaufen.",
+    "unsubscribeMissingToken": "Abmelde-Token fehlt."
   }
 }

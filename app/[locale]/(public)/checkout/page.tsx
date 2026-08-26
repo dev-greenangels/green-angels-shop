@@ -374,6 +374,8 @@ export default function CheckoutPage() {
   const [promoInfo, setPromoInfo] = useState<string | null>(null)
   const [privacyConsent, setPrivacyConsent] = useState(false)
   const [privacyConsentTouched, setPrivacyConsentTouched] = useState(false)
+  const [marketingConsent, setMarketingConsent] = useState(false)
+  const [marketingRevisionId, setMarketingRevisionId] = useState<string | undefined>()
   // SEC-007: account creation happens only via Email OTP / Phone OTP / Google.
   // createAccount checkbox no longer creates identity from raw guest PII.
   const showCreateAccountOption = false
@@ -1195,6 +1197,8 @@ export default function CheckoutPage() {
               createAccount: showCreateAccountOption ? createAccount : undefined,
               privacyConsent,
               privacyConsentVersion: marketSettings.privacyConsentVersion,
+              marketingConsent,
+              marketingRevisionId,
               companyVatId: vatId || undefined,
               countryCode,
               buyerType: marketSettings.region === 'sk' ? buyerType : undefined,
@@ -1221,6 +1225,8 @@ export default function CheckoutPage() {
               createAccount: showCreateAccountOption ? createAccount : undefined,
               privacyConsent,
               privacyConsentVersion: marketSettings.privacyConsentVersion,
+              marketingConsent,
+              marketingRevisionId,
               companyVatId: vatId || undefined,
               countryCode,
               buyerType: marketSettings.region === 'sk' ? buyerType : undefined,
@@ -1265,6 +1271,8 @@ export default function CheckoutPage() {
         createAccount: showCreateAccountOption ? createAccount : undefined,
         privacyConsent,
         privacyConsentVersion: marketSettings.privacyConsentVersion,
+        marketingConsent,
+        marketingRevisionId,
         companyVatId: vatId || undefined,
         countryCode,
         buyerType: marketSettings.region === 'sk' ? buyerType : undefined,
@@ -1677,6 +1685,9 @@ export default function CheckoutPage() {
                     setPrivacyConsent(checked)
                     if (checked) setPrivacyConsentTouched(false)
                   }}
+                  marketingConsentChecked={marketingConsent}
+                  onMarketingConsentChange={setMarketingConsent}
+                  onMarketingRevisionId={setMarketingRevisionId}
                   showCreateAccountOption={showCreateAccountOption}
                   createAccountChecked={createAccount}
                   onCreateAccountChange={() => {}}

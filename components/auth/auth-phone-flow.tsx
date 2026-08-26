@@ -8,7 +8,9 @@ import { toast } from '@/lib/toast'
 import { AuthOAuthButtons } from '@/components/auth/auth-oauth-buttons'
 import { AuthConsentNotice } from '@/components/auth/auth-consent-notice'
 import { FieldHint, OrDivider, RequiredLabel } from '@/components/auth/auth-form-ui'
+import { MarketingConsentCheckbox } from '@/components/legal/marketing-consent-checkbox'
 import { useSession } from '@/components/providers/session-provider'
+import { recordMarketingConsent } from '@/lib/legal/documents-client'
 import { Button } from '@/components/ui/button'
 import { InputWithClear } from '@/components/ui/input-with-clear'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
@@ -124,6 +126,7 @@ export function AuthPhoneFlow({
 }) {
   const t = useTranslations('auth')
   const tc = useTranslations('common')
+  const tMarketing = useTranslations('marketingConsent')
   const locale = useLocale()
   const router = useRouter()
   const { user, setUser } = useSession()
@@ -147,8 +150,23 @@ export function AuthPhoneFlow({
   const [submitting, setSubmitting] = useState(false)
   const [code, setCode] = useState('')
   const [codeError, setCodeError] = useState<string | null>(null)
+  const [marketingConsent, setMarketingConsent] = useState(false)
+  const [marketingRevisionId, setMarketingRevisionId] = useState<string | undefined>()
 
   const isLoggedIn = Boolean(user)
+
+  const persistLoginMarketingConsent = useCallback(
+    async (emailHint?: string) => {
+      if (purpose !== 'login' || !marketingConsent) return
+      await recordMarketingConsent({
+        locale,
+        source: 'LOGIN',
+        revisionId: marketingRevisionId,
+        email: emailHint?.trim() || undefined,
+      })
+    },
+    [locale, marketingConsent, marketingRevisionId, purpose],
+  )
 
   const finishAuthSuccess = useCallback(
     (target: string) => {
@@ -248,9 +266,26 @@ export function AuthPhoneFlow({
       setUser(payload.user)
       if (payload.user.phone) setPhone(payload.user.phone)
       if (payload.user.email) setEmail(payload.user.email)
-      finishAuthSuccess(redirectTo)
+      void (async () => {
+        try {
+          const raw = sessionStorage.getItem('ga-marketing-consent-pending')
+          sessionStorage.removeItem('ga-marketing-consent-pending')
+          if (raw) {
+            const pending = JSON.parse(raw) as { revisionId?: string; locale?: string }
+            await recordMarketingConsent({
+              locale: pending.locale || locale,
+              source: 'LOGIN',
+              revisionId: pending.revisionId,
+              email: payload.user.email || undefined,
+            })
+          }
+        } catch {
+          /* best-effort consent log */
+        }
+        finishAuthSuccess(redirectTo)
+      })()
     },
-    [finishAuthSuccess, redirectTo, setUser],
+    [finishAuthSuccess, locale, redirectTo, setUser],
   )
 
   useOAuthReturn(completeGoogleAuth)
@@ -260,6 +295,18 @@ export function AuthPhoneFlow({
     if (!isGoogleOAuthConfigured()) {
       toast.error(tc('googleSignInUnavailable'))
       return
+    }
+    try {
+      if (marketingConsent) {
+        sessionStorage.setItem(
+          'ga-marketing-consent-pending',
+          JSON.stringify({ revisionId: marketingRevisionId, locale }),
+        )
+      } else {
+        sessionStorage.removeItem('ga-marketing-consent-pending')
+      }
+    } catch {
+      /* ignore */
     }
     setGoogleLoading(true)
     startGoogleOAuth(redirectTo, 'login')
@@ -303,10 +350,12 @@ export function AuthPhoneFlow({
         const { verificationToken } = await verifyAuthSmsCode(phone, code, purpose)
         const sessionUser = await createPhoneSession(phone, verificationToken)
         setUser(sessionUser)
+        await persistLoginMarketingConsent(sessionUser.email)
       } else {
         const { verificationToken } = await verifyAuthEmailCode(email, code, purpose)
         const sessionUser = await createEmailSession(email, verificationToken)
         setUser(sessionUser)
+        await persistLoginMarketingConsent(email)
       }
 
       finishAuthSuccess(redirectTo)
@@ -556,6 +605,16 @@ export function AuthPhoneFlow({
         </div>
       )}
 
+      {purpose === 'login' ? (
+        <MarketingConsentCheckbox
+          id="auth-marketing-consent"
+          checked={marketingConsent}
+          onCheckedChange={setMarketingConsent}
+          fallbackLabel={tMarketing('checkboxFallback')}
+          onRevisionId={setMarketingRevisionId}
+          className="mt-2"
+        />
+      ) : null}
       <AuthConsentNotice text={market.authConsentText} />
     </div>
   )

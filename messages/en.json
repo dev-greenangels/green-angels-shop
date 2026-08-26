@@ -1000,7 +1000,8 @@
     "packetaPointLabel": "Pickup point / Z-BOX",
     "packetaPointPlaceholder": "Search by street, name or ZIP",
     "packetaPointSelectCityFirst": "Select a city first",
-    "packetaPointSearchHint": "Pick a point from the list or refine your search"
+    "packetaPointSearchHint": "Pick a point from the list or refine your search",
+    "marketingConsentFallback": "I want to receive marketing emails."
   },
   "product": {
     "newBadge": "New",
@@ -1274,5 +1275,23 @@
     "exclVat": "{amount} excl. VAT",
     "exclVatColon": "excl. VAT: {amount}",
     "inclVat": "incl. VAT"
+  },
+  "marketingConsent": {
+    "formTitle": "News and offers",
+    "formSubtitle": "Subscribe to our newsletter — separate from order emails. You can withdraw anytime.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "emailRequired": "Enter your email",
+    "consentRequired": "Please confirm marketing consent",
+    "checkboxFallback": "I want to receive marketing emails.",
+    "submit": "Subscribe",
+    "submitting": "Submitting…",
+    "signupSuccess": "You are subscribed.",
+    "signupError": "Could not subscribe. Try again later.",
+    "unsubscribeTitle": "Unsubscribe",
+    "unsubscribeLoading": "Processing…",
+    "unsubscribeSuccess": "You have been unsubscribed from marketing emails.",
+    "unsubscribeError": "Could not unsubscribe. The link may have expired.",
+    "unsubscribeMissingToken": "Unsubscribe token is missing."
   }
 }

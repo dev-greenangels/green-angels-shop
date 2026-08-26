@@ -1000,7 +1000,8 @@
     "packetaPointLabel": "Výdajné miesto / Z-BOX",
     "packetaPointPlaceholder": "Hľadajte podľa ulice, názvu alebo PSČ",
     "packetaPointSelectCityFirst": "Najprv vyberte mesto",
-    "packetaPointSearchHint": "Vyberte miesto zo zoznamu alebo upresnite hľadanie"
+    "packetaPointSearchHint": "Vyberte miesto zo zoznamu alebo upresnite hľadanie",
+    "marketingConsentFallback": "Chcem dostávať marketingové e-maily."
   },
   "product": {
     "newBadge": "Novinka",
@@ -1275,5 +1276,23 @@
     "exclVat": "{amount} bez DPH",
     "exclVatColon": "bez DPH: {amount}",
     "inclVat": "s DPH"
+  },
+  "marketingConsent": {
+    "formTitle": "Novinky a ponuky",
+    "formSubtitle": "Prihláste sa na odber — oddelené od e-mailov o objednávkach. Súhlas môžete kedykoľvek odvolať.",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "vy@example.com",
+    "emailRequired": "Zadajte e-mail",
+    "consentRequired": "Potvrďte súhlas s marketingom",
+    "checkboxFallback": "Chcem dostávať marketingové e-maily.",
+    "submit": "Prihlásiť sa",
+    "submitting": "Odosielame…",
+    "signupSuccess": "Odber bol prihlásený.",
+    "signupError": "Odber sa nepodarilo prihlásiť. Skúste neskôr.",
+    "unsubscribeTitle": "Odhlásenie z odberu",
+    "unsubscribeLoading": "Spracovávame…",
+    "unsubscribeSuccess": "Boli ste odhlásení z marketingových e-mailov.",
+    "unsubscribeError": "Odhlásenie zlyhalo. Odkaz môže byť neplatný.",
+    "unsubscribeMissingToken": "V odkaze chýba token na odhlásenie."
   }
 }

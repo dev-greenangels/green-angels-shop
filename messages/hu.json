@@ -1000,7 +1000,8 @@
     "packetaPointLabel": "Átvételi pont / Z-BOX",
     "packetaPointPlaceholder": "Keresés utca, név vagy irányítószám alapján",
     "packetaPointSelectCityFirst": "Először válasszon várost",
-    "packetaPointSearchHint": "Válasszon a listából vagy pontosítsa a keresést"
+    "packetaPointSearchHint": "Válasszon a listából vagy pontosítsa a keresést",
+    "marketingConsentFallback": "Szeretnék marketing e-maileket kapni."
   },
   "product": {
     "newBadge": "Új",
@@ -1274,5 +1275,23 @@
     "exclVat": "{amount} ÁFA nélkül",
     "exclVatColon": "ÁFA nélkül: {amount}",
     "inclVat": "ÁFA-val"
+  },
+  "marketingConsent": {
+    "formTitle": "Hírek és ajánlatok",
+    "formSubtitle": "Iratkozzon fel a hírlevélre — külön a rendelési e-mailektől. Bármikor visszavonható.",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "on@example.com",
+    "emailRequired": "Adja meg az e-mail címét",
+    "consentRequired": "Erősítse meg a marketing hozzájárulást",
+    "checkboxFallback": "Szeretnék marketing e-maileket kapni.",
+    "submit": "Feliratkozás",
+    "submitting": "Küldés…",
+    "signupSuccess": "Sikeres feliratkozás.",
+    "signupError": "A feliratkozás nem sikerült. Próbálja később.",
+    "unsubscribeTitle": "Leiratkozás",
+    "unsubscribeLoading": "Feldolgozás…",
+    "unsubscribeSuccess": "Leiratkozott a marketing e-mailekről.",
+    "unsubscribeError": "A leiratkozás nem sikerült. A link lejárhatott.",
+    "unsubscribeMissingToken": "Hiányzik a leiratkozási token."
   }
 }

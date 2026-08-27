@@ -139,20 +139,28 @@ type ReviewsListProps = {
   reviews: ReviewListItem[]
   showProductLink?: boolean
   emptyMessage?: string
+  /** Shown under the empty state (e.g. leave-review CTA on product page). */
+  emptyAction?: ReactNode
 }
 
 export function ReviewsList({
   reviews,
   showProductLink = true,
   emptyMessage,
+  emptyAction,
 }: ReviewsListProps) {
   const t = useTranslations('reviews')
   const resolvedEmpty = emptyMessage ?? t('emptyPublished')
   if (reviews.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground">
-        {resolvedEmpty}
-      </p>
+      <div className="space-y-3">
+        <p className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground">
+          {resolvedEmpty}
+        </p>
+        {emptyAction ? (
+          <div className="flex justify-center">{emptyAction}</div>
+        ) : null}
+      </div>
     )
   }
 

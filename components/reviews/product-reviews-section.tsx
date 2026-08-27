@@ -24,9 +24,12 @@ export function ProductReviewsSection({
 }: ProductReviewsSectionProps) {
   const t = useTranslations('reviews')
   const [pageResult, setPageResult] = useState(initialPage)
+  /** Unfiltered product total — rating filter must not hide the toolbar/CTA logic. */
+  const [totalUnfiltered, setTotalUnfiltered] = useState(initialPage.total)
   const [rating, setRating] = useState<number | null>(null)
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [refreshToken, setRefreshToken] = useState(0)
 
   const reload = useCallback(async () => {
     setLoading(true)
@@ -39,10 +42,13 @@ export function ProductReviewsSection({
         sort: 'newest',
       })
       setPageResult(data)
+      if (rating == null) {
+        setTotalUnfiltered(data.total)
+      }
     } finally {
       setLoading(false)
     }
-  }, [productId, rating, page])
+  }, [productId, rating, page, refreshToken])
 
   useEffect(() => {
     void reload()
@@ -53,33 +59,50 @@ export function ProductReviewsSection({
     setPage(1)
   }
 
+  const handleReviewSubmitted = () => {
+    setRating(null)
+    setPage(1)
+    setRefreshToken((n) => n + 1)
+  }
+
+  const leaveReviewAction = (
+    <ReviewLeaveFlow
+      productId={productId}
+      productName={productName}
+      onSubmitted={handleReviewSubmitted}
+    />
+  )
+
+  const showFiltersToolbar = totalUnfiltered > PRODUCT_REVIEWS_PAGE_SIZE
+  const isEmpty = totalUnfiltered === 0
+
   return (
     <section className="mb-8">
-      <div className="mb-3">
-        <h2 className="font-serif text-2xl font-bold text-foreground">{t('productTitle')}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{t('productSubtitle', { name: productName })}</p>
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="font-serif text-2xl font-bold text-foreground">{t('productTitle')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t('productSubtitle', { name: productName })}
+          </p>
+        </div>
+        {!isEmpty && !showFiltersToolbar ? (
+          <div className="shrink-0">{leaveReviewAction}</div>
+        ) : null}
       </div>
 
-      <ReviewsStickyToolbar
-        type="product"
-        rating={rating}
-        sort="newest"
-        onTypeChange={() => undefined}
-        onRatingChange={handleRatingChange}
-        onSortChange={() => undefined}
-        showTypeFilter={false}
-        showSortFilter={false}
-        leaveReviewAction={
-          <ReviewLeaveFlow
-            productId={productId}
-            productName={productName}
-            onSubmitted={() => {
-              setPage(1)
-              void reload()
-            }}
-          />
-        }
-      />
+      {showFiltersToolbar ? (
+        <ReviewsStickyToolbar
+          type="product"
+          rating={rating}
+          sort="newest"
+          onTypeChange={() => undefined}
+          onRatingChange={handleRatingChange}
+          onSortChange={() => undefined}
+          showTypeFilter={false}
+          showSortFilter={false}
+          leaveReviewAction={leaveReviewAction}
+        />
+      ) : null}
 
       {loading ? (
         <p className="mb-3 text-sm text-muted-foreground">{t('loading')}</p>
@@ -89,6 +112,7 @@ export function ProductReviewsSection({
         reviews={pageResult.items}
         showProductLink={false}
         emptyMessage={t('emptyProduct')}
+        emptyAction={isEmpty ? leaveReviewAction : undefined}
       />
 
       <ReviewsPagination

@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from 'next-intl'
 
 import { DiscountedUnitPrice } from '@/components/pricing/discounted-price'
 import { FormattedPrice } from '@/components/commerce/formatted-price'
-import { PriceWithExVatUnder, ShelfPriceBlock } from '@/components/commerce/shelf-price-block'
+import { PriceWithExVatUnder } from '@/components/commerce/shelf-price-block'
 import { ProductOutOfStockBlock } from '@/components/product/product-out-of-stock-block'
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
 import { VariantPhotoGalleryDialog } from '@/components/product/variant-photo-gallery-dialog'
@@ -20,7 +20,6 @@ import {
   getSingleUnitSaleTier,
   getUnitPriceForQuantity,
   getVariantDiscountLayout,
-  getVariantPriceRange,
 } from '@/lib/product-pricing'
 import {
   canOrderVariant,
@@ -60,31 +59,15 @@ function getVariantSizeCountLabel(count: number, t: ReturnType<typeof useTransla
 }
 
 function ProductVariantsSectionSummary({
-  priceMin,
-  priceMax,
   variantCount,
 }: {
-  priceMin: number
-  priceMax: number
   variantCount: number
 }) {
   const t = useTranslations('product')
-  const hasRange = priceMin !== priceMax
-  const singleSize = variantCount === 1 && !hasRange
 
   return (
-    <p className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-xs tracking-wide text-muted-foreground/80 sm:text-[13px]">
-      <ShelfPriceBlock
-        label={singleSize ? 'price' : 'from'}
-        amount={priceMin}
-        amountMax={hasRange ? priceMax : undefined}
-        className="text-xs sm:text-[13px]"
-        primaryClassName="text-xs font-medium text-muted-foreground sm:text-[13px]"
-      />
-      <span className="text-muted-foreground/40" aria-hidden>
-        ·
-      </span>
-      <span>{getVariantSizeCountLabel(variantCount, t)}</span>
+    <p className="text-xs tracking-wide text-muted-foreground/80 sm:text-[13px]">
+      {getVariantSizeCountLabel(variantCount, t)}
     </p>
   )
 }
@@ -911,7 +894,9 @@ export function ProductVariantsTable({
 }: ProductVariantsTableProps) {
   const t = useTranslations('product')
   const canOrder = isPlantOrderable(variants)
-  const { min: priceMin, max: priceMax } = getVariantPriceRange(variants)
+  const hasDeferredShipment = variants.some(
+    (variant) => variantHasAvailableFrom(variant) && Boolean(variant.availableFrom?.trim()),
+  )
 
   const handleBuy: ProductVariantsTableProps['onBuy'] = (variant, quantity, unitPrice) => {
     onSelectVariant?.(variant.id)
@@ -961,21 +946,27 @@ export function ProductVariantsTable({
 
   return (
     <section className="space-y-4" aria-label={t('sizesAndPrices')}>
-      <div>
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h2 className="text-xl font-bold text-foreground md:text-2xl">
-            {fullyOutOfStock ? t('availability') : t('sizesAndPrices')}
-          </h2>
-          {canOrder && variants.length > 0 ? (
-            <ProductVariantsSectionSummary
-              priceMin={priceMin}
-              priceMax={priceMax}
-              variantCount={variants.length}
-            />
+      <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
+            <h2 className="text-lg font-semibold text-foreground md:text-xl">
+              {fullyOutOfStock ? t('availability') : t('sizesAndPrices')}
+            </h2>
+            {canOrder && variants.length > 0 ? (
+              <ProductVariantsSectionSummary variantCount={variants.length} />
+            ) : null}
+          </div>
+          {!fullyOutOfStock ? (
+            <p className="mt-2 text-sm text-muted-foreground md:text-base">{t('sizesHint')}</p>
           ) : null}
         </div>
-        {!fullyOutOfStock ? (
-          <p className="mt-2 text-sm text-muted-foreground md:text-base">{t('sizesHint')}</p>
+        {!fullyOutOfStock && hasDeferredShipment ? (
+          <p
+            role="note"
+            className="min-w-fit self-end max-w-md shrink rounded-md border border-amber-200/80 bg-amber-50 px-3 py-1.5 text-sm leading-snug text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100"
+          >
+            {t('sizesPreorderHint')}
+          </p>
         ) : null}
       </div>
 

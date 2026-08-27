@@ -162,7 +162,7 @@ export function BlogPostFormDialog({
                 value={form.author}
                 onChange={(e) => patchForm({ author: e.target.value })}
                 onClear={() => patchForm({ author: '' })}
-                placeholder="Зелені Янголи"
+                placeholder="Author name"
               />
             </div>
 

@@ -46,7 +46,7 @@ function findByLabel<T extends { label: string }>(items: T[], ...labels: string[
 export function getStoreContactBlocks(store: StoreContactSettings): StoreContactBlock[] {
   return store.contactBlocks
     .map((block) => ({
-      title: block.title.trim() || 'Контакти',
+      title: block.title.trim(),
       lines: block.lines.filter((line) => line.value.trim()),
     }))
     .filter((block) => block.lines.length > 0)

@@ -21,7 +21,7 @@ export const CONTACT_LINE_TYPE_OPTIONS: ReadonlyArray<{
   label: string
   placeholder: string
 }> = [
-  { value: 'phone', label: 'Телефон', placeholder: '+380 XX XXX XX XX' },
+  { value: 'phone', label: 'Телефон', placeholder: '+XXX …' },
   { value: 'email', label: 'Email', placeholder: 'info@example.com' },
   { value: 'viber', label: 'Viber', placeholder: 'Посилання (viber://, номер або https://...)' },
   { value: 'telegram', label: 'Telegram', placeholder: 'Посилання (https://t.me/... або @username)' },

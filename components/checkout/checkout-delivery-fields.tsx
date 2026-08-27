@@ -438,7 +438,7 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
                 <InputWithClear
                   id={`${idPrefix}-courier-postal`}
                   autoComplete="postal-code"
-                  placeholder="811 01"
+                  placeholder={t('postalCodePlaceholder')}
                   className={cn(
                     checkoutInputClassName,
                     showShippingError('postalCode') && 'border-destructive/80 ring-destructive/30',

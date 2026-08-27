@@ -90,7 +90,7 @@ function ContactBlockDisplay({
 
   return (
     <div className={cn('space-y-1.5 text-sm', textClassName)}>
-      <p className="font-medium">{block.title}</p>
+      {block.title.trim() ? <p className="font-medium">{block.title}</p> : null}
       {lines.map((line, index) => (
         <div key={`${line.type}-${line.value}-${index}`} className="flex items-center gap-2 pl-0.5">
           <ContactLineIcon
@@ -225,9 +225,9 @@ export async function StoreContactsDisplay({
         <div className="grid gap-8 md:grid-cols-2 md:items-start">
           <div className="space-y-6">
             {showGroupedContacts
-              ? contactBlocks.map((block) => (
+              ? contactBlocks.map((block, index) => (
                   <ContactBlockDisplay
-                    key={block.title}
+                    key={`${block.title || 'block'}-${index}`}
                     block={block}
                     visibility={lineVisibility}
                     iconClassName={iconClassName}
@@ -266,9 +266,9 @@ export async function StoreContactsDisplay({
       ) : null}
 
       {showGroupedContacts
-        ? contactBlocks.map((block) => (
+        ? contactBlocks.map((block, index) => (
             <ContactBlockDisplay
-              key={block.title}
+              key={`${block.title || 'block'}-${index}`}
               block={block}
               visibility={lineVisibility}
               iconClassName={iconClassName}

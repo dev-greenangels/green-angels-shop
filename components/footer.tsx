@@ -54,11 +54,12 @@ export async function Footer() {
 
   const linkClassName =
     'block text-base text-primary-foreground/85 transition-colors hover:text-primary-foreground'
+  const columnTitleClassName = 'mb-5 font-serif text-[1.8rem] font-semibold leading-tight'
 
   return (
     <footer className="bg-footer-gradient text-primary-foreground">
       <div className={cn(siteContentShellClassName, 'py-14 md:pt-20 md:pb-10')}>
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-[auto_1fr_1fr_auto]">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-[auto_auto_auto_auto_auto]">
           <div className="flex flex-col items-center space-y-5 text-center md:items-start md:text-left">
             <Link href="/" className="inline-flex justify-center md:justify-start">
               <BrandLogo
@@ -77,7 +78,7 @@ export async function Footer() {
           </div>
 
           <div>
-            <h3 className="mb-5 font-serif text-xl font-semibold md:text-2xl">{t('catalogTitle')}</h3>
+            <h3 className={columnTitleClassName}>{t('catalogTitle')}</h3>
             <nav className="space-y-2.5">
               <Link href={catalogLink} className={linkClassName}>
                 {t('catalogTitle')}
@@ -91,7 +92,7 @@ export async function Footer() {
           </div>
 
           <div>
-            <h3 className="mb-5 font-serif text-xl font-semibold md:text-2xl">{t('infoTitle')}</h3>
+            <h3 className={columnTitleClassName}>{t('infoTitle')}</h3>
             <nav className="space-y-2.5">
               <Link href="/shipping" className={linkClassName}>
                 {isSkMarket ? t('shippingSk') : t('shipping')}
@@ -113,6 +114,12 @@ export async function Footer() {
               <Link href="/faq" className={linkClassName}>
                 {t('faq')}
               </Link>
+            </nav>
+          </div>
+
+          <div>
+            <h3 className={columnTitleClassName}>{t('legalTitle')}</h3>
+            <nav className="space-y-2.5">
               <Link href="/terms" className={linkClassName}>
                 {isSkMarket ? t('termsSk') : t('terms')}
               </Link>
@@ -131,7 +138,7 @@ export async function Footer() {
           </div>
 
           <div>
-            <h3 className="mb-5 font-serif text-xl font-semibold md:text-2xl">
+            <h3 className={columnTitleClassName}>
               <Link
                 href="/contacts"
                 className="transition-colors hover:text-primary-foreground/90"

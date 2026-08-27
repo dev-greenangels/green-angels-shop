@@ -315,7 +315,7 @@ export function FlexiSettingsForm() {
                 id="flexi-company"
                 value={settings.companyId}
                 onChange={(e) => setSettings((s) => ({ ...s, companyId: e.target.value }))}
-                placeholder="green_angels_sro"
+                placeholder="company_db"
               />
             </div>
             <div className="space-y-2">

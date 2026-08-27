@@ -182,7 +182,7 @@ export function UserEditCard({
                 value={form.phone}
                 onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
                 onClear={() => setForm((prev) => ({ ...prev, phone: '' }))}
-                placeholder="+380..."
+                placeholder="+…"
               />
             </div>
           </div>

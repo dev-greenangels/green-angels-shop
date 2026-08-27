@@ -187,7 +187,7 @@ export function StoreContactSettingsForm({
               <div className="flex gap-2">
                 <Input
                   className="flex-1"
-                  placeholder="Заголовок (напр. Підтримка, Гурт)"
+                  placeholder="Заголовок (необовʼязково)"
                   value={block.title}
                   onChange={(e) => updateContactBlock(blockIndex, { title: e.target.value })}
                 />

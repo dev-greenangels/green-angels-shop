@@ -107,7 +107,7 @@ export function ReviewBackstageReplyPanel({
               id={`reply-author-${review.id}`}
               value={authorName}
               onChange={(e) => setAuthorName(e.target.value)}
-              placeholder="Наприклад, Олена"
+              placeholder="Name"
             />
           </div>
           <div className="space-y-2">

@@ -111,7 +111,7 @@ export function StaffFormDialog({
               value={form.email}
               onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
               onClear={() => setForm((prev) => ({ ...prev, email: '' }))}
-              placeholder="name@green-angels.com"
+              placeholder="name@example.com"
             />
           </div>
 

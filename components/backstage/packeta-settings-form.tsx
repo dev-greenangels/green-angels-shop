@@ -237,7 +237,7 @@ export function PacketaSettingsForm() {
               id="packeta-sender"
               value={senderLabel}
               onChange={(e) => setSenderLabel(e.target.value)}
-              placeholder="наприклад green-angels"
+              placeholder="e.g. eshop-id"
               autoComplete="off"
             />
           </div>

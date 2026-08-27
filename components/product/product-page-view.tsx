@@ -122,16 +122,28 @@ export function ProductPageView({
             />
 
             <div className="min-w-0 space-y-6">
-              <div>
-                <h1 className="mb-2 font-serif text-3xl font-bold text-foreground md:text-4xl">
+              <h1 className="space-y-2">
+                <span className="block font-serif text-3xl font-bold text-foreground md:text-4xl">
                   {plant.name}
-                </h1>
+                </span>
                 {plant.latinName ? (
-                  <p className="text-lg italic text-muted-foreground">{plant.latinName}</p>
+                  <span className="block text-lg font-normal italic text-muted-foreground">
+                    {plant.latinName}
+                  </span>
                 ) : null}
-              </div>
+              </h1>
 
-              <ProductDisplayCharacteristics items={displayItems} />
+              {displayItems.length > 0 ? (
+                <section aria-labelledby="product-main-characteristics">
+                  <h2
+                    id="product-main-characteristics"
+                    className="mb-3 font-serif text-xl font-semibold text-foreground"
+                  >
+                    {t('mainCharacteristics')}
+                  </h2>
+                  <ProductDisplayCharacteristics items={displayItems} />
+                </section>
+              ) : null}
             </div>
           </div>
 
@@ -147,10 +159,23 @@ export function ProductPageView({
               onBuy={handleBuy}
             />
             {plant.description ? (
-              <div
-                className="prose prose-neutral max-w-none text-muted-foreground leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: plant.description }}
-              />
+              <section
+                aria-labelledby="product-description-heading"
+                className="space-y-4 border-b border-border pb-10"
+              >
+                <h2
+                  id="product-description-heading"
+                  className="text-2xl font-[500] tracking-tight text-foreground"
+                >
+                  {t('descriptionHeading', {
+                    name: plant.latinName?.trim() || plant.name,
+                  })}
+                </h2>
+                <div
+                  className="prose prose-neutral max-w-none text-muted-foreground leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: plant.description }}
+                />
+              </section>
             ) : null}
           </div>
 

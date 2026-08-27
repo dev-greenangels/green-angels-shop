@@ -257,7 +257,7 @@ export function WholesaleInquiryForm({
             <InputWithClear
               id="wholesale-vat"
               autoComplete="off"
-              placeholder="SK1234567890"
+              placeholder="XX1234567890"
               value={values.companyVatId}
               onChange={(e) => patch('companyVatId', sanitizeVatId(e.target.value))}
               onClear={() => patch('companyVatId', '')}

@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dialog'
 import { CategoryCombobox, type CategoryOption } from '@/components/backstage/category-combobox'
 import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
+import { resolveBackstageThumbnailSrc } from '@/lib/category-image'
 import { VariantAttributePicker } from '@/components/backstage/product-pricing-section'
 import {
   buildProductPayload,
@@ -813,7 +814,7 @@ export function ProductsBulkTableEditor() {
                         <div className="relative h-12 w-12 overflow-hidden rounded border bg-muted">
                           {row.imageUrl ? (
                             <Image
-                              src={row.imageUrl}
+                              src={resolveBackstageThumbnailSrc(row.imageUrl)}
                               alt=""
                               fill
                               className="object-cover"

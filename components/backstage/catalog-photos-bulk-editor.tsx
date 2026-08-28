@@ -19,6 +19,7 @@ import {
   patchCategory,
   type CategoryFlat,
 } from '@/lib/backstage/categories'
+import { resolveBackstageThumbnailSrc } from '@/lib/category-image'
 
 async function uploadProductImage(file: File, productId: string): Promise<string> {
   const formData = new FormData()
@@ -123,7 +124,13 @@ export function ProductsPhotosBulkEditor({ onClose }: { onClose?: () => void }) 
             <li key={item.id} className="flex items-center gap-4 px-4 py-3">
               <div className="relative h-14 w-14 overflow-hidden rounded-md bg-muted">
                 {item.imageUrl ? (
-                  <Image src={item.imageUrl} alt="" fill className="object-cover" unoptimized />
+                  <Image
+                    src={resolveBackstageThumbnailSrc(item.imageUrl)}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
                 ) : null}
               </div>
               <div className="min-w-0 flex-1">
@@ -240,7 +247,13 @@ export function CategoriesPhotosBulkEditor({ onClose }: { onClose?: () => void }
             <li key={item.id} className="flex items-center gap-4 px-4 py-3">
               <div className="relative h-14 w-14 overflow-hidden rounded-md bg-muted">
                 {item.imageUrl ? (
-                  <Image src={item.imageUrl} alt="" fill className="object-cover" unoptimized />
+                  <Image
+                    src={resolveBackstageThumbnailSrc(item.imageUrl)}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
                 ) : null}
               </div>
               <div className="min-w-0 flex-1">

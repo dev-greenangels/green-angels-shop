@@ -1,4 +1,4 @@
-import { CATEGORY_DEFAULT_IMAGE, resolveCategoryImageUrl } from '@/lib/category-image'
+import { resolveBackstageThumbnailSrc } from '@/lib/category-image'
 
 export type CategoryTreeNode = {
   id: string
@@ -108,7 +108,7 @@ async function parseError(res: Response): Promise<string> {
 }
 
 function normalizeCategoryNode(node: CategoryTreeNode): CategoryTreeNode {
-  const imageUrl = node.imageUrl || resolveCategoryImageUrl(node.image)
+  const imageUrl = resolveBackstageThumbnailSrc(node.imageUrl || node.image)
   return {
     ...node,
     imageUrl,

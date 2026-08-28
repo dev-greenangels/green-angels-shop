@@ -3,7 +3,11 @@
 import { useEffect, useState } from 'react'
 
 import { BrandLogo } from '@/components/brand-logo'
-import { CATEGORY_DEFAULT_IMAGE, isCategoryPlaceholderImage } from '@/lib/category-image'
+import {
+  CATEGORY_DEFAULT_IMAGE,
+  isCategoryPlaceholderImage,
+  resolveBackstageThumbnailSrc,
+} from '@/lib/category-image'
 import { cn } from '@/lib/utils'
 
 export function CategoryThumbnail({
@@ -15,10 +19,10 @@ export function CategoryThumbnail({
   alt: string
   className?: string
 }) {
-  const [resolvedSrc, setResolvedSrc] = useState(src || CATEGORY_DEFAULT_IMAGE)
+  const [resolvedSrc, setResolvedSrc] = useState(() => resolveBackstageThumbnailSrc(src))
 
   useEffect(() => {
-    setResolvedSrc(src || CATEGORY_DEFAULT_IMAGE)
+    setResolvedSrc(resolveBackstageThumbnailSrc(src))
   }, [src])
 
   const showLogo = isCategoryPlaceholderImage(resolvedSrc)

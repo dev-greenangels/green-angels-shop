@@ -26,3 +26,9 @@ export function resolveCategoryThumbUrl(image: string | null | undefined): strin
   if (!trimmed) return CATEGORY_DEFAULT_IMAGE
   return toPublicMediaUrl(resolveThumbUrl(trimmed))
 }
+
+/** Backstage lists/editors: thumb variant + optional CDN base (`NEXT_PUBLIC_MEDIA_BASE_URL`). */
+export function resolveBackstageThumbnailSrc(image: string | null | undefined): string {
+  if (isCategoryPlaceholderImage(image)) return image?.trim() || CATEGORY_DEFAULT_IMAGE
+  return resolveCategoryThumbUrl(image)
+}

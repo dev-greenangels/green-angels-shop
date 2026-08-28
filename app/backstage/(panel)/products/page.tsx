@@ -48,8 +48,6 @@ import {
   setProductPublished,
   type BackstageProductListItem,
 } from '@/lib/backstage/products'
-import { resolveCategoryThumbUrl } from '@/lib/category-image'
-
 const PAGE_SIZE = 100
 
 type PublishedFilter = 'all' | 'true' | 'false'
@@ -616,7 +614,7 @@ function ProductsPageContent() {
                         <td className="px-4 py-3">
                           <div className="flex items-stretch gap-3">
                             <CategoryThumbnail
-                              src={resolveCategoryThumbUrl(product.imageUrl)}
+                              src={product.imageUrl ?? ''}
                               alt={product.name}
                               className="w-14 shrink-0 self-stretch rounded-md border border-border"
                             />

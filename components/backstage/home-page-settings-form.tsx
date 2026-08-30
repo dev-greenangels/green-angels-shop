@@ -4,6 +4,7 @@ import { Loader2, Plus, Save, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { HomeSectionOrderControls } from '@/components/backstage/home-section-order-controls'
+import { HeroImageField } from '@/components/backstage/hero-image-field'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -150,15 +151,12 @@ export function HomePageSettingsForm({
           }
         />
       </div>
-      <div className="space-y-2">
-        <Label>URL зображення</Label>
-        <Input
-          value={home.hero.imageUrl}
-          onChange={(e) =>
-            setHome({ ...home, hero: { ...home.hero, imageUrl: e.target.value } })
-          }
-        />
-      </div>
+      <HeroImageField
+        imageUrl={home.hero.imageUrl}
+        onImageUrlChange={(imageUrl) =>
+          setHome({ ...home, hero: { ...home.hero, imageUrl } })
+        }
+      />
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Кнопка 1 — текст</Label>

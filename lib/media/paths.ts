@@ -52,6 +52,13 @@ export function isPendingProductPath(url: string): boolean {
   )
 }
 
+export const HOME_HERO_IMAGE_PATH_REGEX =
+  /^\/uploads\/settings\/home-hero\/v\d+\/cover\.webp$/i
+
+export function isHomeHeroImagePath(url: string): boolean {
+  return HOME_HERO_IMAGE_PATH_REGEX.test(url.trim())
+}
+
 export function buildCategoryImageUrl(categoryId: string, revision: number = Date.now()): string {
   return `/uploads/categories/${categoryId}/v${revision}/${CATEGORY_COVER}`
 }

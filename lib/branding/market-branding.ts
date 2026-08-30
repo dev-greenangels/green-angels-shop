@@ -14,7 +14,7 @@ export type MarketBranding = {
 const MARKET_BRANDING: Record<MarketRegion, MarketBranding> = {
   ua: {
     applicationName: 'Зелені Янголи',
-    headerLogo: '/images/logo.png?v=3',
+    headerLogo: '/images/logo.png?v=4',
     footerLogo: '/branding/ua/logo-footer.png?v=4',
     favicon: '/branding/ua/favicon.ico?v=3',
     icon: '/branding/ua/icon-512.png?v=3',
@@ -24,7 +24,7 @@ const MARKET_BRANDING: Record<MarketRegion, MarketBranding> = {
   },
   sk: {
     applicationName: 'Green Angels International',
-    headerLogo: '/branding/sk/logo-header.png?v=3',
+    headerLogo: '/branding/sk/logo-header.png?v=4',
     footerLogo: '/branding/sk/logo-footer.png?v=4',
     favicon: '/branding/sk/favicon.ico?v=3',
     icon: '/branding/sk/icon-512.png?v=3',

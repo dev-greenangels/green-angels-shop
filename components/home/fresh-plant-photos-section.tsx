@@ -1,10 +1,8 @@
-import { ArrowRight } from 'lucide-react'
 import { getLocale, getTranslations } from 'next-intl/server'
 
 import { FreshPhotoCard } from '@/components/catalog/fresh-photo-card'
+import { HomeSectionCta } from '@/components/home/home-section-cta'
 import { HomeSectionHeader } from '@/components/home/home-section-header'
-import { Button } from '@/components/ui/button'
-import { Link } from '@/i18n/navigation'
 import { PRODUCT_CARD_CAROUSEL_SLOT_CLASS } from '@/lib/catalog/product-card-layout'
 import { pickHomeCmsText } from '@/lib/home/cms-or-translated'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
@@ -42,12 +40,9 @@ export async function FreshPlantPhotosSection({ settings, photos }: FreshPlantPh
           align="left"
           className="mb-6 md:mb-8"
         >
-          <Button variant="secondary" asChild className="self-start rounded-full md:self-auto">
-            <Link href="/fresh-photos">
-              {t('viewAllFreshPhotos')}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+          <HomeSectionCta href="/fresh-photos">
+            {t('viewAllFreshPhotos')}
+          </HomeSectionCta>
         </HomeSectionHeader>
 
         <div className="-mx-[var(--site-shell-padding-x)] overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

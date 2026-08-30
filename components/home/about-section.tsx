@@ -66,7 +66,7 @@ export async function AboutSection({ settings }: AboutSectionProps) {
                 key={stat.label}
                 className="rounded-2xl border border-border/50 bg-card p-6 text-center shadow-sm transition-transform hover:-translate-y-0.5 md:p-8"
               >
-                <p className="mb-2 font-serif text-4xl font-medium text-primary md:text-5xl">
+                <p className="mb-2 font-serif text-4xl font-bold text-primary md:text-5xl">
                   {stat.value}
                 </p>
                 <p className="text-sm font-medium text-muted-foreground md:text-base">{stat.label}</p>

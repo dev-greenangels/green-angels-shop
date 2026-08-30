@@ -1,11 +1,9 @@
-import { ArrowRight } from 'lucide-react'
 import { getLocale, getTranslations } from 'next-intl/server'
 
 import { HomeCategoryCarousel } from '@/components/home/home-category-carousel'
+import { HomeSectionCta } from '@/components/home/home-section-cta'
 import { HomeSectionHeader } from '@/components/home/home-section-header'
-import { Button } from '@/components/ui/button'
 import { ServiceUnavailableNotice } from '@/components/ui/service-unavailable-notice'
-import { Link } from '@/i18n/navigation'
 import { pickHomeCmsText } from '@/lib/home/cms-or-translated'
 import { fetchCatalogCategories } from '@/lib/catalog/categories'
 import { orderCategoriesBySlugs } from '@/lib/catalog/order-categories'
@@ -59,17 +57,9 @@ export async function CategoriesSection({
             className="mb-6 md:mb-8"
           >
             {!unavailable && visibleCategories.length > 0 ? (
-              <Button
-                variant="secondary"
-                size="lg"
-                asChild
-                className="self-start rounded-full px-6 md:self-auto"
-              >
-                <Link href={catalogHref}>
-                  {tc('fullCatalog')}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
+              <HomeSectionCta href={catalogHref}>
+                {tc('fullCatalog')}
+              </HomeSectionCta>
             ) : null}
           </HomeSectionHeader>
         ) : subtitle ? (

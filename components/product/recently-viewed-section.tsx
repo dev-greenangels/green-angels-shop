@@ -191,7 +191,7 @@ export function RecentlyViewedSection({
       <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h2 className="font-serif text-2xl font-medium leading-snug text-foreground md:text-3xl">
+            <h2 className="font-serif text-2xl font-bold leading-snug text-foreground md:text-3xl">
               {settings.title}
             </h2>
             <p className="text-sm text-muted-foreground md:text-base">

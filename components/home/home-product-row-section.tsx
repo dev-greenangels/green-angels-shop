@@ -1,12 +1,10 @@
-import { ArrowRight } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import type { ReactNode } from 'react'
 
 import { HomeProductCarousel } from '@/components/home/home-product-carousel'
+import { HomeSectionCta } from '@/components/home/home-section-cta'
 import { HomeSectionHeader } from '@/components/home/home-section-header'
-import { Button } from '@/components/ui/button'
 import { ServiceUnavailableNotice } from '@/components/ui/service-unavailable-notice'
-import { Link } from '@/i18n/navigation'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import { cn } from '@/lib/utils'
 import type { Plant } from '@/lib/types'
@@ -48,16 +46,9 @@ export async function HomeProductRowSection({
         >
           {headerAction ??
             (viewAllHref && viewAllLabel ? (
-              <Button
-                variant="secondary"
-                asChild
-                className="self-start rounded-full md:self-auto"
-              >
-                <Link href={viewAllHref}>
-                  {viewAllLabel}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
+              <HomeSectionCta href={viewAllHref}>
+                {viewAllLabel}
+              </HomeSectionCta>
             ) : null)}
         </HomeSectionHeader>
 

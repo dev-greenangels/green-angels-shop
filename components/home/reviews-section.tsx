@@ -1,12 +1,10 @@
 import Image from 'next/image'
-import { ArrowRight, Quote } from 'lucide-react'
+import { Quote } from 'lucide-react'
 import { getLocale, getTranslations } from 'next-intl/server'
 
+import { HomeSectionCta } from '@/components/home/home-section-cta'
 import { HomeSectionHeader } from '@/components/home/home-section-header'
-import { StarRating } from '@/components/reviews/star-rating'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Link } from '@/i18n/navigation'
 import { pickHomeCmsText } from '@/lib/home/cms-or-translated'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import type { ReviewsPageResult } from '@/lib/reviews/types'
@@ -92,12 +90,9 @@ export async function ReviewsSection({ settings, reviews }: ReviewsSectionProps)
           align="left"
           className="mb-6 md:mb-8"
         >
-          <Button variant="secondary" asChild className="self-start rounded-full md:self-auto">
-            <Link href="/reviews">
-              {t('viewAllReviews')}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+          <HomeSectionCta href="/reviews">
+            {t('viewAllReviews')}
+          </HomeSectionCta>
         </HomeSectionHeader>
 
         <div

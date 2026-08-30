@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { ReviewLeaveFlow } from '@/components/reviews/review-leave-flow'
@@ -50,7 +50,13 @@ export function ProductReviewsSection({
     }
   }, [productId, rating, page, refreshToken])
 
+  const skipInitialFetchRef = useRef(true)
+
   useEffect(() => {
+    if (skipInitialFetchRef.current) {
+      skipInitialFetchRef.current = false
+      return
+    }
     void reload()
   }, [reload])
 

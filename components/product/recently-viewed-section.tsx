@@ -110,11 +110,17 @@ export function RecentlyViewedSection({
   const skeletonCount = Math.min(visibleIds.length, 4)
   const itemCount = plants.length || visibleIds.length
 
+  const scrollRafRef = useRef<number | null>(null)
+
   const updateScrollState = useCallback(() => {
-    const el = scrollRef.current
-    if (!el) return
-    setCanScrollPrev(el.scrollLeft > 4)
-    setCanScrollNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+    if (scrollRafRef.current != null) return
+    scrollRafRef.current = window.requestAnimationFrame(() => {
+      scrollRafRef.current = null
+      const el = scrollRef.current
+      if (!el) return
+      setCanScrollPrev(el.scrollLeft > 4)
+      setCanScrollNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+    })
   }, [])
 
   const scrollByPage = useCallback((direction: 'prev' | 'next') => {
@@ -179,6 +185,10 @@ export function RecentlyViewedSection({
     return () => {
       el.removeEventListener('scroll', updateScrollState)
       observer.disconnect()
+      if (scrollRafRef.current != null) {
+        window.cancelAnimationFrame(scrollRafRef.current)
+        scrollRafRef.current = null
+      }
     }
   }, [loading, plants, updateScrollState])
 

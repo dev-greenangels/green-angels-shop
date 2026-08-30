@@ -83,11 +83,17 @@ export function VariantPhotoGalleryDialog({
     setActiveIndex((current) => (current + 1) % photoCount)
   }, [hasMultiple, photoCount])
 
+  const thumbScrollRafRef = useRef<number | null>(null)
+
   const updateThumbScrollState = useCallback(() => {
-    const el = thumbStripRef.current
-    if (!el) return
-    setCanScrollThumbsPrev(el.scrollLeft > 4)
-    setCanScrollThumbsNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+    if (thumbScrollRafRef.current != null) return
+    thumbScrollRafRef.current = window.requestAnimationFrame(() => {
+      thumbScrollRafRef.current = null
+      const el = thumbStripRef.current
+      if (!el) return
+      setCanScrollThumbsPrev(el.scrollLeft > 4)
+      setCanScrollThumbsNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+    })
   }, [])
 
   const scrollThumbs = useCallback((direction: 'prev' | 'next') => {
@@ -135,6 +141,10 @@ export function VariantPhotoGalleryDialog({
     return () => {
       el.removeEventListener('scroll', updateThumbScrollState)
       resizeObserver.disconnect()
+      if (thumbScrollRafRef.current != null) {
+        window.cancelAnimationFrame(thumbScrollRafRef.current)
+        thumbScrollRafRef.current = null
+      }
     }
   }, [hasMultiple, open, photos.length, updateThumbScrollState])
 
@@ -201,7 +211,6 @@ export function VariantPhotoGalleryDialog({
                       alt={activePhoto.alt}
                       width={720}
                       height={960}
-                      unoptimized
                       priority
                       className="max-h-[72vh] w-full object-contain"
                       sizes="(max-width: 768px) 90vw, 28rem"
@@ -272,7 +281,6 @@ export function VariantPhotoGalleryDialog({
                               src={photo.thumbUrl}
                               alt=""
                               fill
-                              unoptimized
                               sizes="48px"
                               className="object-cover"
                             />

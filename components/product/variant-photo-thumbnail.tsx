@@ -43,7 +43,6 @@ export function VariantPhotoThumbnail({
           alt={alt}
           fill
           sizes="68px"
-          unoptimized
           className="object-cover transition-transform duration-200 group-hover:scale-105"
         />
       ) : (

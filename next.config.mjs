@@ -2,6 +2,46 @@ import createNextIntlPlugin from 'next-intl/plugin'
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts')
 
+function buildImageRemotePatterns() {
+  /** @type {import('next').NextConfig['images']['remotePatterns']} */
+  const patterns = [
+    { protocol: 'http', hostname: 'localhost', pathname: '/**' },
+    { protocol: 'http', hostname: '127.0.0.1', pathname: '/**' },
+  ]
+
+  const mediaUrl = process.env.NEXT_PUBLIC_MEDIA_BASE_URL?.trim()
+  if (mediaUrl) {
+    try {
+      const parsed = new URL(mediaUrl)
+      patterns.push({
+        protocol: parsed.protocol.replace(':', ''),
+        hostname: parsed.hostname,
+        pathname: '/**',
+      })
+    } catch {
+      // ignore invalid URL
+    }
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()
+  if (siteUrl) {
+    try {
+      const parsed = new URL(siteUrl)
+      if (!patterns.some((p) => p.hostname === parsed.hostname)) {
+        patterns.push({
+          protocol: parsed.protocol.replace(':', ''),
+          hostname: parsed.hostname,
+          pathname: '/**',
+        })
+      }
+    } catch {
+      // ignore invalid URL
+    }
+  }
+
+  return patterns
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   allowedDevOrigins: ['192.168.0.62', '192.168.0.63'],
@@ -9,7 +49,8 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    formats: ['image/avif', 'image/webp'],
+    remotePatterns: buildImageRemotePatterns(),
   },
   // Serve /uploads from public/uploads (symlink → ../../data/uploads).
   // Do NOT rewrite through /api/uploads — that buffered media in Node and OOM'd next dev (~8GB).

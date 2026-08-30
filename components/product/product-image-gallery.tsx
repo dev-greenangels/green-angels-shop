@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
@@ -28,6 +28,9 @@ type ProductImageGalleryProps = {
   productId: string
   productName: string
   isNew?: boolean
+  /** Server-rendered LCP image; shown when the selected URL matches heroImageSrc. */
+  heroSlot?: ReactNode
+  heroImageSrc?: string | null
 }
 
 export function ProductImageGallery({
@@ -35,6 +38,8 @@ export function ProductImageGallery({
   productId,
   productName,
   isNew = false,
+  heroSlot,
+  heroImageSrc,
 }: ProductImageGalleryProps) {
   const t = useTranslations('product')
   const [selectedImage, setSelectedImage] = useState(0)
@@ -47,16 +52,22 @@ export function ProductImageGallery({
   const safeIndex = Math.min(selectedImage, Math.max(0, images.length - 1))
   const selectedImageUrl = images[safeIndex]
 
+  const thumbScrollRafRef = useRef<number | null>(null)
+
   const updateThumbScrollState = useCallback(() => {
-    const el = thumbStripRef.current
-    if (!el) {
-      setCanScrollThumbsPrev(false)
-      setCanScrollThumbsNext(false)
-      return
-    }
-    const maxScroll = el.scrollWidth - el.clientWidth
-    setCanScrollThumbsPrev(el.scrollLeft > 2)
-    setCanScrollThumbsNext(maxScroll > 2 && el.scrollLeft < maxScroll - 2)
+    if (thumbScrollRafRef.current != null) return
+    thumbScrollRafRef.current = window.requestAnimationFrame(() => {
+      thumbScrollRafRef.current = null
+      const el = thumbStripRef.current
+      if (!el) {
+        setCanScrollThumbsPrev(false)
+        setCanScrollThumbsNext(false)
+        return
+      }
+      const maxScroll = el.scrollWidth - el.clientWidth
+      setCanScrollThumbsPrev(el.scrollLeft > 2)
+      setCanScrollThumbsNext(maxScroll > 2 && el.scrollLeft < maxScroll - 2)
+    })
   }, [])
 
   useEffect(() => {
@@ -75,6 +86,10 @@ export function ProductImageGallery({
     return () => {
       el.removeEventListener('scroll', updateThumbScrollState)
       observer.disconnect()
+      if (thumbScrollRafRef.current != null) {
+        window.cancelAnimationFrame(thumbScrollRafRef.current)
+        thumbScrollRafRef.current = null
+      }
     }
   }, [hasMultiple, images.length, updateThumbScrollState])
 
@@ -100,6 +115,11 @@ export function ProductImageGallery({
     el.scrollBy({ left: direction === 'next' ? delta : -delta, behavior: 'smooth' })
   }
 
+  const useServerHero =
+    Boolean(heroSlot) &&
+    Boolean(heroImageSrc) &&
+    selectedImageUrl?.trim() === heroImageSrc.trim()
+
   if (images.length === 0) {
     return (
       <div className="relative mx-auto aspect-[5/6] w-full max-w-[22rem] overflow-hidden rounded-xl bg-muted lg:mx-0 lg:max-w-full">
@@ -117,13 +137,17 @@ export function ProductImageGallery({
           onClick={() => setGalleryOpen(true)}
           aria-label={t('viewPhoto', { alt: productName })}
         >
-          <ProductCoverImage
-            src={selectedImageUrl}
-            alt={productName}
-            imageClassName="object-cover"
-            sizes="(max-width: 1024px) 100vw, 22rem"
-            priority
-          />
+          {useServerHero ? (
+            heroSlot
+          ) : (
+            <ProductCoverImage
+              src={selectedImageUrl}
+              alt={productName}
+              imageClassName="object-cover"
+              sizes="(max-width: 1024px) 100vw, 22rem"
+              priority
+            />
+          )}
         </button>
         {isNew ? (
           <Badge className="absolute left-3 top-3 z-[2] bg-primary text-primary-foreground">

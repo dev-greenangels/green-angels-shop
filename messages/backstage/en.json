@@ -124,6 +124,8 @@
     "categoryActivated": "Category activated",
     "categoryDeactivated": "Category deactivated",
     "categoryDeleted": "Category deleted",
+    "categoryReordered": "Category order saved",
+    "reorderFailed": "Failed to change order",
     "statusChangeFailed": "Failed to change status",
     "deleteFailed": "Failed to delete",
     "deletedCount": "Deleted: {count}",

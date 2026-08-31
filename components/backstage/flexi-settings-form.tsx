@@ -29,6 +29,7 @@ import {
   runFlexiStromSync,
   testFlexiConnection,
   updateFlexiSettings,
+  DEFAULT_FLEXI_IMPORT_UPDATE_FIELDS,
   type FlexiDocumentSendMode,
   type FlexiFullSyncSchedule,
   type FlexiPublicSettings,
@@ -85,6 +86,7 @@ const EMPTY: FlexiPublicSettings = {
   stromRootCode: 'STR_CEN',
   stromShopRootCode: '',
   syncCategoriesFromStrom: true,
+  importUpdateFields: { ...DEFAULT_FLEXI_IMPORT_UPDATE_FIELDS },
   sizeAttributeId: '',
   webhookUrl: '',
   hasWebhookSecKey: false,
@@ -111,6 +113,10 @@ function applyLoadedFlexiSettings(next: FlexiPublicSettings): FlexiPublicSetting
     deliveryMethodCodes: {
       ...DEFAULT_DELIVERY_METHOD_CODES,
       ...next.deliveryMethodCodes,
+    },
+    importUpdateFields: {
+      ...DEFAULT_FLEXI_IMPORT_UPDATE_FIELDS,
+      ...next.importUpdateFields,
     },
     stromShopRootCode: next.stromShopRootCode ?? '',
   }
@@ -144,6 +150,7 @@ function editableFlexiSnapshot(
     stromRootCode: settings.stromRootCode,
     stromShopRootCode: settings.stromShopRootCode,
     syncCategoriesFromStrom: settings.syncCategoriesFromStrom,
+    importUpdateFields: settings.importUpdateFields,
     sizeAttributeId: settings.sizeAttributeId,
     webhookUrl: settings.webhookUrl,
     documentSend: settings.documentSend,
@@ -219,6 +226,7 @@ export function FlexiSettingsForm() {
         stromRootCode: settings.stromRootCode,
         stromShopRootCode: settings.stromShopRootCode,
         syncCategoriesFromStrom: settings.syncCategoriesFromStrom,
+        importUpdateFields: settings.importUpdateFields,
         sizeAttributeId: settings.sizeAttributeId,
         webhookUrl: settings.webhookUrl,
         documentSend: settings.documentSend,
@@ -596,6 +604,93 @@ export function FlexiSettingsForm() {
                 onChange={(e) => setSettings((s) => ({ ...s, defaultCategoryId: e.target.value }))}
                 placeholder="uuid категорії магазину, не Flexi id"
               />
+            </div>
+          </div>
+          <div className="space-y-3 rounded-lg border p-3">
+            <div>
+              <p className="font-medium">Що оновлювати з ABRA (існуючі записи)</p>
+              <p className="text-sm text-muted-foreground">
+                Вимкнені поля не перезаписуються при «Оновити існуючі», webhook і poll. Нові
+                товари/категорії при імпорті створюються повністю.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Склад і ціни</p>
+                {(
+                  [
+                    ['stock', 'Кількість на складі'],
+                    ['prices', 'Роздрібна ціна'],
+                    ['quantityPrices', 'Оптові знижки за кількістю'],
+                    ['weight', 'Вага'],
+                    ['cnCode', 'CN / nomen код'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <div key={key} className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+                    <span className="text-sm">{label}</span>
+                    <Switch
+                      checked={settings.importUpdateFields[key]}
+                      onCheckedChange={(checked) =>
+                        setSettings((s) => ({
+                          ...s,
+                          importUpdateFields: { ...s.importUpdateFields, [key]: checked },
+                        }))
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Товари</p>
+                {(
+                  [
+                    ['productNames', 'Назви'],
+                    ['productDescriptions', 'Описи'],
+                    ['productSeo', 'SEO (meta title/desc)'],
+                    ['productLatinName', 'Latin name'],
+                    ['productCategory', 'Категорія'],
+                    ['sizeAttributes', 'Атрибут розміру / container'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <div key={key} className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+                    <span className="text-sm">{label}</span>
+                    <Switch
+                      checked={settings.importUpdateFields[key]}
+                      onCheckedChange={(checked) =>
+                        setSettings((s) => ({
+                          ...s,
+                          importUpdateFields: { ...s.importUpdateFields, [key]: checked },
+                        }))
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Категорії</p>
+                {(
+                  [
+                    ['categoryNames', 'Назви'],
+                    ['categoryDescriptions', 'Опис (txtNad)'],
+                    ['categoryFooters', 'Footer опис (txtPod)'],
+                    ['categoryLatinName', 'Latin name'],
+                    ['categoryTree', 'Дерево (parent, position)'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <div key={key} className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+                    <span className="text-sm">{label}</span>
+                    <Switch
+                      checked={settings.importUpdateFields[key]}
+                      onCheckedChange={(checked) =>
+                        setSettings((s) => ({
+                          ...s,
+                          importUpdateFields: { ...s.importUpdateFields, [key]: checked },
+                        }))
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </CardContent>

@@ -399,6 +399,7 @@
     "title": "Katalog",
     "titlePlants": "Pflanzenkatalog",
     "defaultDescription": "Wählen Sie eine Kategorie oder durchstöbern Sie das gesamte Sortiment",
+    "categoryFooterHeading": "Mehr über diese Kategorie",
     "categories": "Kategorien",
     "categoryProducts": "Kategorieprodukte",
     "allProducts": "Alle Produkte",
@@ -543,6 +544,7 @@
     }
   },
   "recentlyViewed": {
+    "title": "Zuletzt angesehen",
     "eyebrow": "Ihr Verlauf",
     "subtitle": "Kürzlich angesehene Produkte — mit einem Klick zurückkehren",
     "count": "{count, plural, one {# Produkt} other {# Produkte}}",

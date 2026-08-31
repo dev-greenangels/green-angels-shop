@@ -1,5 +1,43 @@
 export type FlexiDocumentSendMode = 'site' | 'abra' | 'both' | 'none'
 
+export type FlexiImportUpdateFields = {
+  stock: boolean
+  prices: boolean
+  quantityPrices: boolean
+  weight: boolean
+  cnCode: boolean
+  sizeAttributes: boolean
+  productNames: boolean
+  productDescriptions: boolean
+  productSeo: boolean
+  productLatinName: boolean
+  productCategory: boolean
+  categoryNames: boolean
+  categoryDescriptions: boolean
+  categoryFooters: boolean
+  categoryLatinName: boolean
+  categoryTree: boolean
+}
+
+export const DEFAULT_FLEXI_IMPORT_UPDATE_FIELDS: FlexiImportUpdateFields = {
+  stock: true,
+  prices: true,
+  quantityPrices: true,
+  weight: true,
+  cnCode: true,
+  sizeAttributes: true,
+  productNames: true,
+  productDescriptions: true,
+  productSeo: true,
+  productLatinName: true,
+  productCategory: true,
+  categoryNames: true,
+  categoryDescriptions: true,
+  categoryFooters: true,
+  categoryLatinName: true,
+  categoryTree: true,
+}
+
 export type FlexiScheduleMode = 'daily' | 'weekly' | 'monthly'
 
 export type FlexiFullSyncSchedule = {
@@ -37,6 +75,7 @@ export type FlexiPublicSettings = {
   stromRootCode: string
   stromShopRootCode: string
   syncCategoriesFromStrom: boolean
+  importUpdateFields: FlexiImportUpdateFields
   sizeAttributeId: string
   webhookUrl: string
   hasWebhookSecKey: boolean
@@ -85,6 +124,7 @@ export type FlexiSettingsPatch = Partial<{
   stromRootCode: string
   stromShopRootCode: string
   syncCategoriesFromStrom: boolean
+  importUpdateFields: Partial<FlexiImportUpdateFields>
   sizeAttributeId: string
   webhookSecKey: string
   webhookUrl: string

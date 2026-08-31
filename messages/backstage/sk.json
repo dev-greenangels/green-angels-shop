@@ -124,6 +124,8 @@
     "categoryActivated": "Kategória aktivovaná",
     "categoryDeactivated": "Kategória deaktivovaná",
     "categoryDeleted": "Kategória odstránená",
+    "categoryReordered": "Poradie kategórií uložené",
+    "reorderFailed": "Nepodarilo sa zmeniť poradie",
     "statusChangeFailed": "Nepodarilo sa zmeniť stav",
     "deleteFailed": "Nepodarilo sa odstrániť",
     "deletedCount": "Odstránené: {count}",

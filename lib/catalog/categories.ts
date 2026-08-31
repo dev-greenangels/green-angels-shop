@@ -28,6 +28,7 @@ export type CategoryTreeNode = {
   metaTitle?: string | null
   metaDesc?: string | null
   productCount: number
+  isStockDepleted?: boolean
   children: CategoryTreeNode[]
 }
 
@@ -71,6 +72,7 @@ function mapTreeNode(node: CategoryTreeNode): CatalogCategory {
     metaDesc: node.metaDesc?.trim() || undefined,
     image: resolveCategoryThumbUrl(node.imageUrl || node.image),
     plantCount: getSubtreeProductCount(node),
+    isStockDepleted: node.isStockDepleted ?? false,
   }
 }
 

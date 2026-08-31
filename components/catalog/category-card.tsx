@@ -44,6 +44,7 @@ export function CategoryCard({ category, className, compact = false }: CategoryC
         'group/card block h-full rounded-xl outline-none',
         'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
         '[-webkit-tap-highlight-color:transparent] select-none',
+        category.isStockDepleted && 'opacity-[0.82] saturate-[0.88]',
         className,
       )}
     >
@@ -51,6 +52,7 @@ export function CategoryCard({ category, className, compact = false }: CategoryC
         className={cn(
           '@container relative aspect-square gap-0 overflow-hidden rounded-xl border-0 p-0 shadow-md',
           'transition-[box-shadow] duration-200 ease-out hover:shadow-lg',
+          category.isStockDepleted && 'grayscale-[0.12]',
         )}
       >
         <CategoryCoverImage

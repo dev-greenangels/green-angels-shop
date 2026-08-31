@@ -124,6 +124,8 @@
     "categoryActivated": "Категорію активовано",
     "categoryDeactivated": "Категорію деактивовано",
     "categoryDeleted": "Категорію видалено",
+    "categoryReordered": "Порядок категорій збережено",
+    "reorderFailed": "Не вдалося змінити порядок",
     "statusChangeFailed": "Не вдалося змінити статус",
     "deleteFailed": "Не вдалося видалити",
     "deletedCount": "Видалено: {count}",

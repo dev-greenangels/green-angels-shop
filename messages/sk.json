@@ -399,6 +399,7 @@
     "title": "Katalóg",
     "titlePlants": "Katalóg rastlín",
     "defaultDescription": "Vyberte kategóriu alebo prehliadajte celú ponuku",
+    "categoryFooterHeading": "Podrobnejšie o ponuke",
     "categories": "Kategórie",
     "categoryProducts": "Produkty v kategórii",
     "allProducts": "Všetky produkty",
@@ -543,6 +544,7 @@
     }
   },
   "recentlyViewed": {
+    "title": "Naposledy zobrazené",
     "eyebrow": "Vaša história",
     "subtitle": "Produkty, ktoré ste nedávno zobrazili — vráťte sa k nim jedným kliknutím",
     "count": "{count, plural, one {# produkt} few {# produkty} other {# produktov}}",

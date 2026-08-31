@@ -264,3 +264,16 @@ export async function deleteCategory(id: string): Promise<void> {
   })
   if (!res.ok) throw new Error(await parseError(res))
 }
+
+export async function reorderCategories(
+  parentId: string | null,
+  orderedIds: string[],
+): Promise<void> {
+  const res = await fetch('/api/backstage/categories/reorder', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ parentId, orderedIds }),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+}

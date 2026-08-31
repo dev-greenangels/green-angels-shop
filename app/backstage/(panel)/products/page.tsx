@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { ChevronLeft, ChevronRight, Edit, Filter, Loader2, Plus, Search, Trash2, X } from 'lucide-react'
@@ -48,6 +48,7 @@ import {
   setProductPublished,
   type BackstageProductListItem,
 } from '@/lib/backstage/products'
+import { useDebouncedUrlSearch } from '@/lib/backstage/use-debounced-url-search'
 const PAGE_SIZE = 100
 
 type PublishedFilter = 'all' | 'true' | 'false'
@@ -113,14 +114,23 @@ function ProductsPageContent() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const urlSearch = searchParams.get('q') ?? ''
   const categoryFilter = searchParams.get('category') ?? 'all'
   const publishedFilter = parsePublished(searchParams.get('published'))
   const stockFilter = parseStock(searchParams.get('stock'))
   const page = Math.max(1, Number(searchParams.get('page') || '1') || 1)
 
-  const [searchInput, setSearchInput] = useState(urlSearch)
-  const [search, setSearch] = useState(urlSearch)
+  const { searchInput, setSearchInput, search, writeUrl, reset: resetSearch } =
+    useDebouncedUrlSearch({ searchParams, pathname, router })
+
+  const prevCommittedSearchRef = useRef(search)
+  useEffect(() => {
+    if (prevCommittedSearchRef.current === search) return
+    prevCommittedSearchRef.current = search
+    writeUrl(search, (params) => {
+      params.delete('page')
+    })
+  }, [search, writeUrl])
+
   const [loading, setLoading] = useState(true)
   const [bulkLoading, setBulkLoading] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null)
@@ -141,23 +151,30 @@ function ProductsPageContent() {
       stock: StockFilter
       page: number
     }) => {
-      const qs = buildProductsListQuery(next)
-      const href = qs ? `${pathname}?${qs}` : pathname
-      router.replace(href, { scroll: false })
+      writeUrl(next.search, (params) => {
+        if (next.category !== 'all') params.set('category', next.category)
+        else params.delete('category')
+        if (next.published !== 'all') params.set('published', next.published)
+        else params.delete('published')
+        if (next.stock !== 'all') params.set('stock', next.stock)
+        else params.delete('stock')
+        if (next.page > 1) params.set('page', String(next.page))
+        else params.delete('page')
+      })
     },
-    [pathname, router],
+    [writeUrl],
   )
 
   const listQueryString = useMemo(
     () =>
       buildProductsListQuery({
-        search: searchInput,
+        search,
         category: categoryFilter,
         published: publishedFilter,
         stock: stockFilter,
         page,
       }),
-    [searchInput, categoryFilter, publishedFilter, stockFilter, page],
+    [search, categoryFilter, publishedFilter, stockFilter, page],
   )
 
   const listHref = listQueryString ? `${pathname}?${listQueryString}` : pathname
@@ -194,32 +211,11 @@ function ProductsPageContent() {
   }, [search, categoryFilter, publishedFilter, stockFilter, page, tt, contentLocale, contentLocaleReady])
 
   useEffect(() => {
-    setSearchInput(urlSearch)
-    setSearch(urlSearch)
-  }, [urlSearch])
-
-  useEffect(() => {
     if (!contentLocaleReady) return
     void fetchCategoryTree(contentLocale, { edit: false })
       .then((tree) => setCategories(flattenCategories(tree)))
       .catch(() => {})
   }, [contentLocale, contentLocaleReady])
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const next = searchInput.trim()
-      if (next === search.trim()) return
-      setSearch(next)
-      syncUrl({
-        search: next,
-        category: categoryFilter,
-        published: publishedFilter,
-        stock: stockFilter,
-        page: 1,
-      })
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchInput, search, categoryFilter, publishedFilter, stockFilter, syncUrl])
 
   useEffect(() => {
     void loadProducts()
@@ -232,7 +228,7 @@ function ProductsPageContent() {
     page?: number
   }) => {
     syncUrl({
-      search: searchInput,
+      search: search.trim(),
       category: patch.category ?? categoryFilter,
       published: patch.published ?? publishedFilter,
       stock: patch.stock ?? stockFilter,
@@ -241,8 +237,7 @@ function ProductsPageContent() {
   }
 
   const resetFilters = () => {
-    setSearchInput('')
-    setSearch('')
+    resetSearch()
     syncUrl({
       search: '',
       category: 'all',

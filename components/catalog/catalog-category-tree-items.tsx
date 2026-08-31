@@ -74,6 +74,7 @@ export function CatalogCategoryTreeItems({
               'min-w-0 flex-1 rounded-md transition-colors hover:bg-muted hover:text-primary',
               isMobile ? 'px-2 py-2 text-[18px] tracking-wide' : 'px-2 py-1.5 text-sm',
               isActive ? 'bg-primary/10 font-semibold text-primary' : 'text-foreground',
+              node.isStockDepleted && !isActive && 'opacity-70 text-muted-foreground',
             )}
             onClick={onNavigate}
           >

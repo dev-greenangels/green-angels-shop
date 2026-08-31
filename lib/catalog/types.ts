@@ -84,4 +84,5 @@ export type CatalogCategory = {
   metaDesc?: string
   image: string
   plantCount: number
+  isStockDepleted?: boolean
 }

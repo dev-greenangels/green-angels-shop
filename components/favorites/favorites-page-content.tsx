@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Heart } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import {
   AccountPageEmpty,
@@ -31,6 +31,7 @@ function parseCatalogProductsPayload(data: unknown): CatalogProductListItem[] {
 
 export function FavoritesPageContent() {
   const catalogHref = useCatalogHref()
+  const locale = useLocale()
   const t = useTranslations('favorites')
   const tc = useTranslations('common')
   const { user } = useSession()
@@ -55,9 +56,10 @@ export function FavoritesPageContent() {
     setLoading(true)
     setError(null)
 
-    void fetch(`/api/catalog/products?ids=${encodeURIComponent(idsKey)}`, {
-      cache: 'no-store',
-    })
+    void fetch(
+      `/api/catalog/products?ids=${encodeURIComponent(idsKey)}&locale=${encodeURIComponent(locale)}`,
+      { cache: 'no-store' },
+    )
       .then(async (res) => {
         if (!res.ok) {
           throw new Error(t('loadError'))
@@ -88,7 +90,7 @@ export function FavoritesPageContent() {
     return () => {
       cancelled = true
     }
-  }, [idsKey, productIds, pruneToExisting, reloadToken, t, user?.id])
+  }, [idsKey, locale, productIds, pruneToExisting, reloadToken, t, user?.id])
 
   if (!productIds.length) {
     return (

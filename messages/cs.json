@@ -399,6 +399,7 @@
     "title": "Catalog",
     "titlePlants": "Plant catalog",
     "defaultDescription": "Choose a category or browse the full assortment",
+    "categoryFooterHeading": "Více o kategorii",
     "categories": "Categories",
     "categoryProducts": "Category products",
     "allProducts": "All products",
@@ -543,6 +544,7 @@
     }
   },
   "recentlyViewed": {
+    "title": "Naposledy zobrazené",
     "eyebrow": "Your history",
     "subtitle": "Products you recently viewed — return to them in one click",
     "count": "{count, plural, one {# product} other {# products}}",

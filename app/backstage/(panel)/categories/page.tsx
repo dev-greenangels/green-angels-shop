@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   FolderTree,
   Loader2,
   MoreHorizontal,
@@ -58,6 +59,7 @@ import {
   fetchCategoryTree,
   flattenCategoryTree,
   categoryLabel,
+  reorderCategories,
   setCategoryActive,
   updateCategory,
   type CategoryFormValues,
@@ -103,39 +105,72 @@ function patchNodeInTree(
   })
 }
 
+function reorderSiblingsInTree(
+  nodes: CategoryTreeNode[],
+  parentId: string | null,
+  orderedIds: string[],
+): CategoryTreeNode[] {
+  if (parentId === null) {
+    const byId = new Map(nodes.map((node) => [node.id, node]))
+    return orderedIds.map((id) => byId.get(id)).filter((node): node is CategoryTreeNode => Boolean(node))
+  }
+
+  return nodes.map((node) => {
+    if (node.id === parentId) {
+      const byId = new Map(node.children.map((child) => [child.id, child]))
+      return {
+        ...node,
+        children: orderedIds.map((id) => byId.get(id)).filter((child): child is CategoryTreeNode => Boolean(child)),
+      }
+    }
+    if (node.children.length === 0) return node
+    return { ...node, children: reorderSiblingsInTree(node.children, parentId, orderedIds) }
+  })
+}
+
 function CategoryRow({
   node,
   depth,
+  siblingIndex,
+  siblings,
   expanded,
   selected,
   togglingActive,
+  reordering,
   onToggleExpand,
   onToggleSelect,
   onToggleActive,
   onAddChild,
   onEdit,
   onDelete,
+  onMoveSibling,
 }: {
   node: CategoryTreeNode
   depth: number
+  siblingIndex: number
+  siblings: CategoryTreeNode[]
   expanded: Set<string>
   selected: Set<string>
   togglingActive: Set<string>
+  reordering: Set<string>
   onToggleExpand: (id: string) => void
   onToggleSelect: (id: string, checked: boolean) => void
   onToggleActive: (node: CategoryTreeNode, isActive: boolean) => void
   onAddChild: (node: CategoryTreeNode) => void
   onEdit: (node: CategoryTreeNode) => void
   onDelete: (node: CategoryTreeNode) => void
+  onMoveSibling: (node: CategoryTreeNode, direction: -1 | 1, siblings: CategoryTreeNode[], index: number) => void
 }) {
   const tActions = useTranslations('actions')
   const tAria = useTranslations('aria')
   const tStatus = useTranslations('status')
-  const tCommon = useTranslations('common')
   const hasChildren = node.children.length > 0
   const isExpanded = expanded.has(node.id)
   const isSelected = selected.has(node.id)
   const isToggling = togglingActive.has(node.id)
+  const isReordering = reordering.has(node.id)
+  const canMoveUp = siblingIndex > 0 && !isReordering
+  const canMoveDown = siblingIndex < siblings.length - 1 && !isReordering
 
   return (
     <>
@@ -210,8 +245,33 @@ function CategoryRow({
           ) : null}
         </div>
 
-        <div className="flex shrink-0 items-center gap-3">
-          <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 flex-col gap-0.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
+              disabled={!canMoveUp}
+              onClick={() => onMoveSibling(node, -1, siblings, siblingIndex)}
+              aria-label={tActions('moveUp')}
+            >
+              <ChevronUp className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
+              disabled={!canMoveDown}
+              onClick={() => onMoveSibling(node, 1, siblings, siblingIndex)}
+              aria-label={tActions('moveDown')}
+            >
+              <ChevronDown className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-3">
             {isToggling ? (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             ) : null}
@@ -269,20 +329,24 @@ function CategoryRow({
       </div>
 
       {hasChildren && isExpanded
-        ? node.children.map((child) => (
+        ? node.children.map((child, index) => (
             <CategoryRow
               key={child.id}
               node={child}
               depth={depth + 1}
+              siblingIndex={index}
+              siblings={node.children}
               expanded={expanded}
               selected={selected}
               togglingActive={togglingActive}
+              reordering={reordering}
               onToggleExpand={onToggleExpand}
               onToggleSelect={onToggleSelect}
               onToggleActive={onToggleActive}
               onAddChild={onAddChild}
               onEdit={onEdit}
               onDelete={onDelete}
+              onMoveSibling={onMoveSibling}
             />
           ))
         : null}
@@ -302,6 +366,7 @@ export default function CategoriesPage() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [togglingActive, setTogglingActive] = useState<Set<string>>(new Set())
+  const [reordering, setReordering] = useState<Set<string>>(new Set())
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create')
   const [editingNode, setEditingNode] = useState<CategoryTreeNode | null>(null)
@@ -441,6 +506,40 @@ export default function CategoriesPage() {
       toast.error(err instanceof Error ? err.message : tt('statusChangeFailed'))
     } finally {
       setTogglingActive((prev) => {
+        const next = new Set(prev)
+        next.delete(node.id)
+        return next
+      })
+    }
+  }
+
+  const handleMoveSibling = async (
+    node: CategoryTreeNode,
+    direction: -1 | 1,
+    siblings: CategoryTreeNode[],
+    index: number,
+  ) => {
+    const nextIndex = index + direction
+    if (nextIndex < 0 || nextIndex >= siblings.length) return
+
+    const reordered = [...siblings]
+    const [moved] = reordered.splice(index, 1)
+    reordered.splice(nextIndex, 0, moved)
+    const orderedIds = reordered.map((item) => item.id)
+    const parentId = node.parentId
+
+    const previousTree = tree
+    setReordering((prev) => new Set(prev).add(node.id))
+    setTree((prev) => reorderSiblingsInTree(prev, parentId, orderedIds))
+
+    try {
+      await reorderCategories(parentId, orderedIds)
+      toast.success(tt('categoryReordered'))
+    } catch (err) {
+      setTree(previousTree)
+      toast.error(err instanceof Error ? err.message : tt('reorderFailed'))
+    } finally {
+      setReordering((prev) => {
         const next = new Set(prev)
         next.delete(node.id)
         return next
@@ -671,20 +770,24 @@ export default function CategoriesPage() {
                   />
                   <span className="text-xs text-muted-foreground">{tActions('selectAll')}</span>
                 </div>
-                {tree.map((node) => (
+                {tree.map((node, index) => (
                   <CategoryRow
                     key={node.id}
                     node={node}
                     depth={0}
+                    siblingIndex={index}
+                    siblings={tree}
                     expanded={expanded}
                     selected={selected}
                     togglingActive={togglingActive}
+                    reordering={reordering}
                     onToggleExpand={toggleExpanded}
                     onToggleSelect={toggleSelect}
                     onToggleActive={handleToggleActive}
                     onAddChild={openCreateChild}
                     onEdit={openEdit}
                     onDelete={setDeleteTarget}
+                    onMoveSibling={handleMoveSibling}
                   />
                 ))}
               </div>

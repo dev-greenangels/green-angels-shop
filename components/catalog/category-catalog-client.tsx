@@ -165,7 +165,7 @@ export function CategoryCatalogClient({
           }
           productsSection={
             showProducts ? (
-              <section>
+              <section className={cn(showSubcategories && 'border-t border-border/70 pt-10 md:pt-12')}>
                 {showSubcategories ? (
                   <h2 className="mb-6 font-serif text-2xl font-semibold text-foreground">
                     {t('categoryProducts')}

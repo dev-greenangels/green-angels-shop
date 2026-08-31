@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { LayoutGrid } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import { CatalogCategoryTreeItems } from '@/components/catalog/catalog-category-tree-items'
 import type { CategoryTreeNode } from '@/lib/catalog/categories'
@@ -30,6 +30,7 @@ export function CatalogCategorySidebar({
   maxHeightPx?: number | null
 }) {
   const pathname = usePathname()
+  const locale = useLocale()
   const catalogHref = useCatalogHref()
   const catalogRootSlug = useCatalogRootSlug()
   const t = useTranslations('catalog')
@@ -48,7 +49,7 @@ export function CatalogCategorySidebar({
     setLoading(true)
     setUnavailable(false)
 
-    void fetch('/api/catalog/categories', { cache: 'no-store' })
+    void fetch(`/api/catalog/categories?locale=${encodeURIComponent(locale)}`, { cache: 'no-store' })
       .then((res) => {
         if (!res.ok) {
           setUnavailable(true)
@@ -80,7 +81,7 @@ export function CatalogCategorySidebar({
     return () => {
       cancelled = true
     }
-  }, [activeSlug])
+  }, [activeSlug, locale])
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => {

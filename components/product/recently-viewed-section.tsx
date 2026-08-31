@@ -1,7 +1,7 @@
 'use client'
 
 import { ArrowLeft, ArrowRight } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { ProductCard } from '@/components/product-card'
@@ -11,6 +11,7 @@ import { mapListItemToPlant } from '@/lib/catalog/map-product'
 import { PRODUCT_CARD_CAROUSEL_SLOT_CLASS } from '@/lib/catalog/product-card-layout'
 import type { CatalogProductListItem } from '@/lib/catalog/types'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
+import { pickHomeCmsText } from '@/lib/home/cms-or-translated'
 import {
   registerRecentlyViewedSettingsLoader,
   useRecentlyViewedIds,
@@ -84,6 +85,7 @@ export function RecentlyViewedSection({
   shell = true,
   initialSettings,
 }: RecentlyViewedSectionProps) {
+  const locale = useLocale()
   const t = useTranslations('recentlyViewed')
   const scrollRef = useRef<HTMLDivElement>(null)
   const [canScrollPrev, setCanScrollPrev] = useState(false)
@@ -150,7 +152,10 @@ export function RecentlyViewedSection({
     let cancelled = false
     setLoading(true)
 
-    void fetch(`/api/catalog/products?ids=${encodeURIComponent(idsKey)}`, { cache: 'no-store' })
+    void fetch(
+      `/api/catalog/products?ids=${encodeURIComponent(idsKey)}&locale=${encodeURIComponent(locale)}`,
+      { cache: 'no-store' },
+    )
       .then(async (res) => {
         if (!res.ok) return []
         const data = (await res.json()) as CatalogProductListItem[]
@@ -171,7 +176,7 @@ export function RecentlyViewedSection({
     return () => {
       cancelled = true
     }
-  }, [idsKey, visibleIds])
+  }, [idsKey, visibleIds, locale])
 
   useEffect(() => {
     const el = scrollRef.current
@@ -196,13 +201,19 @@ export function RecentlyViewedSection({
   if (!visibleIds.length) return null
   if (!loading && !plants.length) return null
 
+  const sectionTitle = pickHomeCmsText(
+    settings.title,
+    DEFAULT_RECENTLY_VIEWED_SETTINGS.title,
+    t('title'),
+  )
+
   const inner = (
     <>
       <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h2 className="font-serif text-2xl font-bold leading-snug text-foreground md:text-3xl">
-              {settings.title}
+              {sectionTitle}
             </h2>
             <p className="text-sm text-muted-foreground md:text-base">
               {t('count', { count: itemCount })}
@@ -265,7 +276,7 @@ export function RecentlyViewedSection({
           className,
           'relative overflow-hidden rounded-2xl border border-border/50 bg-muted/40 p-5 shadow-sm md:p-7',
         )}
-        aria-label={settings.title}
+        aria-label={sectionTitle}
       >
         {inner}
       </section>
@@ -274,8 +285,8 @@ export function RecentlyViewedSection({
 
   return (
     <section
-      className="relative overflow-hidden border-y border-border/40 bg-transparent py-8 md:py-10"
-      aria-label={settings.title}
+      className="relative overflow-hidden border-y border-border/70 bg-transparent py-8 md:py-10"
+      aria-label={sectionTitle}
     >
       <div className={cn(siteContentShellClassName, className)}>{inner}</div>
     </section>

@@ -398,6 +398,7 @@
     "title": "Каталог",
     "titlePlants": "Каталог рослин",
     "defaultDescription": "Оберіть категорію або перегляньте весь асортимент",
+    "categoryFooterHeading": "Детальніше про категорію",
     "categories": "Категорії",
     "categoryProducts": "Товари категорії",
     "allProducts": "Усі товари",
@@ -542,6 +543,7 @@
     }
   },
   "recentlyViewed": {
+    "title": "Останні переглянуті",
     "eyebrow": "Ваша історія",
     "subtitle": "Товари, які ви нещодавно переглядали — поверніться до них одним кліком",
     "count": "{count, plural, one {# товар} few {# товари} other {# товарів}}",

@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -31,6 +31,7 @@ import {
   updateProductImages,
   type BackstageProductListItem,
 } from '@/lib/backstage/products'
+import { useDebouncedUrlSearch } from '@/lib/backstage/use-debounced-url-search'
 import { fetchCategoryTree, type CategoryTreeNode } from '@/lib/backstage/categories'
 import {
   buildVariantLabel,
@@ -276,16 +277,32 @@ export function ProductsBulkTableEditor() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const urlQ = searchParams.get('q') ?? ''
   const urlPage = Math.max(1, Number(searchParams.get('page') || '1') || 1)
+
+  const { searchInput, setSearchInput, search, writeUrl, commitNow } = useDebouncedUrlSearch({
+    searchParams,
+    pathname,
+    router,
+  })
+
+  const skipPageUrlSyncRef = useRef(false)
+  const prevCommittedSearchRef = useRef(search)
+
+  useEffect(() => {
+    if (prevCommittedSearchRef.current === search) return
+    prevCommittedSearchRef.current = search
+    setPage(1)
+    skipPageUrlSyncRef.current = true
+    writeUrl(search, (params) => {
+      params.delete('page')
+    })
+  }, [search, writeUrl])
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [page, setPage] = useState(urlPage)
   const [totalPages, setTotalPages] = useState(1)
   const [rows, setRows] = useState<DraftRow[]>([])
-  const [searchInput, setSearchInput] = useState(urlQ)
-  const [search, setSearch] = useState(urlQ)
   const [busyPhotoId, setBusyPhotoId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [variantDrafts, setVariantDrafts] = useState<Record<string, VariantDraft[]>>({})
@@ -300,13 +317,13 @@ export function ProductsBulkTableEditor() {
 
   const syncUrl = useCallback(
     (nextPage: number, nextSearch: string) => {
-      const params = new URLSearchParams()
-      if (nextSearch.trim()) params.set('q', nextSearch.trim())
-      if (nextPage > 1) params.set('page', String(nextPage))
-      const qs = params.toString()
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+      skipPageUrlSyncRef.current = true
+      writeUrl(nextSearch, (params) => {
+        if (nextPage > 1) params.set('page', String(nextPage))
+        else params.delete('page')
+      })
     },
-    [pathname, router],
+    [writeUrl],
   )
 
   const load = useCallback(async (nextPage: number, q: string) => {
@@ -346,21 +363,13 @@ export function ProductsBulkTableEditor() {
   }, [contentLocale])
 
   useEffect(() => {
-    setSearchInput(urlQ)
-    setSearch(urlQ)
-    setPage(urlPage)
-  }, [urlQ, urlPage])
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const next = searchInput.trim()
-      if (next === search.trim()) return
-      setSearch(next)
-      setPage(1)
-      syncUrl(1, next)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchInput, search, syncUrl])
+    if (skipPageUrlSyncRef.current) {
+      skipPageUrlSyncRef.current = false
+      return
+    }
+    const nextPage = Math.max(1, Number(searchParams.get('page') || '1') || 1)
+    setPage((prev) => (prev === nextPage ? prev : nextPage))
+  }, [searchParams])
 
   useEffect(() => {
     void load(page, search)
@@ -701,8 +710,7 @@ export function ProductsBulkTableEditor() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
-                  const next = searchInput.trim()
-                  setSearch(next)
+                  const next = commitNow()
                   setPage(1)
                   syncUrl(1, next)
                 }
@@ -715,11 +723,9 @@ export function ProductsBulkTableEditor() {
               variant="outline"
               size="sm"
               onClick={() => {
-                const next = searchInput.trim()
-                setSearch(next)
+                const next = commitNow()
                 setPage(1)
                 syncUrl(1, next)
-                void load(1, next)
               }}
               disabled={loading}
             >

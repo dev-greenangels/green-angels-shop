@@ -399,6 +399,7 @@
     "title": "Katalógus",
     "titlePlants": "Növénykatalógus",
     "defaultDescription": "Válasszon kategóriát, vagy böngéssze a teljes kínálatot",
+    "categoryFooterHeading": "Részletek a kategóriáról",
     "categories": "Kategóriák",
     "categoryProducts": "Kategória termékei",
     "allProducts": "Összes termék",
@@ -543,6 +544,7 @@
     }
   },
   "recentlyViewed": {
+    "title": "Nemrég megtekintett",
     "eyebrow": "Előzményei",
     "subtitle": "Nemrég megtekintett termékek — egy kattintással visszatérhet hozzájuk",
     "count": "{count, plural, one {# termék} other {# termék}}",

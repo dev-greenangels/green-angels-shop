@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight, LayoutGrid } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import { CatalogCategoryTreeItems } from '@/components/catalog/catalog-category-tree-items'
 import type { CategoryTreeNode } from '@/lib/catalog/categories'
@@ -34,6 +34,7 @@ export function MobileCatalogNav({
   menuOpen = true,
 }: MobileCatalogNavProps) {
   const tn = useTranslations('nav')
+  const locale = useLocale()
   const tc = useTranslations('catalog')
   const te = useTranslations('errors')
   const tCommon = useTranslations('common')
@@ -58,7 +59,7 @@ export function MobileCatalogNav({
     setLoading(true)
     setUnavailable(false)
 
-    void fetch('/api/catalog/categories', { cache: 'no-store' })
+    void fetch(`/api/catalog/categories?locale=${encodeURIComponent(locale)}`, { cache: 'no-store' })
       .then((res) => {
         if (!res.ok) {
           setUnavailable(true)
@@ -88,7 +89,7 @@ export function MobileCatalogNav({
     return () => {
       cancelled = true
     }
-  }, [activeSlug])
+  }, [activeSlug, locale])
 
   // Після відкриття меню / дерева — прокрутити до підсвіченої підкатегорії (або до рядка Каталог).
   useEffect(() => {

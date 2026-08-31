@@ -72,6 +72,8 @@ export type CheckoutFormValues = {
   companyCity: string
   companyPostalCode: string
   preferredShipDate: string
+  /** When shipment is split — dispatch date for the immediate (no availableFrom) order. */
+  preferredShipDateImmediate: string
   comment: string
   promoCode: string
   promoCodes?: string[]
@@ -426,8 +428,14 @@ export function isShippingStepValid(
     return false
   }
 
-  if (options?.requirePreferredShipDate && !values.preferredShipDate.trim()) {
-    return false
+  if (options?.requirePreferredShipDate) {
+    if (options.shipmentSplit) {
+      if (!values.preferredShipDate.trim() || !values.preferredShipDateImmediate.trim()) {
+        return false
+      }
+    } else if (!values.preferredShipDate.trim()) {
+      return false
+    }
   }
 
   if (options?.shipmentSplit && values.splitShipments) {

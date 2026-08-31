@@ -23,6 +23,7 @@
     "legal": "Юридичні документи",
     "reviews": "Відгуки",
     "wholesaleInquiries": "Заявки гурту",
+    "contractWithdrawals": "Відступлення від договору",
     "promotions": "Знижки",
     "referrals": "Реферали",
     "referenceData": "Довідники",
@@ -170,6 +171,7 @@
     "productDescriptionPlaceholder": "Детальний опис товару…",
     "htmlPlaceholder": "'<p>Ваш HTML-контент…</p>'",
     "htmlHint": "Можна вставити готовий HTML. Після перемикання на «Редактор» він відобразиться візуально.",
+    "localeSwitchAutoSave": "Перемикання мови автоматично зберігає поточний текст опису для попередньої мови.",
     "rootCategory": "Коренева категорія",
     "title": "Заголовок",
     "description": "Опис",
@@ -206,6 +208,7 @@
     "characteristicNamePlaceholder": "Освітлення, Полив…",
     "optionNamePlaceholder": "Повне сонце",
     "characteristicOptionsFormat": "Кожен рядок: «Назва» або «Назва | slug»",
+    "characteristicColorOptionsFormat": "Кожен рядок: «Назва», «Назва | slug» або «Назва | slug | #RRGGBB»",
     "characteristicOptionsPlaceholder": "Повне сонце | full-sun\nНапівтінь | partial-shade",
     "addOptionsForList": "Додайте варіанти для списку.",
     "valueTypeChangeHint": "Безпечні переходи: список ↔ мультисписок, текст ↔ число, список → текст. Інші зміни можуть очистити значення у товарів.",
@@ -283,9 +286,16 @@
     "optionsRequired": "Варіанти *",
     "option": "Варіант",
     "slugTechnical": "Slug (технічний)",
+    "color": "Колір",
+    "pickColor": "Обрати колір з палітри",
     "showInFilters": "Показувати у фільтрах каталогу",
     "showOnProductPage": "Показувати на сторінці товару",
     "productPageIcon": "Іконка на сторінці товару",
+    "colorDisplayMode": "Відображення кольору на сторінці товару",
+    "colorDisplayText": "Лише текст",
+    "colorDisplaySwatch": "Лише зразок кольору",
+    "colorDisplayBoth": "Текст і зразок",
+    "colorDisplayModeHint": "Як показувати значення типу «Колір» у блоці характеристик на сторінці товару.",
     "deleteCharacteristic": "Видалити характеристику",
     "values": "Значення ({count})",
     "valuesRequired": "Значення *",
@@ -350,7 +360,9 @@
     "fontSmall": "Малий",
     "fontNormal": "Звичайний",
     "fontMedium": "Середній",
-    "fontLarge": "Великий"
+    "fontLarge": "Великий",
+    "localeSaved": "Опис збережено ({locale})",
+    "localeSaveFailed": "Не вдалося зберегти опис для цієї мови"
   },
   "breadcrumbs": {
     "home": "Головна",
@@ -360,6 +372,15 @@
     "add-plant": "Додати товар",
     "edit": "Редагування товару",
     "table": "Таблиця товарів"
+  },
+  "translationDialog": {
+    "title": "Переклади",
+    "description": "Редагування перекладів для поля «{field}»",
+    "loading": "Завантаження…",
+    "loadFailed": "Не вдалося завантажити переклади",
+    "saveFailed": "Не вдалося зберегти переклади",
+    "openHint": "Відкрити переклади для всіх мов",
+    "fieldFallback": "Поле"
   },
   "contentBanner": {
     "editing": "Редагуєте переклад: {locale}. Slug, ціна та зображення — спільні для всіх мов.",
@@ -639,7 +660,8 @@
     "SELECT": "Список (один вибір)",
     "MULTI_SELECT": "Список (кілька)",
     "NUMBER": "Число",
-    "TEXT": "Текст"
+    "TEXT": "Текст",
+    "COLOR": "Колір"
   },
   "variantAttributeTypes": {
     "UNIVERSAL": "Універсальний",

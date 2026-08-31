@@ -29,6 +29,10 @@ import {
   defaultAboutPageSettings,
   resolveAboutPageCopy,
 } from '@/lib/settings/about'
+import {
+  DEFAULT_WITHDRAWAL_PUBLIC_SETTINGS,
+  type WithdrawalPublicSettings,
+} from '@/lib/settings/withdrawal'
 import type {
   CartCheckoutSettings,
   CatalogPageSettings,
@@ -213,4 +217,11 @@ export function isStoreContactUnavailable(
   fetched: FetchedPublicSiteSettings | { storeUnavailable?: boolean },
 ): boolean {
   return Boolean('storeUnavailable' in fetched && fetched.storeUnavailable)
+}
+
+export function getWithdrawalPublicSettings(
+  fetched: FetchedPublicSiteSettings | PublicSiteSettings,
+): WithdrawalPublicSettings {
+  const settings = 'settings' in fetched ? fetched.settings : fetched
+  return settings.withdrawal ?? DEFAULT_WITHDRAWAL_PUBLIC_SETTINGS
 }

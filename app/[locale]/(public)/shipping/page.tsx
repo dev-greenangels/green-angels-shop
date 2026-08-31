@@ -22,9 +22,9 @@ import {
   findStoreSchedule,
   formatScheduleEntries,
   formatStoreAddress,
-  getStoreMapsUrl,
   getStoreSchedules,
   hasStoreContactInfo,
+  resolveStoreMapsHref,
 } from '@/lib/settings/store-helpers'
 import { cn } from '@/lib/utils'
 
@@ -67,7 +67,7 @@ export default async function ShippingPage() {
   )
   const contactsUnavailable = isStoreContactUnavailable(fetched) || !hasStoreContactInfo(store)
   const address = formatStoreAddress(store)
-  const mapsUrl = getStoreMapsUrl(store)
+  const mapsUrl = resolveStoreMapsHref(store)
   const pickupSchedule =
     findStoreSchedule(store, 'садов', 'центр') ?? getStoreSchedules(store)[0]
 
@@ -127,14 +127,18 @@ export default async function ShippingPage() {
                                   <p className="font-medium text-foreground">
                                     {t('addressLabel')}:
                                   </p>
-                                  <a
-                                    href={mapsUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="underline-offset-4 transition-colors hover:text-primary hover:underline"
-                                  >
-                                    {address}
-                                  </a>
+                                  {mapsUrl ? (
+                                    <a
+                                      href={mapsUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="underline-offset-4 transition-colors hover:text-primary hover:underline"
+                                    >
+                                      {address}
+                                    </a>
+                                  ) : (
+                                    <p>{address}</p>
+                                  )}
                                 </div>
                                 {pickupSchedule ? (
                                   <div>

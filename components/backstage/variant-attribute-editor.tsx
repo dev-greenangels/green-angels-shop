@@ -5,7 +5,8 @@ import { useTranslations } from 'next-intl'
 import { Loader2, Save, Trash2 } from 'lucide-react'
 
 import { VariantAttributeValuesForm } from '@/components/backstage/variant-attribute-values-form'
-import { ContentLocaleLabel, TranslationHint } from '@/components/backstage/content-locale-banner'
+import { ColorDisplayModeField } from '@/components/backstage/color-display-mode-field'
+import { TranslationHint, ContentLocaleLabel, LocaleTranslationButton } from '@/components/backstage/content-locale-banner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -29,6 +30,7 @@ import {
   type ValueDraft,
   type VariantAttribute,
   type VariantAttributeType,
+  type ColorDisplayMode,
 } from '@/lib/backstage/variant-attributes'
 import { VARIANT_ATTRIBUTE_ICON_OPTIONS } from '@/lib/variant-attributes/icons'
 import { cn } from '@/lib/utils'
@@ -38,6 +40,7 @@ export function VariantAttributeEditor({
   saving,
   onSave,
   onDelete,
+  onReload,
 }: {
   attribute: VariantAttribute
   saving?: boolean
@@ -52,9 +55,11 @@ export function VariantAttributeEditor({
     participatesInLabel: boolean
     showOnProductPage: boolean
     icon: string | null
+    colorDisplayMode: ColorDisplayMode | null
     values: ValueDraft[]
   }) => Promise<void>
   onDelete: () => Promise<void>
+  onReload?: () => void
 }) {
   const tActions = useTranslations('actions')
   const tHints = useTranslations('hints')
@@ -77,9 +82,13 @@ export function VariantAttributeEditor({
   const [participatesInLabel, setParticipatesInLabel] = useState(attribute.participatesInLabel)
   const [showOnProductPage, setShowOnProductPage] = useState(attribute.showOnProductPage)
   const [icon, setIcon] = useState(attribute.icon ?? '')
+  const [colorDisplayMode, setColorDisplayMode] = useState<ColorDisplayMode>(
+    attribute.colorDisplayMode ?? 'BOTH',
+  )
   const [values, setValues] = useState<ValueDraft[]>(() => attributeToValueDrafts(attribute))
 
   const showUnit = attributeTypeNeedsUnit(valueType)
+  const isColorType = valueType === 'COLOR'
 
   useEffect(() => {
     setName(attribute.name)
@@ -92,6 +101,7 @@ export function VariantAttributeEditor({
     setParticipatesInLabel(attribute.participatesInLabel)
     setShowOnProductPage(attribute.showOnProductPage)
     setIcon(attribute.icon ?? '')
+    setColorDisplayMode(attribute.colorDisplayMode ?? 'BOTH')
     setValues(attributeToValueDrafts(attribute))
   }, [attribute])
 
@@ -111,11 +121,12 @@ export function VariantAttributeEditor({
           participatesInLabel,
           showOnProductPage,
           showOnProductPage ? icon.trim() || null : null,
+          isColorType ? colorDisplayMode : null,
           values,
         ),
         baseline,
       ),
-    [name, slug, valueType, description, unit, legacyId, isFilterable, participatesInLabel, showOnProductPage, icon, values, baseline],
+    [name, slug, valueType, description, unit, legacyId, isFilterable, participatesInLabel, showOnProductPage, icon, colorDisplayMode, isColorType, values, baseline],
   )
 
   const handleSave = async () => {
@@ -130,17 +141,60 @@ export function VariantAttributeEditor({
       participatesInLabel,
       showOnProductPage,
       icon: showOnProductPage ? icon.trim() || null : null,
+      colorDisplayMode: isColorType ? colorDisplayMode : null,
       values,
     })
   }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      <div className="mb-4 flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-border/60 pb-4">
+        <div className="min-w-0 space-y-1">
+          <h2 className="font-serif text-xl font-semibold text-foreground">
+            {name.trim() || slug.trim() || attribute.slug}
+          </h2>
+          <p className="text-sm text-muted-foreground">{tPages('editHint')}</p>
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => void onDelete()}
+            disabled={saving}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            {tActions('deleteAttribute')}
+          </Button>
+          <Button type="button" size="sm" onClick={() => void handleSave()} disabled={saving || !isDirty}>
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {tActions('saving')}
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                {tActions('saveChanges')}
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
         <div className="space-y-4 pb-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <ContentLocaleLabel htmlFor="edit-attr-name">{tLabels('nameRequired')}</ContentLocaleLabel>
+              <ContentLocaleLabel
+                htmlFor="edit-attr-name"
+                translationTarget={{ kind: 'variant-attribute-name', attributeId: attribute.id }}
+                translationFieldLabel={tLabels('nameRequired')}
+                onTranslationsSaved={onReload}
+              >
+                {tLabels('nameRequired')}
+              </ContentLocaleLabel>
               <Input
                 id="edit-attr-name"
                 value={name}
@@ -158,36 +212,38 @@ export function VariantAttributeEditor({
                 placeholder={tHints('optional')}
               />
             </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="edit-attr-type">{tPages('attributeType')}</Label>
-              <Select
-                value={valueType}
-                onValueChange={(v) => setValueType(v as VariantAttributeType)}
-              >
-                <SelectTrigger id="edit-attr-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {VARIANT_ATTRIBUTE_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {tAttrTypes(type)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">{tAttrTypeHints(valueType)}</p>
-              <p className="text-xs text-muted-foreground">{tHints('attributeTypeChangeHint')}</p>
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="edit-attr-slug">{tLabels('slugTechnical')}</Label>
-              <Input
-                id="edit-attr-slug"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                className="font-mono text-sm"
-                placeholder="obkhvat-krony"
-              />
-              <p className="text-xs text-muted-foreground">{tHints('attributeSlugHint')}</p>
+            <div className="flex flex-col gap-4 sm:col-span-2 lg:flex-row lg:items-start">
+              <div className="min-w-0 flex-1 space-y-2">
+                <Label htmlFor="edit-attr-type">{tPages('attributeType')}</Label>
+                <Select
+                  value={valueType}
+                  onValueChange={(v) => setValueType(v as VariantAttributeType)}
+                >
+                  <SelectTrigger id="edit-attr-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VARIANT_ATTRIBUTE_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {tAttrTypes(type)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{tAttrTypeHints(valueType)}</p>
+                <p className="text-xs text-muted-foreground">{tHints('attributeTypeChangeHint')}</p>
+              </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <Label htmlFor="edit-attr-slug">{tLabels('slugTechnical')}</Label>
+                <Input
+                  id="edit-attr-slug"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  className="font-mono text-sm"
+                  placeholder="obkhvat-krony"
+                />
+                <p className="text-xs text-muted-foreground">{tHints('attributeSlugHint')}</p>
+              </div>
             </div>
             {showUnit ? (
               <div className="space-y-2">
@@ -202,7 +258,15 @@ export function VariantAttributeEditor({
               </div>
             ) : null}
             <div className={cn('space-y-2', !showUnit && 'sm:col-span-2')}>
-              <Label htmlFor="edit-attr-desc">{tLabels('description')}</Label>
+              <ContentLocaleLabel
+                htmlFor="edit-attr-desc"
+                translationTarget={{ kind: 'variant-attribute-description', attributeId: attribute.id }}
+                translationFieldLabel={tLabels('description')}
+                multiline
+                onTranslationsSaved={onReload}
+              >
+                {tLabels('description')}
+              </ContentLocaleLabel>
               <Textarea
                 id="edit-attr-desc"
                 value={description}
@@ -273,49 +337,21 @@ export function VariantAttributeEditor({
                 </div>
               </div>
             ) : null}
+            {isColorType && showOnProductPage ? (
+              <ColorDisplayModeField value={colorDisplayMode} onChange={setColorDisplayMode} />
+            ) : null}
           </div>
 
           <div className="border-t border-border/60 pt-4">
             <VariantAttributeValuesForm
+              attributeId={attribute.id}
               valueType={valueType}
               unit={unit}
               values={values}
               onValuesChange={setValues}
+              onTranslationsSaved={onReload}
             />
           </div>
-        </div>
-      </div>
-
-      <div
-        className={cn(
-          'shrink-0 border-t border-border/60 bg-background pt-4',
-          'supports-[backdrop-filter]:bg-background/95',
-        )}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={() => void onDelete()}
-            disabled={saving}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            {tActions('deleteAttribute')}
-          </Button>
-          <Button type="button" onClick={() => void handleSave()} disabled={saving || !isDirty}>
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {tActions('saving')}
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                {tActions('saveChanges')}
-              </>
-            )}
-          </Button>
         </div>
       </div>
     </div>

@@ -101,6 +101,8 @@ export function buildOrderPayload(
     returnBaseUrl?: string
     marketRegion?: CheckoutMarketRegion
     deliveryPhonePolicy?: PhonePolicy
+    /** Override form.preferredShipDate (e.g. immediate half of a split checkout). */
+    preferredShipDate?: string
   },
 ): CreateOrderPayload {
   const deliveryForm = options?.shipmentSlice
@@ -216,7 +218,7 @@ export function buildOrderPayload(
     if (psc) payload.companyPostalCode = psc
   }
 
-  const shipDate = form.preferredShipDate.trim()
+  const shipDate = (options?.preferredShipDate ?? form.preferredShipDate).trim()
   if (shipDate) payload.preferredShipDate = shipDate
 
   const vatId = options?.companyVatId?.trim()

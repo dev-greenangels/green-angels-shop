@@ -64,6 +64,9 @@ export function CheckoutShipDateField({
   required = false,
   error = null,
   onBlur,
+  id = 'preferred-ship-date',
+  titleOverride,
+  hintOverride,
 }: {
   availableFromDates: string[]
   value: string
@@ -76,6 +79,9 @@ export function CheckoutShipDateField({
   required?: boolean
   error?: string | null
   onBlur?: () => void
+  id?: string
+  titleOverride?: string
+  hintOverride?: string
 }) {
   const t = useTranslations('checkout')
   const locale = useLocale()
@@ -130,12 +136,16 @@ export function CheckoutShipDateField({
 
   if (!enabled) return null
 
-  const title = pickup ? t('preferredShipDatePickup') : t('preferredShipDate')
-  const hint = pickup
-    ? t('preferredShipDatePickupHint')
-    : t.has('preferredShipDateCarrierHint')
-      ? t('preferredShipDateCarrierHint')
-      : t('preferredShipDateHint')
+  const title =
+    titleOverride ??
+    (pickup ? t('preferredShipDatePickup') : t('preferredShipDate'))
+  const hint =
+    hintOverride ??
+    (pickup
+      ? t('preferredShipDatePickupHint')
+      : t.has('preferredShipDateCarrierHint')
+        ? t('preferredShipDateCarrierHint')
+        : t('preferredShipDateHint'))
   const emptyLabel = pickup ? t('preferredShipDatePickupEmpty') : t('preferredShipDateEmpty')
   const showError = Boolean(error)
   const displayLabel = selectedDate ? formatShipDateLabel(value, locale) : selectLabel
@@ -156,7 +166,7 @@ export function CheckoutShipDateField({
         <Button
           type="button"
           variant="outline"
-          id="preferred-ship-date"
+          id={id}
           aria-invalid={showError || undefined}
           aria-required={required || undefined}
           className={cn(
@@ -222,7 +232,7 @@ export function CheckoutShipDateField({
 
   const heading = (
     <div className={compact ? 'min-w-0 flex-1 space-y-0.5' : undefined}>
-      <Label className="text-base font-medium" htmlFor="preferred-ship-date">
+      <Label className="text-base font-medium" htmlFor={id}>
         {title}
         {required ? <span className="ml-1 text-destructive">*</span> : null}
       </Label>
@@ -241,7 +251,7 @@ export function CheckoutShipDateField({
 
   if (compact) {
     return (
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
         {heading}
         {calendarButton}
       </div>

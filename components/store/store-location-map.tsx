@@ -1,6 +1,6 @@
 import { getLocale, getTranslations } from 'next-intl/server'
 
-import { getStoreMapsEmbedUrl, getStoreMapsUrl } from '@/lib/settings/store-helpers'
+import { getStoreMapsEmbedUrl, resolveStoreMapsHref } from '@/lib/settings/store-helpers'
 import type { StoreContactSettings } from '@/lib/settings/types'
 import { cn } from '@/lib/utils'
 
@@ -18,7 +18,7 @@ export async function StoreLocationMap({
   const locale = await getLocale()
   const t = await getTranslations('contactsPage')
   const embedUrl = getStoreMapsEmbedUrl(store, locale)
-  const mapsUrl = getStoreMapsUrl(store)
+  const mapsUrl = resolveStoreMapsHref(store)
   const mapTitle = title?.trim() || t('mapTitle')
 
   if (!embedUrl) return null

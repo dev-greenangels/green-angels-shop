@@ -24,9 +24,9 @@ import { resolveStoreForCountrySite } from '@/lib/settings/store-contact-country
 import {
   formatStoreAddress,
   getStoreEmails,
-  getStoreMapsUrl,
   getStorePhones,
   hasStoreContactInfo,
+  resolveStoreMapsHref,
 } from '@/lib/settings/store-helpers'
 import { cn } from '@/lib/utils'
 
@@ -64,7 +64,7 @@ export default async function TermsPage() {
     tFallback('sellerFallback')
   const contactsUnavailable = isStoreContactUnavailable(fetched) || !hasStoreContactInfo(store)
   const address = formatStoreAddress(store)
-  const mapsUrl = getStoreMapsUrl(store)
+  const mapsUrl = resolveStoreMapsHref(store)
   const phones = getStorePhones(store)
   const emails = getStoreEmails(store)
 
@@ -140,14 +140,18 @@ export default async function TermsPage() {
                   <>
                     <p>
                       {tFallback('contactAddress')}:{' '}
-                      <a
-                        href={mapsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary underline-offset-4 hover:underline"
-                      >
-                        {address}
-                      </a>
+                      {mapsUrl ? (
+                        <a
+                          href={mapsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary underline-offset-4 hover:underline"
+                        >
+                          {address}
+                        </a>
+                      ) : (
+                        address
+                      )}
                     </p>
                     {phones.map((item) => (
                       <p key={item.phone}>

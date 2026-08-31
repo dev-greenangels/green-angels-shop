@@ -64,7 +64,7 @@ function buildCellUpdate(
       : { productId, characteristicId, clear: true as const }
   }
 
-  if (definition.valueType === 'SELECT') {
+  if (definition.valueType === 'SELECT' || definition.valueType === 'COLOR') {
     return value.optionId
       ? { productId, characteristicId, optionId: value.optionId }
       : { productId, characteristicId, clear: true as const }
@@ -151,7 +151,7 @@ function CharacteristicCellEditor({
     )
   }
 
-  if (definition.valueType === 'SELECT') {
+  if (definition.valueType === 'SELECT' || definition.valueType === 'COLOR') {
     return (
       <Select
         value={value?.optionId ?? '__none__'}
@@ -166,7 +166,16 @@ function CharacteristicCellEditor({
           <SelectItem value="__none__">{tHints('notSpecified')}</SelectItem>
           {definition.options.map((option) => (
             <SelectItem key={option.id} value={option.id}>
-              {option.label}
+              <span className="inline-flex items-center gap-2">
+                {option.colorHex ? (
+                  <span
+                    className="inline-block h-3 w-3 shrink-0 rounded-full border border-border"
+                    style={{ backgroundColor: option.colorHex }}
+                    aria-hidden
+                  />
+                ) : null}
+                {option.label}
+              </span>
             </SelectItem>
           ))}
         </SelectContent>

@@ -33,7 +33,7 @@ import { useStoreSettings } from '@/components/providers/store-settings-provider
 import {
   formatStoreAddress,
   formatStoreHoursInline,
-  getStoreMapsUrl,
+  resolveStoreMapsHref,
 } from '@/lib/settings/store-helpers'
 import { Checkbox } from '@/components/ui/checkbox'
 import { InputWithClear } from '@/components/ui/input-with-clear'
@@ -198,7 +198,7 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
   }, [isSk, countryOptions, shipment.deliveryCountryCode, onPatchShipment])
 
   const pickupAddress = formatStoreAddress(store)
-  const pickupMapsUrl = getStoreMapsUrl(store)
+  const pickupMapsUrl = resolveStoreMapsHref(store)
   const pickupHours = formatStoreHoursInline(store)
 
   const showOrdererDeliveryPhone = showOrdererDeliveryPhoneField(
@@ -386,15 +386,22 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
 
       {shipment.deliveryMethod === 'pickup' && (
         <div className="space-y-2 rounded-xl bg-muted p-4 text-sm">
-          <a
-            href={pickupMapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-start gap-2 font-medium text-foreground transition-colors hover:text-primary hover:underline underline-offset-4"
-          >
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            {pickupAddress}
-          </a>
+          {pickupMapsUrl ? (
+            <a
+              href={pickupMapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-start gap-2 font-medium text-foreground transition-colors hover:text-primary hover:underline underline-offset-4"
+            >
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              {pickupAddress}
+            </a>
+          ) : (
+            <p className="flex items-start gap-2 font-medium text-foreground">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              {pickupAddress}
+            </p>
+          )}
           <p className="flex items-center gap-2 text-muted-foreground">
             <Clock className="h-4 w-4 shrink-0" />
             {pickupHours}

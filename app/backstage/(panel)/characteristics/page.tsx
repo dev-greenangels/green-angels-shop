@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Loader2, Plus, Search, SlidersHorizontal, Table2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Loader2, Plus, Save, Search, SlidersHorizontal, Table2, Trash2 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { useTranslations } from 'next-intl'
 
@@ -13,7 +13,9 @@ import {
   CharacteristicEditor,
   CharacteristicListItem,
   CreateCharacteristicFields,
-  parseCharacteristicOptionsText,
+  createOptionDraft,
+  type CharacteristicEditorActions,
+  type CharacteristicOptionDraft,
 } from '@/components/backstage/characteristic-editor'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -55,8 +57,15 @@ export default function CharacteristicsPage() {
     useState<CharacteristicDefinition['valueType']>('SELECT')
   const [createUnit, setCreateUnit] = useState('')
   const [createFilterable, setCreateFilterable] = useState(true)
-  const [createOptionsText, setCreateOptionsText] = useState('')
+  const [createOptions, setCreateOptions] = useState<CharacteristicOptionDraft[]>([])
+  const editorActionsRef = useRef<CharacteristicEditorActions | null>(null)
+  const [editorDirty, setEditorDirty] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
+
+  const handleEditorActionsChange = useCallback((actions: CharacteristicEditorActions) => {
+    editorActionsRef.current = actions
+    setEditorDirty((prev) => (prev === actions.isDirty ? prev : actions.isDirty))
+  }, [])
 
   const load = useCallback(async () => {
     if (!contentLocaleReady) return
@@ -93,6 +102,11 @@ export default function CharacteristicsPage() {
     [items, selectedId],
   )
 
+  useEffect(() => {
+    setEditorDirty(false)
+    editorActionsRef.current = null
+  }, [selectedId, contentLocale])
+
   const handleCreate = async () => {
     const name = createName.trim()
     if (!name) {
@@ -100,8 +114,11 @@ export default function CharacteristicsPage() {
       return
     }
 
-    const needsOptions = createValueType === 'SELECT' || createValueType === 'MULTI_SELECT'
-    const options = parseCharacteristicOptionsText(createOptionsText)
+    const needsOptions =
+      createValueType === 'SELECT' ||
+      createValueType === 'MULTI_SELECT' ||
+      createValueType === 'COLOR'
+    const options = createOptions.filter((row) => row.label.trim())
     if (needsOptions && options.length === 0) {
       toast.error(tValidation('characteristicOptionsRequired'))
       return
@@ -114,7 +131,13 @@ export default function CharacteristicsPage() {
         valueType: createValueType,
         unit: createUnit.trim() || undefined,
         isFilterable: createFilterable,
-        options: needsOptions ? options : undefined,
+        options: needsOptions
+          ? options.map((row) => ({
+              label: row.label.trim(),
+              slug: row.slug.trim() || undefined,
+              colorHex: row.colorHex.trim() || null,
+            }))
+          : undefined,
       }, contentLocale)
       toast.success(tt('characteristicCreated'))
       setCreateOpen(false)
@@ -122,7 +145,7 @@ export default function CharacteristicsPage() {
       setCreateValueType('SELECT')
       setCreateUnit('')
       setCreateFilterable(true)
-      setCreateOptionsText('')
+      setCreateOptions([])
       await load()
       setSelectedId(created.id)
     } catch (err) {
@@ -141,7 +164,8 @@ export default function CharacteristicsPage() {
       isFilterable: boolean
       showOnProductPage: boolean
       icon: string | null
-      options: Array<{ key: string; id?: string; label: string; slug: string }>
+      colorDisplayMode: CharacteristicDefinition['colorDisplayMode']
+      options: Array<{ key: string; id?: string; label: string; slug: string; colorHex?: string | null }>
     },
   ) => {
     if (!payload.name) {
@@ -153,7 +177,9 @@ export default function CharacteristicsPage() {
     try {
       const selectedItem = items.find((item) => item.id === characteristicId)
       const showOptions =
-        payload.valueType === 'SELECT' || payload.valueType === 'MULTI_SELECT'
+        payload.valueType === 'SELECT' ||
+        payload.valueType === 'MULTI_SELECT' ||
+        payload.valueType === 'COLOR'
 
       const updated = await updateCharacteristic(characteristicId, {
         name: payload.name,
@@ -162,12 +188,14 @@ export default function CharacteristicsPage() {
         isFilterable: payload.isFilterable,
         showOnProductPage: payload.showOnProductPage,
         icon: payload.icon,
+        colorDisplayMode: payload.colorDisplayMode,
         ...(showOptions
           ? {
               options: payload.options.map((row, index) => ({
                 id: row.id,
                 label: row.label.trim(),
                 slug: row.slug.trim() || undefined,
+                colorHex: row.colorHex?.trim() || null,
                 sortOrder: index,
               })),
             }
@@ -280,20 +308,58 @@ export default function CharacteristicsPage() {
               </CardContent>
             </Card>
 
-            <Card className="flex h-full min-h-0 flex-col overflow-hidden">
+            <Card className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden py-0">
               {selected ? (
                 <>
-                  <CardHeader className="shrink-0 pb-3">
-                    <CardTitle>{selected.name}</CardTitle>
-                    <CardDescription>{tPages('slugHint')}</CardDescription>
+                  <CardHeader className="flex shrink-0 flex-row items-start justify-between gap-3 space-y-0 border-b border-border/60 px-6 py-4">
+                    <div className="min-w-0 space-y-1">
+                      <CardTitle className="truncate text-lg">{selected.name}</CardTitle>
+                      <CardDescription className="space-y-1 text-xs leading-snug">
+                        <span className="font-mono text-foreground/80">{selected.slug}</span>
+                        <span className="block">{tPages('slugHint')}</span>
+                      </CardDescription>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => void handleDelete(selected.id, selected.name)}
+                        disabled={saving}
+                      >
+                        <Trash2 className="mr-1.5 h-4 w-4" />
+                        {tActions('delete')}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={saving || !editorDirty}
+                        onClick={() => void editorActionsRef.current?.save()}
+                      >
+                        {saving ? (
+                          <>
+                            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                            {tActions('saving')}
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-1.5 h-4 w-4" />
+                            {tActions('saveChanges')}
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </CardHeader>
-                  <CardContent className="flex min-h-0 flex-1 flex-col px-6 pb-4 pt-0">
+                  <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-4">
                     <CharacteristicEditor
-                      key={selected.id}
+                      key={`${selected.id}-${contentLocale}`}
                       definition={selected}
                       saving={saving}
                       onSave={(payload) => handleSave(selected.id, payload)}
                       onDelete={() => handleDelete(selected.id, selected.name)}
+                      onActionsChange={handleEditorActionsChange}
+                      onReload={() => void load()}
                     />
                   </CardContent>
                 </>
@@ -307,8 +373,14 @@ export default function CharacteristicsPage() {
         )}
       </div>
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-lg">
+      <Dialog
+        open={createOpen}
+        onOpenChange={(open) => {
+          setCreateOpen(open)
+          if (!open) setCreateOptions([])
+        }}
+      >
+        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{tPages('dialogTitle')}</DialogTitle>
             <DialogDescription>{tPages('dialogDesc')}</DialogDescription>
@@ -318,12 +390,19 @@ export default function CharacteristicsPage() {
             valueType={createValueType}
             unit={createUnit}
             isFilterable={createFilterable}
-            optionsText={createOptionsText}
+            options={createOptions}
             onNameChange={setCreateName}
-            onValueTypeChange={setCreateValueType}
+            onValueTypeChange={(next) => {
+              setCreateValueType(next)
+              if (next === 'SELECT' || next === 'MULTI_SELECT' || next === 'COLOR') {
+                setCreateOptions((prev) => (prev.length ? prev : [createOptionDraft()]))
+              } else {
+                setCreateOptions([])
+              }
+            }}
             onUnitChange={setCreateUnit}
             onFilterableChange={setCreateFilterable}
-            onOptionsTextChange={setCreateOptionsText}
+            onOptionsChange={setCreateOptions}
           />
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Plus, Search, Trash2 } from 'lucide-react'
 
-import { TranslationHint } from '@/components/backstage/content-locale-banner'
+import { LocaleTranslationButton, TranslationHint } from '@/components/backstage/content-locale-banner'
+import { ColorHexField } from '@/components/backstage/color-hex-field'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -31,15 +32,50 @@ import {
 import { PACKAGING_KIND_ORDER } from '@/lib/catalog/packaging-kind'
 import { cn } from '@/lib/utils'
 
-function ColorSwatch({ hex }: { hex: string }) {
-  const valid = /^#[0-9A-Fa-f]{6}$/.test(hex.trim())
-  if (!valid) return null
+function ValueLabelField({
+  row,
+  labels,
+  attributeId,
+  onPatch,
+  onTranslationsSaved,
+  onLabelChange,
+  placeholder,
+}: {
+  row: ValueDraft
+  labels: { name: string; namePlaceholder: string }
+  attributeId?: string
+  onPatch: (patch: Partial<ValueDraft>) => void
+  onTranslationsSaved?: () => void
+  onLabelChange?: (label: string) => void
+  placeholder?: string
+}) {
   return (
-    <span
-      className="inline-block h-5 w-5 shrink-0 rounded-full border border-border"
-      style={{ backgroundColor: hex.trim() }}
-      aria-hidden
-    />
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        <Input
+          value={row.label}
+          onChange={(e) => {
+            const label = e.target.value
+            if (onLabelChange) onLabelChange(label)
+            else onPatch({ label })
+          }}
+          placeholder={placeholder ?? labels.namePlaceholder}
+          className="h-9 min-w-0 flex-1"
+        />
+        {row.id && attributeId ? (
+          <LocaleTranslationButton
+            translationTarget={{
+              kind: 'variant-attribute-value-label',
+              attributeId,
+              valueId: row.id,
+            }}
+            translationFieldLabel={labels.name}
+            onTranslationsSaved={onTranslationsSaved}
+          />
+        ) : null}
+      </div>
+      <TranslationHint hint={row.labelHint} />
+    </div>
   )
 }
 
@@ -53,6 +89,8 @@ function ValueRowFields({
   labels,
   numberLocks,
   onNumberLock,
+  attributeId,
+  onTranslationsSaved,
 }: {
   valueType: VariantAttributeType
   row: ValueDraft
@@ -62,6 +100,8 @@ function ValueRowFields({
   deleteAriaLabel: string
   numberLocks: { min?: boolean; max?: boolean }
   onNumberLock: (field: 'min' | 'max') => void
+  attributeId?: string
+  onTranslationsSaved?: () => void
   labels: {
     name: string
     externalId: string
@@ -98,15 +138,13 @@ function ValueRowFields({
   if (valueType === 'UNIVERSAL') {
     return (
       <div className="grid grid-cols-[1fr_100px_40px] items-start gap-2 px-3 py-2">
-        <div className="space-y-1">
-          <Input
-            value={row.label}
-            onChange={(e) => onPatch({ label: e.target.value })}
-            placeholder={labels.namePlaceholder}
-            className="h-9"
-          />
-          <TranslationHint hint={row.labelHint} />
-        </div>
+        <ValueLabelField
+          row={row}
+          labels={labels}
+          attributeId={attributeId}
+          onPatch={onPatch}
+          onTranslationsSaved={onTranslationsSaved}
+        />
         <Input
           value={row.legacyId}
           onChange={(e) => onPatch({ legacyId: e.target.value })}
@@ -125,13 +163,14 @@ function ValueRowFields({
           <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">{labels.name}</Label>
-              <Input
-                value={row.label}
-                onChange={(e) => onPatch({ label: e.target.value })}
+              <ValueLabelField
+                row={row}
+                labels={labels}
+                attributeId={attributeId}
+                onPatch={onPatch}
+                onTranslationsSaved={onTranslationsSaved}
                 placeholder="C3, WRB…"
-                className="h-9"
               />
-              <TranslationHint hint={row.labelHint} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">{labels.packagingKind}</Label>
@@ -214,11 +253,14 @@ function ValueRowFields({
   if (valueType === 'RANGE') {
     return (
       <div className="grid grid-cols-[1fr_72px_72px_80px_40px] items-start gap-2 px-3 py-2">
-        <div className="space-y-1">
-          <Input
-          value={row.label}
-          onChange={(e) => {
-            const label = e.target.value
+        <ValueLabelField
+          row={row}
+          labels={labels}
+          attributeId={attributeId}
+          onPatch={onPatch}
+          onTranslationsSaved={onTranslationsSaved}
+          placeholder="H80-100, H80+…"
+          onLabelChange={(label) =>
             onPatch({
               label,
               ...syncNumbersFromLabel(
@@ -227,12 +269,8 @@ function ValueRowFields({
                 numberLocks,
               ),
             })
-          }}
-          placeholder="H80-100, H80+…"
-          className="h-9"
+          }
         />
-          <TranslationHint hint={row.labelHint} />
-        </div>
         <Input
           value={row.numericMin}
           onChange={(e) => {
@@ -266,25 +304,20 @@ function ValueRowFields({
 
   if (valueType === 'COLOR') {
     return (
-      <div className="grid grid-cols-[1fr_120px_80px_40px] items-start gap-2 px-3 py-2">
-        <div className="space-y-1">
-          <Input
-            value={row.label}
-            onChange={(e) => onPatch({ label: e.target.value })}
-            placeholder="Жовтий…"
-            className="h-9"
-          />
-          <TranslationHint hint={row.labelHint} />
-        </div>
-        <div className="flex items-center gap-2">
-          <ColorSwatch hex={row.colorHex} />
-          <Input
-            value={row.colorHex}
-            onChange={(e) => onPatch({ colorHex: e.target.value })}
-            placeholder="#FFD500"
-            className="h-9 font-mono text-xs"
-          />
-        </div>
+      <div className="grid grid-cols-[1fr_minmax(180px,1fr)_80px_40px] items-start gap-2 px-3 py-2">
+        <ValueLabelField
+          row={row}
+          labels={labels}
+          attributeId={attributeId}
+          onPatch={onPatch}
+          onTranslationsSaved={onTranslationsSaved}
+          placeholder="Жовтий…"
+        />
+        <ColorHexField
+          value={row.colorHex}
+          onChange={(colorHex) => onPatch({ colorHex })}
+          compact
+        />
         <Input
           value={row.legacyId}
           onChange={(e) => onPatch({ legacyId: e.target.value })}
@@ -298,11 +331,14 @@ function ValueRowFields({
 
   return (
     <div className="grid grid-cols-[1fr_88px_80px_40px] items-start gap-2 px-3 py-2">
-      <div className="space-y-1">
-        <Input
-        value={row.label}
-        onChange={(e) => {
-          const label = e.target.value
+      <ValueLabelField
+        row={row}
+        labels={labels}
+        attributeId={attributeId}
+        onPatch={onPatch}
+        onTranslationsSaved={onTranslationsSaved}
+        placeholder={unit ? `500 ${unit}` : '500 грн'}
+        onLabelChange={(label) =>
           onPatch({
             label,
             ...syncNumbersFromLabel(
@@ -311,12 +347,8 @@ function ValueRowFields({
               numberLocks,
             ),
           })
-        }}
-        placeholder={unit ? `500 ${unit}` : '500 грн'}
-        className="h-9"
+        }
       />
-        <TranslationHint hint={row.labelHint} />
-      </div>
       <Input
         value={row.numericMin}
         onChange={(e) => {
@@ -383,7 +415,7 @@ function ValueTableHeader({
 
   if (valueType === 'COLOR') {
     return (
-      <div className="grid grid-cols-[1fr_120px_80px_40px] gap-2 px-3 py-2 text-xs font-medium text-muted-foreground">
+      <div className="grid grid-cols-[1fr_minmax(180px,1fr)_80px_40px] gap-2 px-3 py-2 text-xs font-medium text-muted-foreground">
         <span>{labels.name}</span>
         <span>{labels.hex}</span>
         <span>{labels.externalId}</span>
@@ -406,19 +438,23 @@ function ValueTableHeader({
 }
 
 export function VariantAttributeValuesForm({
+  attributeId,
   valueType: rawValueType,
   unit,
   values,
   onValuesChange,
+  onTranslationsSaved,
   showSearch = true,
   showBulk = true,
   emptyMessage,
   className,
 }: {
+  attributeId?: string
   valueType: VariantAttributeType | string
   unit: string
   values: ValueDraft[]
   onValuesChange: (values: ValueDraft[]) => void
+  onTranslationsSaved?: () => void
   showSearch?: boolean
   showBulk?: boolean
   emptyMessage?: string
@@ -614,6 +650,8 @@ export function VariantAttributeValuesForm({
               labels={fieldLabels}
               numberLocks={getNumberLocks(row.key)}
               onNumberLock={(field) => lockNumberField(row.key, field)}
+              attributeId={attributeId}
+              onTranslationsSaved={onTranslationsSaved}
             />
           ))}
         </div>

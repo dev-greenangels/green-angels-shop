@@ -15,8 +15,8 @@ export const siteStickyToolbarOuterClassName =
   'sticky top-[calc(var(--site-header-offset,5rem)-2px)] z-40 -mx-[var(--site-shell-padding-x)] mb-6 px-3 sm:px-4'
 
 export const siteStickyToolbarInnerClassName =
-  'boty-glass flex items-center gap-2 rounded-b-[0.5rem] px-2.5 py-2 sm:px-3'
+  'boty-glass-sticky flex items-center gap-2 rounded-b-[0.5rem] border-b border-border/40 px-2.5 py-2 sm:px-3'
 
 /** Правий кластер кнопок поверх горизонтального скролу чіпсів. */
 export const siteStickyToolbarControlsClusterClassName =
-  'relative z-10 flex h-8 shrink-0 items-center gap-2 boty-glass-match shadow-[-10px_0_14px_-6px_rgba(0,0,0,0.12)]'
+  'relative z-10 flex h-8 shrink-0 items-center gap-2 boty-glass-match pl-1.5 before:pointer-events-none before:absolute before:inset-y-0 before:right-full before:w-5 before:bg-gradient-to-r before:from-transparent before:to-[var(--boty-glass-bg,rgba(255,255,255,0.78))] before:content-[""]'

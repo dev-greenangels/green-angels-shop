@@ -6,6 +6,7 @@ import { toast } from '@/lib/toast'
 import { useTranslations } from 'next-intl'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
+import { ColorDisplayModeField } from '@/components/backstage/color-display-mode-field'
 import {
   VariantAttributeEditor,
   VariantAttributeListItem,
@@ -46,6 +47,7 @@ import {
   validateValueDraftsForType,
   valueDraftsToPayload,
   VARIANT_ATTRIBUTE_TYPES,
+  type ColorDisplayMode,
   type VariantAttribute,
   type VariantAttributeType,
   type ValueDraft,
@@ -88,6 +90,7 @@ export default function AttributesPage() {
   const [createValues, setCreateValues] = useState<ValueDraft[]>(() => [createValueDraft()])
   const [createShowOnProductPage, setCreateShowOnProductPage] = useState(false)
   const [createIcon, setCreateIcon] = useState('')
+  const [createColorDisplayMode, setCreateColorDisplayMode] = useState<ColorDisplayMode>('BOTH')
   const [labelTypeOrder, setLabelTypeOrder] = useState<VariantAttributeType[]>(
     () => [...DEFAULT_VARIANT_LABEL_TYPE_ORDER],
   )
@@ -111,6 +114,7 @@ export default function AttributesPage() {
     setCreateValues([createValueDraft()])
     setCreateShowOnProductPage(false)
     setCreateIcon('')
+    setCreateColorDisplayMode('BOTH')
   }
 
   const formatValidationError = (code: string): string => {
@@ -191,6 +195,8 @@ export default function AttributesPage() {
         legacyId: createLegacyId.trim() || undefined,
         showOnProductPage: createShowOnProductPage,
         icon: createShowOnProductPage ? createIcon.trim() || null : null,
+        colorDisplayMode:
+          createValueType === 'COLOR' && createShowOnProductPage ? createColorDisplayMode : null,
         values,
       }, contentLocale)
       toast.success(tt('attributeCreated'))
@@ -218,6 +224,7 @@ export default function AttributesPage() {
       participatesInLabel: boolean
       showOnProductPage: boolean
       icon: string | null
+      colorDisplayMode: ColorDisplayMode | null
       values: import('@/lib/backstage/variant-attributes').ValueDraft[]
     },
   ) => {
@@ -255,6 +262,7 @@ export default function AttributesPage() {
         participatesInLabel: payload.participatesInLabel,
         showOnProductPage: payload.showOnProductPage,
         icon: payload.showOnProductPage ? payload.icon?.trim() || null : null,
+        colorDisplayMode: payload.colorDisplayMode,
         values: cleaned.map((v, index) => ({
           ...v,
           sortOrder: index,
@@ -375,21 +383,16 @@ export default function AttributesPage() {
 
             <Card className="flex min-h-0 flex-col gap-0 overflow-hidden py-0">
               {selected ? (
-                <>
-                  <CardHeader className="shrink-0 border-b py-4">
-                    <CardTitle>{selected.name.trim() || selected.slug}</CardTitle>
-                    <CardDescription>{tPages('editHint')}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-4">
-                    <VariantAttributeEditor
-                      key={`${selected.id}:${contentLocale}`}
-                      attribute={selected}
-                      saving={saving}
-                      onSave={(payload) => handleSave(selected.id, payload)}
-                      onDelete={() => handleDelete(selected.id, selected.name)}
-                    />
-                  </CardContent>
-                </>
+                <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-4">
+                  <VariantAttributeEditor
+                    key={`${selected.id}:${contentLocale}`}
+                    attribute={selected}
+                    saving={saving}
+                    onSave={(payload) => handleSave(selected.id, payload)}
+                    onDelete={() => handleDelete(selected.id, selected.name)}
+                    onReload={() => void load()}
+                  />
+                </CardContent>
               ) : (
                 <CardContent className="flex flex-1 items-center justify-center py-16 text-muted-foreground">
                   {tHints('selectAttributeFromLeft')}
@@ -503,6 +506,12 @@ export default function AttributesPage() {
                 {tLabels('showOnProductPage')}
               </Label>
             </div>
+            {createShowOnProductPage && createValueType === 'COLOR' ? (
+              <ColorDisplayModeField
+                value={createColorDisplayMode}
+                onChange={setCreateColorDisplayMode}
+              />
+            ) : null}
             {createShowOnProductPage ? (
               <div className="space-y-2">
                 <Label>{tLabels('productPageIcon')}</Label>

@@ -169,3 +169,16 @@ export async function updateBackstagePrestaImportSettings(
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()
 }
+
+export async function updateBackstageWithdrawalSettings(
+  payload: Partial<import('@/lib/settings/withdrawal').WithdrawalSettings>,
+): Promise<import('@/lib/settings/withdrawal').WithdrawalSettings> {
+  const res = await fetch('/api/backstage/settings/withdrawal', {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}

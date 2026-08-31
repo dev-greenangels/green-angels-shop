@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   DELIVERY_METHOD_LABELS,
   PAYMENT_METHOD_LABELS,
@@ -213,6 +214,41 @@ export function OrderDetailsDialog({
                     ) : null}
                   </div>
                 ) : null}
+
+                <div className="space-y-2 rounded-lg border border-border p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <Label htmlFor="order-withdrawal-action">Online withdrawal action (account)</Label>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Controls whether the withdrawal shortcut is shown in the customer account for this
+                        order. Does not block the public withdrawal page and does not determine statutory
+                        rights.
+                      </p>
+                    </div>
+                    <Switch
+                      id="order-withdrawal-action"
+                      checked={order.onlineWithdrawalActionEnabled !== false}
+                      disabled={saving}
+                      onCheckedChange={(checked) => {
+                        void patchBackstageOrder(order.id, {
+                          onlineWithdrawalActionEnabled: checked,
+                        })
+                          .then((updated) => {
+                            setOrder(updated as BackstageOrderDetail)
+                            toast.success('Налаштування odstúpenia оновлено.')
+                          })
+                          .catch((err: unknown) => {
+                            toast.error(err instanceof Error ? err.message : 'Помилка збереження.')
+                          })
+                      }}
+                    />
+                  </div>
+                  {order.deliveredAt ? (
+                    <p className="text-xs text-muted-foreground">
+                      Delivered at (ABRA): {formatDateTimeOrDash(order.deliveredAt, locale, 'datetime')}
+                    </p>
+                  ) : null}
+                </div>
 
                 <div className="space-y-2">
                   <h4 className="font-semibold">ТТН / відстеження</h4>

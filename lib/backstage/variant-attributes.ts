@@ -5,6 +5,8 @@ import {
 
 export type VariantAttributeType = 'UNIVERSAL' | 'CONTAINER' | 'RANGE' | 'COLOR' | 'NUMBER'
 
+export type ColorDisplayMode = 'TEXT' | 'SWATCH' | 'BOTH'
+
 export const VARIANT_ATTRIBUTE_TYPES: VariantAttributeType[] = [
   'UNIVERSAL',
   'CONTAINER',
@@ -47,6 +49,7 @@ export type VariantAttribute = {
   participatesInLabel: boolean
   showOnProductPage: boolean
   icon: string | null
+  colorDisplayMode: ColorDisplayMode | null
   values: VariantAttributeValue[]
 }
 
@@ -76,6 +79,7 @@ export type CreateVariantAttributePayload = {
   participatesInLabel?: boolean
   showOnProductPage?: boolean
   icon?: string | null
+  colorDisplayMode?: ColorDisplayMode | null
   values: VariantAttributeValueInput[]
 }
 
@@ -91,6 +95,7 @@ export type UpdateVariantAttributePayload = {
   participatesInLabel?: boolean
   showOnProductPage?: boolean
   icon?: string | null
+  colorDisplayMode?: ColorDisplayMode | null
   values?: Array<VariantAttributeValueInput & { id?: string }>
 }
 
@@ -143,6 +148,7 @@ export type VariantAttributeEditorSnapshot = {
   participatesInLabel: boolean
   showOnProductPage: boolean
   icon: string | null
+  colorDisplayMode: ColorDisplayMode | null
   values: Array<{
     id?: string
     label: string
@@ -193,6 +199,7 @@ export function snapshotFromAttribute(attribute: VariantAttribute): VariantAttri
     participatesInLabel: attribute.participatesInLabel,
     showOnProductPage: attribute.showOnProductPage ?? false,
     icon: attribute.icon ?? null,
+    colorDisplayMode: attribute.colorDisplayMode ?? null,
     values: attribute.values.map((value) => draftToValueSnapshot({
       key: value.id,
       id: value.id,
@@ -221,6 +228,7 @@ export function snapshotFromDrafts(
   participatesInLabel: boolean,
   showOnProductPage: boolean,
   icon: string | null,
+  colorDisplayMode: ColorDisplayMode | null,
   values: ValueDraft[],
 ): VariantAttributeEditorSnapshot {
   return {
@@ -234,6 +242,7 @@ export function snapshotFromDrafts(
     participatesInLabel,
     showOnProductPage,
     icon: showOnProductPage ? icon?.trim() || null : null,
+    colorDisplayMode: valueType === 'COLOR' ? colorDisplayMode : null,
     values: values.filter((value) => value.label.trim()).map(draftToValueSnapshot),
   }
 }
@@ -321,6 +330,7 @@ export function normalizeVariantAttribute(attribute: VariantAttribute): VariantA
     participatesInLabel: attribute.participatesInLabel ?? true,
     showOnProductPage: attribute.showOnProductPage ?? false,
     icon: attribute.icon ?? null,
+    colorDisplayMode: attribute.colorDisplayMode ?? null,
     values: (attribute.values ?? []).map((value) => ({
       ...value,
       numericMin: value.numericMin ?? null,

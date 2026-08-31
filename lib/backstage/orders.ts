@@ -57,6 +57,8 @@ export type BackstageOrderDetail = BackstageOrderListItem & {
   npDocumentRef?: string | null
   trackingSyncedAt?: string | null
   shippedAt?: string | null
+  deliveredAt?: string | null
+  onlineWithdrawalActionEnabled?: boolean
   cancellationReasonId?: string | null
   cancellationReasonName?: string | null
   cancellationSource?: string | null
@@ -120,6 +122,7 @@ export type PatchOrderPayload = {
   trackingNumber?: string | null
   trackingCarrier?: string | null
   npDocumentRef?: string | null
+  onlineWithdrawalActionEnabled?: boolean
 }
 
 export async function fetchBackstageOrders(

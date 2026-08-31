@@ -13,6 +13,8 @@ export interface ProductDisplayCharacteristic {
   unit: string | null
   valueType: string
   displayValue: string
+  colorHex?: string | null
+  colorDisplayMode?: 'TEXT' | 'SWATCH' | 'BOTH' | null
   sortOrder: number
 }
 

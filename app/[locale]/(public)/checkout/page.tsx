@@ -46,8 +46,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { getInStockCartItems } from '@/lib/cart-availability'
 import {
   cartNeedsShipmentSplitChoice,
-  getCartItemShipmentDate,
   getLatestShipmentDate,
+  collectDispatchAvailableFromDates,
   partitionCartByShipmentDate,
   type ShipmentSplitMode,
 } from '@/lib/cart-shipment-split'
@@ -165,6 +165,7 @@ const initialFormData: CheckoutFormValues = {
   companyCity: '',
   companyPostalCode: '',
   preferredShipDate: '',
+  preferredShipDateImmediate: '',
   comment: '',
   promoCode: '',
 }
@@ -470,6 +471,8 @@ export default function CheckoutPage() {
     Partial<Record<CheckoutPaymentFieldKey, boolean>>
   >({})
   const [preferredShipDateTouched, setPreferredShipDateTouched] = useState(false)
+  const [preferredShipDateImmediateTouched, setPreferredShipDateImmediateTouched] =
+    useState(false)
   const phoneInputRef = useRef<HTMLInputElement>(null)
   const deliveryPhoneInputRef = useRef<HTMLInputElement>(null)
   const [sessionHydratedForKey, setSessionHydratedForKey] = useState<string | null>(null)
@@ -1194,6 +1197,7 @@ export default function CheckoutPage() {
               shipmentNote: t('shipmentSplit.splitOrderNoteImmediate'),
               splitCheckout: { partIndex: 0, partCount: 2 },
               shipmentSlice: formWithPromos.splitShipments.immediate,
+              preferredShipDate: formWithPromos.preferredShipDateImmediate,
               createAccount: showCreateAccountOption ? createAccount : undefined,
               privacyConsent,
               privacyConsentVersion: marketSettings.privacyConsentVersion,
@@ -1222,6 +1226,7 @@ export default function CheckoutPage() {
               }),
               splitCheckout: { partIndex: 1, partCount: 2 },
               shipmentSlice: formWithPromos.splitShipments.dated,
+              preferredShipDate: formWithPromos.preferredShipDate,
               createAccount: showCreateAccountOption ? createAccount : undefined,
               privacyConsent,
               privacyConsentVersion: marketSettings.privacyConsentVersion,
@@ -1500,25 +1505,81 @@ export default function CheckoutPage() {
                     deliveryPhoneInputRef={deliveryPhoneInputRef}
                     showStepNav={false}
                     beforeRecipientSlot={
-                      <CheckoutShipDateField
-                        compact
-                        pickup={formData.deliveryMethod === 'pickup'}
-                        enabled={dispatchCalendarEnabled}
-                        required={dispatchCalendarEnabled}
-                        error={
-                          preferredShipDateTouched &&
-                          dispatchCalendarEnabled &&
-                          !formData.preferredShipDate.trim()
-                            ? t('preferredShipDateRequired')
-                            : null
-                        }
-                        onBlur={() => setPreferredShipDateTouched(true)}
-                        availableFromDates={checkoutableItems
-                          .map((item) => getCartItemShipmentDate(item))
-                          .filter((d): d is string => Boolean(d))}
-                        value={formData.preferredShipDate}
-                        onChange={(preferredShipDate) => patchForm({ preferredShipDate })}
-                      />
+                      needsShipmentSplitChoice && shipmentSplitMode === 'split' ? (
+                        <div className="space-y-4">
+                          <CheckoutShipDateField
+                            id="preferred-ship-date-immediate"
+                            compact
+                            pickup={
+                              (formData.splitShipments?.immediate.deliveryMethod ??
+                                formData.deliveryMethod) === 'pickup'
+                            }
+                            enabled={dispatchCalendarEnabled}
+                            required={dispatchCalendarEnabled}
+                            titleOverride={t('preferredShipDateSplitImmediate')}
+                            hintOverride={t('preferredShipDateSplitImmediateHint')}
+                            error={
+                              preferredShipDateImmediateTouched &&
+                              dispatchCalendarEnabled &&
+                              !formData.preferredShipDateImmediate.trim()
+                                ? t('preferredShipDateRequired')
+                                : null
+                            }
+                            onBlur={() => setPreferredShipDateImmediateTouched(true)}
+                            availableFromDates={[]}
+                            value={formData.preferredShipDateImmediate}
+                            onChange={(preferredShipDateImmediate) =>
+                              patchForm({ preferredShipDateImmediate })
+                            }
+                          />
+                          <CheckoutShipDateField
+                            id="preferred-ship-date-dated"
+                            compact
+                            pickup={
+                              (formData.splitShipments?.dated.deliveryMethod ??
+                                formData.deliveryMethod) === 'pickup'
+                            }
+                            enabled={dispatchCalendarEnabled}
+                            required={dispatchCalendarEnabled}
+                            titleOverride={t('preferredShipDateSplitDated')}
+                            hintOverride={t('preferredShipDateSplitDatedHint')}
+                            error={
+                              preferredShipDateTouched &&
+                              dispatchCalendarEnabled &&
+                              !formData.preferredShipDate.trim()
+                                ? t('preferredShipDateRequired')
+                                : null
+                            }
+                            onBlur={() => setPreferredShipDateTouched(true)}
+                            availableFromDates={collectDispatchAvailableFromDates(
+                              shipmentPartition.dated,
+                            )}
+                            value={formData.preferredShipDate}
+                            onChange={(preferredShipDate) => patchForm({ preferredShipDate })}
+                          />
+                        </div>
+                      ) : (
+                        <CheckoutShipDateField
+                          id="preferred-ship-date"
+                          compact
+                          pickup={formData.deliveryMethod === 'pickup'}
+                          enabled={dispatchCalendarEnabled}
+                          required={dispatchCalendarEnabled}
+                          error={
+                            preferredShipDateTouched &&
+                            dispatchCalendarEnabled &&
+                            !formData.preferredShipDate.trim()
+                              ? t('preferredShipDateRequired')
+                              : null
+                          }
+                          onBlur={() => setPreferredShipDateTouched(true)}
+                          availableFromDates={collectDispatchAvailableFromDates(
+                            checkoutableItems,
+                          )}
+                          value={formData.preferredShipDate}
+                          onChange={(preferredShipDate) => patchForm({ preferredShipDate })}
+                        />
+                      )
                     }
                     shipmentSplitActive={
                       needsShipmentSplitChoice && shipmentSplitMode === 'split'

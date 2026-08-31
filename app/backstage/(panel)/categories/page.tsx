@@ -821,6 +821,7 @@ export default function CategoriesPage() {
         }
         submitLabel={dialogMode === 'create' ? tActions('create') : tActions('save')}
         onSubmit={handleSubmit}
+        onTranslationsSaved={loadTree}
       />
 
       <AlertDialog

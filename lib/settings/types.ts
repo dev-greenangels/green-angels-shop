@@ -336,4 +336,7 @@ export type PublicSiteSettings = {
   prestaImport?: import('./presta-import').PrestaImportSettings
   /** лише в backstage GET /settings */
   mediaWatermark?: MediaWatermarkSettings
+  withdrawal?: import('./withdrawal').WithdrawalPublicSettings
+  /** лише в backstage GET /settings */
+  withdrawalFull?: import('./withdrawal').WithdrawalSettings
 }

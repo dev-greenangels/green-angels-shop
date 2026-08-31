@@ -155,12 +155,12 @@ export function AuthPhoneFlow({
 
   const isLoggedIn = Boolean(user)
 
-  const persistLoginMarketingConsent = useCallback(
+  const persistMarketingConsentIfNeeded = useCallback(
     async (emailHint?: string) => {
-      if (purpose !== 'login' || !marketingConsent) return
+      if ((purpose !== 'login' && purpose !== 'review') || !marketingConsent) return
       await recordMarketingConsent({
         locale,
-        source: 'LOGIN',
+        source: purpose === 'review' ? 'REVIEW' : 'LOGIN',
         revisionId: marketingRevisionId,
         email: emailHint?.trim() || undefined,
       })
@@ -350,12 +350,12 @@ export function AuthPhoneFlow({
         const { verificationToken } = await verifyAuthSmsCode(phone, code, purpose)
         const sessionUser = await createPhoneSession(phone, verificationToken)
         setUser(sessionUser)
-        await persistLoginMarketingConsent(sessionUser.email)
+        await persistMarketingConsentIfNeeded(sessionUser.email)
       } else {
         const { verificationToken } = await verifyAuthEmailCode(email, code, purpose)
         const sessionUser = await createEmailSession(email, verificationToken)
         setUser(sessionUser)
-        await persistLoginMarketingConsent(email)
+        await persistMarketingConsentIfNeeded(email)
       }
 
       finishAuthSuccess(redirectTo)
@@ -605,7 +605,7 @@ export function AuthPhoneFlow({
         </div>
       )}
 
-      {purpose === 'login' ? (
+      {purpose === 'login' || purpose === 'review' ? (
         <MarketingConsentCheckbox
           id="auth-marketing-consent"
           checked={marketingConsent}

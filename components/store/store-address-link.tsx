@@ -1,6 +1,6 @@
 import { MapPin } from 'lucide-react'
 
-import { getStoreMapsUrl } from '@/lib/settings/store-helpers'
+import { resolveStoreMapsHref } from '@/lib/settings/store-helpers'
 import type { StoreContactSettings } from '@/lib/settings/types'
 import { cn } from '@/lib/utils'
 
@@ -19,7 +19,7 @@ export function StoreAddressLink({
   textClassName,
   linkClassName,
 }: StoreAddressLinkProps) {
-  const mapsUrl = getStoreMapsUrl(store)
+  const mapsUrl = resolveStoreMapsHref(store)
   const addressText = (
     <>
       {store.addressLine1}

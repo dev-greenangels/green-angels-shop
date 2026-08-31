@@ -23,6 +23,7 @@
     "legal": "Legal documents",
     "reviews": "Reviews",
     "wholesaleInquiries": "Wholesale inquiries",
+    "contractWithdrawals": "Contract withdrawals",
     "promotions": "Promotions",
     "referrals": "Referrals",
     "referenceData": "Reference data",
@@ -170,6 +171,7 @@
     "productDescriptionPlaceholder": "Detailed product description…",
     "htmlPlaceholder": "'<p>Your HTML content…</p>'",
     "htmlHint": "You can paste ready HTML. After switching to Editor it will display visually.",
+    "localeSwitchAutoSave": "Switching language automatically saves the current description for the previous language.",
     "rootCategory": "Root category",
     "title": "Title",
     "description": "Description",
@@ -206,6 +208,7 @@
     "characteristicNamePlaceholder": "Lighting, Watering…",
     "optionNamePlaceholder": "Full sun",
     "characteristicOptionsFormat": "Each line: \"Name\" or \"Name | slug\"",
+    "characteristicColorOptionsFormat": "Each line: \"Name\", \"Name | slug\", or \"Name | slug | #RRGGBB\"",
     "characteristicOptionsPlaceholder": "Full sun | full-sun\nPartial shade | partial-shade",
     "addOptionsForList": "Add options for the list.",
     "valueTypeChangeHint": "Safe transitions: select ↔ multi-select, text ↔ number, list → text. Other changes may clear product values.",
@@ -283,9 +286,16 @@
     "optionsRequired": "Options *",
     "option": "Option",
     "slugTechnical": "Slug (technical)",
+    "color": "Color",
+    "pickColor": "Pick color from palette",
     "showInFilters": "Show in catalog filters",
     "showOnProductPage": "Show on product page",
     "productPageIcon": "Product page icon",
+    "colorDisplayMode": "Color display on product page",
+    "colorDisplayText": "Text only",
+    "colorDisplaySwatch": "Color swatch only",
+    "colorDisplayBoth": "Text and swatch",
+    "colorDisplayModeHint": "How to show COLOR-type values in the product characteristics block.",
     "deleteCharacteristic": "Delete characteristic",
     "values": "Values ({count})",
     "valuesRequired": "Values *",
@@ -350,7 +360,9 @@
     "fontSmall": "Small",
     "fontNormal": "Normal",
     "fontMedium": "Medium",
-    "fontLarge": "Large"
+    "fontLarge": "Large",
+    "localeSaved": "Description saved ({locale})",
+    "localeSaveFailed": "Could not save description for this language"
   },
   "breadcrumbs": {
     "home": "Home",
@@ -360,6 +372,15 @@
     "add-plant": "Add product",
     "edit": "Edit product",
     "table": "Products table"
+  },
+  "translationDialog": {
+    "title": "Translations",
+    "description": "Edit translations for “{field}”",
+    "loading": "Loading…",
+    "loadFailed": "Could not load translations",
+    "saveFailed": "Could not save translations",
+    "openHint": "Open translations for all languages",
+    "fieldFallback": "Field"
   },
   "contentBanner": {
     "editing": "Editing translation: {locale}. Slug, price and images are shared across languages.",
@@ -639,7 +660,8 @@
     "SELECT": "List (single choice)",
     "MULTI_SELECT": "List (multiple)",
     "NUMBER": "Number",
-    "TEXT": "Text"
+    "TEXT": "Text",
+    "COLOR": "Color"
   },
   "variantAttributeTypes": {
     "UNIVERSAL": "Universal",

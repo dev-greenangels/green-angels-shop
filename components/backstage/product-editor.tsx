@@ -273,6 +273,28 @@ export function ProductEditor({
 
   const isDirty = useMemo(() => isProductFormDirty(form, baseline), [form, baseline])
 
+  const reloadProductTranslations = useCallback(async () => {
+    if (!productId || !contentLocaleReady) return
+    try {
+      const detail = await fetchBackstageProduct(productId, contentLocale)
+      setTranslationHints({
+        name: detail.nameHint,
+        description: detail.descriptionHint,
+        metaTitle: detail.metaTitleHint,
+        metaDesc: detail.metaDescHint,
+      })
+      setForm((prev) => ({
+        ...prev,
+        name: detail.name ?? prev.name,
+        description: detail.description ?? prev.description,
+        metaTitle: detail.metaTitle ?? prev.metaTitle,
+        metaDesc: detail.metaDesc ?? prev.metaDesc,
+      }))
+    } catch {
+      // ignore — inline field still editable
+    }
+  }, [productId, contentLocale, contentLocaleReady])
+
   const persistProductImages = useCallback(
     async (images: ProductImageDraft[]) => {
       if (!productId) return images
@@ -378,7 +400,18 @@ export function ProductEditor({
                   <CardContent className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <ContentLocaleLabel htmlFor="name">{tp('productName')}</ContentLocaleLabel>
+                        <ContentLocaleLabel
+                          htmlFor="name"
+                          translationTarget={
+                            productId
+                              ? { kind: 'product-name', productId }
+                              : undefined
+                          }
+                          translationFieldLabel={tp('productName')}
+                          onTranslationsSaved={() => void reloadProductTranslations()}
+                        >
+                          {tp('productName')}
+                        </ContentLocaleLabel>
                         <Input
                           id="name"
                           value={form.name}
@@ -399,52 +432,61 @@ export function ProductEditor({
                       </div>
                     </div>
 
-                    <div className="space-y-2 sm:max-w-md">
-                      <Label htmlFor="cnCode">{tp('cnCode')}</Label>
-                      <Input
-                        id="cnCode"
-                        value={form.cnCode}
-                        onChange={(e) => patch({ cnCode: e.target.value })}
-                        placeholder="060290"
-                        inputMode="numeric"
-                        autoComplete="off"
-                      />
-                      <p className="text-xs text-amber-800 dark:text-amber-200/90">
-                        {tp('cnCodeWarning')}
-                      </p>
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <Label htmlFor="cnCode">{tp('cnCode')}</Label>
+                        <Input
+                          id="cnCode"
+                          value={form.cnCode}
+                          onChange={(e) => patch({ cnCode: e.target.value })}
+                          placeholder="060290"
+                          inputMode="numeric"
+                          autoComplete="off"
+                        />
+                        <p className="text-xs text-amber-800 dark:text-amber-200/90">
+                          {tp('cnCodeWarning')}
+                        </p>
+                      </div>
+
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <Label htmlFor="legacyId">{tl('legacyId')}</Label>
+                        <Input
+                          id="legacyId"
+                          value={form.legacyId}
+                          onChange={(e) => patch({ legacyId: e.target.value })}
+                          placeholder={th('optionalLegacyId')}
+                        />
+                      </div>
                     </div>
 
-                    <div className="space-y-2 sm:max-w-md">
-                      <Label htmlFor="legacyId">{tl('legacyId')}</Label>
-                      <Input
-                        id="legacyId"
-                        value={form.legacyId}
-                        onChange={(e) => patch({ legacyId: e.target.value })}
-                        placeholder={th('optionalLegacyId')}
-                      />
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+                      <div className="min-w-0 flex-1">
+                        <CategoryCombobox
+                          label={tp('primaryCategory')}
+                          options={categoryOptions}
+                          value={form.primaryCategoryId}
+                          onChange={(primaryCategoryId) => patch({ primaryCategoryId })}
+                          loading={categoriesLoading}
+                          required
+                        />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <AdditionalCategoriesPicker
+                          options={categoryOptions}
+                          primaryCategoryId={form.primaryCategoryId}
+                          selectedIds={form.additionalCategoryIds}
+                          onChange={(additionalCategoryIds) => patch({ additionalCategoryIds })}
+                          loading={categoriesLoading}
+                        />
+                      </div>
                     </div>
-
-                    <CategoryCombobox
-                      label={tp('primaryCategory')}
-                      options={categoryOptions}
-                      value={form.primaryCategoryId}
-                      onChange={(primaryCategoryId) => patch({ primaryCategoryId })}
-                      loading={categoriesLoading}
-                      required
-                    />
-
-                    <AdditionalCategoriesPicker
-                      options={categoryOptions}
-                      primaryCategoryId={form.primaryCategoryId}
-                      selectedIds={form.additionalCategoryIds}
-                      onChange={(additionalCategoryIds) => patch({ additionalCategoryIds })}
-                      loading={categoriesLoading}
-                    />
 
                     <RichTextEditor
                       label={tp('fullDescription')}
                       value={form.description}
                       onChange={(description) => patch({ description })}
+                      multiLocaleProductId={productId}
                     />
                     <TranslationHint hint={translationHints.description} />
                   </CardContent>
@@ -478,7 +520,16 @@ export function ProductEditor({
                       <p className="text-xs text-muted-foreground">/{form.slug || '…'}</p>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="metaTitle">Meta title</Label>
+                      <ContentLocaleLabel
+                        htmlFor="metaTitle"
+                        translationTarget={
+                          productId ? { kind: 'product-meta-title', productId } : undefined
+                        }
+                        translationFieldLabel="Meta title"
+                        onTranslationsSaved={() => void reloadProductTranslations()}
+                      >
+                        Meta title
+                      </ContentLocaleLabel>
                       <Input
                         id="metaTitle"
                         value={form.metaTitle}
@@ -489,7 +540,17 @@ export function ProductEditor({
                       <p className="text-xs text-muted-foreground">{form.metaTitle.length}/120</p>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="metaDesc">Meta description</Label>
+                      <ContentLocaleLabel
+                        htmlFor="metaDesc"
+                        translationTarget={
+                          productId ? { kind: 'product-meta-desc', productId } : undefined
+                        }
+                        translationFieldLabel="Meta description"
+                        multiline
+                        onTranslationsSaved={() => void reloadProductTranslations()}
+                      >
+                        Meta description
+                      </ContentLocaleLabel>
                       <Textarea
                         id="metaDesc"
                         value={form.metaDesc}

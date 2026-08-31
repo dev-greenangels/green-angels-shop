@@ -12,16 +12,22 @@ export const RESERVED_PUBLIC_SEGMENTS = new Set([
   'catalog',
   'checkout',
   'contacts',
+  'cookies',
   'faq',
   'favorites',
+  'fresh-photos',
+  'marketing',
   'new-arrivals',
   'plants',
+  'privacy',
   'product',
   'promotions',
+  'returns',
   'reviews',
   'search',
   'shipping',
   'terms',
+  'wholesale',
 ])
 
 export function catalogRootHref(rootSlug: string): string {

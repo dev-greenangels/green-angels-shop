@@ -1,8 +1,11 @@
+export type ColorDisplayMode = 'TEXT' | 'SWATCH' | 'BOTH'
+
 export type CharacteristicOption = {
   id: string
   slug: string
   label: string
   labelHint?: { locale: string; text: string } | null
+  colorHex?: string | null
   sortOrder: number
 }
 
@@ -11,11 +14,12 @@ export type CharacteristicDefinition = {
   slug: string
   name: string
   nameHint?: { locale: string; text: string } | null
-  valueType: 'SELECT' | 'MULTI_SELECT' | 'NUMBER' | 'TEXT'
+  valueType: 'SELECT' | 'MULTI_SELECT' | 'NUMBER' | 'TEXT' | 'COLOR'
   unit: string | null
   isFilterable: boolean
   showOnProductPage: boolean
   icon: string | null
+  colorDisplayMode: ColorDisplayMode | null
   sortOrder: number
   options: CharacteristicOption[]
 }
@@ -139,6 +143,7 @@ export async function fetchCharacteristicDefinitions(options?: {
     isFilterable: item.isFilterable ?? true,
     showOnProductPage: item.showOnProductPage ?? false,
     icon: item.icon ?? null,
+    colorDisplayMode: item.colorDisplayMode ?? null,
     sortOrder: item.sortOrder ?? 0,
     options: item.options ?? [],
   }))
@@ -153,7 +158,8 @@ export async function createCharacteristic(
     isFilterable?: boolean
     showOnProductPage?: boolean
     icon?: string
-    options?: Array<{ label: string; slug?: string }>
+    colorDisplayMode?: ColorDisplayMode
+    options?: Array<{ label: string; slug?: string; colorHex?: string | null }>
   },
   locale: string,
 ): Promise<CharacteristicDefinition> {
@@ -176,8 +182,9 @@ export async function updateCharacteristic(
     isFilterable: boolean
     showOnProductPage: boolean
     icon: string | null
+    colorDisplayMode?: ColorDisplayMode | null
     sortOrder: number
-    options: Array<{ id?: string; label: string; slug?: string; sortOrder?: number }>
+    options: Array<{ id?: string; label: string; slug?: string; colorHex?: string | null; sortOrder?: number }>
   }>,
   locale: string,
 ): Promise<CharacteristicDefinition> {

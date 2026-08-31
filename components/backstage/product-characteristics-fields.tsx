@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
+import { ColorSwatchPreview } from '@/components/backstage/color-hex-field'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -114,7 +115,7 @@ export function ProductCharacteristicsFields({
         continue
       }
 
-      if (definition.valueType === 'SELECT') {
+      if (definition.valueType === 'SELECT' || definition.valueType === 'COLOR') {
         const optionId = typeof fieldValue === 'string' ? fieldValue : ''
         if (!optionId) continue
         const option = definition.options.find((item) => item.id === optionId)
@@ -148,7 +149,7 @@ export function ProductCharacteristicsFields({
         const selected = Array.isArray(fieldValue) ? fieldValue : []
         return definition.options.some((option) => !selected.includes(option.id))
       }
-      if (definition.valueType === 'SELECT') {
+      if (definition.valueType === 'SELECT' || definition.valueType === 'COLOR') {
         return !(typeof fieldValue === 'string' && fieldValue)
       }
       return !(typeof fieldValue === 'string' && fieldValue.trim())
@@ -162,7 +163,8 @@ export function ProductCharacteristicsFields({
     if (!pendingDefinition) return []
     if (
       pendingDefinition.valueType !== 'SELECT' &&
-      pendingDefinition.valueType !== 'MULTI_SELECT'
+      pendingDefinition.valueType !== 'MULTI_SELECT' &&
+      pendingDefinition.valueType !== 'COLOR'
     ) {
       return []
     }
@@ -179,7 +181,8 @@ export function ProductCharacteristicsFields({
     if (!pendingCharacteristicId || !pendingDefinition) return false
     if (
       pendingDefinition.valueType === 'SELECT' ||
-      pendingDefinition.valueType === 'MULTI_SELECT'
+      pendingDefinition.valueType === 'MULTI_SELECT' ||
+      pendingDefinition.valueType === 'COLOR'
     ) {
       return Boolean(pendingValueId)
     }
@@ -220,7 +223,10 @@ export function ProductCharacteristicsFields({
         ...current,
         [pendingDefinition.id]: [...selected, pendingValueId],
       })
-    } else if (pendingDefinition.valueType === 'SELECT' && pendingValueId) {
+    } else if (
+      (pendingDefinition.valueType === 'SELECT' || pendingDefinition.valueType === 'COLOR') &&
+      pendingValueId
+    ) {
       onChange({
         ...current,
         [pendingDefinition.id]: pendingValueId,
@@ -264,7 +270,18 @@ export function ProductCharacteristicsFields({
             >
               <span className="truncate">
                 <span className="text-muted-foreground">{chip.label}:</span>{' '}
-                <span className="font-medium text-foreground">{chip.valueLabel}</span>
+                {(() => {
+                  const definition = definitions.find((item) => item.id === chip.characteristicId)
+                  const option = definition?.options.find((item) => item.id === chip.optionId)
+                  return option?.colorHex ? (
+                    <span className="inline-flex items-center gap-1 font-medium text-foreground">
+                      <ColorSwatchPreview hex={option.colorHex} />
+                      {chip.valueLabel}
+                    </span>
+                  ) : (
+                    <span className="font-medium text-foreground">{chip.valueLabel}</span>
+                  )
+                })()}
               </span>
               <button
                 type="button"
@@ -334,7 +351,10 @@ export function ProductCharacteristicsFields({
                   <SelectItem value="__none__">{tHints('notSelectedOption')}</SelectItem>
                   {pendingOptions.map((option) => (
                     <SelectItem key={option.id} value={option.id}>
-                      {option.label}
+                      <span className="inline-flex items-center gap-2">
+                        {option.colorHex ? <ColorSwatchPreview hex={option.colorHex} /> : null}
+                        {option.label}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>

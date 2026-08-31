@@ -346,7 +346,7 @@ export const CheckoutOrderSummary = memo(function CheckoutOrderSummary({
             onCheckedChange={(checked) => onPrivacyConsentChange?.(checked === true)}
             aria-invalid={privacyConsentError}
             className={cn(
-              'mt-0.5 size-4 shrink-0 rounded-[4px] border-2',
+              'mt-0.5 size-5 shrink-0 rounded-[4px] border-2',
               privacyConsentError && 'border-destructive',
             )}
           />

@@ -13,10 +13,50 @@ export function formatStoreAddress(
   return [store.addressLine1.trim(), store.addressLine2.trim()].filter(Boolean).join(', ')
 }
 
+/** Reject incomplete short links like `https://maps.app.goo.gl` (no share id). */
+export function isUsableStoreMapsUrl(url: string): boolean {
+  const trimmed = url.trim()
+  if (!trimmed) return false
+  try {
+    const parsed = new URL(trimmed)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false
+    const host = parsed.hostname.toLowerCase()
+    const path = parsed.pathname.replace(/\/+$/, '') || '/'
+    if (
+      (host === 'maps.app.goo.gl' ||
+        host === 'goo.gl' ||
+        host.endsWith('.app.goo.gl')) &&
+      path === '/'
+    ) {
+      return false
+    }
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function buildStoreMapsSearchUrl(
+  store: Pick<StoreContactSettings, 'addressLine1' | 'addressLine2'>,
+): string {
+  const address = formatStoreAddress(store)
+  if (!address) return ''
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
+}
+
+/** Configured Maps URL only (empty if missing/invalid). */
 export function getStoreMapsUrl(
   store: Pick<StoreContactSettings, 'mapsUrl'>,
 ): string {
-  return store.mapsUrl?.trim() ?? ''
+  const configured = store.mapsUrl?.trim() ?? ''
+  return isUsableStoreMapsUrl(configured) ? configured : ''
+}
+
+/** Prefer configured share link; otherwise open Google Maps search by address. */
+export function resolveStoreMapsHref(
+  store: Pick<StoreContactSettings, 'addressLine1' | 'addressLine2' | 'mapsUrl'>,
+): string {
+  return getStoreMapsUrl(store) || buildStoreMapsSearchUrl(store)
 }
 
 export function getStoreMapsEmbedUrl(store: StoreContactSettings, locale = 'uk'): string {

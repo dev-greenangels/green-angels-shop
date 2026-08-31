@@ -60,6 +60,7 @@ export function CategoryFormDialog({
   submitLabel,
   hints,
   onSubmit,
+  onTranslationsSaved,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -78,6 +79,7 @@ export function CategoryFormDialog({
     metaDesc?: { locale: string; text: string } | null
   }
   onSubmit: (values: CategoryFormValues) => Promise<void>
+  onTranslationsSaved?: () => void | Promise<void>
 }) {
   const [form, setForm] = useState<CategoryFormValues>(emptyForm)
   const [slugTouched, setSlugTouched] = useState(false)
@@ -148,7 +150,16 @@ export function CategoryFormDialog({
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
           <ContentLocaleBanner />
           <div className="space-y-2">
-            <ContentLocaleLabel htmlFor="category-name">{tLabels('nameRequired')}</ContentLocaleLabel>
+            <ContentLocaleLabel
+              htmlFor="category-name"
+              translationTarget={
+                categoryId ? { kind: 'category-name', categoryId } : undefined
+              }
+              translationFieldLabel={tLabels('nameRequired')}
+              onTranslationsSaved={() => void onTranslationsSaved?.()}
+            >
+              {tLabels('nameRequired')}
+            </ContentLocaleLabel>
             <Input
               id="category-name"
               value={form.name}
@@ -215,7 +226,17 @@ export function CategoryFormDialog({
           />
 
           <div className="space-y-2">
-            <ContentLocaleLabel htmlFor="category-description">{tLabels('shortDescription')}</ContentLocaleLabel>
+            <ContentLocaleLabel
+              htmlFor="category-description"
+              translationTarget={
+                categoryId ? { kind: 'category-description', categoryId } : undefined
+              }
+              translationFieldLabel={tLabels('shortDescription')}
+              multiline
+              onTranslationsSaved={() => void onTranslationsSaved?.()}
+            >
+              {tLabels('shortDescription')}
+            </ContentLocaleLabel>
             <Textarea
               id="category-description"
               value={form.description}
@@ -228,7 +249,16 @@ export function CategoryFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category-meta-title">SEO title</Label>
+            <ContentLocaleLabel
+              htmlFor="category-meta-title"
+              translationTarget={
+                categoryId ? { kind: 'category-meta-title', categoryId } : undefined
+              }
+              translationFieldLabel="SEO title"
+              onTranslationsSaved={() => void onTranslationsSaved?.()}
+            >
+              SEO title
+            </ContentLocaleLabel>
             <Input
               id="category-meta-title"
               value={form.metaTitle}
@@ -239,7 +269,17 @@ export function CategoryFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category-meta-desc">SEO description</Label>
+            <ContentLocaleLabel
+              htmlFor="category-meta-desc"
+              translationTarget={
+                categoryId ? { kind: 'category-meta-desc', categoryId } : undefined
+              }
+              translationFieldLabel="SEO description"
+              multiline
+              onTranslationsSaved={() => void onTranslationsSaved?.()}
+            >
+              SEO description
+            </ContentLocaleLabel>
             <Textarea
               id="category-meta-desc"
               value={form.metaDesc}
@@ -251,7 +291,19 @@ export function CategoryFormDialog({
           </div>
 
           <div className="space-y-2">
-            <ContentLocaleLabel htmlFor="category-footer-description">{tLabels('footerDescription')}</ContentLocaleLabel>
+            <ContentLocaleLabel
+              htmlFor="category-footer-description"
+              translationTarget={
+                categoryId
+                  ? { kind: 'category-footer-description', categoryId }
+                  : undefined
+              }
+              translationFieldLabel={tLabels('footerDescription')}
+              multiline
+              onTranslationsSaved={() => void onTranslationsSaved?.()}
+            >
+              {tLabels('footerDescription')}
+            </ContentLocaleLabel>
             <Textarea
               id="category-footer-description"
               value={form.footerDescription}

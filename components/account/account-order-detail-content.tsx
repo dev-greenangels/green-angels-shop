@@ -8,6 +8,7 @@ import {
   AccountPageError,
   AccountPageLoading,
 } from '@/components/account/account-page-state'
+import { ContractWithdrawalAccountDialog } from '@/components/legal/contract-withdrawal-account-dialog'
 import { FormattedPrice } from '@/components/commerce/formatted-price'
 import { Link } from '@/i18n/navigation'
 import {
@@ -22,6 +23,7 @@ import {
 import { formatDateTime } from '@/lib/i18n/format-datetime'
 import { buildTrackingUrl } from '@/lib/shipping/tracking'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 type Props = {
   orderId: string
@@ -30,8 +32,10 @@ type Props = {
 export function AccountOrderDetailContent({ orderId }: Props) {
   const t = useTranslations('account')
   const tCheckout = useTranslations('checkout')
+  const tWithdrawal = useTranslations('contractWithdrawal')
   const locale = useLocale()
   const [order, setOrder] = useState<AccountOrderDetail | null>(null)
+  const [withdrawalOpen, setWithdrawalOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [reloadToken, setReloadToken] = useState(0)
@@ -114,14 +118,28 @@ export function AccountOrderDetailContent({ orderId }: Props) {
         >
           {t('backToOrders')}
         </Link>
-        <span
-          className={cn(
-            'rounded-full px-2.5 py-0.5 text-xs font-medium',
-            orderStatusBadgeClass(status),
-          )}
-        >
-          {orderStatusLabel(status, order.statusLabel)}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          {order.withdrawalActionVisible ? (
+            <>
+              <Button type="button" variant="outline" onClick={() => setWithdrawalOpen(true)}>
+                {tWithdrawal('accountCta')}
+              </Button>
+              <ContractWithdrawalAccountDialog
+                orderId={order.id}
+                open={withdrawalOpen}
+                onOpenChange={setWithdrawalOpen}
+              />
+            </>
+          ) : null}
+          <span
+            className={cn(
+              'rounded-full px-2.5 py-0.5 text-xs font-medium',
+              orderStatusBadgeClass(status),
+            )}
+          >
+            {orderStatusLabel(status, order.statusLabel)}
+          </span>
+        </div>
       </div>
 
       <div className="space-y-1">

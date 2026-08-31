@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Loader2, Plus, Save, Trash2 } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 
-import { ContentLocaleLabel, TranslationHint } from '@/components/backstage/content-locale-banner'
+import { ContentLocaleLabel, LocaleTranslationButton, TranslationHint } from '@/components/backstage/content-locale-banner'
+import { ColorDisplayModeField } from '@/components/backstage/color-display-mode-field'
+import { ColorHexField } from '@/components/backstage/color-hex-field'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -16,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { CharacteristicDefinition } from '@/lib/backstage/characteristics'
+import type { CharacteristicDefinition, ColorDisplayMode } from '@/lib/backstage/characteristics'
 import { CHARACTERISTIC_ICON_OPTIONS } from '@/lib/characteristics/icons'
 import { cn } from '@/lib/utils'
 
@@ -26,6 +28,7 @@ export type CharacteristicOptionDraft = {
   label: string
   labelHint?: { locale: string; text: string } | null
   slug: string
+  colorHex: string
 }
 
 function useValueTypeLabel(valueType: CharacteristicDefinition['valueType']) {
@@ -33,11 +36,12 @@ function useValueTypeLabel(valueType: CharacteristicDefinition['valueType']) {
   return tValueTypes(valueType)
 }
 
-function createOptionDraft(partial?: Partial<CharacteristicOptionDraft>): CharacteristicOptionDraft {
+export function createOptionDraft(partial?: Partial<CharacteristicOptionDraft>): CharacteristicOptionDraft {
   return {
     key: crypto.randomUUID(),
     label: '',
     slug: '',
+    colorHex: '',
     ...partial,
   }
 }
@@ -49,7 +53,15 @@ function definitionToOptionDrafts(definition: CharacteristicDefinition): Charact
     label: option.label,
     labelHint: option.labelHint ?? null,
     slug: option.slug,
+    colorHex: option.colorHex ?? '',
   }))
+}
+
+export type CharacteristicEditorActions = {
+  isDirty: boolean
+  saving?: boolean
+  save: () => Promise<void>
+  delete: () => void
 }
 
 export function CharacteristicEditor({
@@ -57,6 +69,8 @@ export function CharacteristicEditor({
   saving,
   onSave,
   onDelete,
+  onActionsChange,
+  onReload,
 }: {
   definition: CharacteristicDefinition
   saving?: boolean
@@ -67,11 +81,13 @@ export function CharacteristicEditor({
     isFilterable: boolean
     showOnProductPage: boolean
     icon: string | null
+    colorDisplayMode: ColorDisplayMode | null
     options: CharacteristicOptionDraft[]
   }) => Promise<void>
   onDelete: () => Promise<void>
+  onActionsChange?: (actions: CharacteristicEditorActions) => void
+  onReload?: () => void
 }) {
-  const tActions = useTranslations('actions')
   const tHints = useTranslations('hints')
   const tLabels = useTranslations('labels')
   const tAria = useTranslations('aria')
@@ -84,6 +100,9 @@ export function CharacteristicEditor({
   const [isFilterable, setIsFilterable] = useState(definition.isFilterable)
   const [showOnProductPage, setShowOnProductPage] = useState(definition.showOnProductPage)
   const [icon, setIcon] = useState(definition.icon ?? '')
+  const [colorDisplayMode, setColorDisplayMode] = useState<ColorDisplayMode>(
+    definition.colorDisplayMode ?? 'BOTH',
+  )
   const [options, setOptions] = useState<CharacteristicOptionDraft[]>(() =>
     definitionToOptionDrafts(definition),
   )
@@ -95,6 +114,7 @@ export function CharacteristicEditor({
     setIsFilterable(definition.isFilterable)
     setShowOnProductPage(definition.showOnProductPage)
     setIcon(definition.icon ?? '')
+    setColorDisplayMode(definition.colorDisplayMode ?? 'BOTH')
     setOptions(definitionToOptionDrafts(definition))
   }, [definition])
 
@@ -104,6 +124,7 @@ export function CharacteristicEditor({
     if ((unit.trim() || null) !== definition.unit) return true
     if (isFilterable !== definition.isFilterable) return true
     if (showOnProductPage !== definition.showOnProductPage) return true
+    if ((definition.colorDisplayMode ?? 'BOTH') !== colorDisplayMode) return true
     if ((icon.trim() || null) !== definition.icon) return true
     const baseline = definitionToOptionDrafts(definition)
     if (options.length !== baseline.length) return true
@@ -112,13 +133,15 @@ export function CharacteristicEditor({
       return (
         row.label.trim() !== base.label.trim() ||
         row.slug.trim() !== base.slug.trim() ||
+        row.colorHex.trim() !== base.colorHex.trim() ||
         row.id !== base.id
       )
     })
-  }, [definition, icon, isFilterable, name, options, showOnProductPage, unit, valueType])
+  }, [definition, icon, isFilterable, name, options, showOnProductPage, colorDisplayMode, unit, valueType])
 
   const showOptions =
-    valueType === 'SELECT' || valueType === 'MULTI_SELECT'
+    valueType === 'SELECT' || valueType === 'MULTI_SELECT' || valueType === 'COLOR'
+  const isColorType = valueType === 'COLOR'
 
   const patchOption = (key: string, patch: Partial<CharacteristicOptionDraft>) => {
     setOptions((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)))
@@ -132,63 +155,90 @@ export function CharacteristicEditor({
       isFilterable,
       showOnProductPage,
       icon: showOnProductPage ? icon.trim() || null : null,
+      colorDisplayMode: isColorType ? colorDisplayMode : null,
       options: options
-        .filter((row) => row.label.trim())
+        .filter((row) => row.id || row.label.trim())
         .map((row) => ({
           key: row.key,
           id: row.id,
           label: row.label,
           slug: row.slug,
+          colorHex: row.colorHex.trim() || null,
         })),
     })
   }
 
+  const handleSaveRef = useRef(handleSave)
+  handleSaveRef.current = handleSave
+
+  const onDeleteRef = useRef(onDelete)
+  onDeleteRef.current = onDelete
+
+  useEffect(() => {
+    onActionsChange?.({
+      isDirty,
+      saving,
+      save: () => handleSaveRef.current(),
+      delete: () => void onDeleteRef.current(),
+    })
+  }, [isDirty, saving, onActionsChange])
+
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-        <div className="space-y-4 pb-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <ContentLocaleLabel htmlFor="char-name">{tLabels('nameRequired')}</ContentLocaleLabel>
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-[12rem] flex-1 basis-[14rem] space-y-2">
+              <ContentLocaleLabel
+                htmlFor="char-name"
+                translationTarget={{ kind: 'characteristic-name', characteristicId: definition.id }}
+                translationFieldLabel={tLabels('nameRequired')}
+                onTranslationsSaved={onReload}
+              >
+                {tLabels('nameRequired')}
+              </ContentLocaleLabel>
               <Input
                 id="char-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={tBanner('missingPlaceholder')}
+                className="h-9"
               />
               <TranslationHint hint={definition.nameHint} />
-              <p className="text-xs text-muted-foreground">Slug: {definition.slug}</p>
             </div>
-            <div className="space-y-2">
+            <div className="min-w-[10rem] flex-1 basis-[11rem] space-y-2 sm:max-w-[14rem] sm:flex-none">
               <Label>{tLabels('valueType')}</Label>
               <Select
                 value={valueType}
                 onValueChange={(next) => setValueType(next as CharacteristicDefinition['valueType'])}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue>{tValueTypes(valueType)}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {(['SELECT', 'MULTI_SELECT', 'NUMBER', 'TEXT'] as const).map((key) => (
+                  {(['SELECT', 'MULTI_SELECT', 'COLOR', 'NUMBER', 'TEXT'] as const).map((key) => (
                     <SelectItem key={key} value={key}>
                       {tValueTypes(key)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {valueType !== definition.valueType ? (
-                <p className="text-xs text-muted-foreground">{tHints('valueTypeChangeHint')}</p>
-              ) : null}
             </div>
-            <div className="space-y-2">
+            <div className="min-w-[6rem] flex-1 basis-[8rem] space-y-2 sm:max-w-[10rem] sm:flex-none">
               <Label htmlFor="char-unit">{tLabels('unit')}</Label>
               <Input
                 id="char-unit"
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
                 placeholder={tHints('unitPlaceholder')}
+                className="h-9"
               />
             </div>
+          </div>
+          {valueType !== definition.valueType ? (
+            <p className="text-xs text-muted-foreground">{tHints('valueTypeChangeHint')}</p>
+          ) : null}
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex items-end gap-2 pb-2">
               <Checkbox
                 id="char-filterable"
@@ -237,6 +287,9 @@ export function CharacteristicEditor({
                 </div>
               </div>
             ) : null}
+            {isColorType && showOnProductPage ? (
+              <ColorDisplayModeField value={colorDisplayMode} onChange={setColorDisplayMode} />
+            ) : null}
           </div>
 
           {showOptions ? (
@@ -254,9 +307,17 @@ export function CharacteristicEditor({
                     {tLabels('option')}
                   </Button>
                 </div>
-                <div className="grid grid-cols-[1fr_1fr_40px] gap-2 border-t border-border/60 bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">
+                <div
+                  className={cn(
+                    'grid gap-2 border-t border-border/60 bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground',
+                    isColorType
+                      ? 'grid-cols-[1fr_1fr_minmax(148px,1fr)_40px]'
+                      : 'grid-cols-[1fr_1fr_40px]',
+                  )}
+                >
                   <span>{tLabels('name')}</span>
                   <span>{tLabels('slugTechnical')}</span>
+                  {isColorType ? <span>{tLabels('color')}</span> : null}
                   <span />
                 </div>
               </div>
@@ -270,15 +331,35 @@ export function CharacteristicEditor({
                     {options.map((row) => (
                       <div
                         key={row.key}
-                        className="grid grid-cols-[1fr_1fr_40px] items-center gap-2 px-3 py-2"
+                        className={cn(
+                          'grid items-start gap-2 px-3 py-2',
+                          isColorType
+                            ? 'grid-cols-[1fr_1fr_minmax(148px,1fr)_40px]'
+                            : 'grid-cols-[1fr_1fr_40px]',
+                        )}
                       >
-                        <Input
-                          value={row.label}
-                          onChange={(e) => patchOption(row.key, { label: e.target.value })}
-                          placeholder={tBanner('missingPlaceholder')}
-                          className="h-9"
-                        />
-                        <TranslationHint hint={row.labelHint} />
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={row.label}
+                              onChange={(e) => patchOption(row.key, { label: e.target.value })}
+                              placeholder={tBanner('missingPlaceholder')}
+                              className="h-9 min-w-0 flex-1"
+                            />
+                            {row.id ? (
+                              <LocaleTranslationButton
+                                translationTarget={{
+                                  kind: 'characteristic-option-label',
+                                  characteristicId: definition.id,
+                                  optionId: row.id,
+                                }}
+                                translationFieldLabel={tLabels('name')}
+                                onTranslationsSaved={onReload}
+                              />
+                            ) : null}
+                          </div>
+                          <TranslationHint hint={row.labelHint} />
+                        </div>
                         <Input
                           value={row.slug}
                           onChange={(e) => patchOption(row.key, { slug: e.target.value })}
@@ -286,6 +367,13 @@ export function CharacteristicEditor({
                           className="h-9 font-mono text-xs"
                           disabled={Boolean(row.id)}
                         />
+                        {isColorType ? (
+                          <ColorHexField
+                            value={row.colorHex}
+                            onChange={(colorHex) => patchOption(row.key, { colorHex })}
+                            compact
+                          />
+                        ) : null}
                         <Button
                           type="button"
                           variant="ghost"
@@ -305,39 +393,6 @@ export function CharacteristicEditor({
               </div>
             </div>
           ) : null}
-        </div>
-      </div>
-
-      <div
-        className={cn(
-          'shrink-0 border-t border-border/60 pt-4',
-          'bg-background/20 backdrop-blur-md supports-[backdrop-filter]:bg-background/80',
-        )}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={() => void onDelete()}
-            disabled={saving}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-              {tLabels('deleteCharacteristic')}
-            </Button>
-            <Button type="button" onClick={() => void handleSave()} disabled={saving || !isDirty}>
-              {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {tActions('saving')}
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  {tActions('saveChanges')}
-              </>
-            )}
-          </Button>
         </div>
       </div>
     </div>
@@ -376,34 +431,126 @@ export function CharacteristicListItem({
   )
 }
 
+export function CreateCharacteristicOptionsList({
+  valueType,
+  options,
+  onChange,
+}: {
+  valueType: CharacteristicDefinition['valueType']
+  options: CharacteristicOptionDraft[]
+  onChange: (options: CharacteristicOptionDraft[]) => void
+}) {
+  const tHints = useTranslations('hints')
+  const tLabels = useTranslations('labels')
+  const tAria = useTranslations('aria')
+  const tBanner = useTranslations('contentBanner')
+  const isColorType = valueType === 'COLOR'
+
+  const patchOption = (key: string, patch: Partial<CharacteristicOptionDraft>) => {
+    onChange(options.map((row) => (row.key === key ? { ...row, ...patch } : row)))
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <Label>{tLabels('optionsRequired')}</Label>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onChange([...options, createOptionDraft()])}
+        >
+          <Plus className="mr-1 h-4 w-4" />
+          {tLabels('option')}
+        </Button>
+      </div>
+      {options.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{tHints('addOptionsForList')}</p>
+      ) : (
+        <div className="overflow-hidden rounded-lg border border-border">
+          <div
+            className={cn(
+              'grid gap-2 border-b border-border/60 bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground',
+              isColorType
+                ? 'grid-cols-[1fr_minmax(148px,1fr)_40px]'
+                : 'grid-cols-[1fr_40px]',
+            )}
+          >
+            <span>{tLabels('name')}</span>
+            {isColorType ? <span>{tLabels('color')}</span> : null}
+            <span />
+          </div>
+          <div className="divide-y divide-border">
+            {options.map((row) => (
+              <div
+                key={row.key}
+                className={cn(
+                  'grid items-start gap-2 px-3 py-2',
+                  isColorType
+                    ? 'grid-cols-[1fr_minmax(148px,1fr)_40px]'
+                    : 'grid-cols-[1fr_40px]',
+                )}
+              >
+                <Input
+                  value={row.label}
+                  onChange={(e) => patchOption(row.key, { label: e.target.value })}
+                  placeholder={tBanner('missingPlaceholder')}
+                  className="h-9"
+                />
+                {isColorType ? (
+                  <ColorHexField
+                    value={row.colorHex}
+                    onChange={(colorHex) => patchOption(row.key, { colorHex })}
+                    compact
+                  />
+                ) : null}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-destructive hover:text-destructive"
+                  onClick={() => onChange(options.filter((item) => item.key !== row.key))}
+                  aria-label={tAria('deleteOption')}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function CreateCharacteristicFields({
   name,
   valueType,
   unit,
   isFilterable,
-  optionsText,
+  options,
   onNameChange,
   onValueTypeChange,
   onUnitChange,
   onFilterableChange,
-  onOptionsTextChange,
+  onOptionsChange,
 }: {
   name: string
   valueType: CharacteristicDefinition['valueType']
   unit: string
   isFilterable: boolean
-  optionsText: string
+  options: CharacteristicOptionDraft[]
   onNameChange: (value: string) => void
   onValueTypeChange: (value: CharacteristicDefinition['valueType']) => void
   onUnitChange: (value: string) => void
   onFilterableChange: (value: boolean) => void
-  onOptionsTextChange: (value: string) => void
+  onOptionsChange: (options: CharacteristicOptionDraft[]) => void
 }) {
   const tHints = useTranslations('hints')
   const tLabels = useTranslations('labels')
   const tValueTypes = useTranslations('valueTypes')
   const tBanner = useTranslations('contentBanner')
-  const showOptions = valueType === 'SELECT' || valueType === 'MULTI_SELECT'
+  const showOptions = valueType === 'SELECT' || valueType === 'MULTI_SELECT' || valueType === 'COLOR'
 
   return (
     <div className="space-y-4">
@@ -416,29 +563,32 @@ export function CreateCharacteristicFields({
           placeholder={tBanner('missingPlaceholder')}
         />
       </div>
-      <div className="space-y-2">
-        <Label>{tLabels('valueTypeRequired')}</Label>
-        <Select value={valueType} onValueChange={(v) => onValueTypeChange(v as typeof valueType)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(['SELECT', 'MULTI_SELECT', 'NUMBER', 'TEXT'] as const).map((key) => (
-              <SelectItem key={key} value={key}>
-                {tValueTypes(key)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="create-char-unit">{tLabels('unit')}</Label>
-        <Input
-          id="create-char-unit"
-          value={unit}
-          onChange={(e) => onUnitChange(e.target.value)}
-          placeholder={tHints('optional')}
-        />
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-[10rem] flex-1 space-y-2">
+          <Label>{tLabels('valueTypeRequired')}</Label>
+          <Select value={valueType} onValueChange={(v) => onValueTypeChange(v as typeof valueType)}>
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(['SELECT', 'MULTI_SELECT', 'COLOR', 'NUMBER', 'TEXT'] as const).map((key) => (
+                <SelectItem key={key} value={key}>
+                  {tValueTypes(key)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-full min-w-[6rem] max-w-[10rem] space-y-2 sm:w-auto">
+          <Label htmlFor="create-char-unit">{tLabels('unit')}</Label>
+          <Input
+            id="create-char-unit"
+            value={unit}
+            onChange={(e) => onUnitChange(e.target.value)}
+            placeholder={tHints('optional')}
+            className="h-9"
+          />
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <Checkbox
@@ -451,30 +601,29 @@ export function CreateCharacteristicFields({
         </Label>
       </div>
       {showOptions ? (
-        <div className="space-y-2">
-          <Label htmlFor="create-char-options">{tLabels('optionsRequired')}</Label>
-          <textarea
-            id="create-char-options"
-            value={optionsText}
-            onChange={(e) => onOptionsTextChange(e.target.value)}
-            rows={8}
-            placeholder={tHints('characteristicOptionsPlaceholder')}
-            className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm"
-          />
-          <p className="text-xs text-muted-foreground">{tHints('characteristicOptionsFormat')}</p>
-        </div>
+        <CreateCharacteristicOptionsList
+          valueType={valueType}
+          options={options}
+          onChange={onOptionsChange}
+        />
       ) : null}
     </div>
   )
 }
 
-export function parseCharacteristicOptionsText(text: string): Array<{ label: string; slug?: string }> {
+export function parseCharacteristicOptionsText(
+  text: string,
+): Array<{ label: string; slug?: string; colorHex?: string | null }> {
   return text
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const [label, slug] = line.split('|').map((part) => part.trim())
-      return { label, slug: slug || undefined }
+      const [label, slug, colorHex] = line.split('|').map((part) => part.trim())
+      return {
+        label,
+        slug: slug || undefined,
+        colorHex: colorHex || null,
+      }
     })
 }

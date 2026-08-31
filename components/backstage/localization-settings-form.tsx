@@ -13,7 +13,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { TranslationLocaleLabel } from '@/components/backstage/content-locale-banner'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
@@ -146,7 +146,7 @@ function TranslationEntryRow({
           return (
             <div key={locale} className="space-y-1.5">
               <div className="flex items-center justify-between gap-2">
-                <Label className="text-sm font-medium">{LOCALE_LABELS[locale]}</Label>
+                <TranslationLocaleLabel locale={locale} />
                 {isCustom ? (
                   <Button
                     type="button"
@@ -503,7 +503,7 @@ export function LocalizationSettingsForm({
                     <span className="text-lg leading-none" aria-hidden>
                       {LOCALE_FLAGS[locale]}
                     </span>
-                    <span className="text-sm font-medium">{LOCALE_LABELS[locale]}</span>
+                    <span className="text-sm font-normal text-muted-foreground">{LOCALE_LABELS[locale]}</span>
                   </label>
                 )
               })}

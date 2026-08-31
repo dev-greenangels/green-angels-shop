@@ -1,21 +1,27 @@
 'use client'
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import {
-  Bold,
-  Heading2,
-  Heading3,
-  Italic,
-  List,
-  Pilcrow,
-  Type,
-} from 'lucide-react'
+import { Bold, Italic, List, Pilcrow, Type } from 'lucide-react'
 
+import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
+import { toast } from '@/lib/toast'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  applyRichTextBlockFormat,
+  applyRichTextCommand,
+  applyRichTextFontSize,
+  normalizeRichTextHtml,
+  type RichFontSize,
+} from '@/lib/backstage/rich-text-html'
+import {
+  fetchTranslationField,
+  patchTranslationField,
+} from '@/lib/backstage/translation-fields'
+import { LOCALE_FLAGS, SUPPORTED_LOCALES, type AppLocale } from '@/lib/i18n/locales'
 import { cn } from '@/lib/utils'
 
 function ToolbarButton({
@@ -45,100 +51,268 @@ function ToolbarButton({
   )
 }
 
+function RichTextLocaleSwitcher({
+  activeLocale,
+  onSelect,
+  disabled,
+}: {
+  activeLocale: AppLocale
+  onSelect: (locale: AppLocale) => void
+  disabled?: boolean
+}) {
+  const t = useTranslations('common')
+
+  return (
+    <div className="flex flex-wrap items-center gap-1" role="group" aria-label={t('contentLocaleAria')}>
+      {SUPPORTED_LOCALES.map((item) => {
+        const active = item === activeLocale
+        return (
+          <button
+            key={item}
+            type="button"
+            disabled={disabled}
+            onClick={() => {
+              if (item !== activeLocale) onSelect(item)
+            }}
+            className={cn(
+              'inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition-colors',
+              active
+                ? 'border-primary/40 bg-primary/10 text-primary'
+                : 'border-border text-muted-foreground hover:border-primary/40 hover:bg-muted/60 hover:text-foreground',
+              disabled && 'pointer-events-none opacity-50',
+            )}
+            aria-pressed={active}
+            title={item.toUpperCase()}
+          >
+            <span aria-hidden className="text-xs leading-none">
+              {LOCALE_FLAGS[item]}
+            </span>
+            {item}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 export function RichTextEditor({
   id: idProp,
   label,
   value,
   onChange,
   placeholder,
+  multiLocaleProductId,
 }: {
   id?: string
   label?: string
   value: string
   onChange: (html: string) => void
   placeholder?: string
+  /** When set, locale chips switch description per language (auto-saved on switch). */
+  multiLocaleProductId?: string
 }) {
   const te = useTranslations('editor')
   const tl = useTranslations('labels')
   const th = useTranslations('hints')
-  const fontSizes = useMemo(
-    () => [
-      { label: te('fontSmall'), value: '2' },
-      { label: te('fontNormal'), value: '3' },
-      { label: te('fontMedium'), value: '4' },
-      { label: te('fontLarge'), value: '5' },
-    ],
-    [te],
-  )
+  const { locale: contentLocale, ready: contentLocaleReady } = useBackstageContentLocale()
   const autoId = useId()
   const id = idProp ?? autoId
   const editorRef = useRef<HTMLDivElement>(null)
+  const draftsRef = useRef<Partial<Record<AppLocale, string>>>({})
+  const prevContentLocaleRef = useRef<AppLocale>(contentLocale)
+  const [editorLocale, setEditorLocale] = useState<AppLocale>(contentLocale)
   const [mode, setMode] = useState<'visual' | 'html'>('visual')
   const [htmlDraft, setHtmlDraft] = useState(value)
+  const [localeLoading, setLocaleLoading] = useState(false)
   const resolvedLabel = label ?? tl('description')
   const resolvedPlaceholder = placeholder ?? th('productDescriptionPlaceholder')
 
-  useEffect(() => {
-    setHtmlDraft(value)
-    if (mode === 'visual' && editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value
-    }
-  }, [value, mode])
+  const fontSizes: Array<{ label: string; value: RichFontSize }> = [
+    { label: te('fontSmall'), value: 'sm' },
+    { label: te('fontNormal'), value: 'base' },
+    { label: te('fontMedium'), value: 'lg' },
+    { label: te('fontLarge'), value: 'xl' },
+  ]
 
-  const syncFromEditor = () => {
-    const html = editorRef.current?.innerHTML ?? ''
-    onChange(html)
-    setHtmlDraft(html)
+  useEffect(() => {
+    if (!contentLocaleReady) return
+    draftsRef.current[contentLocale] = value
+    setHtmlDraft(value)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial mount sync only
+  }, [contentLocaleReady])
+
+  useEffect(() => {
+    if (prevContentLocaleRef.current === contentLocale) return
+    prevContentLocaleRef.current = contentLocale
+    draftsRef.current[contentLocale] = value
+    setEditorLocale(contentLocale)
+    setHtmlDraft(value)
+  }, [contentLocale, value])
+
+  useEffect(() => {
+    if (!multiLocaleProductId) {
+      return
+    }
+
+    let cancelled = false
+    setLocaleLoading(true)
+    void fetchTranslationField({
+      kind: 'product-description',
+      productId: multiLocaleProductId,
+    })
+      .then((translations) => {
+        if (cancelled) return
+        draftsRef.current = {
+          ...translations,
+          [contentLocale]: value || translations[contentLocale] || '',
+        }
+        setHtmlDraft(draftsRef.current[editorLocale] ?? draftsRef.current[contentLocale] ?? '')
+      })
+      .finally(() => {
+        if (!cancelled) setLocaleLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [multiLocaleProductId])
+
+  const syncVisualFromDraft = (html: string) => {
+    if (!editorRef.current) return
+    if (editorRef.current.innerHTML !== html) {
+      editorRef.current.innerHTML = html
+    }
   }
 
-  const exec = (command: string, commandValue?: string) => {
-    editorRef.current?.focus()
-    document.execCommand(command, false, commandValue)
+  useLayoutEffect(() => {
+    if (mode !== 'visual') return
+    syncVisualFromDraft(htmlDraft)
+  }, [mode, htmlDraft])
+
+  const readCurrentHtml = useCallback(() => {
+    const raw =
+      mode === 'visual'
+        ? (editorRef.current?.innerHTML ?? htmlDraft)
+        : htmlDraft
+    return normalizeRichTextHtml(raw)
+  }, [mode, htmlDraft])
+
+  const commitHtml = useCallback(
+    (raw: string, locale = editorLocale) => {
+      const normalized = normalizeRichTextHtml(raw)
+      draftsRef.current[locale] = normalized
+      setHtmlDraft(normalized)
+      syncVisualFromDraft(normalized)
+      if (locale === contentLocale) {
+        onChange(normalized)
+      }
+      return normalized
+    },
+    [contentLocale, editorLocale, onChange],
+  )
+
+  const syncFromEditor = () => {
+    if (!editorRef.current) return
+    commitHtml(editorRef.current.innerHTML)
+  }
+
+  const switchEditorLocale = async (nextLocale: AppLocale) => {
+    if (nextLocale === editorLocale || localeLoading) return
+
+    const currentHtml = readCurrentHtml()
+    draftsRef.current[editorLocale] = currentHtml
+
+    if (multiLocaleProductId) {
+      setLocaleLoading(true)
+      try {
+        await patchTranslationField(
+          { kind: 'product-description', productId: multiLocaleProductId },
+          { [editorLocale]: currentHtml },
+        )
+        toast.success(te('localeSaved', { locale: editorLocale.toUpperCase() }))
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : te('localeSaveFailed'))
+        return
+      } finally {
+        setLocaleLoading(false)
+      }
+    }
+
+    const nextHtml = draftsRef.current[nextLocale] ?? ''
+    setEditorLocale(nextLocale)
+    setHtmlDraft(nextHtml)
+    syncVisualFromDraft(nextHtml)
+    if (nextLocale === contentLocale) {
+      onChange(nextHtml)
+    }
+  }
+
+  const applyBlockFormat = () => {
+    if (!editorRef.current) return
+    applyRichTextBlockFormat(editorRef.current, 'p')
     syncFromEditor()
   }
 
-  const applyHtml = () => {
-    onChange(htmlDraft)
-    if (editorRef.current) editorRef.current.innerHTML = htmlDraft
+  const applyInlineCommand = (command: 'bold' | 'italic' | 'insertUnorderedList') => {
+    if (!editorRef.current) return
+    applyRichTextCommand(editorRef.current, command)
+    syncFromEditor()
   }
+
+  const applyFontSize = (size: RichFontSize) => {
+    if (!editorRef.current) return
+    applyRichTextFontSize(editorRef.current, size)
+    syncFromEditor()
+  }
+
+  const showLocaleSwitcher = Boolean(multiLocaleProductId && contentLocaleReady)
 
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{resolvedLabel}</Label>
+
       <Tabs
         value={mode}
         onValueChange={(next) => {
           if (next === 'html') {
-            setHtmlDraft(editorRef.current?.innerHTML ?? value)
+            const latest = readCurrentHtml()
+            setHtmlDraft(latest)
+            commitHtml(latest)
           } else if (next === 'visual') {
-            applyHtml()
+            commitHtml(htmlDraft)
           }
           setMode(next as 'visual' | 'html')
         }}
       >
-        <TabsList className="grid w-full max-w-xs grid-cols-2">
-          <TabsTrigger value="visual">{te('tabVisual')}</TabsTrigger>
-          <TabsTrigger value="html">{te('tabHtml')}</TabsTrigger>
-        </TabsList>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+          <TabsList className="grid h-9 w-full max-w-xs grid-cols-2 sm:w-auto">
+            <TabsTrigger value="visual">{te('tabVisual')}</TabsTrigger>
+            <TabsTrigger value="html">{te('tabHtml')}</TabsTrigger>
+          </TabsList>
+          {showLocaleSwitcher ? (
+            <RichTextLocaleSwitcher
+              activeLocale={editorLocale}
+              onSelect={(next) => void switchEditorLocale(next)}
+              disabled={localeLoading}
+            />
+          ) : null}
+        </div>
+        {showLocaleSwitcher ? (
+          <p className="text-xs text-muted-foreground">{th('localeSwitchAutoSave')}</p>
+        ) : null}
 
-        <TabsContent value="visual" className="mt-3 space-y-0">
+        <TabsContent value="visual" forceMount className="mt-3 space-y-0 data-[state=inactive]:hidden">
           <div className="flex flex-wrap items-center gap-0.5 rounded-t-lg border border-b-0 border-border bg-muted/40 p-1">
-            <ToolbarButton onClick={() => exec('bold')} label={te('bold')}>
+            <ToolbarButton onClick={() => applyInlineCommand('bold')} label={te('bold')}>
               <Bold className="h-4 w-4" />
             </ToolbarButton>
-            <ToolbarButton onClick={() => exec('italic')} label={te('italic')}>
+            <ToolbarButton onClick={() => applyInlineCommand('italic')} label={te('italic')}>
               <Italic className="h-4 w-4" />
             </ToolbarButton>
-            <ToolbarButton onClick={() => exec('formatBlock', 'p')} label={te('paragraph')}>
+            <ToolbarButton onClick={applyBlockFormat} label={te('paragraph')}>
               <Pilcrow className="h-4 w-4" />
             </ToolbarButton>
-            <ToolbarButton onClick={() => exec('formatBlock', 'h2')} label={te('heading2')}>
-              <Heading2 className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => exec('formatBlock', 'h3')} label={te('heading3')}>
-              <Heading3 className="h-4 w-4" />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => exec('insertUnorderedList')} label={te('list')}>
+            <ToolbarButton onClick={() => applyInlineCommand('insertUnorderedList')} label={te('list')}>
               <List className="h-4 w-4" />
             </ToolbarButton>
             <div className="mx-1 h-6 w-px bg-border" />
@@ -146,8 +320,8 @@ export function RichTextEditor({
               <Type className="h-4 w-4 text-muted-foreground" aria-hidden />
               <select
                 className="h-8 rounded-md border border-border/80 bg-background px-2 text-xs shadow-sm focus-visible:border-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/20"
-                defaultValue="3"
-                onChange={(e) => exec('fontSize', e.target.value)}
+                defaultValue="base"
+                onChange={(e) => applyFontSize(e.target.value as RichFontSize)}
                 aria-label={te('fontSize')}
               >
                 {fontSizes.map((size) => (
@@ -167,12 +341,10 @@ export function RichTextEditor({
             suppressContentEditableWarning
             data-placeholder={resolvedPlaceholder}
             className={cn(
-              'min-h-[220px] rounded-b-lg border border-border bg-background px-4 py-3 text-sm leading-relaxed',
+              'rich-text-content min-h-[220px] rounded-b-lg border border-border bg-background px-4 py-3 text-sm leading-relaxed',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               'empty:before:pointer-events-none empty:before:text-muted-foreground empty:before:content-[attr(data-placeholder)]',
-              '[&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:text-xl [&_h2]:font-semibold',
-              '[&_h3]:mb-2 [&_h3]:mt-3 [&_h3]:text-lg [&_h3]:font-semibold',
-              '[&_p]:mb-2 [&_ul]:mb-2 [&_ul]:list-disc [&_ul]:pl-5'
+              localeLoading && 'opacity-60',
             )}
             onInput={syncFromEditor}
             onBlur={syncFromEditor}
@@ -183,11 +355,12 @@ export function RichTextEditor({
           <Textarea
             value={htmlDraft}
             onChange={(e) => setHtmlDraft(e.target.value)}
-            onBlur={applyHtml}
+            onBlur={() => commitHtml(htmlDraft)}
             rows={12}
             className="font-mono text-xs"
             placeholder={th('htmlPlaceholder')}
             spellCheck={false}
+            disabled={localeLoading}
           />
           <p className="mt-2 text-xs text-muted-foreground">{th('htmlHint')}</p>
         </TabsContent>

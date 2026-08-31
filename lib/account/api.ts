@@ -73,6 +73,8 @@ export type AccountOrderDetail = AccountOrderListItem & {
   paymentStatus: string | null
   comment: string | null
   shippedAt: string | null
+  deliveredAt: string | null
+  withdrawalActionVisible: boolean
   cancelledAt: string | null
   items: AccountOrderDetailItem[]
 }

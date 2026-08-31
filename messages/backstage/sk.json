@@ -23,6 +23,7 @@
     "legal": "Právne dokumenty",
     "reviews": "Recenzie",
     "wholesaleInquiries": "Veľkoobchodné dopyty",
+    "contractWithdrawals": "Odstúpenia od zmluvy",
     "promotions": "Akcie",
     "referrals": "Odporúčania",
     "referenceData": "Číselníky",
@@ -170,6 +171,7 @@
     "productDescriptionPlaceholder": "Podrobný popis produktu…",
     "htmlPlaceholder": "'<p>Váš HTML obsah…</p>'",
     "htmlHint": "Môžete vložiť hotový HTML. Po prepnutí na Editor sa zobrazí vizuálne.",
+    "localeSwitchAutoSave": "Prepnutie jazyka automaticky uloží aktuálny popis pre predchádzajúci jazyk.",
     "rootCategory": "Koreňová kategória",
     "title": "Nadpis",
     "description": "Popis",
@@ -206,6 +208,7 @@
     "characteristicNamePlaceholder": "Osvetlenie, Polievanie…",
     "optionNamePlaceholder": "Plné slnko",
     "characteristicOptionsFormat": "Každý riadok: „Názov“ alebo „Názov | slug“",
+    "characteristicColorOptionsFormat": "Každý riadok: „Názov“, „Názov | slug“ alebo „Názov | slug | #RRGGBB“",
     "characteristicOptionsPlaceholder": "Plné slnko | full-sun\nPolotien | partial-shade",
     "addOptionsForList": "Pridajte možnosti pre zoznam.",
     "valueTypeChangeHint": "Bezpečné prechody: výber ↔ viacnásobný výber, text ↔ číslo, zoznam → text. Iné zmeny môžu vymazať hodnoty u produktov.",
@@ -283,9 +286,16 @@
     "optionsRequired": "Možnosti *",
     "option": "Možnosť",
     "slugTechnical": "Slug (technický)",
+    "color": "Farba",
+    "pickColor": "Vybrať farbu z palety",
     "showInFilters": "Zobraziť vo filtroch katalógu",
     "showOnProductPage": "Zobraziť na stránke produktu",
     "productPageIcon": "Ikona na stránke produktu",
+    "colorDisplayMode": "Zobrazenie farby na stránke produktu",
+    "colorDisplayText": "Iba text",
+    "colorDisplaySwatch": "Iba vzorka farby",
+    "colorDisplayBoth": "Text a vzorka",
+    "colorDisplayModeHint": "Ako zobraziť hodnoty typu COLOR v bloku charakteristík na stránke produktu.",
     "deleteCharacteristic": "Odstrániť charakteristiku",
     "values": "Hodnoty ({count})",
     "valuesRequired": "Hodnoty *",
@@ -350,7 +360,9 @@
     "fontSmall": "Malé",
     "fontNormal": "Normálne",
     "fontMedium": "Stredné",
-    "fontLarge": "Veľké"
+    "fontLarge": "Veľké",
+    "localeSaved": "Popis uložený ({locale})",
+    "localeSaveFailed": "Nepodarilo sa uložiť popis pre tento jazyk"
   },
   "breadcrumbs": {
     "home": "Domov",
@@ -360,6 +372,15 @@
     "add-plant": "Pridať produkt",
     "edit": "Upraviť produkt",
     "table": "Tabuľka produktov"
+  },
+  "translationDialog": {
+    "title": "Preklady",
+    "description": "Úprava prekladov pre pole „{field}“",
+    "loading": "Načítava sa…",
+    "loadFailed": "Nepodarilo sa načítať preklady",
+    "saveFailed": "Nepodarilo sa uložiť preklady",
+    "openHint": "Otvoriť preklady pre všetky jazyky",
+    "fieldFallback": "Pole"
   },
   "contentBanner": {
     "editing": "Upravujete preklad: {locale}. Slug, cena a obrázky sú spoločné pre všetky jazyky.",
@@ -639,7 +660,8 @@
     "SELECT": "Zoznam (jeden výber)",
     "MULTI_SELECT": "Zoznam (viacnásobný)",
     "NUMBER": "Číslo",
-    "TEXT": "Text"
+    "TEXT": "Text",
+    "COLOR": "Farba"
   },
   "variantAttributeTypes": {
     "UNIVERSAL": "Univerzálny",

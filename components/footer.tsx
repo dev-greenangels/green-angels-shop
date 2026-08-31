@@ -126,11 +126,9 @@ export async function Footer() {
               <Link href="/privacy" className={linkClassName}>
                 {isSkMarket ? t('privacySk') : t('privacy')}
               </Link>
-              {isSkMarket ? (
-                <Link href="/returns" className={linkClassName}>
-                  {t('returnsSk')}
-                </Link>
-              ) : null}
+              <Link href="/returns" className={linkClassName}>
+                {t('returns')}
+              </Link>
               <Link href="/cookies" className={linkClassName}>
                 {t('cookies')}
               </Link>

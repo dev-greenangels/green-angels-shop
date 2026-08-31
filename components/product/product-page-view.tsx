@@ -123,7 +123,7 @@ export async function ProductPageView({
                 })}
               </h2>
               <div
-                className="prose prose-neutral max-w-none text-muted-foreground leading-relaxed"
+                className="rich-text-content max-w-none leading-relaxed text-muted-foreground"
                 dangerouslySetInnerHTML={{ __html: plant.description }}
               />
             </section>

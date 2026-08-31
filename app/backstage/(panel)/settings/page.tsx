@@ -14,6 +14,7 @@ import { FlexiSettingsForm } from '@/components/backstage/flexi-settings-form'
 import { RecentlyViewedSettingsForm } from '@/components/backstage/recently-viewed-settings-form'
 import { MarketSettingsForm } from '@/components/backstage/market-settings-form'
 import { clearRecentlyViewedSettingsCache } from '@/components/product/recently-viewed-section'
+import { WithdrawalSettingsForm } from '@/components/backstage/withdrawal-settings-form'
 import { StoreContactSettingsForm } from '@/components/backstage/store-contact-settings-form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -29,6 +30,7 @@ import {
   updateBackstageMediaWatermarkSettings,
   updateBackstageRecentlyViewedSettings,
   updateBackstageStoreSettings,
+  updateBackstageWithdrawalSettings,
   updateBackstagePrestaImportSettings,
 } from '@/lib/backstage/settings'
 import { fetchCurrencies } from '@/lib/backstage/reference-data'
@@ -58,6 +60,7 @@ import type {
   RecentlyViewedSettings,
   StoreContactSettings,
 } from '@/lib/settings/types'
+import type { WithdrawalSettings } from '@/lib/settings/withdrawal'
 
 function stableJson(value: unknown): string {
   return JSON.stringify(value)
@@ -73,6 +76,7 @@ export default function SettingsPage() {
   const [savingRecentlyViewed, setSavingRecentlyViewed] = useState(false)
   const [savingPrestaImport, setSavingPrestaImport] = useState(false)
   const [savingMarket, setSavingMarket] = useState(false)
+  const [savingWithdrawal, setSavingWithdrawal] = useState(false)
   const [store, setStore] = useState<StoreContactSettings | null>(null)
   const [cart, setCart] = useState<CartCheckoutSettings | null>(null)
   const [catalog, setCatalog] = useState<CatalogPageSettings | null>(null)
@@ -80,6 +84,7 @@ export default function SettingsPage() {
   const [recentlyViewed, setRecentlyViewed] = useState<RecentlyViewedSettings | null>(null)
   const [prestaImport, setPrestaImport] = useState<PrestaImportSettings | null>(null)
   const [market, setMarket] = useState<MarketSettings | null>(null)
+  const [withdrawal, setWithdrawal] = useState<WithdrawalSettings | null>(null)
   const [currencies, setCurrencies] = useState<CurrencyInfo[]>([])
   const [currenciesLoading, setCurrenciesLoading] = useState(true)
   const [baselineStore, setBaselineStore] = useState<string | null>(null)
@@ -89,6 +94,7 @@ export default function SettingsPage() {
   const [baselineRecentlyViewed, setBaselineRecentlyViewed] = useState<string | null>(null)
   const [baselinePrestaImport, setBaselinePrestaImport] = useState<string | null>(null)
   const [baselineMarket, setBaselineMarket] = useState<string | null>(null)
+  const [baselineWithdrawal, setBaselineWithdrawal] = useState<string | null>(null)
 
   const storeDirty = useMemo(
     () => Boolean(store && baselineStore && stableJson(store) !== baselineStore),
@@ -131,6 +137,10 @@ export default function SettingsPage() {
     () => Boolean(market && baselineMarket && stableJson(market) !== baselineMarket),
     [market, baselineMarket],
   )
+  const withdrawalDirty = useMemo(
+    () => Boolean(withdrawal && baselineWithdrawal && stableJson(withdrawal) !== baselineWithdrawal),
+    [withdrawal, baselineWithdrawal],
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -151,6 +161,7 @@ export default function SettingsPage() {
         data.prestaImport ?? DEFAULT_PRESTA_IMPORT_SETTINGS,
       )
       const nextMarket = normalizeMarketSettings(data.market ?? DEFAULT_MARKET_SETTINGS)
+      const nextWithdrawal = data.withdrawalFull ?? null
       setStore(nextStore)
       setCart(nextCart)
       setCatalog(nextCatalog)
@@ -158,6 +169,7 @@ export default function SettingsPage() {
       setRecentlyViewed(nextRecently)
       setPrestaImport(nextPresta)
       setMarket(nextMarket)
+      setWithdrawal(nextWithdrawal)
       setCurrencies(currenciesData)
       setBaselineStore(stableJson(nextStore))
       setBaselineCart(stableJson(nextCart))
@@ -166,6 +178,7 @@ export default function SettingsPage() {
       setBaselineRecentlyViewed(stableJson(nextRecently))
       setBaselinePrestaImport(stableJson(nextPresta))
       setBaselineMarket(stableJson(nextMarket))
+      setBaselineWithdrawal(nextWithdrawal ? stableJson(nextWithdrawal) : null)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося завантажити налаштування.')
       setStore(null)
@@ -175,6 +188,7 @@ export default function SettingsPage() {
       setRecentlyViewed(null)
       setPrestaImport(null)
       setMarket(null)
+      setWithdrawal(null)
     } finally {
       setLoading(false)
       setCurrenciesLoading(false)
@@ -281,6 +295,21 @@ export default function SettingsPage() {
     }
   }
 
+  const saveWithdrawal = async () => {
+    if (!withdrawal) return
+    setSavingWithdrawal(true)
+    try {
+      const updated = await updateBackstageWithdrawalSettings(withdrawal)
+      setWithdrawal(updated)
+      setBaselineWithdrawal(stableJson(updated))
+      toast.success('Налаштування odstúpenia збережено.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
+    } finally {
+      setSavingWithdrawal(false)
+    }
+  }
+
   const saveMarket = async () => {
     if (!market) return
     setSavingMarket(true)
@@ -362,6 +391,7 @@ export default function SettingsPage() {
             <TabsTrigger value="packeta">Packeta</TabsTrigger>
             <TabsTrigger value="flexi">ABRA Flexi</TabsTrigger>
             <TabsTrigger value="presta-import">Імпорт Presta</TabsTrigger>
+            <TabsTrigger value="withdrawal">Odstúpenie</TabsTrigger>
           </TabsList>
 
           <TabsContent value="store" className="mt-6 space-y-6">
@@ -526,6 +556,18 @@ export default function SettingsPage() {
                   </Button>
                 </CardContent>
               </Card>
+            ) : null}
+          </TabsContent>
+
+          <TabsContent value="withdrawal" className="mt-6 space-y-6">
+            {withdrawal ? (
+              <WithdrawalSettingsForm
+                settings={withdrawal}
+                onChange={setWithdrawal}
+                onSave={() => void saveWithdrawal()}
+                saving={savingWithdrawal}
+                isDirty={withdrawalDirty}
+              />
             ) : null}
           </TabsContent>
         </Tabs>

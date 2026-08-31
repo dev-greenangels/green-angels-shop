@@ -38,6 +38,7 @@ import {
   Loader2,
   Receipt,
   Bell,
+  Undo2,
   Workflow,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -53,12 +54,17 @@ import { BrandLogo } from '@/components/brand-logo'
 import { BackstageContentLocaleSwitcher } from '@/components/backstage/backstage-content-locale'
 import { BackstageUiLocaleSwitcher } from '@/components/backstage/backstage-ui-locale'
 import { fetchWholesaleInquiriesNewCount } from '@/lib/backstage/wholesale-inquiries'
+import {
+  CONTRACT_WITHDRAWALS_NEW_COUNT_EVENT,
+  fetchContractWithdrawalsNewCount,
+} from '@/lib/backstage/contract-withdrawals'
 import { fetchStockNotificationsPendingCount } from '@/lib/backstage/stock-notifications'
 import { cn } from '@/lib/utils'
 import type { BackstageSession } from '@/lib/backstage-auth/types'
 
 const WHOLESALE_NEW_COUNT_EVENT = 'ga:wholesale-new-count-refresh'
 const STOCK_PENDING_EVENT = 'ga:stock-notify-pending-refresh'
+const WITHDRAWALS_NEW_COUNT_EVENT = CONTRACT_WITHDRAWALS_NEW_COUNT_EVENT
 const WHOLESALE_NEW_COUNT_POLL_MS = 60_000
 
 type NavItem = {
@@ -132,6 +138,11 @@ const navGroups: NavGroup[] = [
       { href: '/backstage/legal', labelKey: 'legal', icon: ScrollText },
       { href: '/backstage/reviews', labelKey: 'reviews', icon: MessageSquareQuote },
       { href: '/backstage/wholesale-inquiries', labelKey: 'wholesaleInquiries', icon: Warehouse },
+      {
+        href: '/backstage/contract-withdrawals',
+        labelKey: 'contractWithdrawals',
+        icon: Undo2,
+      },
       { href: '/backstage/stock-notifications', labelKey: 'stockNotifications', icon: Bell },
     ],
   },
@@ -303,6 +314,7 @@ function Sidebar({
   const pathname = usePathname()
   const tCommon = useTranslations('common')
   const [wholesaleNewCount, setWholesaleNewCount] = useState(0)
+  const [withdrawalsNewCount, setWithdrawalsNewCount] = useState(0)
   const [stockPendingCount, setStockPendingCount] = useState(0)
 
   const initiallyOpen = useMemo(() => {
@@ -332,17 +344,20 @@ function Sidebar({
 
     const refresh = async () => {
       try {
-        const [wholesale, stock] = await Promise.all([
+        const [wholesale, withdrawals, stock] = await Promise.all([
           fetchWholesaleInquiriesNewCount(),
+          fetchContractWithdrawalsNewCount(),
           fetchStockNotificationsPendingCount(),
         ])
         if (!cancelled) {
           setWholesaleNewCount(wholesale)
+          setWithdrawalsNewCount(withdrawals)
           setStockPendingCount(stock)
         }
       } catch {
         if (!cancelled) {
           setWholesaleNewCount(0)
+          setWithdrawalsNewCount(0)
           setStockPendingCount(0)
         }
       }
@@ -356,12 +371,14 @@ function Sidebar({
       void refresh()
     }
     window.addEventListener(WHOLESALE_NEW_COUNT_EVENT, onRefresh)
+    window.addEventListener(WITHDRAWALS_NEW_COUNT_EVENT, onRefresh)
     window.addEventListener(STOCK_PENDING_EVENT, onRefresh)
 
     return () => {
       cancelled = true
       window.clearInterval(intervalId)
       window.removeEventListener(WHOLESALE_NEW_COUNT_EVENT, onRefresh)
+      window.removeEventListener(WITHDRAWALS_NEW_COUNT_EVENT, onRefresh)
       window.removeEventListener(STOCK_PENDING_EVENT, onRefresh)
     }
   }, [])
@@ -369,9 +386,10 @@ function Sidebar({
   const badgeByHref = useMemo(
     () => ({
       '/backstage/wholesale-inquiries': wholesaleNewCount,
+      '/backstage/contract-withdrawals': withdrawalsNewCount,
       '/backstage/stock-notifications': stockPendingCount,
     }),
-    [wholesaleNewCount, stockPendingCount],
+    [wholesaleNewCount, withdrawalsNewCount, stockPendingCount],
   )
 
   return (

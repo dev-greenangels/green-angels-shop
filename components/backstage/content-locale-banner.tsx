@@ -1,11 +1,33 @@
 'use client'
 
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 
-import { LOCALE_FLAGS, LOCALE_LABELS, isSupportedLocale } from '@/lib/i18n/locales'
+import { TranslationFieldsDialog } from '@/components/backstage/translation-fields-dialog'
+import { LOCALE_FLAGS, LOCALE_LABELS, isSupportedLocale, type AppLocale } from '@/lib/i18n/locales'
+import type { TranslationFieldTarget } from '@/lib/backstage/translation-fields'
 import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
 import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
+
+export function TranslationLocaleLabel({
+  locale,
+  htmlFor,
+}: {
+  locale: AppLocale
+  htmlFor?: string
+}) {
+  return (
+    <Label htmlFor={htmlFor} className="text-sm font-normal text-muted-foreground">
+      <span aria-hidden>{LOCALE_FLAGS[locale]}</span>
+      <span>{LOCALE_LABELS[locale]}</span>
+      <span className="rounded border border-border px-1 py-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {locale}
+      </span>
+    </Label>
+  )
+}
 
 export function ContentLocaleBanner({ hint }: { hint?: string }) {
   const { locale, ready } = useBackstageContentLocale()
@@ -21,23 +43,91 @@ export function ContentLocaleBanner({ hint }: { hint?: string }) {
   )
 }
 
+export function LocaleTranslationButton({
+  translationTarget,
+  translationFieldLabel,
+  multiline = false,
+  onTranslationsSaved,
+}: {
+  translationTarget: TranslationFieldTarget
+  translationFieldLabel: string
+  multiline?: boolean
+  onTranslationsSaved?: () => void
+}) {
+  const { locale, ready } = useBackstageContentLocale()
+  const tDialog = useTranslations('translationDialog')
+  const [dialogOpen, setDialogOpen] = useState(false)
+
+  if (!ready) return null
+
+  return (
+    <>
+      <button
+        type="button"
+        className={cn(
+          'shrink-0 rounded border border-border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground',
+          'transition-colors hover:border-primary/40 hover:bg-muted/60 hover:text-foreground',
+        )}
+        title={tDialog('openHint')}
+        aria-label={tDialog('openHint')}
+        onClick={() => setDialogOpen(true)}
+      >
+        {locale}
+      </button>
+      <TranslationFieldsDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        target={dialogOpen ? translationTarget : null}
+        fieldLabel={translationFieldLabel}
+        multiline={multiline}
+        onSaved={onTranslationsSaved}
+      />
+    </>
+  )
+}
+
 export function ContentLocaleLabel({
   htmlFor,
   children,
+  translationTarget,
+  translationFieldLabel,
+  multiline = false,
+  onTranslationsSaved,
 }: {
   htmlFor?: string
   children: ReactNode
+  translationTarget?: TranslationFieldTarget
+  translationFieldLabel?: string
+  multiline?: boolean
+  onTranslationsSaved?: () => void
 }) {
   const { locale, ready } = useBackstageContentLocale()
+  const tDialog = useTranslations('translationDialog')
+  const [dialogOpen, setDialogOpen] = useState(false)
+
   return (
-    <Label htmlFor={htmlFor} className="flex flex-wrap items-center gap-2">
-      <span>{children}</span>
-      {ready ? (
-        <span className="rounded border border-border px-1.5 py-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {locale}
-        </span>
-      ) : null}
-    </Label>
+    <>
+      <Label htmlFor={htmlFor} className="flex flex-wrap items-center gap-2">
+        <span>{children}</span>
+        {ready ? (
+          translationTarget ? (
+            <LocaleTranslationButton
+              translationTarget={translationTarget}
+              translationFieldLabel={
+                translationFieldLabel ??
+                (typeof children === 'string' ? children : tDialog('fieldFallback'))
+              }
+              multiline={multiline}
+              onTranslationsSaved={onTranslationsSaved}
+            />
+          ) : (
+            <span className="rounded border border-border px-1.5 py-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {locale}
+            </span>
+          )
+        ) : null}
+      </Label>
+    </>
   )
 }
 

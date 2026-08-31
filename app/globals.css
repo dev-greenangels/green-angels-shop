@@ -353,14 +353,14 @@
   }
 
   /**
-   * Sticky «Каталог»: той самий матеріал що меню (blur + fill), без бордера/тіні.
-   * Blur потрібен щоб не просвічували пункти під час скролу — без подвійного
-   * «білого листа» поверх уже заблюреного фону.
+   * Sticky «Каталог»: той самий матеріал що меню (blur + fill), без бокових тіней.
    */
   .boty-glass-sticky {
     background-color: var(--boty-glass-bg, rgba(255, 255, 255, 0.78));
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
+    box-shadow: none;
+    border: 0;
   }
 
   .dark .boty-glass {
@@ -487,6 +487,54 @@
   .prose a:active {
     transform: none !important;
     opacity: 1 !important;
+  }
+
+  .rich-text-content :where(p, ul, ol, blockquote) {
+    margin-bottom: 0.5rem;
+  }
+
+  .rich-text-content [data-rich-font-size='sm'] {
+    font-size: 0.875rem;
+  }
+
+  .rich-text-content [data-rich-font-size='base'] {
+    font-size: 1rem;
+  }
+
+  .rich-text-content [data-rich-font-size='lg'] {
+    font-size: 1.125rem;
+  }
+
+  .rich-text-content [data-rich-font-size='xl'] {
+    font-size: 1.25rem;
+  }
+
+  .rich-text-content :where(span[style*='font-size']) {
+    line-height: 1.6;
+  }
+
+  .rich-text-content :where(strong, b) {
+    font-weight: 600;
+    color: var(--foreground);
+  }
+
+  .rich-text-content :where(em, i) {
+    font-style: italic;
+  }
+
+  .rich-text-content :where(ul) {
+    list-style-type: disc;
+    padding-left: 1.25rem;
+  }
+
+  .rich-text-content :where(ol) {
+    list-style-type: decimal;
+    padding-left: 1.25rem;
+  }
+
+  .rich-text-content :where(a) {
+    color: var(--primary);
+    text-decoration: underline;
   }
 }
 

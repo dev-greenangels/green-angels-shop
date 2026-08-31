@@ -1,5 +1,20 @@
 import { resolveCharacteristicIcon } from '@/lib/characteristics/icons'
 import type { ProductDisplayCharacteristic } from '@/lib/types'
+import { ColorDisplayValue } from '@/components/product/color-display-swatch'
+
+function CharacteristicValue({ item }: { item: ProductDisplayCharacteristic }) {
+  if (item.valueType === 'COLOR' && (item.colorHex || item.colorDisplayMode)) {
+    return (
+      <ColorDisplayValue
+        displayValue={item.displayValue}
+        colorHex={item.colorHex}
+        colorDisplayMode={item.colorDisplayMode}
+      />
+    )
+  }
+
+  return <p className="text-sm font-medium">{item.displayValue}</p>
+}
 
 export function ProductDisplayCharacteristics({
   items,
@@ -14,12 +29,12 @@ export function ProductDisplayCharacteristics({
         const Icon = resolveCharacteristicIcon(item.icon)
         return (
           <div key={item.id} className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary">
               <Icon className="h-5 w-5 text-primary" />
             </div>
             <div className="min-w-0">
               <p className="text-xs text-muted-foreground">{item.name}</p>
-              <p className="text-sm font-medium">{item.displayValue}</p>
+              <CharacteristicValue item={item} />
             </div>
           </div>
         )

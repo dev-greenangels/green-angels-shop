@@ -1,13 +1,20 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { ChevronDown, Plus, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { ColorSwatchPreview } from '@/components/backstage/color-hex-field'
+import { CharacteristicIconInline } from '@/components/backstage/characteristic-icon-inline'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -21,9 +28,11 @@ import {
   emptyCharacteristicsForm,
   fetchCharacteristicDefinitions,
   hasCharacteristicsFormValue,
+  isMultiOptionCharacteristic,
   type CharacteristicDefinition,
   type ProductCharacteristicsFormState,
 } from '@/lib/backstage/characteristics'
+import { cn } from '@/lib/utils'
 
 type ProductCharacteristicsFieldsProps = {
   value: ProductCharacteristicsFormState
@@ -43,13 +52,15 @@ type ChipEntry = {
   optionId?: string
   label: string
   valueLabel: string
+  icon: string | null
+  colorHex?: string | null
 }
 
 function normalizeField(
   definition: CharacteristicDefinition,
   fieldValue: string | string[] | undefined,
 ): string | string[] {
-  if (definition.valueType === 'MULTI_SELECT' || definition.valueType === 'COLOR') {
+  if (isMultiOptionCharacteristic(definition)) {
     if (Array.isArray(fieldValue)) return fieldValue
     return fieldValue ? [fieldValue] : []
   }
@@ -68,7 +79,9 @@ export function ProductCharacteristicsFields({
   const [loading, setLoading] = useState(true)
   const [pendingCharacteristicId, setPendingCharacteristicId] = useState('')
   const [pendingValueId, setPendingValueId] = useState('')
+  const [pendingMultiValueIds, setPendingMultiValueIds] = useState<string[]>([])
   const [pendingScalar, setPendingScalar] = useState('')
+  const [valuePickerOpen, setValuePickerOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -86,7 +99,6 @@ export function ProductCharacteristicsFields({
     return () => {
       cancelled = true
     }
-    // Seed from legacy once; refetch labels when content locale changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contentLocale])
 
@@ -99,7 +111,7 @@ export function ProductCharacteristicsFields({
     const entries: ChipEntry[] = []
     for (const definition of definitions) {
       const fieldValue = normalizeField(definition, current[definition.id])
-      if (definition.valueType === 'MULTI_SELECT' || definition.valueType === 'COLOR') {
+      if (isMultiOptionCharacteristic(definition)) {
         const ids = Array.isArray(fieldValue) ? fieldValue : []
         for (const optionId of ids) {
           const option = definition.options.find((item) => item.id === optionId)
@@ -110,6 +122,8 @@ export function ProductCharacteristicsFields({
             optionId,
             label: definition.name,
             valueLabel: option.label,
+            icon: definition.icon,
+            colorHex: option.colorHex,
           })
         }
         continue
@@ -126,6 +140,8 @@ export function ProductCharacteristicsFields({
           optionId,
           label: definition.name,
           valueLabel: option.label,
+          icon: definition.icon,
+          colorHex: option.colorHex,
         })
         continue
       }
@@ -137,6 +153,7 @@ export function ProductCharacteristicsFields({
         characteristicId: definition.id,
         label: definition.name,
         valueLabel: definition.unit ? `${scalar} ${definition.unit}` : scalar,
+        icon: definition.icon,
       })
     }
     return entries
@@ -145,7 +162,7 @@ export function ProductCharacteristicsFields({
   const availableDefinitions = useMemo(() => {
     return definitions.filter((definition) => {
       const fieldValue = normalizeField(definition, current[definition.id])
-      if (definition.valueType === 'MULTI_SELECT' || definition.valueType === 'COLOR') {
+      if (isMultiOptionCharacteristic(definition)) {
         const selected = Array.isArray(fieldValue) ? fieldValue : []
         return definition.options.some((option) => !selected.includes(option.id))
       }
@@ -163,8 +180,7 @@ export function ProductCharacteristicsFields({
     if (!pendingDefinition) return []
     if (
       pendingDefinition.valueType !== 'SELECT' &&
-      pendingDefinition.valueType !== 'MULTI_SELECT' &&
-      pendingDefinition.valueType !== 'COLOR'
+      !isMultiOptionCharacteristic(pendingDefinition)
     ) {
       return []
     }
@@ -177,23 +193,33 @@ export function ProductCharacteristicsFields({
     return pendingDefinition.options.filter((option) => !selected.includes(option.id))
   }, [pendingDefinition, current])
 
+  const isMultiPending = pendingDefinition
+    ? isMultiOptionCharacteristic(pendingDefinition)
+    : false
+
   const canAdd = (() => {
     if (!pendingCharacteristicId || !pendingDefinition) return false
-    if (
-      pendingDefinition.valueType === 'SELECT' ||
-      pendingDefinition.valueType === 'MULTI_SELECT' ||
-      pendingDefinition.valueType === 'COLOR'
-    ) {
+    if (pendingDefinition.valueType === 'SELECT') {
       return Boolean(pendingValueId)
+    }
+    if (isMultiOptionCharacteristic(pendingDefinition)) {
+      return pendingMultiValueIds.length > 0
     }
     return Boolean(pendingScalar.trim())
   })()
+
+  const resetPendingValues = () => {
+    setPendingValueId('')
+    setPendingMultiValueIds([])
+    setPendingScalar('')
+    setValuePickerOpen(false)
+  }
 
   const handleClearChip = (chip: ChipEntry) => {
     const definition = definitions.find((item) => item.id === chip.characteristicId)
     if (!definition) return
 
-    if (definition.valueType === 'MULTI_SELECT' || definition.valueType === 'COLOR') {
+    if (isMultiOptionCharacteristic(definition)) {
       const fieldValue = normalizeField(definition, current[definition.id])
       const selected = Array.isArray(fieldValue) ? fieldValue : []
       onChange({
@@ -212,17 +238,16 @@ export function ProductCharacteristicsFields({
   const handleAdd = () => {
     if (!pendingDefinition || !canAdd) return
 
-    if (
-      (pendingDefinition.valueType === 'MULTI_SELECT' ||
-        pendingDefinition.valueType === 'COLOR') &&
-      pendingValueId
-    ) {
+    if (isMultiOptionCharacteristic(pendingDefinition)) {
       const fieldValue = normalizeField(pendingDefinition, current[pendingDefinition.id])
       const selected = Array.isArray(fieldValue) ? fieldValue : []
-      if (selected.includes(pendingValueId)) return
+      const next = [...selected]
+      for (const optionId of pendingMultiValueIds) {
+        if (!next.includes(optionId)) next.push(optionId)
+      }
       onChange({
         ...current,
-        [pendingDefinition.id]: [...selected, pendingValueId],
+        [pendingDefinition.id]: next,
       })
     } else if (pendingDefinition.valueType === 'SELECT' && pendingValueId) {
       onChange({
@@ -240,8 +265,7 @@ export function ProductCharacteristicsFields({
     }
 
     setPendingCharacteristicId('')
-    setPendingValueId('')
-    setPendingScalar('')
+    resetPendingValues()
   }
 
   if (loading) {
@@ -257,6 +281,14 @@ export function ProductCharacteristicsFields({
   const isScalarPending =
     pendingDefinition?.valueType === 'TEXT' || pendingDefinition?.valueType === 'NUMBER'
 
+  const pendingMultiSummary =
+    pendingMultiValueIds.length === 0
+      ? tHints('selectValue')
+      : pendingMultiValueIds
+          .map((id) => pendingOptions.find((option) => option.id === id)?.label ?? id)
+          .filter(Boolean)
+          .join(', ')
+
   return (
     <div className="space-y-3">
       {chips.length > 0 ? (
@@ -266,20 +298,17 @@ export function ProductCharacteristicsFields({
               key={chip.key}
               className="inline-flex max-w-full items-center gap-1 rounded-full border border-border/70 bg-muted/40 py-0.5 pl-2.5 pr-1 text-xs"
             >
-              <span className="truncate">
+              <span className="inline-flex min-w-0 items-center gap-1 truncate">
+                <CharacteristicIconInline icon={chip.icon} />
                 <span className="text-muted-foreground">{chip.label}:</span>{' '}
-                {(() => {
-                  const definition = definitions.find((item) => item.id === chip.characteristicId)
-                  const option = definition?.options.find((item) => item.id === chip.optionId)
-                  return option?.colorHex ? (
-                    <span className="inline-flex items-center gap-1 font-medium text-foreground">
-                      <ColorSwatchPreview hex={option.colorHex} />
-                      {chip.valueLabel}
-                    </span>
-                  ) : (
-                    <span className="font-medium text-foreground">{chip.valueLabel}</span>
-                  )
-                })()}
+                {chip.colorHex ? (
+                  <span className="inline-flex items-center gap-1 font-medium text-foreground">
+                    <ColorSwatchPreview hex={chip.colorHex} />
+                    {chip.valueLabel}
+                  </span>
+                ) : (
+                  <span className="font-medium text-foreground">{chip.valueLabel}</span>
+                )}
               </span>
               <button
                 type="button"
@@ -304,8 +333,7 @@ export function ProductCharacteristicsFields({
               value={pendingCharacteristicId || '__none__'}
               onValueChange={(next) => {
                 setPendingCharacteristicId(next === '__none__' ? '' : next)
-                setPendingValueId('')
-                setPendingScalar('')
+                resetPendingValues()
               }}
             >
               <SelectTrigger className="h-9 w-full">
@@ -315,8 +343,13 @@ export function ProductCharacteristicsFields({
                 <SelectItem value="__none__">{tHints('notSelectedOption')}</SelectItem>
                 {availableDefinitions.map((definition) => (
                   <SelectItem key={definition.id} value={definition.id}>
-                    {definition.name}
-                    {definition.unit ? ` (${definition.unit})` : ''}
+                    <span className="inline-flex items-center gap-2">
+                      <CharacteristicIconInline icon={definition.icon} />
+                      <span>
+                        {definition.name}
+                        {definition.unit ? ` (${definition.unit})` : ''}
+                      </span>
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -333,6 +366,54 @@ export function ProductCharacteristicsFields({
                 inputMode={pendingDefinition?.valueType === 'NUMBER' ? 'decimal' : 'text'}
                 onChange={(event) => setPendingScalar(event.target.value)}
               />
+            </div>
+          ) : isMultiPending ? (
+            <div className="w-[9.5rem] space-y-1.5 sm:w-[11rem]">
+              <Label className="text-xs leading-4">{tHints('valueLabel')}</Label>
+              <Popover open={valuePickerOpen} onOpenChange={setValuePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      'h-9 w-full justify-between px-2.5 font-normal',
+                      !pendingMultiValueIds.length && 'text-muted-foreground',
+                    )}
+                    disabled={!pendingDefinition || pendingOptions.length === 0}
+                  >
+                    <span className="truncate text-left text-xs">{pendingMultiSummary}</span>
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-60 p-3" align="start">
+                  <div className="max-h-56 space-y-2 overflow-y-auto">
+                    {pendingOptions.map((option) => {
+                      const checked = pendingMultiValueIds.includes(option.id)
+                      return (
+                        <label
+                          key={option.id}
+                          className="flex cursor-pointer items-center gap-2 text-sm"
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(next) => {
+                              setPendingMultiValueIds((prev) =>
+                                next
+                                  ? [...prev, option.id]
+                                  : prev.filter((id) => id !== option.id),
+                              )
+                            }}
+                          />
+                          <span className="inline-flex min-w-0 items-center gap-1.5">
+                            {option.colorHex ? <ColorSwatchPreview hex={option.colorHex} /> : null}
+                            <span className="truncate">{option.label}</span>
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           ) : (
             <div className="w-[9.5rem] space-y-1.5 sm:w-[11rem]">

@@ -31,10 +31,13 @@ export type VariantAttributeFilterDefinition = {
   valueType?: 'UNIVERSAL' | 'CONTAINER' | 'RANGE' | 'COLOR' | 'NUMBER'
   isFilterable: boolean
   participatesInLabel: boolean
+  icon?: string | null
+  colorDisplayMode?: ColorDisplayMode | null
   values: Array<{
     id: string
     slug: string
     label: string
+    colorHex?: string | null
     packagingKind?: 'POT' | 'ROOT_BALL' | 'BARE_ROOT' | 'POT_ROOT_BALL' | null
   }>
 }
@@ -56,7 +59,7 @@ export type ProductCharacteristicFieldValue = string | string[]
 
 export type ProductCharacteristicsFormState = Record<string, ProductCharacteristicFieldValue>
 
-function isMultiOptionCharacteristic(
+export function isMultiOptionCharacteristic(
   definition: Pick<CharacteristicDefinition, 'valueType'>,
 ): boolean {
   return definition.valueType === 'MULTI_SELECT' || definition.valueType === 'COLOR'

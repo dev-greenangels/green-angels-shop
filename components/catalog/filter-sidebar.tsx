@@ -4,6 +4,10 @@ import { type CSSProperties } from 'react'
 import { Filter, Loader2, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
+import {
+  CatalogFilterOptionLabel,
+  CatalogFilterSectionTitle,
+} from '@/components/catalog/catalog-filter-option-label'
 import { CatalogActiveFilters } from '@/components/catalog/catalog-active-filters'
 import { CatalogPriceFilter } from '@/components/catalog/catalog-price-filter'
 import { CatalogContainerFilterValues } from '@/components/catalog/catalog-container-filter-values'
@@ -162,7 +166,9 @@ export function FilterSidebarContent({
 
           return (
           <AccordionItem key={attribute.id} value={`attr-${attribute.slug}`}>
-            <AccordionTrigger className="text-sm font-semibold">{attribute.name}</AccordionTrigger>
+            <AccordionTrigger className="text-sm font-semibold">
+              <CatalogFilterSectionTitle name={attribute.name} icon={attribute.icon} />
+            </AccordionTrigger>
             <AccordionContent>
               {isContainer ? (
                 <CatalogContainerFilterValues
@@ -194,7 +200,12 @@ export function FilterSidebarContent({
                         }
                       />
                       <Label htmlFor={`attr-${attribute.slug}-${value.slug}`} className="text-sm font-normal">
-                        {value.label}
+                        <CatalogFilterOptionLabel
+                          label={value.label}
+                          colorHex={value.colorHex}
+                          colorDisplayMode={attribute.colorDisplayMode}
+                          icon={attribute.icon}
+                        />
                       </Label>
                     </div>
                   )
@@ -208,7 +219,9 @@ export function FilterSidebarContent({
 
         {visibleDefinitions.characteristics.map((characteristic) => (
           <AccordionItem key={characteristic.id} value={`char-${characteristic.slug}`}>
-            <AccordionTrigger className="text-sm font-semibold">{characteristic.name}</AccordionTrigger>
+            <AccordionTrigger className="text-sm font-semibold">
+              <CatalogFilterSectionTitle name={characteristic.name} icon={characteristic.icon} />
+            </AccordionTrigger>
             <AccordionContent>
               <div
                 className={cn(
@@ -230,8 +243,16 @@ export function FilterSidebarContent({
                           )
                         }
                       />
-                      <Label htmlFor={`char-${characteristic.slug}-${option.slug}`} className="text-sm font-normal">
-                        {option.label}
+                      <Label
+                        htmlFor={`char-${characteristic.slug}-${option.slug}`}
+                        className="text-sm font-normal"
+                      >
+                        <CatalogFilterOptionLabel
+                          label={option.label}
+                          colorHex={option.colorHex}
+                          colorDisplayMode={characteristic.colorDisplayMode}
+                          icon={characteristic.icon}
+                        />
                       </Label>
                     </div>
                   )

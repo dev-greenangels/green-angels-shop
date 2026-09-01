@@ -23,7 +23,7 @@
     "legal": "Юридичні документи",
     "reviews": "Відгуки",
     "wholesaleInquiries": "Заявки гурту",
-    "contractWithdrawals": "Відступлення від договору",
+    "contractWithdrawals": "Відмова від договору",
     "promotions": "Знижки",
     "referrals": "Реферали",
     "referenceData": "Довідники",
@@ -34,6 +34,7 @@
     "photos": "Свіжі фото",
     "tedb": "TEDB / ПДВ",
     "stockNotifications": "Сповіщення про наявність",
+    "marketingSubscribers": "Підписники розсилки",
     "jobs": "Джоби"
   },
   "common": {
@@ -70,6 +71,7 @@
     "saveChanges": "Зберегти зміни",
     "saving": "Збереження…",
     "cancel": "Скасувати",
+    "back": "Назад",
     "close": "Закрити",
     "create": "Створити",
     "creating": "Створення…",
@@ -171,7 +173,7 @@
     "productDescriptionPlaceholder": "Детальний опис товару…",
     "htmlPlaceholder": "'<p>Ваш HTML-контент…</p>'",
     "htmlHint": "Можна вставити готовий HTML. Після перемикання на «Редактор» він відобразиться візуально.",
-    "localeSwitchAutoSave": "Перемикання мови автоматично зберігає поточний текст опису для попередньої мови.",
+    "localeSwitchAutoSave": "При перемиканні мови опис зберігається лише якщо текст змінено.",
     "rootCategory": "Коренева категорія",
     "title": "Заголовок",
     "description": "Опис",
@@ -387,6 +389,8 @@
     "missingPlaceholder": "Немає перекладу цією мовою",
     "hintFrom": "Підказка ({locale}):",
     "switchConfirm": "Незбережені зміни в полях буде втрачено. Перемкнути мову контенту?",
+    "switchSaveFailed": "Не вдалося зберегти перед перемиканням мови.",
+    "switchAutoSave": "Поточна мова автоматично зберігається перед перемиканням.",
     "cmsNotTranslated": "Тексти головної та контактів — на деплой, не на мову інтерфейсу чи контенту."
   },
   "validation": {
@@ -500,6 +504,37 @@
       "saveSuccess": "Сторінку «Гурт» збережено.",
       "saveError": "Не вдалося зберегти сторінку «Гурт»."
     },
+    "contractWithdrawals": {
+      "title": "Відмова від договору",
+      "subtitle": "Онлайн-заяви зі сторінки повернення та з особистого кабінету. {total, plural, one {# запис} few {# записи} many {# записів} other {# записів}}.",
+      "refresh": "Оновити",
+      "loading": "Завантаження…",
+      "loadError": "Не вдалося завантажити заяви.",
+      "empty": "Заяв поки немає.",
+      "filterAll": "Усі",
+      "statusSubmitted": "Нові",
+      "statusUnderReview": "На розгляді",
+      "statusAccepted": "Прийняті",
+      "statusRejected": "Відхилені",
+      "statusClosed": "Закриті",
+      "scopeEntireOrder": "Усе замовлення",
+      "scopePartial": "Частково",
+      "fieldScope": "Охоплення",
+      "fieldSource": "Джерело",
+      "sourceAccount": "Кабінет",
+      "sourcePublic": "Публічна форма",
+      "orderNumber": "зам. {number}",
+      "emailAck": "· e-mail {date}",
+      "actionUnderReview": "На розгляд",
+      "actionAccept": "Прийняти",
+      "actionReject": "Відхилити",
+      "actionClose": "Закрити",
+      "statusUpdated": "Статус оновлено.",
+      "statusUpdateError": "Не вдалося оновити статус.",
+      "paginationPrev": "Назад",
+      "paginationNext": "Далі",
+      "paginationPage": "{page} / {totalPages}"
+    },
     "products": {
       "title": "Товари",
       "subtitle": "Керуйте каталогом товарів",
@@ -513,6 +548,11 @@
       "addTitle": "Додати товар",
       "loadingProduct": "Завантаження товару…",
       "formSubtitle": "Контент, SEO, ціни, варіанти та властивості",
+      "unsavedChangesTitle": "Незбережені зміни",
+      "unsavedChangesDesc": "Зберегти зміни перед виходом з картки товару?",
+      "discardChanges": "Не зберігати",
+      "saveAndLeave": "Зберегти і вийти",
+      "stayOnPage": "Залишитись",
       "tabContent": "Контент",
       "tabSeo": "SEO",
       "tabPricing": "Ціни та розміри",
@@ -713,6 +753,7 @@
     "fieldIntro": "Вступ",
     "fieldBody": "Розділи",
     "bodyHint": "Заголовок з нового рядка, абзаци через порожній рядок. Розділи розділяйте рядком ---.",
+    "returnsFormsMarkerHint": "Для документа «Повернення» залиште розділ ---WITHDRAWAL_FORMS--- — на цьому місці на сайті вставляються інтерактивні форми відмови.",
     "placeholderHint": "На вітрині підставляються реквізити з налаштувань компанії. У тексті використовуйте плейсхолдери '{sellerName}', '{ico}' (ЄДРПОУ/IČO), '{dic}' (DIČ), '{icDph}' (IČ DPH), '{legalAddress}'. Не вписуйте IČO вручну.",
     "publish": "Опублікувати",
     "draftCreated": "Чернетку створено",
@@ -918,5 +959,43 @@
     "openTedb": "Відкрити TEDB",
     "appTitle": "Черга app (замовлення / листи)",
     "appBody": "Expire unpaid і листи замовлень у спільній черзі app."
+  },
+  "marketingSubscribers": {
+    "title": "Підписники розсилки",
+    "subtitle": "Згода на маркетингові листи. {count} записів.",
+    "refresh": "Оновити",
+    "loading": "Завантаження…",
+    "loadError": "Не вдалося завантажити підписників.",
+    "exportSuccess": "Експорт завантажено.",
+    "exportError": "Не вдалося експортувати.",
+    "empty": "Підписників немає.",
+    "searchPlaceholder": "Email, імʼя або прізвище",
+    "statusFilter": {
+      "all": "Усі",
+      "active": "Підписані",
+      "withdrawn": "Відписані"
+    },
+    "status": {
+      "active": "Підписаний",
+      "withdrawn": "Відписаний"
+    },
+    "columns": {
+      "email": "Email",
+      "name": "ПІБ",
+      "source": "Джерело",
+      "status": "Статус",
+      "subscribedAt": "Дата підписки",
+      "unsubscribedAt": "Дата відписки",
+      "clientType": "Клієнт"
+    },
+    "clientType": {
+      "registered": "Зареєстрований",
+      "guest": "Лише email"
+    },
+    "pagination": {
+      "prev": "Назад",
+      "next": "Далі",
+      "page": "Стор. {page} з {totalPages}"
+    }
   }
 }

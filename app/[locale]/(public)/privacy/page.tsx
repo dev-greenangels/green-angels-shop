@@ -46,7 +46,7 @@ export default async function PrivacyPage() {
 
         <div className={cn(siteContentShellClassName, 'py-12')}>
           <div className="max-w-3xl mx-auto prose prose-green space-y-6">
-            <LegalTemplateNotice />
+            {!document ? <LegalTemplateNotice /> : null}
             <LegalPageLinks current="privacy" />
 
             {document ? (

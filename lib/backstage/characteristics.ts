@@ -56,8 +56,14 @@ export type ProductCharacteristicFieldValue = string | string[]
 
 export type ProductCharacteristicsFormState = Record<string, ProductCharacteristicFieldValue>
 
+function isMultiOptionCharacteristic(
+  definition: Pick<CharacteristicDefinition, 'valueType'>,
+): boolean {
+  return definition.valueType === 'MULTI_SELECT' || definition.valueType === 'COLOR'
+}
+
 function defaultFieldValue(definition: CharacteristicDefinition): ProductCharacteristicFieldValue {
-  return definition.valueType === 'MULTI_SELECT' ? [] : ''
+  return isMultiOptionCharacteristic(definition) ? [] : ''
 }
 
 function hasFieldValue(value: ProductCharacteristicFieldValue | undefined): boolean {
@@ -283,7 +289,7 @@ export function buildCharacteristicsPayload(
   for (const [characteristicId, raw] of Object.entries(form)) {
     const definition = definitionById.get(characteristicId)
 
-    if (definition?.valueType === 'MULTI_SELECT') {
+    if (definition?.valueType === 'MULTI_SELECT' || definition?.valueType === 'COLOR') {
       const optionIds = Array.isArray(raw) ? raw : raw ? [raw] : []
       for (const rawOptionId of optionIds) {
         const value = rawOptionId.trim()
@@ -376,7 +382,9 @@ export function characteristicsFormFromEntries(
 ): ProductCharacteristicsFormState {
   const form = emptyCharacteristicsForm(definitions)
   const multiIds = new Set(
-    definitions.filter((item) => item.valueType === 'MULTI_SELECT').map((item) => item.id),
+    definitions
+      .filter((item) => isMultiOptionCharacteristic(item))
+      .map((item) => item.id),
   )
   const multiValues = new Map<string, string[]>()
 

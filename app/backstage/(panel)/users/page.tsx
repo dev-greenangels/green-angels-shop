@@ -214,7 +214,7 @@ export default function UsersPage() {
                     className={userRowClassName}
                   >
                     {segment === 'customers' ? (
-                      <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-7">
+                      <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-8">
                         <UserField
                           label="Роль"
                           value={customerRoleLabel(user.role)}
@@ -224,6 +224,14 @@ export default function UsersPage() {
                         <UserField label="По батькові" value={displayValue(user.patronymic)} />
                         <UserField label="Телефон" value={displayValue(user.phone)} />
                         <UserField label="Email" value={displayValue(user.email)} />
+                        <UserField
+                          label="Розсилка"
+                          value={
+                            user.marketingSubscribed
+                              ? 'Підписаний'
+                              : 'Не підписаний'
+                          }
+                        />
                         <UserField
                           label="Замовлень"
                           value={String(user.orderCount)}

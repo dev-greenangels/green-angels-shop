@@ -38,6 +38,7 @@ import {
   updateBackstageUserGroups,
   type BackstageUserDetail,
 } from '@/lib/backstage/users'
+import { marketingSourceLabel } from '@/lib/backstage/marketing-subscribers'
 import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
 import { formatDateTime } from '@/lib/i18n/format-datetime'
 import { formatPersonName } from '@/lib/format-person-name'
@@ -206,6 +207,44 @@ export default function UserDetailPage() {
                 setUser(updated)
               }}
             />
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Маркетингова розсилка</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Статус</p>
+                  <p className="mt-0.5 text-sm font-medium">
+                    {user.marketingSubscribed ? 'Підписаний' : 'Не підписаний'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Джерело підписки</p>
+                  <p className="mt-0.5 text-sm font-medium">
+                    {user.marketingSubscribed
+                      ? marketingSourceLabel(user.marketingSource)
+                      : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Дата підписки</p>
+                  <p className="mt-0.5 text-sm font-medium">
+                    {user.marketingSubscribedAt
+                      ? formatDateTime(user.marketingSubscribedAt, locale, 'datetime')
+                      : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Дата відписки</p>
+                  <p className="mt-0.5 text-sm font-medium">
+                    {user.marketingUnsubscribedAt
+                      ? formatDateTime(user.marketingUnsubscribedAt, locale, 'datetime')
+                      : '—'}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
 
             <Card>
               <CardHeader>

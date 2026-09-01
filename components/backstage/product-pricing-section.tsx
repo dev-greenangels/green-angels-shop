@@ -17,6 +17,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  addVariantSelectionValue,
+  attributeHasAvailableValues,
+  getSelectedValueIds,
+  removeVariantSelectionValue,
+  type VariantAttributeSelections,
+} from '@/lib/backstage/variant-selections'
+import {
   buildVariantLabel,
   type VariantAttribute,
 } from '@/lib/backstage/variant-attributes'
@@ -45,33 +52,45 @@ export function VariantAttributePicker({
   onClear,
 }: {
   attributes: VariantAttribute[]
-  selections: Record<string, string>
+  selections: VariantAttributeSelections
   onChange: (attributeId: string, valueId: string) => void
-  onClear: (attributeId: string) => void
+  onClear: (attributeId: string, valueId?: string) => void
 }) {
   const tp = useTranslations('pricing')
   const [pendingAttributeId, setPendingAttributeId] = useState('')
   const [pendingValueId, setPendingValueId] = useState('')
 
-  const selectedEntries = attributes
-    .map((attr) => {
-      const valueId = selections[attr.id]
-      if (!valueId) return null
-      const value = attr.values.find((item) => item.id === valueId)
-      if (!value) return null
-      return { attr, value }
-    })
-    .filter((item): item is { attr: VariantAttribute; value: VariantAttribute['values'][number] } =>
-      Boolean(item),
-    )
+  const selectedEntries = attributes.flatMap((attr) =>
+    getSelectedValueIds(selections, attr.id)
+      .map((valueId) => {
+        const value = attr.values.find((item) => item.id === valueId)
+        if (!value) return null
+        return { attr, value }
+      })
+      .filter((item): item is { attr: VariantAttribute; value: VariantAttribute['values'][number] } =>
+        Boolean(item),
+      ),
+  )
 
-  const availableAttributes = attributes.filter((attr) => !selections[attr.id])
+  const availableAttributes = attributes.filter((attr) =>
+    attr.valueType === 'COLOR'
+      ? attributeHasAvailableValues(attr, selections)
+      : !getSelectedValueIds(selections, attr.id).length,
+  )
   const pendingAttribute = attributes.find((attr) => attr.id === pendingAttributeId) ?? null
+  const pendingValueOptions =
+    pendingAttribute?.valueType === 'COLOR'
+      ? (pendingAttribute.values ?? []).filter(
+          (value) => !getSelectedValueIds(selections, pendingAttribute.id).includes(value.id),
+        )
+      : (pendingAttribute?.values ?? [])
 
   const handleAdd = () => {
     if (!pendingAttributeId || !pendingValueId) return
     onChange(pendingAttributeId, pendingValueId)
-    setPendingAttributeId('')
+    if (pendingAttribute?.valueType !== 'COLOR') {
+      setPendingAttributeId('')
+    }
     setPendingValueId('')
   }
 
@@ -81,7 +100,7 @@ export function VariantAttributePicker({
         <div className="flex flex-wrap gap-1.5">
           {selectedEntries.map(({ attr, value }) => (
             <span
-              key={attr.id}
+              key={`${attr.id}-${value.id}`}
               className="inline-flex max-w-full items-center gap-1 rounded-full border border-border/70 bg-muted/40 py-0.5 pl-2.5 pr-1 text-xs"
             >
               <span className="truncate">
@@ -91,7 +110,7 @@ export function VariantAttributePicker({
               <button
                 type="button"
                 className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-background hover:text-destructive"
-                onClick={() => onClear(attr.id)}
+                onClick={() => onClear(attr.id, attr.valueType === 'COLOR' ? value.id : undefined)}
                 aria-label={tp('removeAttribute')}
               >
                 <X className="h-3 w-3" />
@@ -139,7 +158,7 @@ export function VariantAttributePicker({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">{tp('notSelectedOption')}</SelectItem>
-                {(pendingAttribute?.values ?? []).map((value) => (
+                {pendingValueOptions.map((value) => (
                   <SelectItem key={value.id} value={value.id}>
                     {value.label}
                   </SelectItem>
@@ -236,11 +255,18 @@ function VariantAccordionItem({
     variant.stock.trim() === '' ? 0 : Math.max(0, Number(variant.stock) || 0)
 
   const updateSelection = (attributeId: string, valueId: string) => {
+    const attribute = attributes.find((item) => item.id === attributeId)
+    if (!attribute) return
     onChange({
-      selections: {
-        ...variant.selections,
-        [attributeId]: valueId === '__none__' ? '' : valueId,
-      },
+      selections: addVariantSelectionValue(variant.selections, attribute, valueId),
+    })
+  }
+
+  const clearSelection = (attributeId: string, valueId?: string) => {
+    const attribute = attributes.find((item) => item.id === attributeId)
+    if (!attribute) return
+    onChange({
+      selections: removeVariantSelectionValue(variant.selections, attribute, valueId),
     })
   }
 
@@ -319,7 +345,7 @@ function VariantAccordionItem({
               attributes={attributes}
               selections={variant.selections}
               onChange={(attributeId, valueId) => updateSelection(attributeId, valueId)}
-              onClear={(attributeId) => updateSelection(attributeId, '')}
+              onClear={(attributeId, valueId) => clearSelection(attributeId, valueId)}
             />
           )}
 

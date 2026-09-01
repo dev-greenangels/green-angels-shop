@@ -45,7 +45,7 @@ export default async function CookiesPage() {
 
         <div className={cn(siteContentShellClassName, 'py-12')}>
           <div className="max-w-3xl mx-auto space-y-6">
-            <LegalTemplateNotice />
+            {!document ? <LegalTemplateNotice /> : null}
             <LegalPageLinks current="cookies" />
 
             <div className="prose prose-green">

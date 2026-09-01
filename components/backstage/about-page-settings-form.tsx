@@ -1,6 +1,7 @@
 'use client'
 
 import { Plus, Save, Trash2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { ContentLocaleBanner, ContentLocaleLabel } from '@/components/backstage/content-locale-banner'
 import { Button } from '@/components/ui/button'
@@ -54,6 +55,7 @@ export function AboutPageSettingsForm({
   isDirty: boolean
   marketRegion: 'ua' | 'sk'
 }) {
+  const tBanner = useTranslations('contentBanner')
   const storedCopy = settings.byLocale[contentLocale]
   const copy: AboutPageCmsCopy = storedCopy ?? { ...EMPTY_ABOUT_CMS }
   const hintCopy =
@@ -114,7 +116,7 @@ export function AboutPageSettingsForm({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <ContentLocaleBanner hint="Редагуєте текст «Про нас» для обраної мови. Збережіть перед перемиканням мови." />
+        <ContentLocaleBanner hint={tBanner('switchAutoSave')} />
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">

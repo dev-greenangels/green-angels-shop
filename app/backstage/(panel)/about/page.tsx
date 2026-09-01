@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
-import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
+import { useBackstageContentLocale, useContentLocaleSwitchSave } from '@/components/backstage/backstage-content-locale'
 import { AboutPageSettingsForm } from '@/components/backstage/about-page-settings-form'
 import {
   fetchBackstageSettings,
@@ -68,10 +68,13 @@ export default function AboutPageSettingsPanel() {
       toast.success(t('saveSuccess'))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('saveError'))
+      throw err
     } finally {
       setSaving(false)
     }
   }
+
+  useContentLocaleSwitchSave(() => saveAbout(), { when: () => aboutDirty })
 
   return (
     <AdminLayout>

@@ -2,6 +2,10 @@ import {
   DEFAULT_VARIANT_LABEL_TYPE_ORDER,
   normalizeVariantLabelTypeOrder,
 } from '@/lib/backstage/variant-label-settings'
+import {
+  getSelectedValueIds,
+  type VariantAttributeSelections,
+} from '@/lib/backstage/variant-selections'
 
 export type VariantAttributeType = 'UNIVERSAL' | 'CONTAINER' | 'RANGE' | 'COLOR' | 'NUMBER'
 
@@ -464,7 +468,7 @@ export function sortAttributesForVariantLabel(
 
 export function buildVariantLabel(
   attributes: VariantAttribute[],
-  selections: Record<string, string>,
+  selections: VariantAttributeSelections,
   typeOrder?: VariantAttributeType[],
 ): string {
   const parts: string[] = []
@@ -473,10 +477,14 @@ export function buildVariantLabel(
     normalizeVariantLabelTypeOrder(typeOrder),
   )) {
     if (!attr.participatesInLabel) continue
-    const valueId = selections[attr.id]
-    if (!valueId) continue
-    const value = attr.values.find((v) => v.id === valueId)
-    if (value) parts.push(value.label)
+    const valueIds = getSelectedValueIds(selections, attr.id)
+    if (!valueIds.length) continue
+    const labels = valueIds
+      .map((valueId) => attr.values.find((v) => v.id === valueId)?.label)
+      .filter((label): label is string => Boolean(label?.trim()))
+    if (labels.length) {
+      parts.push(attr.valueType === 'COLOR' ? labels.join(' / ') : labels.join(' · '))
+    }
   }
   return parts.join(' · ')
 }

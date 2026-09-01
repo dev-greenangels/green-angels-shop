@@ -14,6 +14,7 @@ export function StickyFormActions({
   isLoading,
   isDirty = false,
   submitLabel,
+  cancelLabel,
   isPublished,
   onPublishedChange,
   tabs,
@@ -24,12 +25,14 @@ export function StickyFormActions({
   isLoading?: boolean
   isDirty?: boolean
   submitLabel?: string
+  cancelLabel?: string
   isPublished?: boolean
   onPublishedChange?: (value: boolean) => void
   tabs?: React.ReactNode
 }) {
   const t = useTranslations('actions')
   const resolvedSubmitLabel = submitLabel ?? t('save')
+  const resolvedCancelLabel = cancelLabel ?? t('cancel')
 
   return (
     <div
@@ -59,7 +62,7 @@ export function StickyFormActions({
             </div>
           ) : null}
           <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
-            {t('cancel')}
+            {resolvedCancelLabel}
           </Button>
           <Button type="submit" disabled={isLoading || !isDirty}>
             {isLoading ? t('saving') : resolvedSubmitLabel}

@@ -1,5 +1,11 @@
 const BLOCK_TAGS = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'div', 'li'])
 
+const PASTE_ALLOWED_TAGS = new Set(['p', 'strong', 'em', 'ul', 'ol', 'li', 'br', 'span'])
+
+const PASTE_BLOCKISH_TAGS = new Set(['h1', 'h2', 'h3', 'h4', 'div'])
+
+const PASTE_DROP_TAGS = new Set(['script', 'style', 'meta', 'link', 'head', 'html', 'body'])
+
 export const RICH_FONT_SIZES = {
   sm: '0.875rem',
   base: '1rem',
@@ -74,6 +80,127 @@ export function normalizeRichTextHtml(html: string): string {
   })
 
   return body.innerHTML.trim()
+}
+
+/** Trim only — used when saving from visual/HTML tabs (no structural cleanup). */
+export function prepareRichTextDraft(html: string): string {
+  return html.trim()
+}
+
+/**
+ * Strip unsupported markup from clipboard HTML pasted into the visual editor.
+ * Keeps paragraphs, bold/italic, lists, breaks, and editor font-size spans only.
+ */
+export function sanitizeVisualRichTextPaste(html: string): string {
+  const trimmed = html.trim()
+  if (!trimmed) return ''
+
+  const doc = new DOMParser().parseFromString(trimmed, 'text/html')
+  sanitizePasteContainer(doc.body, doc)
+  return normalizeRichTextHtml(doc.body.innerHTML)
+}
+
+function sanitizePasteContainer(container: Element, doc: Document) {
+  for (const child of [...container.childNodes]) {
+    sanitizePasteNode(child, doc)
+  }
+}
+
+function sanitizePasteNode(node: Node, doc: Document) {
+  if (node.nodeType === Node.TEXT_NODE) return
+
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    node.parentNode?.removeChild(node)
+    return
+  }
+
+  const element = node as HTMLElement
+  const tag = element.tagName.toLowerCase()
+
+  if (PASTE_DROP_TAGS.has(tag)) {
+    element.remove()
+    return
+  }
+
+  for (const child of [...element.childNodes]) {
+    sanitizePasteNode(child, doc)
+  }
+
+  if (tag === 'b') {
+    replaceTag(element, doc.createElement('strong'))
+    return
+  }
+
+  if (tag === 'i') {
+    replaceTag(element, doc.createElement('em'))
+    return
+  }
+
+  if (PASTE_BLOCKISH_TAGS.has(tag)) {
+    replaceTag(element, doc.createElement('p'))
+    return
+  }
+
+  if (tag === 'span') {
+    const sizeKey = resolveAllowedFontSize(element)
+    if (sizeKey) {
+      const next = doc.createElement('span')
+      next.dataset.richFontSize = sizeKey
+      next.style.fontSize = RICH_FONT_SIZES[sizeKey]
+      while (element.firstChild) next.appendChild(element.firstChild)
+      element.replaceWith(next)
+      return
+    }
+    unwrapElement(element)
+    return
+  }
+
+  if (tag === 'font') {
+    const sizeAttr = element.getAttribute('size')?.trim()
+    const mapped = sizeAttr ? LEGACY_FONT_SIZE_MAP[sizeAttr] : undefined
+    if (mapped) {
+      const next = doc.createElement('span')
+      next.dataset.richFontSize = mapped
+      next.style.fontSize = RICH_FONT_SIZES[mapped]
+      while (element.firstChild) next.appendChild(element.firstChild)
+      element.replaceWith(next)
+      return
+    }
+    unwrapElement(element)
+    return
+  }
+
+  if (!PASTE_ALLOWED_TAGS.has(tag)) {
+    unwrapElement(element)
+    return
+  }
+
+  stripElementAttributes(element)
+}
+
+function replaceTag(element: Element, next: HTMLElement) {
+  while (element.firstChild) next.appendChild(element.firstChild)
+  element.replaceWith(next)
+}
+
+function stripElementAttributes(element: Element) {
+  for (const attr of [...element.attributes]) {
+    element.removeAttribute(attr.name)
+  }
+}
+
+function resolveAllowedFontSize(element: HTMLElement): RichFontSize | null {
+  const datasetSize = element.dataset.richFontSize
+  if (datasetSize && datasetSize in RICH_FONT_SIZES) {
+    return datasetSize as RichFontSize
+  }
+
+  const fontSize = element.style.fontSize?.trim()
+  if (fontSize) {
+    return inferFontSizeKey(fontSize) ?? null
+  }
+
+  return null
 }
 
 function inferFontSizeKey(fontSize: string): RichFontSize | null {

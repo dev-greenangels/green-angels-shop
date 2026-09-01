@@ -57,14 +57,14 @@ function buildCellUpdate(
     return { productId, characteristicId, clear: true as const }
   }
 
-  if (definition.valueType === 'MULTI_SELECT') {
+  if (definition.valueType === 'MULTI_SELECT' || definition.valueType === 'COLOR') {
     const optionIds = value.optionIds ?? []
     return optionIds.length
       ? { productId, characteristicId, optionIds }
       : { productId, characteristicId, clear: true as const }
   }
 
-  if (definition.valueType === 'SELECT' || definition.valueType === 'COLOR') {
+  if (definition.valueType === 'SELECT') {
     return value.optionId
       ? { productId, characteristicId, optionId: value.optionId }
       : { productId, characteristicId, clear: true as const }
@@ -109,7 +109,7 @@ function CharacteristicCellEditor({
 }) {
   const tHints = useTranslations('hints')
 
-  if (definition.valueType === 'MULTI_SELECT') {
+  if (definition.valueType === 'MULTI_SELECT' || definition.valueType === 'COLOR') {
     const selectedIds = value?.optionIds ?? []
     return (
       <Popover>
@@ -141,7 +141,16 @@ function CharacteristicCellEditor({
                       onChange(optionIds.length ? { optionIds } : null)
                     }}
                   />
-                  <span>{option.label}</span>
+                  <span className="inline-flex items-center gap-2">
+                    {option.colorHex ? (
+                      <span
+                        className="inline-block h-3 w-3 shrink-0 rounded-full border border-border"
+                        style={{ backgroundColor: option.colorHex }}
+                        aria-hidden
+                      />
+                    ) : null}
+                    {option.label}
+                  </span>
                 </label>
               )
             })}
@@ -151,7 +160,7 @@ function CharacteristicCellEditor({
     )
   }
 
-  if (definition.valueType === 'SELECT' || definition.valueType === 'COLOR') {
+  if (definition.valueType === 'SELECT') {
     return (
       <Select
         value={value?.optionId ?? '__none__'}

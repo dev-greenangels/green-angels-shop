@@ -1,13 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
-import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
+import { useBackstageContentLocale, useContentLocaleSwitchSave } from '@/components/backstage/backstage-content-locale'
 import { ContentLocaleBanner, ContentLocaleLabel, TranslationHint } from '@/components/backstage/content-locale-banner'
 import { AdditionalCategoriesPicker } from '@/components/backstage/additional-categories-picker'
 import { CategoryCombobox, type CategoryOption } from '@/components/backstage/category-combobox'
@@ -15,8 +15,20 @@ import {
   ProductPricingModeSwitcher,
   ProductPricingSection,
 } from '@/components/backstage/product-pricing-section'
-import { RichTextEditor } from '@/components/backstage/rich-text-editor'
+import {
+  RichTextEditor,
+  type RichTextEditorHandle,
+} from '@/components/backstage/rich-text-editor'
 import { StickyFormActions } from '@/components/backstage/sticky-form-actions'
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -48,6 +60,7 @@ import {
 } from '@/lib/backstage/product-form'
 import { ProductImagesField } from '@/components/backstage/product-images-field'
 import { fetchVariantAttributes, type VariantAttribute } from '@/lib/backstage/variant-attributes'
+import { countVariantSelections } from '@/lib/backstage/variant-selections'
 import { cn } from '@/lib/utils'
 
 function flattenCategoryOptions(nodes: CategoryTreeNode[], depth = 0): CategoryOption[] {
@@ -59,10 +72,6 @@ function flattenCategoryOptions(nodes: CategoryTreeNode[], depth = 0): CategoryO
     }
   }
   return result
-}
-
-function countVariantSelections(selections: Record<string, string>) {
-  return Object.values(selections).filter(Boolean).length
 }
 
 function validateForm(
@@ -116,6 +125,7 @@ export function ProductEditor({
   const router = useRouter()
   const { locale: contentLocale, ready: contentLocaleReady } = useBackstageContentLocale()
   const tp = useTranslations('pages.products')
+  const ta = useTranslations('actions')
   const tv = useTranslations('validation')
   const tt = useTranslations('toast')
   const th = useTranslations('hints')
@@ -146,6 +156,9 @@ export function ProductEditor({
   const [slugTouched, setSlugTouched] = useState(false)
   const [slugStatus, setSlugStatus] = useState<SlugStatus>('idle')
   const [activeTab, setActiveTab] = useState('content')
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
+  const [descriptionLocalesDirty, setDescriptionLocalesDirty] = useState(false)
+  const descriptionEditorRef = useRef<RichTextEditorHandle>(null)
 
   const loadCategories = useCallback(async () => {
     if (!contentLocaleReady) return
@@ -271,7 +284,46 @@ export function ProductEditor({
     return () => clearTimeout(timer)
   }, [form.slug, form.id, slugTouched, checkSlug])
 
-  const isDirty = useMemo(() => isProductFormDirty(form, baseline), [form, baseline])
+  const isDirty = useMemo(
+    () => isProductFormDirty(form, baseline) || descriptionLocalesDirty,
+    [form, baseline, descriptionLocalesDirty],
+  )
+
+  const persistProductForLocaleSwitch = useCallback(async () => {
+    if (!isEditing || !productId) return
+    descriptionEditorRef.current?.flushCurrentLocaleDraft()
+    const error = validateForm(form, attributes, tv)
+    if (error) throw new Error(error)
+    const slugOk =
+      slugStatus === 'available' ? true : await checkSlug(form.slug, form.id)
+    if (!slugOk) throw new Error(tt('slugTaken'))
+    const payload = buildProductPayload(
+      form,
+      attributes,
+      characteristicDefinitions,
+      contentLocale,
+    )
+    await updateProduct(productId, payload)
+    await descriptionEditorRef.current?.saveDirtyDescriptionLocales({
+      excludeLocale: contentLocale,
+    })
+    descriptionEditorRef.current?.markLocalesSaved()
+  }, [
+    isEditing,
+    productId,
+    form,
+    attributes,
+    tv,
+    slugStatus,
+    checkSlug,
+    tt,
+    characteristicDefinitions,
+    contentLocale,
+  ])
+
+  useContentLocaleSwitchSave(persistProductForLocaleSwitch, {
+    when: () => isDirty && isEditing && Boolean(productId),
+  })
 
   const reloadProductTranslations = useCallback(async () => {
     if (!productId || !contentLocaleReady) return
@@ -322,36 +374,83 @@ export function ProductEditor({
       : tp('editTitle')
     : tp('addTitle')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const cloneFormState = (state: ProductFormState): ProductFormState =>
+    JSON.parse(JSON.stringify(state)) as ProductFormState
+
+  const saveProduct = async (): Promise<boolean> => {
     const error = validateForm(form, attributes, tv)
     if (error) {
       toast.error(error)
-      return
+      return false
     }
 
     const slugOk =
       slugStatus === 'available' ? true : await checkSlug(form.slug, form.id)
     if (!slugOk) {
       toast.error(tt('slugTaken'))
-      return
+      return false
     }
 
     setIsLoading(true)
     try {
+      descriptionEditorRef.current?.flushCurrentLocaleDraft()
       const payload = buildProductPayload(form, attributes, characteristicDefinitions, contentLocale)
       if (isEditing && productId) {
         await updateProduct(productId, payload)
+        await descriptionEditorRef.current?.saveDirtyDescriptionLocales({
+          excludeLocale: contentLocale,
+        })
+        descriptionEditorRef.current?.markLocalesSaved()
+        setBaseline(cloneFormState(form))
         toast.success(tt('productSaved'))
-      } else {
-        await createProduct(payload)
-        toast.success(tt('productCreated'))
+        return true
       }
-      router.push(productsListHref)
+
+      const created = await createProduct(payload)
+      toast.success(tt('productCreated'))
+      const returnToQuery = returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''
+      router.replace(`/backstage/products/${created.id}/edit${returnToQuery}`)
+      return true
     } catch (err) {
       toast.error(err instanceof Error ? err.message : tt('saveFailed'))
+      return false
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await saveProduct()
+  }
+
+  const navigateBack = () => {
+    router.push(productsListHref)
+  }
+
+  const handleBack = () => {
+    descriptionEditorRef.current?.flushCurrentLocaleDraft()
+    const hasUnsavedChanges =
+      isProductFormDirty(form, baseline) ||
+      (descriptionEditorRef.current?.isMultiLocaleDirty() ?? descriptionLocalesDirty)
+    if (!hasUnsavedChanges) {
+      navigateBack()
+      return
+    }
+    setLeaveDialogOpen(true)
+  }
+
+  const handleDiscardAndLeave = () => {
+    setLeaveDialogOpen(false)
+    navigateBack()
+  }
+
+  const handleSaveAndLeave = async () => {
+    const saved = await saveProduct()
+    if (!saved) return
+    setLeaveDialogOpen(false)
+    if (isEditing) {
+      navigateBack()
     }
   }
 
@@ -374,7 +473,8 @@ export function ProductEditor({
           <StickyFormActions
             title={editorTitle}
             subtitle={tp('formSubtitle')}
-            onCancel={() => router.push(productsListHref)}
+            onCancel={handleBack}
+            cancelLabel={ta('back')}
             isLoading={isLoading}
             isDirty={isDirty}
             isPublished={form.isPublished}
@@ -483,10 +583,12 @@ export function ProductEditor({
                     </div>
 
                     <RichTextEditor
+                      ref={descriptionEditorRef}
                       label={tp('fullDescription')}
                       value={form.description}
                       onChange={(description) => patch({ description })}
                       multiLocaleProductId={productId}
+                      onMultiLocaleDirtyChange={setDescriptionLocalesDirty}
                     />
                     <TranslationHint hint={translationHints.description} />
                   </CardContent>
@@ -642,6 +744,29 @@ export function ProductEditor({
               </TabsContent>
               ) : null}
         </Tabs>
+
+        <AlertDialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{tp('unsavedChangesTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>{tp('unsavedChangesDesc')}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
+              <AlertDialogCancel disabled={isLoading}>{tp('stayOnPage')}</AlertDialogCancel>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isLoading}
+                onClick={() => void handleDiscardAndLeave()}
+              >
+                {tp('discardChanges')}
+              </Button>
+              <Button type="button" disabled={isLoading} onClick={() => void handleSaveAndLeave()}>
+                {isLoading ? ta('saving') : tp('saveAndLeave')}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </form>
     </AdminLayout>
   )

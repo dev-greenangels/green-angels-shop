@@ -15,6 +15,7 @@ export interface ProductDisplayCharacteristic {
   displayValue: string
   colorHex?: string | null
   colorDisplayMode?: 'TEXT' | 'SWATCH' | 'BOTH' | null
+  colorOptions?: Array<{ displayValue: string; colorHex: string | null }>
   sortOrder: number
 }
 

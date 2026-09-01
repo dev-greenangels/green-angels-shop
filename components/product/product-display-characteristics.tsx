@@ -3,12 +3,13 @@ import type { ProductDisplayCharacteristic } from '@/lib/types'
 import { ColorDisplayValue } from '@/components/product/color-display-swatch'
 
 function CharacteristicValue({ item }: { item: ProductDisplayCharacteristic }) {
-  if (item.valueType === 'COLOR' && (item.colorHex || item.colorDisplayMode)) {
+  if (item.valueType === 'COLOR' && (item.colorHex || item.colorOptions?.length || item.colorDisplayMode)) {
     return (
       <ColorDisplayValue
         displayValue={item.displayValue}
         colorHex={item.colorHex}
         colorDisplayMode={item.colorDisplayMode}
+        colorOptions={item.colorOptions}
       />
     )
   }

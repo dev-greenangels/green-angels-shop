@@ -1,6 +1,7 @@
 'use client'
 
 import { Save } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { ContentLocaleBanner, ContentLocaleLabel } from '@/components/backstage/content-locale-banner'
 import { Button } from '@/components/ui/button'
@@ -46,6 +47,7 @@ export function WholesalePageSettingsForm({
   isDirty: boolean
   marketRegion: 'ua' | 'sk'
 }) {
+  const tBanner = useTranslations('contentBanner')
   const storedCopy = settings.byLocale[contentLocale]
   const copy: WholesalePageCmsCopy = storedCopy ?? { ...EMPTY_WHOLESALE_CMS }
   const hintCopy =
@@ -78,7 +80,7 @@ export function WholesalePageSettingsForm({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ContentLocaleBanner hint="Редагуєте текст гурту для обраної мови. Збережіть перед перемиканням мови." />
+        <ContentLocaleBanner hint={tBanner('switchAutoSave')} />
 
         <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
           <div>

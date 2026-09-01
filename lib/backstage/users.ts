@@ -28,6 +28,8 @@ export type BackstageUserListItem = {
   role: BackstageUserRole
   orderCount: number
   createdAt: string
+  marketingSubscribed: boolean
+  marketingSubscribedAt: string | null
 }
 
 export type BackstageUsersFilters = {
@@ -87,6 +89,8 @@ export type BackstageUserOrderSummary = {
 export type BackstageUserDetail = BackstageUserListItem & {
   orders: BackstageUserOrderSummary[]
   groupIds: string[]
+  marketingSource: string | null
+  marketingUnsubscribedAt: string | null
 }
 
 export async function createBackstageStaffMember(

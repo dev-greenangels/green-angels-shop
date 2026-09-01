@@ -40,6 +40,7 @@ import {
   Bell,
   Undo2,
   Workflow,
+  Mail,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -136,6 +137,11 @@ const navGroups: NavGroup[] = [
       { href: '/backstage/about', labelKey: 'about', icon: Sprout },
       { href: '/backstage/wholesale', labelKey: 'wholesalePage', icon: Handshake },
       { href: '/backstage/legal', labelKey: 'legal', icon: ScrollText },
+      {
+        href: '/backstage/marketing-subscribers',
+        labelKey: 'marketingSubscribers',
+        icon: Mail,
+      },
       { href: '/backstage/reviews', labelKey: 'reviews', icon: MessageSquareQuote },
       { href: '/backstage/wholesale-inquiries', labelKey: 'wholesaleInquiries', icon: Warehouse },
       {
@@ -445,6 +451,7 @@ export function AdminLayout({ children, addClassName }: AdminLayoutProps) {
       return tBread(segment as 'add-plant' | 'edit' | 'table')
     }
     if (segment === 'stock-notifications') return tNav('stockNotifications')
+    if (segment === 'marketing-subscribers') return tNav('marketingSubscribers')
     if (segment === 'jobs') return tNav('jobs')
     if (navLabelKeys.has(segment as NavLabelKey)) {
       return tNav(segment as NavLabelKey)

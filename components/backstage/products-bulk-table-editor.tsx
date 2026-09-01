@@ -40,6 +40,12 @@ import {
 } from '@/lib/backstage/variant-attributes'
 import { fetchCharacteristicDefinitions } from '@/lib/backstage/characteristics'
 import { createVariantDraft, type ProductVariantDraft } from '@/lib/backstage/product-form'
+import {
+  addVariantSelectionValue,
+  hasVariantSelections,
+  removeVariantSelectionValue,
+  type VariantAttributeSelections,
+} from '@/lib/backstage/variant-selections'
 
 const DRAFT_STORAGE_KEY = 'ga-products-bulk-drafts'
 const PAGE_SIZE = 50
@@ -61,7 +67,7 @@ type VariantDraft = {
   clientId: string
   variantId?: string
   label: string
-  selections: Record<string, string>
+  selections: VariantAttributeSelections
   price: string
   stock: string
   weight: string
@@ -73,7 +79,7 @@ type VariantDraft = {
 }
 
 type AddSizeForm = {
-  selections: Record<string, string>
+  selections: VariantAttributeSelections
   price: string
   stock: string
   weight: string
@@ -487,7 +493,7 @@ export function ProductsBulkTableEditor() {
         fetchCharacteristicDefinitions({ locale: contentLocale, edit: false }),
       ])
       const form = productDetailToFormState(detail, attributes, definitions)
-      form.pricingMode = drafts.length > 1 || Object.keys(drafts[0]?.selections ?? {}).length > 0
+      form.pricingMode = drafts.length > 1 || hasVariantSelections(drafts[0]?.selections ?? {})
         ? 'variants'
         : form.pricingMode
       form.variants = drafts.map((draft) => {
@@ -555,7 +561,7 @@ export function ProductsBulkTableEditor() {
 
   const submitAddSize = async () => {
     if (!addSizeProductId) return
-    const hasSelection = Object.values(addSizeForm.selections).some(Boolean)
+    const hasSelection = hasVariantSelections(addSizeForm.selections)
     if (!hasSelection) {
       toast.error('Оберіть хоча б один атрибут розміру')
       return
@@ -1076,19 +1082,22 @@ export function ProductsBulkTableEditor() {
               <VariantAttributePicker
                 attributes={attributes}
                 selections={addSizeForm.selections}
-                onChange={(attributeId, valueId) =>
+                onChange={(attributeId, valueId) => {
+                  const attribute = attributes.find((item) => item.id === attributeId)
+                  if (!attribute) return
                   setAddSizeForm((prev) => ({
                     ...prev,
-                    selections: { ...prev.selections, [attributeId]: valueId },
+                    selections: addVariantSelectionValue(prev.selections, attribute, valueId),
                   }))
-                }
-                onClear={(attributeId) =>
-                  setAddSizeForm((prev) => {
-                    const selections = { ...prev.selections }
-                    delete selections[attributeId]
-                    return { ...prev, selections }
-                  })
-                }
+                }}
+                onClear={(attributeId, valueId) => {
+                  const attribute = attributes.find((item) => item.id === attributeId)
+                  if (!attribute) return
+                  setAddSizeForm((prev) => ({
+                    ...prev,
+                    selections: removeVariantSelectionValue(prev.selections, attribute, valueId),
+                  }))
+                }}
               />
             )}
             <div className="grid gap-3 sm:grid-cols-2">

@@ -15,10 +15,12 @@ export type ProductImageDraft = {
   isMain: boolean
 }
 
+import type { VariantAttributeSelections } from '@/lib/backstage/variant-selections'
+
 export type ProductVariantDraft = {
   clientId: string
   id?: string
-  selections: Record<string, string>
+  selections: VariantAttributeSelections
   sku: string
   ean: string
   stock: string

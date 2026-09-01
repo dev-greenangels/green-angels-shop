@@ -6,7 +6,7 @@ import { toast } from '@/lib/toast'
 import { useTranslations } from 'next-intl'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
-import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
+import { useBackstageContentLocale, useContentLocaleSwitchSave } from '@/components/backstage/backstage-content-locale'
 import { ContentLocaleBanner, ContentLocaleLabel } from '@/components/backstage/content-locale-banner'
 import { CharacteristicsBulkEditor } from '@/components/backstage/characteristics-bulk-editor'
 import {
@@ -66,6 +66,13 @@ export default function CharacteristicsPage() {
     editorActionsRef.current = actions
     setEditorDirty((prev) => (prev === actions.isDirty ? prev : actions.isDirty))
   }, [])
+
+  useContentLocaleSwitchSave(
+    async () => {
+      await editorActionsRef.current?.save()
+    },
+    { when: () => editorDirty },
+  )
 
   const load = useCallback(async () => {
     if (!contentLocaleReady) return

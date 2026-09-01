@@ -2,7 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { ContractWithdrawalModelForm } from '@/components/legal/contract-withdrawal-model-form'
 import { ContractWithdrawalPublicForm } from '@/components/legal/contract-withdrawal-public-form'
-import { LegalInternalLink } from '@/components/legal/legal-internal-link'
+import { ReturnsLegalContent } from '@/components/legal/returns-legal-content'
 import { Navigation } from '@/components/navigation'
 import { PublicPageBreadcrumbs } from '@/components/public-page-breadcrumbs'
 import { resolveWithdrawalReturnAddressText } from '@/lib/settings/withdrawal-return-address'
@@ -22,17 +22,12 @@ import { resolveStoreForCountrySite } from '@/lib/settings/store-contact-country
 import { getSupportEmail } from '@/lib/settings/store-helpers'
 import { cn } from '@/lib/utils'
 
-const contentCardClassName =
-  'rounded-2xl border border-border/70 bg-[rgba(232,240,227,0.35)] p-5 shadow-sm md:p-8'
-
 const subsectionClassName =
   'space-y-3 border-t border-border/55 pt-7 first:border-t-0 first:pt-0'
 
 const sectionTitleClassName = 'font-serif text-2xl font-semibold text-foreground'
 
 const subsectionTitleClassName = 'font-serif text-xl font-semibold text-foreground'
-
-const bodyClassName = 'whitespace-pre-line text-sm leading-relaxed text-foreground/90'
 
 export default async function ReturnsPage({
   params,
@@ -57,6 +52,26 @@ export default async function ReturnsPage({
   const contactEmail = getSupportEmail(store) || 'info@green-angels.sk'
   const pageTitle = document?.title ?? t('title')
   const displayReturnAddress = returnAddress || t('section5AddressPending')
+
+  const formsSlot = (
+    <>
+      <div className="space-y-4">
+        <h2 className={sectionTitleClassName}>{t('section2Title')}</h2>
+        <p className="text-sm leading-relaxed text-muted-foreground">{t('section2Intro')}</p>
+        <ContractWithdrawalPublicForm id="withdraw-here" />
+      </div>
+
+      <div className={subsectionClassName}>
+        <h3 className={subsectionTitleClassName}>{t('section3Title')}</h3>
+        <p className="text-sm text-muted-foreground">{t('section3Intro')}</p>
+        <ContractWithdrawalModelForm
+          locale={locale}
+          seller={fallbackSeller}
+          contactEmail={contactEmail}
+        />
+      </div>
+    </>
+  )
 
   return (
     <>
@@ -84,79 +99,23 @@ export default async function ReturnsPage({
         </div>
 
         <div className={cn(siteContentShellClassName, 'py-10 md:py-12')}>
-          <div className="mx-auto max-w-3xl space-y-8">
-            <section id="overview" className={contentCardClassName}>
-              <h2 className={sectionTitleClassName}>{t('section1Title')}</h2>
-              <p className={cn(bodyClassName, 'mt-4')}>{t('section1Body')}</p>
-            </section>
-
-            <section id="withdrawal" className={cn(contentCardClassName, 'space-y-8')}>
-              <div className="space-y-4">
-                <h2 className={sectionTitleClassName}>{t('section2Title')}</h2>
-                <p className="text-sm leading-relaxed text-muted-foreground">{t('section2Intro')}</p>
-                <ContractWithdrawalPublicForm id="withdraw-here" />
-              </div>
-
-              <div className={subsectionClassName}>
-                <h3 className={subsectionTitleClassName}>{t('section3Title')}</h3>
-                <p className="text-sm text-muted-foreground">{t('section3Intro')}</p>
-                <ContractWithdrawalModelForm
-                  locale={locale}
-                  seller={fallbackSeller}
-                  contactEmail={contactEmail}
-                />
-              </div>
-            </section>
-
-            <section id="legal-info" className={cn(contentCardClassName, 'space-y-0')}>
-              <div className={subsectionClassName}>
-                <h3 className={subsectionTitleClassName}>{t('section4Title')}</h3>
-                <p className={bodyClassName}>{t('section4Body')}</p>
-              </div>
-
-              <div className={subsectionClassName}>
-                <h3 className={subsectionTitleClassName}>{t('section5Title')}</h3>
-                <p className={bodyClassName}>{t('section5Intro')}</p>
-                <p className="rounded-lg border border-border/80 bg-background/80 p-4 text-sm font-medium">
-                  {displayReturnAddress}
-                </p>
-                <p className={bodyClassName}>{t('section5ReturnNote')}</p>
-              </div>
-
-              <div className={subsectionClassName}>
-                <h3 className={subsectionTitleClassName}>{t('section6Title')}</h3>
-                <p className={bodyClassName}>
-                  {t('section6BodyBefore')}{' '}
-                  <LegalInternalLink doc="terms" hash="reklamacia">
-                    {t('section6TermsLink')}
-                  </LegalInternalLink>
-                  {t('section6BodyAfter')}
-                </p>
-              </div>
-
-              <div className={subsectionClassName}>
-                <h3 className={subsectionTitleClassName}>{t('section8Title')}</h3>
-                <p className={bodyClassName}>{t('section8Body')}</p>
-              </div>
-
-              <div className={subsectionClassName}>
-                <h3 className={subsectionTitleClassName}>{t('section9Title')}</h3>
-                <p className={bodyClassName}>
-                  {t('section9Body')}{' '}
-                  <a className="text-primary underline underline-offset-2" href={`mailto:${contactEmail}`}>
-                    {contactEmail}
-                  </a>
-                </p>
-                <nav className="flex flex-wrap gap-x-3 gap-y-2 pt-2 text-sm">
-                  <LegalInternalLink doc="terms" />
-                  <LegalInternalLink doc="privacy" />
-                  <LegalInternalLink doc="cookies" />
-                  <LegalInternalLink doc="shipping" />
-                  <LegalInternalLink doc="contacts" />
-                </nav>
-              </div>
-            </section>
-          </div>
+          {document ? (
+            <ReturnsLegalContent
+              document={document}
+              vars={{
+                returnAddress: displayReturnAddress,
+                supportEmail: contactEmail,
+              }}
+              formsSlot={formsSlot}
+            />
+          ) : (
+            <div className="mx-auto max-w-3xl space-y-8">
+              <p className="text-sm text-muted-foreground">{t('intro')}</p>
+              <section id="withdrawal" className="rounded-2xl border border-border/70 bg-[rgba(232,240,227,0.35)] p-5 shadow-sm md:p-8">
+                {formsSlot}
+              </section>
+            </div>
+          )}
         </div>
       </main>
     </>

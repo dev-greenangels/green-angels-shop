@@ -12,6 +12,10 @@ import {
 } from '@/lib/backstage/product-form'
 import { isoToDateInput } from '@/lib/backstage/variant-pricing'
 import type { VariantAttribute } from '@/lib/backstage/variant-attributes'
+import {
+  flattenAttributeValueIds,
+  variantSelectionsFromAttributeValueIds,
+} from '@/lib/backstage/variant-selections'
 
 async function parseError(res: Response): Promise<string> {
   const data = (await res.json().catch(() => ({}))) as {
@@ -216,7 +220,7 @@ function buildVariantPayload(
     stock: Number(variant.stock),
     price: Number(variant.price),
     legacyId: variant.legacyId.trim() || undefined,
-    attributeValueIds: Object.values(variant.selections).filter(Boolean),
+    attributeValueIds: flattenAttributeValueIds(variant.selections),
     availableFrom: variant.availableFrom.trim() || undefined,
     salesUnitId: variant.salesUnitId.trim() || undefined,
     weight: variant.weight.trim() ? Number(variant.weight) : undefined,
@@ -519,16 +523,14 @@ export function productDetailToFormState(
 
   form.variants =
     detail.variants.length > 0
-      ? detail.variants.map((variant) => {
-          const selections: Record<string, string> = {}
-          for (const attribute of variantAttributes) {
-            const valueId = variant.attributeValueIds.find((id) =>
-              attribute.values.some((value) => value.id === id),
-            )
-            if (valueId) selections[attribute.id] = valueId
-          }
-          return mapVariantToDraft(variant, { selections })
-        })
+      ? detail.variants.map((variant) =>
+          mapVariantToDraft(variant, {
+            selections: variantSelectionsFromAttributeValueIds(
+              variant.attributeValueIds,
+              variantAttributes,
+            ),
+          }),
+        )
       : [createVariantDraft()]
 
   return form

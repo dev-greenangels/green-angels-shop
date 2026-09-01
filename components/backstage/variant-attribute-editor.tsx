@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Loader2, Save, Trash2 } from 'lucide-react'
 
+import { useContentLocaleSwitchSave } from '@/components/backstage/backstage-content-locale'
+
 import { VariantAttributeValuesForm } from '@/components/backstage/variant-attribute-values-form'
 import { ColorDisplayModeField } from '@/components/backstage/color-display-mode-field'
 import { TranslationHint, ContentLocaleLabel, LocaleTranslationButton } from '@/components/backstage/content-locale-banner'
@@ -145,6 +147,8 @@ export function VariantAttributeEditor({
       values,
     })
   }
+
+  useContentLocaleSwitchSave(() => handleSave(), { when: () => isDirty })
 
   return (
     <div className="flex h-full min-h-0 flex-col">

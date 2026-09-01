@@ -49,7 +49,7 @@ function normalizeField(
   definition: CharacteristicDefinition,
   fieldValue: string | string[] | undefined,
 ): string | string[] {
-  if (definition.valueType === 'MULTI_SELECT') {
+  if (definition.valueType === 'MULTI_SELECT' || definition.valueType === 'COLOR') {
     if (Array.isArray(fieldValue)) return fieldValue
     return fieldValue ? [fieldValue] : []
   }
@@ -99,7 +99,7 @@ export function ProductCharacteristicsFields({
     const entries: ChipEntry[] = []
     for (const definition of definitions) {
       const fieldValue = normalizeField(definition, current[definition.id])
-      if (definition.valueType === 'MULTI_SELECT') {
+      if (definition.valueType === 'MULTI_SELECT' || definition.valueType === 'COLOR') {
         const ids = Array.isArray(fieldValue) ? fieldValue : []
         for (const optionId of ids) {
           const option = definition.options.find((item) => item.id === optionId)
@@ -115,7 +115,7 @@ export function ProductCharacteristicsFields({
         continue
       }
 
-      if (definition.valueType === 'SELECT' || definition.valueType === 'COLOR') {
+      if (definition.valueType === 'SELECT') {
         const optionId = typeof fieldValue === 'string' ? fieldValue : ''
         if (!optionId) continue
         const option = definition.options.find((item) => item.id === optionId)
@@ -145,11 +145,11 @@ export function ProductCharacteristicsFields({
   const availableDefinitions = useMemo(() => {
     return definitions.filter((definition) => {
       const fieldValue = normalizeField(definition, current[definition.id])
-      if (definition.valueType === 'MULTI_SELECT') {
+      if (definition.valueType === 'MULTI_SELECT' || definition.valueType === 'COLOR') {
         const selected = Array.isArray(fieldValue) ? fieldValue : []
         return definition.options.some((option) => !selected.includes(option.id))
       }
-      if (definition.valueType === 'SELECT' || definition.valueType === 'COLOR') {
+      if (definition.valueType === 'SELECT') {
         return !(typeof fieldValue === 'string' && fieldValue)
       }
       return !(typeof fieldValue === 'string' && fieldValue.trim())
@@ -193,7 +193,7 @@ export function ProductCharacteristicsFields({
     const definition = definitions.find((item) => item.id === chip.characteristicId)
     if (!definition) return
 
-    if (definition.valueType === 'MULTI_SELECT' && chip.optionId) {
+    if (definition.valueType === 'MULTI_SELECT' || definition.valueType === 'COLOR') {
       const fieldValue = normalizeField(definition, current[definition.id])
       const selected = Array.isArray(fieldValue) ? fieldValue : []
       onChange({
@@ -205,7 +205,7 @@ export function ProductCharacteristicsFields({
 
     onChange({
       ...current,
-      [definition.id]: definition.valueType === 'MULTI_SELECT' ? [] : '',
+      [definition.id]: '',
     })
   }
 
@@ -213,7 +213,8 @@ export function ProductCharacteristicsFields({
     if (!pendingDefinition || !canAdd) return
 
     if (
-      pendingDefinition.valueType === 'MULTI_SELECT' &&
+      (pendingDefinition.valueType === 'MULTI_SELECT' ||
+        pendingDefinition.valueType === 'COLOR') &&
       pendingValueId
     ) {
       const fieldValue = normalizeField(pendingDefinition, current[pendingDefinition.id])
@@ -223,10 +224,7 @@ export function ProductCharacteristicsFields({
         ...current,
         [pendingDefinition.id]: [...selected, pendingValueId],
       })
-    } else if (
-      (pendingDefinition.valueType === 'SELECT' || pendingDefinition.valueType === 'COLOR') &&
-      pendingValueId
-    ) {
+    } else if (pendingDefinition.valueType === 'SELECT' && pendingValueId) {
       onChange({
         ...current,
         [pendingDefinition.id]: pendingValueId,

@@ -34,6 +34,7 @@
     "photos": "Fresh photos",
     "tedb": "TEDB / VAT",
     "stockNotifications": "Stock alerts",
+    "marketingSubscribers": "Marketing subscribers",
     "jobs": "Jobs"
   },
   "common": {
@@ -70,6 +71,7 @@
     "saveChanges": "Save changes",
     "saving": "Saving…",
     "cancel": "Cancel",
+    "back": "Back",
     "close": "Close",
     "create": "Create",
     "creating": "Creating…",
@@ -171,7 +173,7 @@
     "productDescriptionPlaceholder": "Detailed product description…",
     "htmlPlaceholder": "'<p>Your HTML content…</p>'",
     "htmlHint": "You can paste ready HTML. After switching to Editor it will display visually.",
-    "localeSwitchAutoSave": "Switching language automatically saves the current description for the previous language.",
+    "localeSwitchAutoSave": "Description is saved on language switch only when the text was changed.",
     "rootCategory": "Root category",
     "title": "Title",
     "description": "Description",
@@ -387,6 +389,8 @@
     "missingPlaceholder": "No translation for this language",
     "hintFrom": "Hint ({locale}):",
     "switchConfirm": "Unsaved field changes will be lost. Switch content language?",
+    "switchSaveFailed": "Could not save before switching language.",
+    "switchAutoSave": "The current language is saved automatically before switching.",
     "cmsNotTranslated": "Homepage and contact texts belong to this deploy, not to the content-language switcher."
   },
   "validation": {
@@ -500,6 +504,37 @@
       "saveSuccess": "Wholesale page saved.",
       "saveError": "Could not save the wholesale page."
     },
+    "contractWithdrawals": {
+      "title": "Contract withdrawal",
+      "subtitle": "Online notices from the returns page and customer account. {total, plural, one {# record} other {# records}}.",
+      "refresh": "Refresh",
+      "loading": "Loading…",
+      "loadError": "Could not load withdrawal requests.",
+      "empty": "No requests yet.",
+      "filterAll": "All",
+      "statusSubmitted": "New",
+      "statusUnderReview": "Under review",
+      "statusAccepted": "Accepted",
+      "statusRejected": "Rejected",
+      "statusClosed": "Closed",
+      "scopeEntireOrder": "Entire order",
+      "scopePartial": "Partial",
+      "fieldScope": "Scope",
+      "fieldSource": "Source",
+      "sourceAccount": "Account",
+      "sourcePublic": "Public form",
+      "orderNumber": "order {number}",
+      "emailAck": "· email {date}",
+      "actionUnderReview": "Mark under review",
+      "actionAccept": "Accept",
+      "actionReject": "Reject",
+      "actionClose": "Close",
+      "statusUpdated": "Status updated.",
+      "statusUpdateError": "Could not update status.",
+      "paginationPrev": "Previous",
+      "paginationNext": "Next",
+      "paginationPage": "{page} / {totalPages}"
+    },
     "products": {
       "title": "Products",
       "subtitle": "Manage the product catalog",
@@ -513,6 +548,11 @@
       "addTitle": "Add product",
       "loadingProduct": "Loading product…",
       "formSubtitle": "Content, SEO, prices, variants and properties",
+      "unsavedChangesTitle": "Unsaved changes",
+      "unsavedChangesDesc": "Save changes before leaving the product page?",
+      "discardChanges": "Discard",
+      "saveAndLeave": "Save and leave",
+      "stayOnPage": "Stay",
       "tabContent": "Content",
       "tabSeo": "SEO",
       "tabPricing": "Prices & sizes",
@@ -713,6 +753,7 @@
     "fieldIntro": "Intro",
     "fieldBody": "Sections",
     "bodyHint": "Heading on the first line, paragraphs separated by a blank line. Split sections with a --- line.",
+    "returnsFormsMarkerHint": "For the Returns document, keep the ---WITHDRAWAL_FORMS--- section — interactive withdrawal forms are inserted there on the storefront.",
     "placeholderHint": "Storefront texts fill company details from back-office settings. Use '{sellerName}', '{ico}' (IČO), '{dic}' (DIČ), '{icDph}' (IČ DPH), '{legalAddress}'. Do not hardcode IČO.",
     "publish": "Publish",
     "draftCreated": "Draft created",
@@ -918,5 +959,43 @@
     "openTedb": "Open TEDB",
     "appTitle": "App queue (orders / email)",
     "appBody": "Expire unpaid and order emails share the app queue."
+  },
+  "marketingSubscribers": {
+    "title": "Marketing subscribers",
+    "subtitle": "Marketing email consent. {count} records.",
+    "refresh": "Refresh",
+    "loading": "Loading…",
+    "loadError": "Could not load subscribers.",
+    "exportSuccess": "Export downloaded.",
+    "exportError": "Export failed.",
+    "empty": "No subscribers yet.",
+    "searchPlaceholder": "Email, first or last name",
+    "statusFilter": {
+      "all": "All",
+      "active": "Subscribed",
+      "withdrawn": "Unsubscribed"
+    },
+    "status": {
+      "active": "Subscribed",
+      "withdrawn": "Unsubscribed"
+    },
+    "columns": {
+      "email": "Email",
+      "name": "Name",
+      "source": "Source",
+      "status": "Status",
+      "subscribedAt": "Subscribed at",
+      "unsubscribedAt": "Unsubscribed at",
+      "clientType": "Client"
+    },
+    "clientType": {
+      "registered": "Registered",
+      "guest": "Email only"
+    },
+    "pagination": {
+      "prev": "Previous",
+      "next": "Next",
+      "page": "Page {page} of {totalPages}"
+    }
   }
 }

@@ -5,7 +5,7 @@ import { Loader2, Plus, RefreshCw } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
-import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
+import { useBackstageContentLocale, useContentLocaleSwitchSave } from '@/components/backstage/backstage-content-locale'
 import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
@@ -99,6 +99,28 @@ export default function LegalDocumentsPage() {
   )
 
   const draftOnly = selected?.status === 'DRAFT'
+
+  const isDraftDirty = useMemo(() => {
+    if (!selected || !draftOnly) return false
+    return (
+      title !== selected.title ||
+      intro !== selected.intro ||
+      body !== sectionsToText(selected.sections)
+    )
+  }, [selected, draftOnly, title, intro, body])
+
+  useContentLocaleSwitchSave(
+    async () => {
+      if (!selected || !draftOnly) return
+      await updateBackstageLegalDraft(selected.id, {
+        title,
+        intro,
+        sections: textToSections(body),
+      })
+      await load()
+    },
+    { when: () => isDraftDirty },
+  )
 
   async function handleNewDraft() {
     setSaving(true)
@@ -266,6 +288,9 @@ export default function LegalDocumentsPage() {
                       className="font-mono text-sm"
                     />
                     <p className="text-xs text-muted-foreground">{t('bodyHint')}</p>
+                    {type === 'RETURNS' ? (
+                      <p className="text-xs text-muted-foreground">{t('returnsFormsMarkerHint')}</p>
+                    ) : null}
                     <p className="text-xs text-muted-foreground">{t('placeholderHint')}</p>
                   </div>
                   {draftOnly ? (

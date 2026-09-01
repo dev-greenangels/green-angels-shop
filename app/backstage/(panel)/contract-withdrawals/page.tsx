@@ -1,10 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, RefreshCw } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
+import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -15,28 +17,7 @@ import {
   type ContractWithdrawalStatus,
 } from '@/lib/backstage/contract-withdrawals'
 import { formatDateTime } from '@/lib/i18n/format-datetime'
-import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
 import { cn } from '@/lib/utils'
-
-const STATUS_FILTERS: Array<{ value: ContractWithdrawalStatus | 'ALL'; label: string }> = [
-  { value: 'ALL', label: 'Усі' },
-  { value: 'SUBMITTED', label: 'Nové' },
-  { value: 'UNDER_REVIEW', label: 'V posudzovaní' },
-  { value: 'ACCEPTED', label: 'Prijaté' },
-  { value: 'REJECTED', label: 'Zamietnuté' },
-  { value: 'CLOSED', label: 'Uzavreté' },
-]
-
-function statusLabel(status: ContractWithdrawalStatus): string {
-  const map: Record<ContractWithdrawalStatus, string> = {
-    SUBMITTED: 'Nové',
-    UNDER_REVIEW: 'V posudzovaní',
-    ACCEPTED: 'Prijaté',
-    REJECTED: 'Zamietnuté',
-    CLOSED: 'Uzavreté',
-  }
-  return map[status]
-}
 
 function statusVariant(status: ContractWithdrawalStatus): 'default' | 'secondary' | 'outline' | 'destructive' {
   if (status === 'SUBMITTED') return 'default'
@@ -45,12 +26,9 @@ function statusVariant(status: ContractWithdrawalStatus): 'default' | 'secondary
   return 'outline'
 }
 
-function scopeLabel(scope: ContractWithdrawalListItem['scope']): string {
-  return scope === 'ENTIRE_ORDER' ? 'Celá objednávka' : 'Čiastočné'
-}
-
 export default function BackstageContractWithdrawalsPage() {
   const { locale } = useBackstageUiLocale()
+  const t = useTranslations('pages.contractWithdrawals')
   const [items, setItems] = useState<ContractWithdrawalListItem[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -58,6 +36,39 @@ export default function BackstageContractWithdrawalsPage() {
   const [statusFilter, setStatusFilter] = useState<ContractWithdrawalStatus | 'ALL'>('ALL')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const statusFilters = useMemo(
+    () =>
+      [
+        { value: 'ALL' as const, label: t('filterAll') },
+        { value: 'SUBMITTED' as const, label: t('statusSubmitted') },
+        { value: 'UNDER_REVIEW' as const, label: t('statusUnderReview') },
+        { value: 'ACCEPTED' as const, label: t('statusAccepted') },
+        { value: 'REJECTED' as const, label: t('statusRejected') },
+        { value: 'CLOSED' as const, label: t('statusClosed') },
+      ] satisfies Array<{ value: ContractWithdrawalStatus | 'ALL'; label: string }>,
+    [t],
+  )
+
+  const statusLabel = useCallback(
+    (status: ContractWithdrawalStatus) => {
+      const map: Record<ContractWithdrawalStatus, string> = {
+        SUBMITTED: t('statusSubmitted'),
+        UNDER_REVIEW: t('statusUnderReview'),
+        ACCEPTED: t('statusAccepted'),
+        REJECTED: t('statusRejected'),
+        CLOSED: t('statusClosed'),
+      }
+      return map[status]
+    },
+    [t],
+  )
+
+  const scopeLabel = useCallback(
+    (scope: ContractWithdrawalListItem['scope']) =>
+      scope === 'ENTIRE_ORDER' ? t('scopeEntireOrder') : t('scopePartial'),
+    [t],
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -71,11 +82,11 @@ export default function BackstageContractWithdrawalsPage() {
       setTotal(data.total)
       setTotalPages(data.totalPages)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не вдалося завантажити žiadosti.')
+      setError(err instanceof Error ? err.message : t('loadError'))
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, page])
+  }, [statusFilter, page, t])
 
   useEffect(() => {
     void load()
@@ -85,9 +96,9 @@ export default function BackstageContractWithdrawalsPage() {
     try {
       const updated = await updateBackstageContractWithdrawalStatus(id, status)
       setItems((current) => current.map((row) => (row.id === id ? updated : row)))
-      toast.success('Статус оновлено.')
+      toast.success(t('statusUpdated'))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Не вдалося оновити статус.')
+      toast.error(err instanceof Error ? err.message : t('statusUpdateError'))
     }
   }
 
@@ -96,19 +107,17 @@ export default function BackstageContractWithdrawalsPage() {
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="font-serif text-2xl font-bold md:text-3xl">Odstúpenia od zmluvy</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Online oznámenia zo stránky a z účtu. {total} záznam.
-            </p>
+            <h1 className="font-serif text-2xl font-bold md:text-3xl">{t('title')}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{t('subtitle', { total })}</p>
           </div>
           <Button type="button" variant="outline" onClick={() => void load()} disabled={loading}>
             <RefreshCw className={cn('mr-2 h-4 w-4', loading && 'animate-spin')} />
-            Оновити
+            {t('refresh')}
           </Button>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {STATUS_FILTERS.map((filter) => (
+          {statusFilters.map((filter) => (
             <Button
               key={filter.value}
               type="button"
@@ -127,7 +136,7 @@ export default function BackstageContractWithdrawalsPage() {
         {loading ? (
           <div className="flex items-center gap-2 py-12 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
-            Завантаження…
+            {t('loading')}
           </div>
         ) : error ? (
           <Card>
@@ -135,9 +144,7 @@ export default function BackstageContractWithdrawalsPage() {
           </Card>
         ) : items.length === 0 ? (
           <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              Žiadosti zatiaľ nie sú.
-            </CardContent>
+            <CardContent className="py-8 text-center text-muted-foreground">{t('empty')}</CardContent>
           </Card>
         ) : (
           <div className="space-y-4">
@@ -148,7 +155,7 @@ export default function BackstageContractWithdrawalsPage() {
                     <div>
                       <p className="font-medium text-foreground">{item.referenceNumber}</p>
                       <p className="text-sm text-muted-foreground">
-                        {item.customerName} · obj. {item.submittedOrderNumber}
+                        {item.customerName} · {t('orderNumber', { number: item.submittedOrderNumber })}
                       </p>
                     </div>
                     <Badge variant={statusVariant(item.status)}>{statusLabel(item.status)}</Badge>
@@ -166,8 +173,13 @@ export default function BackstageContractWithdrawalsPage() {
                         </a>
                       </p>
                     ) : null}
-                    <p>Rozsah: {scopeLabel(item.scope)}</p>
-                    <p>Zdroj: {item.source === 'ACCOUNT' ? 'Účet' : 'Verejný formulár'}</p>
+                    <p>
+                      {t('fieldScope')}: {scopeLabel(item.scope)}
+                    </p>
+                    <p>
+                      {t('fieldSource')}:{' '}
+                      {item.source === 'ACCOUNT' ? t('sourceAccount') : t('sourcePublic')}
+                    </p>
                   </div>
                   {item.partialItemsText ? (
                     <p className="whitespace-pre-wrap text-sm text-foreground">{item.partialItemsText}</p>
@@ -184,7 +196,9 @@ export default function BackstageContractWithdrawalsPage() {
                   <p className="text-xs text-muted-foreground">
                     {formatDateTime(item.submittedAt, locale)} · {item.locale}
                     {item.acknowledgementSentAt
-                      ? ` · e-mail ${formatDateTime(item.acknowledgementSentAt, locale)}`
+                      ? ` ${t('emailAck', {
+                          date: formatDateTime(item.acknowledgementSentAt, locale),
+                        })}`
                       : ''}
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -195,7 +209,7 @@ export default function BackstageContractWithdrawalsPage() {
                         variant="outline"
                         onClick={() => void changeStatus(item.id, 'UNDER_REVIEW')}
                       >
-                        V posudzovaní
+                        {t('actionUnderReview')}
                       </Button>
                     ) : null}
                     {item.status !== 'ACCEPTED' ? (
@@ -205,7 +219,7 @@ export default function BackstageContractWithdrawalsPage() {
                         variant="outline"
                         onClick={() => void changeStatus(item.id, 'ACCEPTED')}
                       >
-                        Prijať
+                        {t('actionAccept')}
                       </Button>
                     ) : null}
                     {item.status !== 'REJECTED' ? (
@@ -215,7 +229,7 @@ export default function BackstageContractWithdrawalsPage() {
                         variant="outline"
                         onClick={() => void changeStatus(item.id, 'REJECTED')}
                       >
-                        Zamietnuť
+                        {t('actionReject')}
                       </Button>
                     ) : null}
                     {item.status !== 'CLOSED' ? (
@@ -225,7 +239,7 @@ export default function BackstageContractWithdrawalsPage() {
                         variant="ghost"
                         onClick={() => void changeStatus(item.id, 'CLOSED')}
                       >
-                        Uzavrieť
+                        {t('actionClose')}
                       </Button>
                     ) : null}
                   </div>
@@ -241,10 +255,10 @@ export default function BackstageContractWithdrawalsPage() {
                   disabled={page <= 1}
                   onClick={() => setPage((n) => n - 1)}
                 >
-                  Назад
+                  {t('paginationPrev')}
                 </Button>
                 <span className="self-center text-sm text-muted-foreground">
-                  {page} / {totalPages}
+                  {t('paginationPage', { page, totalPages })}
                 </span>
                 <Button
                   type="button"
@@ -253,7 +267,7 @@ export default function BackstageContractWithdrawalsPage() {
                   disabled={page >= totalPages}
                   onClick={() => setPage((n) => n + 1)}
                 >
-                  Далі
+                  {t('paginationNext')}
                 </Button>
               </div>
             ) : null}

@@ -48,23 +48,64 @@ export function ColorDisplayValue({
   displayValue,
   colorHex,
   colorDisplayMode,
+  colorOptions,
 }: {
   displayValue: string
   colorHex?: string | null
   colorDisplayMode?: ColorDisplayMode | null
+  colorOptions?: Array<{ displayValue: string; colorHex: string | null }>
 }) {
   const mode = colorDisplayMode ?? 'BOTH'
-  const showText = mode !== 'SWATCH' && displayValue.trim()
-  const showSwatch = mode !== 'TEXT' && colorHex
+  const showText = mode !== 'SWATCH'
+  const showSwatch = mode !== 'TEXT'
 
-  if (!showText && !showSwatch) {
+  const options =
+    colorOptions && colorOptions.length > 0
+      ? colorOptions
+      : displayValue.trim() || colorHex
+        ? [{ displayValue, colorHex: colorHex ?? null }]
+        : []
+
+  if (!options.length) {
     return <span className="text-sm font-medium">{displayValue}</span>
   }
 
-  if (showSwatch && !showText) {
+  if (options.length > 1) {
+    return (
+      <div className="flex flex-col gap-1.5">
+        {showText && displayValue.trim() ? (
+          <p className="text-sm font-medium">{displayValue}</p>
+        ) : null}
+        {showSwatch ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {options.map((option, index) =>
+              option.colorHex ? (
+                <ColorDisplaySwatch
+                  key={`${option.colorHex}-${index}`}
+                  hex={option.colorHex}
+                  label={option.displayValue.trim() || undefined}
+                  size="sm"
+                />
+              ) : null,
+            )}
+          </div>
+        ) : null}
+      </div>
+    )
+  }
+
+  const single = options[0]
+  const singleText = showText ? single.displayValue.trim() || displayValue.trim() : ''
+  const singleHex = showSwatch ? single.colorHex : null
+
+  if (!singleText && !singleHex) {
+    return <span className="text-sm font-medium">{displayValue}</span>
+  }
+
+  if (singleHex && !singleText) {
     return (
       <ColorDisplaySwatch
-        hex={colorHex!}
+        hex={singleHex}
         label={displayValue.trim() || undefined}
         size="sm"
         className="mt-0.5"
@@ -74,14 +115,14 @@ export function ColorDisplayValue({
 
   return (
     <p className="inline-flex min-w-0 max-w-full items-center gap-2 text-sm font-medium">
-      {showSwatch ? (
+      {singleHex ? (
         <ColorDisplaySwatch
-          hex={colorHex!}
-          label={displayValue.trim() || undefined}
+          hex={singleHex}
+          label={singleText || undefined}
           size="sm"
         />
       ) : null}
-      {showText ? <span className="truncate">{displayValue}</span> : null}
+      {singleText ? <span className="truncate">{singleText}</span> : null}
     </p>
   )
 }

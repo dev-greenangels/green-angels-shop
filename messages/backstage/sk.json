@@ -34,6 +34,7 @@
     "photos": "Čerstvé fotky",
     "tedb": "TEDB / DPH",
     "stockNotifications": "Upozornenia o dostupnosti",
+    "marketingSubscribers": "Odberatelia marketingu",
     "jobs": "Joby"
   },
   "common": {
@@ -70,6 +71,7 @@
     "saveChanges": "Uložiť zmeny",
     "saving": "Ukladá sa…",
     "cancel": "Zrušiť",
+    "back": "Späť",
     "close": "Zavrieť",
     "create": "Vytvoriť",
     "creating": "Vytvára sa…",
@@ -171,7 +173,7 @@
     "productDescriptionPlaceholder": "Podrobný popis produktu…",
     "htmlPlaceholder": "'<p>Váš HTML obsah…</p>'",
     "htmlHint": "Môžete vložiť hotový HTML. Po prepnutí na Editor sa zobrazí vizuálne.",
-    "localeSwitchAutoSave": "Prepnutie jazyka automaticky uloží aktuálny popis pre predchádzajúci jazyk.",
+    "localeSwitchAutoSave": "Pri prepnutí jazyka sa popis uloží len ak bol text zmenený.",
     "rootCategory": "Koreňová kategória",
     "title": "Nadpis",
     "description": "Popis",
@@ -387,6 +389,8 @@
     "missingPlaceholder": "Preklad v tomto jazyku chýba",
     "hintFrom": "Nápoveda ({locale}):",
     "switchConfirm": "Neuložené zmeny v poliach sa stratia. Prepnúť jazyk obsahu?",
+    "switchSaveFailed": "Nepodarilo sa uložiť pred prepnutím jazyka.",
+    "switchAutoSave": "Aktuálny jazyk sa pred prepnutím automaticky uloží.",
     "cmsNotTranslated": "Texty úvodnej stránky a kontaktov patria k tomuto nasadeniu, nie k prepínaču jazyka obsahu."
   },
   "validation": {
@@ -500,6 +504,37 @@
       "saveSuccess": "Stránka «Veľkoobchod» bola uložená.",
       "saveError": "Nepodarilo sa uložiť stránku «Veľkoobchod»."
     },
+    "contractWithdrawals": {
+      "title": "Odstúpenia od zmluvy",
+      "subtitle": "Online oznámenia zo stránky a z účtu. {total, plural, one {# záznam} few {# záznamy} many {# záznamov} other {# záznamov}}.",
+      "refresh": "Obnoviť",
+      "loading": "Načítava sa…",
+      "loadError": "Nepodarilo sa načítať žiadosti.",
+      "empty": "Žiadosti zatiaľ nie sú.",
+      "filterAll": "Všetky",
+      "statusSubmitted": "Nové",
+      "statusUnderReview": "V posudzovaní",
+      "statusAccepted": "Prijaté",
+      "statusRejected": "Zamietnuté",
+      "statusClosed": "Uzavreté",
+      "scopeEntireOrder": "Celá objednávka",
+      "scopePartial": "Čiastočné",
+      "fieldScope": "Rozsah",
+      "fieldSource": "Zdroj",
+      "sourceAccount": "Účet",
+      "sourcePublic": "Verejný formulár",
+      "orderNumber": "obj. {number}",
+      "emailAck": "· e-mail {date}",
+      "actionUnderReview": "V posudzovaní",
+      "actionAccept": "Prijať",
+      "actionReject": "Zamietnuť",
+      "actionClose": "Uzavrieť",
+      "statusUpdated": "Stav bol aktualizovaný.",
+      "statusUpdateError": "Nepodarilo sa aktualizovať stav.",
+      "paginationPrev": "Späť",
+      "paginationNext": "Ďalej",
+      "paginationPage": "{page} / {totalPages}"
+    },
     "products": {
       "title": "Produkty",
       "subtitle": "Spravujte katalóg produktov",
@@ -513,6 +548,11 @@
       "addTitle": "Pridať produkt",
       "loadingProduct": "Načítava sa produkt…",
       "formSubtitle": "Obsah, SEO, ceny, varianty a vlastnosti",
+      "unsavedChangesTitle": "Neuložené zmeny",
+      "unsavedChangesDesc": "Uložiť zmeny pred odchodom z karty produktu?",
+      "discardChanges": "Neukladať",
+      "saveAndLeave": "Uložiť a odísť",
+      "stayOnPage": "Zostať",
       "tabContent": "Obsah",
       "tabSeo": "SEO",
       "tabPricing": "Ceny a veľkosti",
@@ -713,6 +753,7 @@
     "fieldIntro": "Úvod",
     "fieldBody": "Časti",
     "bodyHint": "Nadpis v prvom riadku, odseky oddelené prázdnym riadkom. Časti oddeľte riadkom ---.",
+    "returnsFormsMarkerHint": "Pre dokument Vrátenie ponechajte sekciu ---WITHDRAWAL_FORMS--- — na tomto mieste sa na webe vkladajú interaktívne formuláre odstúpenia.",
     "placeholderHint": "Na webe sa doplnia firemné údaje z nastavení back office. Použite '{sellerName}', '{ico}' (IČO), '{dic}' (DIČ), '{icDph}' (IČ DPH), '{legalAddress}'. IČO nevpisujte ručne.",
     "publish": "Publikovať",
     "draftCreated": "Koncept vytvorený",
@@ -918,5 +959,43 @@
     "openTedb": "Otvoriť TEDB",
     "appTitle": "Fronta app (objednávky / e-maily)",
     "appBody": "Expire unpaid a e-maily objednávok v spoločnej fronte app."
+  },
+  "marketingSubscribers": {
+    "title": "Odberatelia marketingu",
+    "subtitle": "Súhlas s marketingovými e-mailmi. {count} záznamov.",
+    "refresh": "Obnoviť",
+    "loading": "Načítavanie…",
+    "loadError": "Nepodarilo sa načítať odberateľov.",
+    "exportSuccess": "Export stiahnutý.",
+    "exportError": "Export zlyhal.",
+    "empty": "Zatiaľ žiadni odberatelia.",
+    "searchPlaceholder": "E-mail, meno alebo priezvisko",
+    "statusFilter": {
+      "all": "Všetci",
+      "active": "Prihlásení",
+      "withdrawn": "Odhlásení"
+    },
+    "status": {
+      "active": "Prihlásený",
+      "withdrawn": "Odhlásený"
+    },
+    "columns": {
+      "email": "E-mail",
+      "name": "Meno",
+      "source": "Zdroj",
+      "status": "Stav",
+      "subscribedAt": "Dátum prihlásenia",
+      "unsubscribedAt": "Dátum odhlásenia",
+      "clientType": "Klient"
+    },
+    "clientType": {
+      "registered": "Registrovaný",
+      "guest": "Len e-mail"
+    },
+    "pagination": {
+      "prev": "Späť",
+      "next": "Ďalej",
+      "page": "Str. {page} z {totalPages}"
+    }
   }
 }

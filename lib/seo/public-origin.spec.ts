@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
+import { DEFAULT_COUNTRY_SITES } from '../settings/market'
 import { buildPageAlternates } from './page-alternates'
 import { resolvePublicOrigin } from './public-origin'
 
-const SK_HOSTS = 'green-angels.sk:sk,www.green-angels.sk:sk,green-angels.at:at,green-angels.hu:hu'
+const SK_HOSTS =
+  'green-angels.sk:sk,www.green-angels.sk:sk,green-angels.at:at,www.green-angels.at:at,green-angels.hu:hu,www.green-angels.hu:hu'
 const SK_SITE = 'https://green-angels.sk'
 
 describe('resolvePublicOrigin — allowlist', () => {
@@ -55,40 +57,50 @@ describe('resolvePublicOrigin — allowlist', () => {
   })
 })
 
-describe('buildPageAlternates — self canonical + intra-host hreflang', () => {
-  it('does not canonicalize /cs to /sk', () => {
+describe('buildPageAlternates — self canonical + hreflang', () => {
+  it('SK deploy uses regional cross-host hreflang for /cs (self-canonical on .sk/cs)', () => {
     const alt = buildPageAlternates({
       origin: 'https://green-angels.sk',
       locale: 'cs',
       pathname: '/echinacea/3330-echinacea-sensation-wild-romance',
       availableLocales: ['sk', 'cs', 'en'],
       xDefaultLocale: 'sk',
+      marketRegion: 'sk',
+      countryCode: 'sk',
+      enabledCountrySites: DEFAULT_COUNTRY_SITES,
+      countryHostsEnv: SK_HOSTS,
+      siteUrl: SK_SITE,
     })
     assert.ok(alt)
     assert.equal(
       alt.canonical,
       'https://green-angels.sk/cs/echinacea/3330-echinacea-sensation-wild-romance',
     )
+    assert.equal(alt.languages['cs-SK'], alt.canonical)
     assert.equal(
-      alt.languages.sk,
-      'https://green-angels.sk/sk/echinacea/3330-echinacea-sensation-wild-romance',
+      alt.languages['en-AT'],
+      'https://green-angels.at/en/echinacea/3330-echinacea-sensation-wild-romance',
     )
-    assert.equal(alt.languages['x-default'], alt.languages.sk)
-    assert.equal(alt.languages.hu, undefined)
-    assert.equal(alt.languages.de, undefined)
+    assert.equal(alt.languages['x-default'], undefined)
   })
 
-  it('keeps .at host for de pages', () => {
+  it('keeps .at/de self-canonical with regional cluster', () => {
     const alt = buildPageAlternates({
       origin: 'https://green-angels.at',
       locale: 'de',
       pathname: '/echinacea/slug',
       availableLocales: ['de', 'en'],
       xDefaultLocale: 'de',
+      marketRegion: 'sk',
+      countryCode: 'at',
+      enabledCountrySites: DEFAULT_COUNTRY_SITES,
+      countryHostsEnv: SK_HOSTS,
     })
     assert.ok(alt)
     assert.equal(alt.canonical, 'https://green-angels.at/de/echinacea/slug')
-    assert.ok(Object.values(alt.languages).every((url) => url.startsWith('https://green-angels.at/')))
+    assert.equal(alt.languages['de-AT'], alt.canonical)
+    assert.ok(alt.languages['en-SK']?.startsWith('https://green-angels.sk/en/'))
+    assert.ok(alt.languages['en-HU']?.startsWith('https://green-angels.hu/en/'))
   })
 
   it('preserves UA Presta category/product paths', () => {

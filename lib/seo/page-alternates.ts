@@ -1,6 +1,10 @@
 import type { AppLocale } from '@/i18n/routing'
 import { isAppLocale } from '@/i18n/routing'
+import type { CountrySiteCode } from '@/lib/country-sites/types'
 import { localePath } from '@/lib/locale-path'
+import type { CountrySiteProfile, MarketRegion } from '@/lib/settings/market'
+
+import { buildSkRegionalAlternates } from './regional-hreflang'
 
 export const OG_LOCALE: Record<AppLocale, string> = {
   uk: 'uk_UA',
@@ -36,23 +40,44 @@ export type PageAlternates = {
   languages: Record<string, string>
 }
 
-/** Intra-host only. Do not pass another country-site origin. */
-export function buildPageAlternates(input: {
+export type BuildPageAlternatesInput = {
   origin: string
   locale: string
   pathname: string
   availableLocales: readonly string[]
   xDefaultLocale: string
-}): PageAlternates | null {
+  marketRegion?: MarketRegion
+  countryCode?: CountrySiteCode | null
+  enabledCountrySites?: CountrySiteProfile[]
+  countryHostsEnv?: string | null
+  siteUrl?: string | null
+}
+
+/** Self-canonical + hreflang (intra-host UA, or cross-host SK cluster). */
+export function buildPageAlternates(input: BuildPageAlternatesInput): PageAlternates | null {
   const origin = input.origin.replace(/\/$/, '')
   if (!origin || !isAppLocale(input.locale)) return null
 
   const pathname = normalizeIndexablePath(input.pathname)
+
+  if (
+    input.marketRegion === 'sk' &&
+    input.enabledCountrySites?.some((site) => site.enabled) &&
+    input.countryHostsEnv?.trim()
+  ) {
+    return buildSkRegionalAlternates({
+      origin,
+      locale: input.locale,
+      pathname,
+      countryCode: input.countryCode ?? null,
+      enabledCountrySites: input.enabledCountrySites ?? [],
+      countryHostsEnv: input.countryHostsEnv,
+      siteUrl: input.siteUrl,
+    })
+  }
+
   const available = input.availableLocales.filter(isAppLocale)
-  const hrefLocales = uniqueLocales([
-    input.locale,
-    ...available,
-  ])
+  const hrefLocales = uniqueLocales([input.locale, ...available])
 
   const xDefault = isAppLocale(input.xDefaultLocale)
     ? hrefLocales.includes(input.xDefaultLocale)

@@ -7,7 +7,7 @@ import { GA_COUNTRY_HEADER, isCountrySiteCode, type CountrySiteCode } from '@/li
 import { hostnameFromSiteUrl, resolvePublicOrigin } from '@/lib/seo/public-origin'
 import { buildPageAlternates, type PageAlternates } from '@/lib/seo/page-alternates'
 import { fetchPublicSiteSettings, getLocalizationSettings, getMarketSettings } from '@/lib/settings/fetch'
-import type { MarketRegion } from '@/lib/settings/market'
+import type { CountrySiteProfile, MarketRegion } from '@/lib/settings/market'
 
 export type SeoRequestContext = {
   locale: AppLocale
@@ -16,6 +16,7 @@ export type SeoRequestContext = {
   xDefaultLocale: AppLocale
   countryCode: CountrySiteCode | null
   marketRegion: MarketRegion
+  enabledCountrySites: CountrySiteProfile[]
 }
 
 export async function resolveSeoRequestContext(locale: string): Promise<SeoRequestContext> {
@@ -48,6 +49,8 @@ export async function resolveSeoRequestContext(locale: string): Promise<SeoReque
       ? defaultLocale
       : (availableLocales[0] ?? defaultLocale)
 
+  const enabledCountrySites = market.countrySites.filter((site) => site.enabled)
+
   return {
     locale: appLocale,
     origin,
@@ -55,6 +58,7 @@ export async function resolveSeoRequestContext(locale: string): Promise<SeoReque
     xDefaultLocale,
     countryCode,
     marketRegion: market.region,
+    enabledCountrySites,
   }
 }
 
@@ -69,6 +73,11 @@ export async function resolvePageAlternates(
     pathname,
     availableLocales: ctx.availableLocales,
     xDefaultLocale: ctx.xDefaultLocale,
+    marketRegion: ctx.marketRegion,
+    countryCode: ctx.countryCode,
+    enabledCountrySites: ctx.enabledCountrySites,
+    countryHostsEnv: process.env.GA_COUNTRY_HOSTS,
+    siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
   })
 }
 

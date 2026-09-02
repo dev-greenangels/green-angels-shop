@@ -8,6 +8,7 @@ import { RecentlyViewedSection } from '@/components/product/recently-viewed-sect
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import { staticPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
 import { buildIndexablePageMetadata } from '@/lib/seo/build-page-metadata'
+import { UTILITY_PAGE_ROBOTS } from '@/lib/seo/robots-directives'
 import { cn } from '@/lib/utils'
 
 type PageProps = {
@@ -23,6 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `${t('pageTitle')} · ${siteName}`,
     description: t('pageDescription', { brand: siteName }),
     siteName,
+    robots: UTILITY_PAGE_ROBOTS,
   })
 }
 

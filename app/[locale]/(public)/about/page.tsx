@@ -59,14 +59,12 @@ export default async function AboutPage({ params }: PageProps) {
         <div className={cn(siteContentShellClassName, 'space-y-20 py-12 md:space-y-24 md:py-16')}>
           <section className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
             <AboutCmsHtml html={page.introHtml} />
-            {page.foundersImageUrl ? (
-              <AboutImage
-                src={page.foundersImageUrl}
-                alt={page.foundersImageAlt || page.heroTitle}
-                className={foundersImageClass}
-                priority
-              />
-            ) : null}
+            <AboutImage
+              src={page.foundersImageUrl}
+              alt={page.foundersImageAlt || page.heroTitle}
+              className={foundersImageClass}
+              priority
+            />
           </section>
 
           <AboutStatsSection
@@ -117,16 +115,14 @@ export default async function AboutPage({ params }: PageProps) {
                     className="overflow-hidden border-border/60 py-0 shadow-sm"
                   >
                     <CardContent className="flex flex-col items-center gap-4 p-4 sm:flex-row sm:items-center sm:p-5">
-                      {line.imageUrl ? (
-                        <AboutImage
-                          src={line.imageUrl}
-                          alt={line.imageAlt || line.title}
-                          className={cn(
-                            'size-32 shrink-0 rounded-full sm:size-36 md:size-44',
-                            index % 2 === 1 && 'sm:order-2',
-                          )}
-                        />
-                      ) : null}
+                      <AboutImage
+                        src={line.imageUrl}
+                        alt={line.imageAlt || line.title}
+                        className={cn(
+                          'size-32 shrink-0 rounded-full sm:size-36 md:size-44',
+                          index % 2 === 1 && 'sm:order-2',
+                        )}
+                      />
                       <div
                         className={cn(
                           'min-w-0 flex-1 space-y-3 text-center sm:text-left',
@@ -165,13 +161,11 @@ export default async function AboutPage({ params }: PageProps) {
 
           <section className="overflow-hidden rounded-2xl border border-border/60 bg-secondary/20">
             <div className="grid md:grid-cols-2">
-              {page.deliveryImageUrl ? (
-                <AboutImage
-                  src={page.deliveryImageUrl}
-                  alt={page.deliveryImageAlt || page.deliveryTitle}
-                  className="min-h-[260px] rounded-none md:min-h-full"
-                />
-              ) : null}
+              <AboutImage
+                src={page.deliveryImageUrl}
+                alt={page.deliveryImageAlt || page.deliveryTitle}
+                className="min-h-[260px] rounded-none md:min-h-full"
+              />
               <div className="flex flex-col justify-center gap-5 p-8 md:p-10">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
                   <Truck className="h-7 w-7 text-primary" />

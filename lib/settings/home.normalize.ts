@@ -1,4 +1,5 @@
 import { DEFAULT_HOME_SETTINGS } from '@/lib/settings/defaults'
+import { sanitizeCmsImageUrl } from '@/lib/media/cms-image-url'
 import {
   normalizeHomeSectionOrder,
   resolveHomeSectionHidden,
@@ -56,7 +57,16 @@ export function normalizeHomeSettings(
         base.lowStock?.stockThreshold ?? DEFAULT_HOME_SETTINGS.lowStock.stockThreshold,
     },
     whyUs: { ...DEFAULT_HOME_SETTINGS.whyUs, ...base.whyUs },
-    nurseryGallery: { ...DEFAULT_HOME_SETTINGS.nurseryGallery, ...base.nurseryGallery },
+    nurseryGallery: {
+      ...DEFAULT_HOME_SETTINGS.nurseryGallery,
+      ...base.nurseryGallery,
+      images: (base.nurseryGallery?.images ?? DEFAULT_HOME_SETTINGS.nurseryGallery.images).map(
+        (image) => ({
+          ...image,
+          url: sanitizeCmsImageUrl(image.url),
+        }),
+      ),
+    },
     freshPlantPhotos: {
       ...DEFAULT_HOME_SETTINGS.freshPlantPhotos,
       ...base.freshPlantPhotos,

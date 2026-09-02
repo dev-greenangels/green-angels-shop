@@ -8,6 +8,19 @@ function FooterFallback() {
   return <footer className="bg-footer-gradient text-primary-foreground" />
 }
 
+import type { Metadata } from 'next'
+import { getTranslations } from 'next-intl/server'
+
+import { PRIVATE_PAGE_ROBOTS } from '@/lib/seo/robots-directives'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('account')
+  return {
+    title: t('title'),
+    robots: PRIVATE_PAGE_ROBOTS,
+  }
+}
+
 export default function AccountSectionLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">

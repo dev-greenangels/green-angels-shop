@@ -14,6 +14,17 @@ export function gtinFromEan(ean: string | null | undefined): string | null {
   return null
 }
 
+/** Map valid EAN digits to the appropriate Schema.org GTIN property. */
+export function gtinSchemaFields(ean: string | null | undefined): Record<string, string> | null {
+  const digits = gtinFromEan(ean)
+  if (!digits) return null
+  if (digits.length === 14) return { gtin14: digits }
+  if (digits.length === 13) return { gtin13: digits }
+  if (digits.length === 12) return { gtin12: digits }
+  if (digits.length === 8) return { gtin8: digits }
+  return { gtin: digits }
+}
+
 export function absoluteCatalogImages(urls: string[]): string[] {
   const seen = new Set<string>()
   const out: string[] = []
@@ -27,13 +38,52 @@ export function absoluteCatalogImages(urls: string[]): string[] {
   return out
 }
 
+export type ProductJsonLdOfferInput = {
+  lowPrice: number
+  highPrice: number
+  currency: string
+  offerCount?: number
+}
+
+function buildOffersNode(
+  url: string,
+  availability: ProductSeoEntity['availability'],
+  offer: ProductJsonLdOfferInput,
+): Record<string, unknown> {
+  const availabilityUrl = availability
+    ? AVAILABILITY[availability]
+    : 'https://schema.org/OutOfStock'
+  const shared = {
+    url,
+    priceCurrency: offer.currency,
+    availability: availabilityUrl,
+    itemCondition: 'https://schema.org/NewCondition',
+  }
+
+  if (offer.lowPrice === offer.highPrice) {
+    return {
+      '@type': 'Offer',
+      ...shared,
+      price: offer.lowPrice,
+    }
+  }
+
+  return {
+    '@type': 'AggregateOffer',
+    ...shared,
+    lowPrice: offer.lowPrice,
+    highPrice: offer.highPrice,
+    offerCount: offer.offerCount ?? undefined,
+  }
+}
+
 export function buildProductJsonLd(input: {
   entity: ProductSeoEntity
   images?: string[]
-  gtin?: string | null
+  ean?: string | null
   latinName?: string | null
   alternateNames?: string[]
-  offer?: { price: number; currency: string } | null
+  offer?: ProductJsonLdOfferInput | null
 }): Record<string, unknown> | null {
   const name = input.entity.name?.trim()
   const url = input.entity.url?.trim()
@@ -51,7 +101,7 @@ export function buildProductJsonLd(input: {
     ...(input.entity.description ? { description: input.entity.description } : {}),
     ...(images.length ? { image: images.length === 1 ? images[0] : images } : {}),
     ...(input.entity.sku ? { sku: input.entity.sku } : {}),
-    ...(input.gtin ? { gtin: input.gtin } : {}),
+    ...(gtinSchemaFields(input.ean) ?? {}),
     ...(input.entity.brand ? { brand: { '@type': 'Brand', name: input.entity.brand } } : {}),
   }
 
@@ -70,17 +120,13 @@ export function buildProductJsonLd(input: {
     schema.alternateName = alternateNames.length === 1 ? alternateNames[0] : alternateNames
   }
 
-  if (input.offer && input.offer.price > 0 && input.offer.currency) {
-    schema.offers = {
-      '@type': 'Offer',
-      url,
-      price: input.offer.price,
-      priceCurrency: input.offer.currency,
-      availability: input.entity.availability
-        ? AVAILABILITY[input.entity.availability]
-        : 'https://schema.org/OutOfStock',
-      itemCondition: 'https://schema.org/NewCondition',
-    }
+  if (
+    input.offer &&
+    input.offer.currency &&
+    input.offer.lowPrice > 0 &&
+    input.offer.highPrice > 0
+  ) {
+    schema.offers = buildOffersNode(url, input.entity.availability, input.offer)
   }
 
   return schema

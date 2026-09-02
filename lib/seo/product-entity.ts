@@ -1,3 +1,4 @@
+import { canOrderVariant } from '@/lib/plant-variants'
 import type { Plant } from '@/lib/types'
 
 /** Contract for a later Product JSON-LD task — no Schema.org emit here. */
@@ -23,7 +24,6 @@ export function toProductSeoEntity(input: {
 }): ProductSeoEntity {
   const variants = input.plant.variants ?? []
   const inStock = variants.some((variant) => variant.stock > 0) || input.plant.stock > 0
-  const preorder = variants.some((variant) => Boolean(variant.availableFrom))
 
   return {
     name: input.plant.name,
@@ -35,6 +35,10 @@ export function toProductSeoEntity(input: {
     brand: input.brand ?? null,
     price: input.plant.price > 0 ? input.plant.price : null,
     currency: input.currency ?? null,
-    availability: inStock ? 'in_stock' : preorder ? 'preorder' : 'out_of_stock',
+    availability: inStock
+      ? 'in_stock'
+      : variants.some(canOrderVariant)
+        ? 'preorder'
+        : 'out_of_stock',
   }
 }

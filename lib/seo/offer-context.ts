@@ -61,3 +61,32 @@ export function resolveSeoOffer(
 
   return null
 }
+
+/** Shelf prices for JSON-LD after overlay / VAT conversion. */
+export function resolveSeoOfferRange(
+  storedPrices: number[],
+  input: {
+    market: MarketSettings
+    overlay: CountrySiteOverlay | null
+    commerce: PublicCommerceSettings
+    cartTaxRatePercent: number
+  },
+): { lowPrice: number; highPrice: number; currency: string; offerCount: number } | null {
+  const shelfPrices = storedPrices
+    .map((stored) => resolveSeoOffer(stored, input))
+    .filter((offer): offer is SeoOfferContext => Boolean(offer))
+    .map((offer) => offer.price)
+    .filter((price) => price > 0)
+
+  if (!shelfPrices.length) return null
+
+  const currency = resolveSeoOffer(storedPrices[0], input)?.currency
+  if (!currency) return null
+
+  return {
+    lowPrice: Math.min(...shelfPrices),
+    highPrice: Math.max(...shelfPrices),
+    currency,
+    offerCount: shelfPrices.length,
+  }
+}

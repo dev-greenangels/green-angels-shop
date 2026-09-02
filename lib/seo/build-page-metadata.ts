@@ -27,6 +27,11 @@ export async function buildIndexablePageMetadata(
         pathname,
         availableLocales: ctx.availableLocales,
         xDefaultLocale: ctx.xDefaultLocale,
+        marketRegion: ctx.marketRegion,
+        countryCode: ctx.countryCode,
+        enabledCountrySites: ctx.enabledCountrySites,
+        countryHostsEnv: process.env.GA_COUNTRY_HOSTS,
+        siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
       })
     : null
   return applyIndexableMetadata(

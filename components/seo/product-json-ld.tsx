@@ -1,24 +1,31 @@
 import { JsonLdScript } from '@/components/seo/json-ld-script'
-import { buildProductJsonLd } from '@/lib/seo/product-json-ld'
-import type { ProductSeoEntity } from '@/lib/seo/product-entity'
+import {
+  buildProductStructuredData,
+  type ProductStructuredDataContext,
+} from '@/lib/seo/build-product-structured-data'
+import type { Plant } from '@/lib/types'
 
 export function ProductJsonLd(props: {
-  entity: ProductSeoEntity
+  plant: Plant
+  productUrl: string
+  locale: string
+  brand: string
   images?: string[]
-  gtin?: string | null
   latinName?: string | null
   alternateNames?: string[]
-  offer?: { price: number; currency: string } | null
+  ctx: ProductStructuredDataContext
 }) {
   return (
     <JsonLdScript
-      data={buildProductJsonLd({
-        entity: props.entity,
+      data={buildProductStructuredData({
+        plant: props.plant,
+        productUrl: props.productUrl,
+        locale: props.locale,
+        brand: props.brand,
         images: props.images,
-        gtin: props.gtin,
         latinName: props.latinName,
         alternateNames: props.alternateNames,
-        offer: props.offer,
+        ctx: props.ctx,
       })}
     />
   )

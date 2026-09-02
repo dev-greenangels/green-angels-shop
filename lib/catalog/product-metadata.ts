@@ -33,6 +33,14 @@ export async function buildProductPageMetadata(
   const tCommon = await getTranslations({ locale, namespace: 'common' })
   const siteName = tCommon('brand')
   const productResult = await fetchCatalogProductBySlug(slug, locale)
+
+  if (productResult.unavailable) {
+    return {
+      title: siteName,
+      robots: { index: false, follow: false },
+    }
+  }
+
   const plant = productResult.data
 
   if (!plant) {

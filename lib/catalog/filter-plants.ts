@@ -63,11 +63,9 @@ export function hasActiveCatalogFilters(
 
 export function serializeCatalogFiltersForListing(
   filters: CatalogFilters,
-  bounds?: CatalogPriceBounds,
+  _bounds?: CatalogPriceBounds,
 ) {
-  return serializeCatalogFilters(filters, {
-    inStockOnly: hasActiveCatalogFilters(filters, bounds),
-  })
+  return serializeCatalogFilters(filters)
 }
 
 export function countActiveCatalogFilters(

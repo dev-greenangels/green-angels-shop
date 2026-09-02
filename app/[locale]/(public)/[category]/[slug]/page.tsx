@@ -11,10 +11,9 @@ import { fetchCatalogProductBySlug, fetchCatalogProducts } from '@/lib/catalog/p
 import { buildProductPageMetadata } from '@/lib/catalog/product-metadata'
 import { fetchCommerceSettings } from '@/lib/commerce/fetch'
 import { applyCountrySiteOverlay } from '@/lib/country-sites/apply-overlay'
-import { resolveSeoOffer } from '@/lib/seo/offer-context'
+import { localePath } from '@/lib/locale-path'
 import { buildPageAlternates } from '@/lib/seo/page-alternates'
-import { gtinFromEan, absoluteCatalogImages } from '@/lib/seo/product-json-ld'
-import { toProductSeoEntity } from '@/lib/seo/product-entity'
+import { absoluteCatalogImages } from '@/lib/seo/product-json-ld'
 import { resolvePublicOriginFromRequest, resolveSeoRequestContext } from '@/lib/seo/request-context'
 import { parseReviewsPage } from '@/lib/reviews/fetch'
 import type { ReviewsPageResult } from '@/lib/reviews/types'
@@ -25,8 +24,7 @@ import {
   getMarketSettings,
 } from '@/lib/settings/fetch'
 import { getLocale, getTranslations } from 'next-intl/server'
-import { redirect } from '@/i18n/navigation'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 
 type PageProps = {
   params: Promise<{ category: string; slug: string; locale: string }>
@@ -72,7 +70,7 @@ export default async function ProductInCategoryPage({ params }: PageProps) {
   const plant = productResult.data
 
   if (plant.category && plant.category !== categorySlug) {
-    redirect({ href: productHref(plant.category, plant.slug), locale })
+    permanentRedirect(localePath(productHref(plant.category, plant.slug), locale))
   }
 
   const [categoryPathResult, relatedResult, productReviewsPage, categoryTree, origin, seoCtx, siteSettings, commerce] =
@@ -105,37 +103,36 @@ export default async function ProductInCategoryPage({ params }: PageProps) {
     pathname: path,
     availableLocales: seoCtx.availableLocales,
     xDefaultLocale: seoCtx.xDefaultLocale,
+    marketRegion: seoCtx.marketRegion,
+    countryCode: seoCtx.countryCode,
+    enabledCountrySites: seoCtx.enabledCountrySites,
+    countryHostsEnv: process.env.GA_COUNTRY_HOSTS,
+    siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
   })
   const market = getMarketSettings(siteSettings)
   const overlay = applyCountrySiteOverlay(market, seoCtx.countryCode)
-  const offer = resolveSeoOffer(plant.price, {
+  const cartTaxRatePercent = getCartCheckoutSettings(siteSettings).taxRatePercent
+  const offerCtx = {
     market,
     overlay,
     commerce,
-    cartTaxRatePercent: getCartCheckoutSettings(siteSettings).taxRatePercent,
-  })
+    cartTaxRatePercent,
+  }
   const tCommon = await getTranslations({ locale, namespace: 'common' })
   const productUrl = alternates?.canonical ?? ''
-  const entity = productUrl
-    ? toProductSeoEntity({
-        plant,
-        url: productUrl,
-        locale,
-        brand: tCommon('brand'),
-        currency: offer?.currency,
-      })
-    : null
 
   return (
     <>
-      {entity ? (
+      {productUrl ? (
         <ProductJsonLd
-          entity={entity}
+          plant={plant}
+          productUrl={productUrl}
+          locale={locale}
+          brand={tCommon('brand')}
           images={absoluteCatalogImages(plant.images)}
-          gtin={gtinFromEan(plant.variants?.find((variant) => variant.ean)?.ean)}
           latinName={plant.latinName}
           alternateNames={plant.searchSynonyms}
-          offer={offer ? { price: offer.price, currency: offer.currency } : null}
+          ctx={offerCtx}
         />
       ) : null}
       <ProductPageView

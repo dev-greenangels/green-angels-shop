@@ -493,6 +493,15 @@
     margin-bottom: 0.5rem;
   }
 
+  .legal-document {
+    font-family: var(--font-sans);
+  }
+
+  .legal-document :where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--font-sans);
+    letter-spacing: normal;
+  }
+
   .rich-text-content [data-rich-font-size='sm'] {
     font-size: 0.875rem;
   }

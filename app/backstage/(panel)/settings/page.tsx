@@ -302,9 +302,9 @@ export default function SettingsPage() {
       const updated = await updateBackstageWithdrawalSettings(withdrawal)
       setWithdrawal(updated)
       setBaselineWithdrawal(stableJson(updated))
-      toast.success('Налаштування odstúpenia збережено.')
+      toast.success(tSettings('withdrawal.saveSuccess'))
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
+      toast.error(err instanceof Error ? err.message : tSettings('withdrawal.saveError'))
     } finally {
       setSavingWithdrawal(false)
     }
@@ -391,7 +391,7 @@ export default function SettingsPage() {
             <TabsTrigger value="packeta">Packeta</TabsTrigger>
             <TabsTrigger value="flexi">ABRA Flexi</TabsTrigger>
             <TabsTrigger value="presta-import">Імпорт Presta</TabsTrigger>
-            <TabsTrigger value="withdrawal">Odstúpenie</TabsTrigger>
+            <TabsTrigger value="withdrawal">{tSettings('withdrawal.tab')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="store" className="mt-6 space-y-6">

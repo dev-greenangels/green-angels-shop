@@ -56,6 +56,7 @@ export type CatalogProductVariant = {
 
 export type CatalogProductDetail = CatalogProductListItem & {
   description: string | null
+  searchSynonyms?: string | null
   metaTitle?: string | null
   metaDesc?: string | null
   pricingMode: 'simple' | 'variants'

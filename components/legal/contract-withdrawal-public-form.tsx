@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { submitPublicContractWithdrawal } from '@/lib/contract-withdrawals/api'
 import { formatDateTime } from '@/lib/i18n/format-datetime'
 import { toast } from '@/lib/toast'
+import { legalSubsectionHeadingClassName } from '@/lib/legal/storefront-typography'
 import { cn } from '@/lib/utils'
 import {
   EMPTY_CONTRACT_WITHDRAWAL_FORM,
@@ -111,7 +112,7 @@ export function ContractWithdrawalPublicForm({ id }: ContractWithdrawalPublicFor
         className="rounded-2xl border border-primary/20 bg-primary/5 p-6 md:p-8"
         aria-live="polite"
       >
-        <h3 className="font-serif text-xl font-semibold text-foreground">{t('successTitle')}</h3>
+        <h3 className={legalSubsectionHeadingClassName}>{t('successTitle')}</h3>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{t('successBody')}</p>
         <dl className="mt-4 space-y-2 rounded-lg border border-border/60 bg-background/80 p-4 text-sm">
           <div className="flex flex-wrap justify-between gap-2">
@@ -133,7 +134,7 @@ export function ContractWithdrawalPublicForm({ id }: ContractWithdrawalPublicFor
   if (step === 'confirm') {
     return (
       <div id={id} className="rounded-2xl border border-border bg-card p-6 md:p-8">
-        <h3 className="font-serif text-xl font-semibold text-foreground">{t('confirmTitle')}</h3>
+        <h3 className={legalSubsectionHeadingClassName}>{t('confirmTitle')}</h3>
         <p className="mt-2 text-sm text-muted-foreground">{t('confirmHint')}</p>
         <dl className="mt-4 space-y-2 text-sm">
           <div>

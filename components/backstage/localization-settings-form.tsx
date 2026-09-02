@@ -13,6 +13,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { TranslationLocaleLabel } from '@/components/backstage/content-locale-banner'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -106,7 +107,7 @@ function buildEditableEntries(settings: LocalizationSettings): EditableEntry[] {
 
 function buildSettingsFromEntries(
   entries: EditableEntry[],
-  base: Pick<LocalizationSettings, 'showLanguageSwitcher' | 'availableLocales'>,
+  base: Pick<LocalizationSettings, 'showLanguageSwitcher' | 'showFaqInFooter' | 'availableLocales'>,
 ): LocalizationSettings {
   const messageOverrides = Object.fromEntries(
     SUPPORTED_LOCALES.map((locale) => [
@@ -120,6 +121,7 @@ function buildSettingsFromEntries(
 
   return {
     showLanguageSwitcher: base.showLanguageSwitcher,
+    showFaqInFooter: base.showFaqInFooter,
     availableLocales: base.availableLocales,
     messageOverrides,
   }
@@ -406,9 +408,10 @@ export function LocalizationSettingsForm({
   const settingsBase = useMemo(
     () => ({
       showLanguageSwitcher: settings.showLanguageSwitcher,
+      showFaqInFooter: settings.showFaqInFooter,
       availableLocales: settings.availableLocales,
     }),
-    [settings.showLanguageSwitcher, settings.availableLocales],
+    [settings.showLanguageSwitcher, settings.showFaqInFooter, settings.availableLocales],
   )
 
   const updateEntry = (key: string, locale: AppLocale, value: string) => {
@@ -472,6 +475,18 @@ export function LocalizationSettingsForm({
               onCheckedChange={(checked) =>
                 onChange({ ...settings, showLanguageSwitcher: checked })
               }
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-4 border-t-2 border-border pt-6">
+            <div className="space-y-1">
+              <Label htmlFor="show-faq-in-footer">{tPages('showFaqInFooterLabel')}</Label>
+              <p className="text-sm text-muted-foreground">{tPages('showFaqInFooterHint')}</p>
+            </div>
+            <Switch
+              id="show-faq-in-footer"
+              checked={settings.showFaqInFooter}
+              onCheckedChange={(checked) => onChange({ ...settings, showFaqInFooter: checked })}
             />
           </div>
 

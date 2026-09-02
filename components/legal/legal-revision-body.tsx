@@ -12,11 +12,15 @@ export async function LegalRevisionBody({
   locale,
   versionLabel,
   fallbackSeller,
+  supportEmail = '',
+  sellerIdentityKind = 'seller',
 }: {
   document: LegalDocumentView
   locale: string
   versionLabel: string
   fallbackSeller?: LegalSellerIdentity | null
+  supportEmail?: string
+  sellerIdentityKind?: 'seller' | 'controller'
 }) {
   return (
     <>
@@ -24,9 +28,15 @@ export async function LegalRevisionBody({
       <p className="text-muted-foreground text-sm">
         {formatDateTime(document.effectiveAt, locale, 'dateLong')}
       </p>
-      <LegalSellerDetails seller={firstSellerIdentity(document.seller, fallbackSeller)} />
+      <LegalSellerDetails
+        seller={firstSellerIdentity(document.seller, fallbackSeller)}
+        identityKind={sellerIdentityKind}
+      />
       {document.intro ? <p className="text-muted-foreground">{document.intro}</p> : null}
-      <LegalPageSections sections={document.sections as LegalPageSection[]} />
+      <LegalPageSections
+        sections={document.sections as LegalPageSection[]}
+        supportEmail={supportEmail}
+      />
     </>
   )
 }

@@ -4,13 +4,22 @@ import {
   createContext,
   useCallback,
   useContext,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
 
 import { useBodyScrollLock } from '@/lib/body-scroll-lock'
-import { siteStickyToolbarOuterClassName } from '@/lib/layout/site-shell'
+import {
+  siteMobileMenuDividerClassName,
+  siteStickyToolbarOuterClassName,
+} from '@/lib/layout/site-shell'
+import {
+  scrollStickyToolbarIntoPlace,
+  STICKY_TOOLBAR_ROOT_ATTR,
+} from '@/lib/layout/sticky-toolbar-scroll'
 import { cn } from '@/lib/utils'
 
 type StickyToolbarContextValue = {
@@ -63,12 +72,27 @@ export function StickyToolbarShell({
   compact = false,
 }: StickyToolbarShellProps) {
   const [openPanel, setOpenPanel] = useState<string | null>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
 
   const togglePanel = useCallback((id: string) => {
     setOpenPanel((prev) => (prev === id ? null : id))
   }, [])
 
   const isOpen = useCallback((id: string) => openPanel === id, [openPanel])
+
+  useLayoutEffect(() => {
+    if (!openPanel) return
+
+    const root = rootRef.current
+    if (!root) return
+
+    const pinToolbar = () => scrollStickyToolbarIntoPlace(root)
+    pinToolbar()
+    requestAnimationFrame(pinToolbar)
+    const timer = window.setTimeout(pinToolbar, 420)
+
+    return () => window.clearTimeout(timer)
+  }, [openPanel])
 
   const value = useMemo(
     () => ({ openPanel, setOpenPanel, togglePanel, isOpen }),
@@ -79,7 +103,11 @@ export function StickyToolbarShell({
 
   return (
     <StickyToolbarContext.Provider value={value}>
-      <div className={cn(siteStickyToolbarOuterClassName, outerClassName, className)}>
+      <div
+        ref={rootRef}
+        data-sticky-toolbar-root
+        className={cn(siteStickyToolbarOuterClassName, outerClassName, className)}
+      >
         {/* Layout slot = row height only; glass expands absolutely over content */}
         <div className={cn('relative', compact ? 'h-10' : 'h-12')}>
           <div
@@ -136,8 +164,10 @@ export function StickyToolbarPanel({ id, children, contentClassName }: StickyToo
       aria-hidden={!open}
     >
       <div
+        data-sticky-toolbar-panel-scroll
         className={cn(
-          'max-h-[70vh] overflow-y-auto overscroll-contain border-t border-border/50 px-3 py-3',
+          'max-h-[70vh] overflow-y-auto overscroll-contain border-t px-3 py-3',
+          siteMobileMenuDividerClassName,
           contentClassName,
         )}
       >

@@ -11,6 +11,11 @@ import { staticPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
 import { SERVICE_UNAVAILABLE_MESSAGE } from '@/lib/api/fetch-result'
 import { getRequestCountrySiteCode } from '@/lib/country-sites/request-country'
 import { fetchCurrentLegalDocument, sellerFromBankDetails } from '@/lib/legal/documents'
+import {
+  legalPageTitleClassName,
+  legalProseClassName,
+  legalSectionHeadingClassName,
+} from '@/lib/legal/storefront-typography'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import { resolveCheckoutBankDetails } from '@/lib/settings/company-bank-details'
 import {
@@ -25,6 +30,7 @@ import {
   formatStoreAddress,
   getStoreEmails,
   getStorePhones,
+  getSupportEmail,
   hasStoreContactInfo,
   resolveStoreMapsHref,
 } from '@/lib/settings/store-helpers'
@@ -67,6 +73,7 @@ export default async function TermsPage() {
   const mapsUrl = resolveStoreMapsHref(store)
   const phones = getStorePhones(store)
   const emails = getStoreEmails(store)
+  const supportEmail = getSupportEmail(store)
 
   const marketKey = market.region === 'sk' ? 'sk' : 'ua'
   const fallbackSections = withSellerName(
@@ -84,14 +91,14 @@ export default async function TermsPage() {
               className="mb-4"
               items={staticPageBreadcrumbs(tNav('terms'))}
             />
-            <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground">
+            <h1 className={legalPageTitleClassName}>
               {legalDocument?.title ?? tFallback('title')}
             </h1>
           </div>
         </div>
 
         <div className={cn(siteContentShellClassName, 'py-12')}>
-          <div className="prose prose-green mx-auto max-w-3xl">
+          <div className={legalProseClassName}>
             <div className="mb-6">
               <LegalPageLinks current="terms" />
             </div>
@@ -108,65 +115,67 @@ export default async function TermsPage() {
                 locale={locale}
                 versionLabel=""
                 fallbackSeller={fallbackSeller}
+                supportEmail={supportEmail}
               />
             ) : (
               <>
                 <LegalSellerDetails seller={fallbackSeller} />
-                <LegalPageSections sections={fallbackSections} />
+                <LegalPageSections sections={fallbackSections} supportEmail={supportEmail} />
               </>
             )}
 
-            <section className="mb-8">
-              <h2 className="mb-4 font-serif text-2xl font-semibold text-foreground">
-                {tFallback('contactHeading')}
-              </h2>
-              <div className="space-y-2 text-muted-foreground">
-                {fallbackSeller?.organizationName || legalDocument?.seller?.organizationName ? (
-                  <p>
-                    <strong className="text-foreground">
-                      {legalDocument?.seller?.organizationName ||
-                        fallbackSeller?.organizationName}
-                    </strong>
-                  </p>
-                ) : null}
-                {contactsUnavailable ? (
-                  <ServiceUnavailableNotice
-                    compact
-                    title={tFallback('contactsUnavailableTitle')}
-                    message={SERVICE_UNAVAILABLE_MESSAGE}
-                    className="text-left"
-                  />
-                ) : (
-                  <>
+            {!legalDocument ? (
+              <section className="mb-8">
+                <h2 className={cn('mb-4', legalSectionHeadingClassName)}>
+                  {tFallback('contactHeading')}
+                </h2>
+                <div className="space-y-2 text-muted-foreground">
+                  {fallbackSeller?.organizationName ? (
                     <p>
-                      {tFallback('contactAddress')}:{' '}
-                      {mapsUrl ? (
-                        <a
-                          href={mapsUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary underline-offset-4 hover:underline"
-                        >
-                          {address}
-                        </a>
-                      ) : (
-                        address
-                      )}
+                      <strong className="text-foreground">
+                        {fallbackSeller.organizationName}
+                      </strong>
                     </p>
-                    {phones.map((item) => (
-                      <p key={item.phone}>
-                        {tFallback('contactPhone', { label: item.label })}: {item.phone}
+                  ) : null}
+                  {contactsUnavailable ? (
+                    <ServiceUnavailableNotice
+                      compact
+                      title={tFallback('contactsUnavailableTitle')}
+                      message={SERVICE_UNAVAILABLE_MESSAGE}
+                      className="text-left"
+                    />
+                  ) : (
+                    <>
+                      <p>
+                        {tFallback('contactAddress')}:{' '}
+                        {mapsUrl ? (
+                          <a
+                            href={mapsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline-offset-4 hover:underline"
+                          >
+                            {address}
+                          </a>
+                        ) : (
+                          address
+                        )}
                       </p>
-                    ))}
-                    {emails.map((item) => (
-                      <p key={item.email}>
-                        {tFallback('contactEmail', { label: item.label })}: {item.email}
-                      </p>
-                    ))}
-                  </>
-                )}
-              </div>
-            </section>
+                      {phones.map((item) => (
+                        <p key={item.phone}>
+                          {tFallback('contactPhone', { label: item.label })}: {item.phone}
+                        </p>
+                      ))}
+                      {emails.map((item) => (
+                        <p key={item.email}>
+                          {tFallback('contactEmail', { label: item.label })}: {item.email}
+                        </p>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </section>
+            ) : null}
           </div>
         </div>
       </main>

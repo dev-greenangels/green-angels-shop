@@ -8,6 +8,11 @@ import {
   splitReturnsDocumentSections,
   type ReturnsCmsVars,
 } from '@/lib/legal/returns-cms'
+import {
+  legalBodyTextClassName,
+  legalSectionHeadingClassName,
+  legalSubsectionHeadingClassName,
+} from '@/lib/legal/storefront-typography'
 import { cn } from '@/lib/utils'
 
 const contentCardClassName =
@@ -16,11 +21,11 @@ const contentCardClassName =
 const subsectionClassName =
   'space-y-3 border-t border-border/55 pt-7 first:border-t-0 first:pt-0'
 
-const sectionTitleClassName = 'font-serif text-2xl font-semibold text-foreground'
+const sectionTitleClassName = legalSectionHeadingClassName
 
-const subsectionTitleClassName = 'font-serif text-xl font-semibold text-foreground'
+const subsectionTitleClassName = legalSubsectionHeadingClassName
 
-const bodyClassName = 'whitespace-pre-line text-sm leading-relaxed text-foreground/90'
+const bodyClassName = legalBodyTextClassName
 
 function ReturnsCmsParagraph({
   text,
@@ -116,9 +121,9 @@ export function ReturnsLegalContent({
   const { beforeForms, afterForms } = splitReturnsDocumentSections(sections)
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="legal-document mx-auto max-w-3xl space-y-8">
       {document.intro ? (
-        <p className="text-sm leading-relaxed text-muted-foreground">{document.intro}</p>
+        <p className={legalBodyTextClassName}>{document.intro}</p>
       ) : null}
 
       {beforeForms.length > 0 ? (

@@ -8,6 +8,7 @@ export type StockNotificationListItem = {
   email: string | null
   phone: string | null
   locale: string
+  countrySiteCode: string | null
   consentAt: string | null
   notifiedAt: string | null
   createdAt: string

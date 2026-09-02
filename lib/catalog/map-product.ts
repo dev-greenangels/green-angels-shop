@@ -12,6 +12,7 @@ import type {
   CatalogProductListItem,
   CatalogVariantQuantityPrice,
 } from './types'
+import { parseSearchSynonyms } from './search-synonyms'
 
 const PLACEHOLDER_IMAGE = '/images/category-placeholder.svg'
 
@@ -170,5 +171,6 @@ export function mapDetailToPlant(item: CatalogProductDetail): Plant {
     displayCharacteristics: item.displayCharacteristics ?? [],
     metaTitle: item.metaTitle ?? null,
     metaDesc: item.metaDesc ?? null,
+    searchSynonyms: parseSearchSynonyms(item.searchSynonyms),
   }
 }

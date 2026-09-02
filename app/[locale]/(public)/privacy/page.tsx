@@ -10,6 +10,7 @@ import { staticPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import { LegalSellerDetails } from '@/components/legal/legal-seller-details'
 import { fetchCurrentLegalDocument, sellerFromBankDetails } from '@/lib/legal/documents'
+import { legalPageTitleClassName, legalProseClassName } from '@/lib/legal/storefront-typography'
 import { resolveCheckoutBankDetails } from '@/lib/settings/company-bank-details'
 import {
   fetchPublicSiteSettings,
@@ -17,6 +18,7 @@ import {
   getMarketSettings,
   getStoreSettings,
 } from '@/lib/settings/fetch'
+import { getSupportEmail } from '@/lib/settings/store-helpers'
 import { cn } from '@/lib/utils'
 
 export default async function PrivacyPage() {
@@ -27,9 +29,11 @@ export default async function PrivacyPage() {
   const sections = t.raw('sections') as LegalPageSection[]
   const siteSettings = await fetchPublicSiteSettings()
   const market = getMarketSettings(siteSettings)
+  const store = getStoreSettings(siteSettings)
   const fallbackSeller = sellerFromBankDetails(
-    resolveCheckoutBankDetails(getCartCheckoutSettings(siteSettings), getStoreSettings(siteSettings)),
+    resolveCheckoutBankDetails(getCartCheckoutSettings(siteSettings), store),
   )
+  const supportEmail = getSupportEmail(store)
   const document = await fetchCurrentLegalDocument('PRIVACY', locale)
   const title = document?.title ?? t('title')
 
@@ -40,12 +44,12 @@ export default async function PrivacyPage() {
         <div className="bg-secondary/30 py-8 md:py-12">
           <div className={siteContentShellClassName}>
             <PublicPageBreadcrumbs className="mb-4" items={staticPageBreadcrumbs(tNav('privacy'))} />
-            <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground">{title}</h1>
+            <h1 className={legalPageTitleClassName}>{title}</h1>
           </div>
         </div>
 
         <div className={cn(siteContentShellClassName, 'py-12')}>
-          <div className="max-w-3xl mx-auto prose prose-green space-y-6">
+          <div className={cn(legalProseClassName, 'space-y-6')}>
             {!document ? <LegalTemplateNotice /> : null}
             <LegalPageLinks current="privacy" />
 
@@ -55,15 +59,17 @@ export default async function PrivacyPage() {
                 locale={locale}
                 versionLabel={tLegal('revisionLine', { version: document.version })}
                 fallbackSeller={fallbackSeller}
+                supportEmail={supportEmail}
+                sellerIdentityKind="controller"
               />
             ) : (
               <>
                 <p className="text-muted-foreground text-lg">
                   {t('consentVersion', { version: market.privacyConsentVersion })}
                 </p>
-                <LegalSellerDetails seller={fallbackSeller} />
+                <LegalSellerDetails seller={fallbackSeller} identityKind="controller" />
                 <p className="text-muted-foreground">{t('intro')}</p>
-                <LegalPageSections sections={sections} />
+                <LegalPageSections sections={sections} supportEmail={supportEmail} />
               </>
             )}
           </div>

@@ -225,6 +225,7 @@ export type CharacteristicCellValue = {
 export type BulkMatrixProductRow = {
   productId: string
   productName: string
+  imageUrl: string | null
   stock: number
   values: Record<string, CharacteristicCellValue>
 }

@@ -332,6 +332,10 @@ export default function BackstageStockNotificationsPage() {
                         <td className="p-3">
                           <p>{row.email ?? '—'}</p>
                           <p className="text-xs text-muted-foreground">{row.phone ?? '—'}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {row.locale}
+                            {row.countrySiteCode ? ` · ${row.countrySiteCode}` : ''}
+                          </p>
                         </td>
                         <td className="p-3">
                           <Badge variant={row.notifiedAt ? 'secondary' : 'default'}>

@@ -134,6 +134,7 @@ export default async function ProductInCategoryPage({ params }: PageProps) {
           images={absoluteCatalogImages(plant.images)}
           gtin={gtinFromEan(plant.variants?.find((variant) => variant.ean)?.ean)}
           latinName={plant.latinName}
+          alternateNames={plant.searchSynonyms}
           offer={offer ? { price: offer.price, currency: offer.currency } : null}
         />
       ) : null}

@@ -11,12 +11,14 @@ import { staticPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import { LegalSellerDetails } from '@/components/legal/legal-seller-details'
 import { fetchCurrentLegalDocument, sellerFromBankDetails } from '@/lib/legal/documents'
+import { legalPageTitleClassName, legalProseClassName } from '@/lib/legal/storefront-typography'
 import { resolveCheckoutBankDetails } from '@/lib/settings/company-bank-details'
 import {
   fetchPublicSiteSettings,
   getCartCheckoutSettings,
   getStoreSettings,
 } from '@/lib/settings/fetch'
+import { getSupportEmail } from '@/lib/settings/store-helpers'
 import { cn } from '@/lib/utils'
 
 export default async function CookiesPage() {
@@ -26,9 +28,11 @@ export default async function CookiesPage() {
   const tLegal = await getTranslations('legalPages')
   const sections = t.raw('sections') as LegalPageSection[]
   const siteSettings = await fetchPublicSiteSettings()
+  const store = getStoreSettings(siteSettings)
   const fallbackSeller = sellerFromBankDetails(
-    resolveCheckoutBankDetails(getCartCheckoutSettings(siteSettings), getStoreSettings(siteSettings)),
+    resolveCheckoutBankDetails(getCartCheckoutSettings(siteSettings), store),
   )
+  const supportEmail = getSupportEmail(store)
   const document = await fetchCurrentLegalDocument('COOKIES', locale)
   const title = document?.title ?? t('title')
 
@@ -39,7 +43,7 @@ export default async function CookiesPage() {
         <div className="bg-secondary/30 py-8 md:py-12">
           <div className={siteContentShellClassName}>
             <PublicPageBreadcrumbs className="mb-4" items={staticPageBreadcrumbs(tNav('cookies'))} />
-            <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground">{title}</h1>
+            <h1 className={legalPageTitleClassName}>{title}</h1>
           </div>
         </div>
 
@@ -48,19 +52,21 @@ export default async function CookiesPage() {
             {!document ? <LegalTemplateNotice /> : null}
             <LegalPageLinks current="cookies" />
 
-            <div className="prose prose-green">
+            <div className={legalProseClassName}>
               {document ? (
                 <LegalRevisionBody
                   document={document}
                   locale={locale}
                   versionLabel={tLegal('revisionLine', { version: document.version })}
                   fallbackSeller={fallbackSeller}
+                  supportEmail={supportEmail}
+                  sellerIdentityKind="controller"
                 />
               ) : (
                 <>
                   <p className="text-muted-foreground text-lg">{t('intro')}</p>
-                  <LegalSellerDetails seller={fallbackSeller} />
-                  <LegalPageSections sections={sections} />
+                  <LegalSellerDetails seller={fallbackSeller} identityKind="controller" />
+                  <LegalPageSections sections={sections} supportEmail={supportEmail} />
                 </>
               )}
             </div>

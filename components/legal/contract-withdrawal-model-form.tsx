@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import type { LegalSellerIdentity } from '@/lib/legal/documents'
+import { legalSubsectionHeadingClassName } from '@/lib/legal/storefront-typography'
 
 type ContractWithdrawalModelFormProps = {
   locale: string
@@ -34,7 +35,7 @@ export function ContractWithdrawalModelForm({
       <div className="space-y-5 rounded-xl border border-border/80 bg-background/90 p-5 text-sm leading-relaxed md:p-6 print:border-0 print:p-0">
         <div className="flex flex-wrap items-start justify-between gap-3 print:hidden">
           <div className="space-y-1">
-            <h3 className="font-serif text-lg font-semibold text-foreground">{t('title')}</h3>
+            <h3 className={legalSubsectionHeadingClassName}>{t('title')}</h3>
             <p className="text-muted-foreground">{t('subtitle')}</p>
           </div>
           <Button type="button" variant="outline" size="sm" onClick={() => window.print()}>

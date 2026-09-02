@@ -3,18 +3,21 @@ import { buildSearchPageHref, normalizeSearchQuery } from '@/lib/search/url'
 export type SearchSuggestionItem = {
   label: string
   href: string
+  latinName?: string | null
 }
 
 export type SearchCategoryHit = {
   id: string
   name: string
   slug: string
+  latinName?: string | null
   image: string
 }
 
 export type SearchProductHit = {
   id: string
   name: string
+  latinName?: string | null
   slug: string
   categorySlug: string
   image: string

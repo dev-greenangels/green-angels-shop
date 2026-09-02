@@ -1,6 +1,7 @@
 'use client'
 
 import { Loader2, Save } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { TranslationLocaleLabel } from '@/components/backstage/content-locale-banner'
 import { Button } from '@/components/ui/button'
@@ -18,6 +19,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { SUPPORTED_LOCALES, type AppLocale } from '@/lib/i18n/locales'
 import type { WithdrawalSettings } from '@/lib/settings/withdrawal'
 
+const WITHDRAWAL_EMAIL_PLACEHOLDERS =
+  '{{customerName}}, {{orderNumber}}, {{withdrawalReference}}, {{submittedAt}}, {{withdrawalScope}}, {{partialItems}}, {{returnAddress}}, {{sellerName}}, {{supportEmail}}'
+
 type WithdrawalSettingsFormProps = {
   settings: WithdrawalSettings
   onChange: (next: WithdrawalSettings) => void
@@ -33,6 +37,8 @@ export function WithdrawalSettingsForm({
   saving = false,
   isDirty = false,
 }: WithdrawalSettingsFormProps) {
+  const t = useTranslations('pages.settings.withdrawal')
+
   const patchAddress = (field: keyof WithdrawalSettings['customReturnAddress'], value: string) => {
     onChange({
       ...settings,
@@ -60,15 +66,13 @@ export function WithdrawalSettingsForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Odstúpenie od zmluvy</CardTitle>
-        <CardDescription>
-          Adresa na vrátenie tovaru a šablóny e-mailového potvrdenia prijatia oznámenia.
-        </CardDescription>
+        <CardTitle>{t('title')}</CardTitle>
+        <CardDescription>{t('description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="withdrawal-return-mode">Adresa na vrátenie</Label>
+            <Label htmlFor="withdrawal-return-mode">{t('returnAddressLabel')}</Label>
             <Select
               value={settings.returnAddressMode}
               onValueChange={(value: 'store' | 'custom') =>
@@ -79,13 +83,13 @@ export function WithdrawalSettingsForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="store">Adresa obchodu (kontakty)</SelectItem>
-                <SelectItem value="custom">Vlastná adresa</SelectItem>
+                <SelectItem value="store">{t('returnAddressStore')}</SelectItem>
+                <SelectItem value="custom">{t('returnAddressCustom')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="withdrawal-window-days">Okno CTA v účte (dni)</Label>
+            <Label htmlFor="withdrawal-window-days">{t('accountWindowDaysLabel')}</Label>
             <Input
               id="withdrawal-window-days"
               type="number"
@@ -102,16 +106,14 @@ export function WithdrawalSettingsForm({
                 })
               }
             />
-            <p className="text-xs text-muted-foreground">
-              Ovplyvňuje len tlačidlo v detaile objednávky zákazníka, nie verejný formulár.
-            </p>
+            <p className="text-xs text-muted-foreground">{t('accountWindowDaysHint')}</p>
           </div>
         </div>
 
         {settings.returnAddressMode === 'custom' ? (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="withdrawal-org">Názov organizácie</Label>
+              <Label htmlFor="withdrawal-org">{t('organizationName')}</Label>
               <Input
                 id="withdrawal-org"
                 value={settings.customReturnAddress.organizationName}
@@ -119,7 +121,7 @@ export function WithdrawalSettingsForm({
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="withdrawal-street">Ulica a číslo</Label>
+              <Label htmlFor="withdrawal-street">{t('street')}</Label>
               <Input
                 id="withdrawal-street"
                 value={settings.customReturnAddress.street}
@@ -127,7 +129,7 @@ export function WithdrawalSettingsForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="withdrawal-city">Mesto</Label>
+              <Label htmlFor="withdrawal-city">{t('city')}</Label>
               <Input
                 id="withdrawal-city"
                 value={settings.customReturnAddress.city}
@@ -135,7 +137,7 @@ export function WithdrawalSettingsForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="withdrawal-postal">PSČ</Label>
+              <Label htmlFor="withdrawal-postal">{t('postalCode')}</Label>
               <Input
                 id="withdrawal-postal"
                 value={settings.customReturnAddress.postalCode}
@@ -143,7 +145,7 @@ export function WithdrawalSettingsForm({
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="withdrawal-country">Krajina</Label>
+              <Label htmlFor="withdrawal-country">{t('country')}</Label>
               <Input
                 id="withdrawal-country"
                 value={settings.customReturnAddress.country}
@@ -155,11 +157,9 @@ export function WithdrawalSettingsForm({
 
         <div className="space-y-3">
           <div>
-            <h3 className="text-sm font-semibold">Šablóna potvrdenia (e-mail)</h3>
+            <h3 className="text-sm font-semibold">{t('emailTemplateTitle')}</h3>
             <p className="text-xs text-muted-foreground">
-              Placeholdery: {'{{customerName}}'}, {'{{orderNumber}}'}, {'{{withdrawalReference}}'},
-              {' {{submittedAt}}'}, {'{{withdrawalScope}}'}, {'{{partialItems}}'}, {'{{returnAddress}}'},
-              {' {{sellerName}}'}, {'{{supportEmail}}'}
+              {t('emailTemplatePlaceholdersLabel')}: {WITHDRAWAL_EMAIL_PLACEHOLDERS}
             </p>
           </div>
           <div className="max-h-[min(60vh,28rem)] space-y-4 overflow-y-auto pr-1">
@@ -168,7 +168,7 @@ export function WithdrawalSettingsForm({
                 <TranslationLocaleLabel locale={loc} />
                 <div className="space-y-2">
                   <Label htmlFor={`withdrawal-subject-${loc}`} className="text-xs font-normal text-muted-foreground">
-                    Predmet
+                    {t('emailSubject')}
                   </Label>
                   <Input
                     id={`withdrawal-subject-${loc}`}
@@ -178,7 +178,7 @@ export function WithdrawalSettingsForm({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor={`withdrawal-body-${loc}`} className="text-xs font-normal text-muted-foreground">
-                    Telo správy
+                    {t('emailBody')}
                   </Label>
                   <Textarea
                     id={`withdrawal-body-${loc}`}
@@ -194,7 +194,7 @@ export function WithdrawalSettingsForm({
 
         <Button type="button" onClick={() => void onSave()} disabled={saving || !isDirty}>
           {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-          Uložiť nastavenia odstúpenia
+          {t('save')}
         </Button>
       </CardContent>
     </Card>

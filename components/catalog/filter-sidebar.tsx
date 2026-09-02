@@ -1,6 +1,6 @@
 'use client'
 
-import { type CSSProperties } from 'react'
+import { type CSSProperties, useMemo } from 'react'
 import { Filter, Loader2, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
@@ -41,6 +41,8 @@ import {
   type CatalogFilterScope,
 } from '@/lib/catalog/use-catalog-filter-definitions'
 import { useDefaultCurrency } from '@/components/providers/commerce-provider'
+import { siteMobileMenuDividerClassName } from '@/lib/layout/site-shell'
+import { useStickyToolbarAccordionScroll } from '@/lib/layout/use-sticky-toolbar-accordion-scroll'
 import { cn } from '@/lib/utils'
 
 export type CatalogFiltersState = CatalogFilters
@@ -92,6 +94,8 @@ interface FilterSidebarProps {
   expandContainerByDefault?: boolean
   /** Згорнути групи типів упаковки всередині «Контейнер» */
   collapseContainerGroupsByDefault?: boolean
+  /** Видиміші розділювачі (мобільна sticky-панель) */
+  emphasizedDividers?: boolean
 }
 
 export function FilterSidebarContent({
@@ -103,6 +107,7 @@ export function FilterSidebarContent({
   fitContent = false,
   expandContainerByDefault = false,
   collapseContainerGroupsByDefault = false,
+  emphasizedDividers = false,
 }: FilterSidebarProps) {
   const t = useTranslations('filter')
   const currency = useDefaultCurrency()
@@ -112,20 +117,35 @@ export function FilterSidebarContent({
     filterDefinitionsOptions,
   )
 
+  const visibleDefinitions = useMemo(() => {
+    if (!definitions) {
+      return { variantAttributes: [], characteristics: [] }
+    }
+    return filterVisibility
+      ? applyCatalogFiltersVisibility(definitions, filterVisibility)
+      : definitions
+  }, [definitions, filterVisibility])
+
+  const defaultAccordionValue = useMemo(
+    () =>
+      expandContainerByDefault
+        ? visibleDefinitions.variantAttributes
+            .filter(
+              (attribute) =>
+                attribute.valueType === 'CONTAINER' || attribute.slug === 'konteyner',
+            )
+            .map((attribute) => `attr-${attribute.slug}`)
+        : [],
+    [expandContainerByDefault, visibleDefinitions.variantAttributes],
+  )
+  const { onAccordionValueChange, onTriggerPointerDown } =
+    useStickyToolbarAccordionScroll(defaultAccordionValue)
+
   if (loading || !definitions) {
     return <FilterSidebarSkeleton />
   }
 
-  const visibleDefinitions = filterVisibility
-    ? applyCatalogFiltersVisibility(definitions, filterVisibility)
-    : definitions
   const showPrice = filterVisibility?.price ?? true
-
-  const defaultAccordionValue = expandContainerByDefault
-    ? visibleDefinitions.variantAttributes
-        .filter((attribute) => attribute.valueType === 'CONTAINER' || attribute.slug === 'konteyner')
-        .map((attribute) => `attr-${attribute.slug}`)
-    : []
 
   return (
     <div className="relative">
@@ -146,7 +166,14 @@ export function FilterSidebarContent({
         aria-busy={isRefreshing}
       >
       {showPrice ? (
-      <section className="space-y-3 border-b border-border/60 pb-4">
+      <section
+        className={cn(
+          'space-y-3 pb-4',
+          emphasizedDividers
+            ? cn('border-b', siteMobileMenuDividerClassName)
+            : 'border-b border-border/60',
+        )}
+      >
         <h3 className="text-sm font-semibold">
           {t('price')}
           <span className="ml-1.5 font-normal text-muted-foreground">({currency.symbol})</span>
@@ -159,14 +186,29 @@ export function FilterSidebarContent({
       </section>
       ) : null}
 
-      <Accordion type="multiple" defaultValue={defaultAccordionValue} className="w-full">
+      <Accordion
+        type="multiple"
+        defaultValue={defaultAccordionValue}
+        onValueChange={emphasizedDividers ? onAccordionValueChange : undefined}
+        className={cn(
+          'w-full',
+          emphasizedDividers && '[&_[data-slot=accordion-item]]:border-[#65954f38]',
+        )}
+      >
         {visibleDefinitions.variantAttributes.map((attribute) => {
           const isContainer =
             attribute.valueType === 'CONTAINER' || attribute.slug === 'konteyner'
 
           return (
-          <AccordionItem key={attribute.id} value={`attr-${attribute.slug}`}>
-            <AccordionTrigger className="text-sm font-semibold">
+          <AccordionItem
+            key={attribute.id}
+            value={`attr-${attribute.slug}`}
+            data-accordion-value={`attr-${attribute.slug}`}
+          >
+            <AccordionTrigger
+              className="text-sm font-semibold"
+              onPointerDown={emphasizedDividers ? onTriggerPointerDown : undefined}
+            >
               <CatalogFilterSectionTitle name={attribute.name} icon={attribute.icon} />
             </AccordionTrigger>
             <AccordionContent>
@@ -177,6 +219,7 @@ export function FilterSidebarContent({
                   onFilterChange={onFilterChange}
                   collapseGroups={collapseContainerGroupsByDefault}
                   fitContent={fitContent}
+                  scrollExpandedIntoToolbarPanel={emphasizedDividers}
                 />
               ) : (
               <div
@@ -218,8 +261,15 @@ export function FilterSidebarContent({
         })}
 
         {visibleDefinitions.characteristics.map((characteristic) => (
-          <AccordionItem key={characteristic.id} value={`char-${characteristic.slug}`}>
-            <AccordionTrigger className="text-sm font-semibold">
+          <AccordionItem
+            key={characteristic.id}
+            value={`char-${characteristic.slug}`}
+            data-accordion-value={`char-${characteristic.slug}`}
+          >
+            <AccordionTrigger
+              className="text-sm font-semibold"
+              onPointerDown={emphasizedDividers ? onTriggerPointerDown : undefined}
+            >
               <CatalogFilterSectionTitle name={characteristic.name} icon={characteristic.icon} />
             </AccordionTrigger>
             <AccordionContent>
@@ -449,6 +499,7 @@ export function CatalogFilterToolbarPanel({
         fitContent={fitContent}
         expandContainerByDefault={expandContainerByDefault}
         collapseContainerGroupsByDefault={collapseContainerGroupsByDefault}
+        emphasizedDividers
       />
     </div>
   )

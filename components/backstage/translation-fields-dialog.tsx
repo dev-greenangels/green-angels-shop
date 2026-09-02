@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   fetchTranslationField,
   patchTranslationField,
+  translationTargetKey,
   type TranslationFieldTarget,
 } from '@/lib/backstage/translation-fields'
 import { TranslationLocaleLabel } from '@/components/backstage/content-locale-banner'
@@ -46,13 +47,17 @@ export function TranslationFieldsDialog({
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const targetKey = translationTargetKey(target)
+  const targetRef = useRef(target)
+  targetRef.current = target
 
   useEffect(() => {
-    if (!open || !target) return
+    const currentTarget = targetRef.current
+    if (!open || !targetKey || !currentTarget) return
     let cancelled = false
     setLoading(true)
     setError(null)
-    void fetchTranslationField(target)
+    void fetchTranslationField(currentTarget)
       .then((translations) => {
         if (cancelled) return
         setValues(translations)
@@ -67,7 +72,7 @@ export function TranslationFieldsDialog({
     return () => {
       cancelled = true
     }
-  }, [open, target, tDialog])
+  }, [open, targetKey, tDialog])
 
   const handleSave = async () => {
     if (!target) return

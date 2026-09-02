@@ -45,6 +45,7 @@ export type ProductFormState = {
   primaryCategoryId: string
   additionalCategoryIds: string[]
   description: string
+  searchSynonyms: string
   metaTitle: string
   metaDesc: string
   pricingMode: PricingMode
@@ -89,6 +90,7 @@ export const emptyProductForm = (): ProductFormState => ({
   primaryCategoryId: '',
   additionalCategoryIds: [],
   description: '',
+  searchSynonyms: '',
   metaTitle: '',
   metaDesc: '',
   pricingMode: 'simple',
@@ -113,6 +115,7 @@ function normalizeProductFormForCompare(form: ProductFormState) {
     primaryCategoryId: form.primaryCategoryId,
     additionalCategoryIds: [...form.additionalCategoryIds].sort(),
     description: form.description,
+    searchSynonyms: form.searchSynonyms,
     metaTitle: form.metaTitle,
     metaDesc: form.metaDesc,
     pricingMode: form.pricingMode,

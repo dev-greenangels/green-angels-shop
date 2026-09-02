@@ -14,6 +14,7 @@ import type { CatalogProductListItem } from '@/lib/catalog/types'
 import { categoryHref, productHref } from '@/lib/catalog/paths'
 import { resolveCategoryThumbUrl } from '@/lib/category-image'
 import { resolveThumbUrl } from '@/lib/media/paths'
+import { toPublicMediaUrl } from '@/lib/media/public-url'
 import { buildSearchPageHref, normalizeSearchQuery } from '@/lib/search/url'
 
 const PLACEHOLDER_IMAGE = '/images/category-placeholder.svg'
@@ -26,6 +27,7 @@ type BackendCategorySearchHit = {
   slug: string
   name: string
   imageUrl: string
+  latinName?: string | null
 }
 
 function isPaginatedProducts(data: unknown): data is { items: CatalogProductListItem[] } {
@@ -39,7 +41,7 @@ function isPaginatedProducts(data: unknown): data is { items: CatalogProductList
 
 function resolveProductImage(imageUrl: string | null | undefined) {
   if (!imageUrl?.trim()) return PLACEHOLDER_IMAGE
-  return resolveThumbUrl(imageUrl.trim())
+  return toPublicMediaUrl(resolveThumbUrl(imageUrl.trim()))
 }
 
 function buildSuggestions(
@@ -51,11 +53,15 @@ function buildSuggestions(
   const seen = new Set<string>()
   const suggestions: SearchSuggestionItem[] = []
 
-  const add = (label: string, href: string) => {
+  const add = (label: string, href: string, latinName?: string | null) => {
     const key = label.toLowerCase()
     if (seen.has(key)) return
     seen.add(key)
-    suggestions.push({ label, href })
+    suggestions.push({
+      label,
+      href,
+      latinName: latinName?.trim() || null,
+    })
   }
 
   const searchQueryLabel = searchQueryLabelForLocale(locale, query)
@@ -63,13 +69,13 @@ function buildSuggestions(
 
   for (const category of categories) {
     if (suggestions.length >= MAX_SUGGESTIONS) break
-    add(category.name, categoryHref(category.slug))
+    add(category.name, categoryHref(category.slug), category.latinName)
   }
 
   for (const product of products) {
     if (suggestions.length >= MAX_SUGGESTIONS) break
     if (!product.categorySlug) continue
-    add(product.name, productHref(product.categorySlug, product.slug))
+    add(product.name, productHref(product.categorySlug, product.slug), product.latinName)
   }
 
   return suggestions
@@ -132,6 +138,7 @@ export async function GET(request: NextRequest) {
         id: category.id,
         name: category.name,
         slug: category.slug,
+        latinName: category.latinName?.trim() || null,
         image: resolveCategoryThumbUrl(category.imageUrl),
       }),
     )
@@ -139,6 +146,7 @@ export async function GET(request: NextRequest) {
     const productHits: SearchProductHit[] = productRows.slice(0, MAX_PRODUCTS).map((item) => ({
       id: item.id,
       name: item.name,
+      latinName: item.latinName?.trim() || null,
       slug: item.slug,
       categorySlug: item.categorySlug,
       image: resolveProductImage(item.imageUrl),

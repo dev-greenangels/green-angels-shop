@@ -1,11 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Image from 'next/image'
 import { ArrowLeft, Loader2, Save, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
 import { useBackstageContentLocale } from '@/components/backstage/backstage-content-locale'
+import { resolveBackstageThumbnailSrc } from '@/lib/category-image'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -486,7 +488,7 @@ export function CharacteristicsBulkEditor({
           <table className="w-max min-w-full border-collapse text-sm">
             <thead className="sticky top-0 z-30 bg-background shadow-[0_1px_0_0_hsl(var(--border))]">
               <tr>
-                <th className="sticky left-0 z-40 min-w-[220px] border-b border-r bg-background px-3 py-2 text-left font-medium">
+                <th className="sticky left-0 z-40 min-w-[260px] border-b border-r bg-background px-3 py-2 text-left font-medium">
                   {tLabels('product')}
                 </th>
                 {characteristics.map((definition) => (
@@ -516,22 +518,36 @@ export function CharacteristicsBulkEditor({
                       inStock ? 'bg-background' : 'bg-muted',
                     )}
                   >
-                    <div className="flex min-w-[180px] flex-col gap-1">
-                      <span className={cn('font-medium', inStock ? 'text-foreground' : undefined)}>
-                        {row.productName}
-                      </span>
-                      <span
-                        className={cn(
-                          'w-fit rounded-full px-2 py-0.5 text-xs font-medium',
-                          inStock
-                            ? row.stock < 20
-                              ? 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400'
-                              : 'bg-primary/10 text-primary'
-                            : 'bg-muted text-muted-foreground',
-                        )}
-                      >
-                        {inStock ? tProducts('stockUnits', { count: row.stock }) : tProducts('stockNone')}
-                      </span>
+                    <div className="flex min-w-[220px] items-start gap-2">
+                      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded border bg-muted">
+                        {row.imageUrl ? (
+                          <Image
+                            src={resolveBackstageThumbnailSrc(row.imageUrl)}
+                            alt=""
+                            fill
+                            className="object-cover"
+                            unoptimized
+                            sizes="40px"
+                          />
+                        ) : null}
+                      </div>
+                      <div className="flex min-w-0 flex-col gap-1">
+                        <span className={cn('font-medium', inStock ? 'text-foreground' : undefined)}>
+                          {row.productName}
+                        </span>
+                        <span
+                          className={cn(
+                            'w-fit rounded-full px-2 py-0.5 text-xs font-medium',
+                            inStock
+                              ? row.stock < 20
+                                ? 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400'
+                                : 'bg-primary/10 text-primary'
+                              : 'bg-muted text-muted-foreground',
+                          )}
+                        >
+                          {inStock ? tProducts('stockUnits', { count: row.stock }) : tProducts('stockNone')}
+                        </span>
+                      </div>
                     </div>
                   </td>
                   {characteristics.map((definition) => {

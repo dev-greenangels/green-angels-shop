@@ -9,6 +9,10 @@ import { staticPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
 import { SERVICE_UNAVAILABLE_MESSAGE } from '@/lib/api/fetch-result'
 import type { CheckoutDeliveryMethodSlug } from '@/lib/checkout/methods'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
+import {
+  legalPageTitleClassName,
+  legalSectionHeadingClassName,
+} from '@/lib/legal/storefront-typography'
 import { getRequestCountrySiteCode } from '@/lib/country-sites/request-country'
 import {
   fetchPublicSiteSettings,
@@ -86,16 +90,16 @@ export default async function ShippingPage() {
               className="mb-4"
               items={staticPageBreadcrumbs(tFooter(isSk ? 'shippingSk' : 'shipping'))}
             />
-            <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground">
+            <h1 className={legalPageTitleClassName}>
               {t('title')}
             </h1>
           </div>
         </div>
 
-        <div className={cn(siteContentShellClassName, 'py-12')}>
+        <div className={cn(siteContentShellClassName, 'legal-document py-12')}>
           <div className="mx-auto max-w-4xl">
             <section className="mb-16">
-              <h2 className="mb-8 font-serif text-2xl font-semibold text-foreground">
+              <h2 className={cn('mb-8', legalSectionHeadingClassName)}>
                 {t('deliveryTitle')}
               </h2>
               <div className="grid gap-6 md:grid-cols-2">
@@ -199,7 +203,7 @@ export default async function ShippingPage() {
 
             {groups.length ? (
               <section className="mb-16">
-                <h2 className="mb-8 font-serif text-2xl font-semibold text-foreground">
+                <h2 className={cn('mb-8', legalSectionHeadingClassName)}>
                   {t('costsTitle')}
                 </h2>
                 <div className="overflow-x-auto">
@@ -233,7 +237,7 @@ export default async function ShippingPage() {
 
             {payments.length ? (
               <section className="mb-16">
-                <h2 className="mb-8 font-serif text-2xl font-semibold text-foreground">
+                <h2 className={cn('mb-8', legalSectionHeadingClassName)}>
                   {t('paymentTitle')}
                 </h2>
                 <div className="grid gap-6 sm:grid-cols-2">
@@ -265,7 +269,7 @@ export default async function ShippingPage() {
             ) : null}
 
             <section className="rounded-2xl bg-primary/5 p-8">
-              <h2 className="mb-4 font-serif text-2xl font-semibold text-foreground">
+              <h2 className={cn('mb-4', legalSectionHeadingClassName)}>
                 {t('packingTitle')}
               </h2>
               <p className="mb-6 text-muted-foreground">{t('packingIntro')}</p>

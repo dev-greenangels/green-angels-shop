@@ -32,6 +32,7 @@ export function buildProductJsonLd(input: {
   images?: string[]
   gtin?: string | null
   latinName?: string | null
+  alternateNames?: string[]
   offer?: { price: number; currency: string } | null
 }): Record<string, unknown> | null {
   const name = input.entity.name?.trim()
@@ -60,6 +61,13 @@ export function buildProductJsonLd(input: {
       name: 'botanicalName',
       value: input.latinName.trim(),
     }
+  }
+
+  const alternateNames = (input.alternateNames ?? [])
+    .map((item) => item.trim())
+    .filter(Boolean)
+  if (alternateNames.length > 0) {
+    schema.alternateName = alternateNames.length === 1 ? alternateNames[0] : alternateNames
   }
 
   if (input.offer && input.offer.price > 0 && input.offer.currency) {

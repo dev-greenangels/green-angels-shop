@@ -61,6 +61,7 @@ import {
 import { ProductImagesField } from '@/components/backstage/product-images-field'
 import { fetchVariantAttributes, type VariantAttribute } from '@/lib/backstage/variant-attributes'
 import { countVariantSelections } from '@/lib/backstage/variant-selections'
+import type { TranslationFieldTarget } from '@/lib/backstage/translation-fields'
 import { cn } from '@/lib/utils'
 
 function flattenCategoryOptions(nodes: CategoryTreeNode[], depth = 0): CategoryOption[] {
@@ -133,6 +134,26 @@ export function ProductEditor({
   const tBanner = useTranslations('contentBanner')
   const isEditing = Boolean(productId)
   const productsListHref = resolveProductsReturnTo(returnTo)
+  const productNameTranslationTarget = useMemo(
+    (): TranslationFieldTarget | undefined =>
+      productId ? { kind: 'product-name', productId } : undefined,
+    [productId],
+  )
+  const productMetaTitleTranslationTarget = useMemo(
+    (): TranslationFieldTarget | undefined =>
+      productId ? { kind: 'product-meta-title', productId } : undefined,
+    [productId],
+  )
+  const productMetaDescTranslationTarget = useMemo(
+    (): TranslationFieldTarget | undefined =>
+      productId ? { kind: 'product-meta-desc', productId } : undefined,
+    [productId],
+  )
+  const productSearchSynonymsTranslationTarget = useMemo(
+    (): TranslationFieldTarget | undefined =>
+      productId ? { kind: 'product-search-synonyms', productId } : undefined,
+    [productId],
+  )
   const [isLoading, setIsLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(isEditing)
   const [categoriesLoading, setCategoriesLoading] = useState(true)
@@ -150,6 +171,7 @@ export function ProductEditor({
   const [translationHints, setTranslationHints] = useState<{
     name?: { locale: string; text: string } | null
     description?: { locale: string; text: string } | null
+    searchSynonyms?: { locale: string; text: string } | null
     metaTitle?: { locale: string; text: string } | null
     metaDesc?: { locale: string; text: string } | null
   }>({})
@@ -171,7 +193,7 @@ export function ProductEditor({
     } finally {
       setCategoriesLoading(false)
     }
-  }, [contentLocale, contentLocaleReady, tt])
+  }, [contentLocale, contentLocaleReady])
 
   const loadAttributes = useCallback(async () => {
     if (!contentLocaleReady) return
@@ -183,7 +205,7 @@ export function ProductEditor({
     } finally {
       setAttributesLoading(false)
     }
-  }, [contentLocale, contentLocaleReady, tt])
+  }, [contentLocale, contentLocaleReady])
 
   useEffect(() => {
     if (!contentLocaleReady) return
@@ -216,6 +238,7 @@ export function ProductEditor({
         setTranslationHints({
           name: detail.nameHint,
           description: detail.descriptionHint,
+          searchSynonyms: detail.searchSynonymsHint,
           metaTitle: detail.metaTitleHint,
           metaDesc: detail.metaDescHint,
         })
@@ -235,7 +258,7 @@ export function ProductEditor({
     return () => {
       cancelled = true
     }
-  }, [productId, router, contentLocale, contentLocaleReady, productsListHref, tt])
+  }, [productId, router, contentLocale, contentLocaleReady, productsListHref])
 
   const patch = useCallback(
     (patchValues: Partial<ProductFormState>) => {
@@ -332,6 +355,7 @@ export function ProductEditor({
       setTranslationHints({
         name: detail.nameHint,
         description: detail.descriptionHint,
+        searchSynonyms: detail.searchSynonymsHint,
         metaTitle: detail.metaTitleHint,
         metaDesc: detail.metaDescHint,
       })
@@ -339,6 +363,15 @@ export function ProductEditor({
         ...prev,
         name: detail.name ?? prev.name,
         description: detail.description ?? prev.description,
+        searchSynonyms: detail.searchSynonyms ?? prev.searchSynonyms,
+        metaTitle: detail.metaTitle ?? prev.metaTitle,
+        metaDesc: detail.metaDesc ?? prev.metaDesc,
+      }))
+      setBaseline((prev) => ({
+        ...prev,
+        name: detail.name ?? prev.name,
+        description: detail.description ?? prev.description,
+        searchSynonyms: detail.searchSynonyms ?? prev.searchSynonyms,
         metaTitle: detail.metaTitle ?? prev.metaTitle,
         metaDesc: detail.metaDesc ?? prev.metaDesc,
       }))
@@ -346,6 +379,10 @@ export function ProductEditor({
       // ignore — inline field still editable
     }
   }, [productId, contentLocale, contentLocaleReady])
+
+  const handleTranslationsSaved = useCallback(() => {
+    void reloadProductTranslations()
+  }, [reloadProductTranslations])
 
   const persistProductImages = useCallback(
     async (images: ProductImageDraft[]) => {
@@ -502,13 +539,9 @@ export function ProductEditor({
                       <div className="space-y-2">
                         <ContentLocaleLabel
                           htmlFor="name"
-                          translationTarget={
-                            productId
-                              ? { kind: 'product-name', productId }
-                              : undefined
-                          }
+                          translationTarget={productNameTranslationTarget}
                           translationFieldLabel={tp('productName')}
-                          onTranslationsSaved={() => void reloadProductTranslations()}
+                          onTranslationsSaved={handleTranslationsSaved}
                         >
                           {tp('productName')}
                         </ContentLocaleLabel>
@@ -582,6 +615,25 @@ export function ProductEditor({
                       </div>
                     </div>
 
+                    <div className="space-y-2">
+                      <ContentLocaleLabel
+                        htmlFor="product-search-synonyms"
+                        translationTarget={productSearchSynonymsTranslationTarget}
+                        translationFieldLabel={tp('searchSynonyms')}
+                        onTranslationsSaved={handleTranslationsSaved}
+                      >
+                        {tp('searchSynonyms')}
+                      </ContentLocaleLabel>
+                      <Input
+                        id="product-search-synonyms"
+                        value={form.searchSynonyms}
+                        onChange={(e) => patch({ searchSynonyms: e.target.value })}
+                        placeholder={tp('searchSynonymsPlaceholder')}
+                      />
+                      <p className="text-xs text-muted-foreground">{tp('searchSynonymsHint')}</p>
+                      <TranslationHint hint={translationHints.searchSynonyms} />
+                    </div>
+
                     <RichTextEditor
                       ref={descriptionEditorRef}
                       label={tp('fullDescription')}
@@ -624,11 +676,9 @@ export function ProductEditor({
                     <div className="space-y-2">
                       <ContentLocaleLabel
                         htmlFor="metaTitle"
-                        translationTarget={
-                          productId ? { kind: 'product-meta-title', productId } : undefined
-                        }
+                        translationTarget={productMetaTitleTranslationTarget}
                         translationFieldLabel="Meta title"
-                        onTranslationsSaved={() => void reloadProductTranslations()}
+                        onTranslationsSaved={handleTranslationsSaved}
                       >
                         Meta title
                       </ContentLocaleLabel>
@@ -644,12 +694,10 @@ export function ProductEditor({
                     <div className="space-y-2">
                       <ContentLocaleLabel
                         htmlFor="metaDesc"
-                        translationTarget={
-                          productId ? { kind: 'product-meta-desc', productId } : undefined
-                        }
+                        translationTarget={productMetaDescTranslationTarget}
                         translationFieldLabel="Meta description"
                         multiline
-                        onTranslationsSaved={() => void reloadProductTranslations()}
+                        onTranslationsSaved={handleTranslationsSaved}
                       >
                         Meta description
                       </ContentLocaleLabel>

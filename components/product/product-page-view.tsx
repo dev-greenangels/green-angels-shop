@@ -114,6 +114,12 @@ export async function ProductPageView({
               aria-labelledby="product-description-heading"
               className="mb-16 space-y-4 border-b border-border pb-10"
             >
+              {plant.searchSynonyms && plant.searchSynonyms.length > 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground/80">{t('alsoSearchFor')}</span>{' '}
+                  {plant.searchSynonyms.join(', ')}
+                </p>
+              ) : null}
               <h2
                 id="product-description-heading"
                 className="text-2xl font-[500] tracking-tight text-foreground"

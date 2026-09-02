@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 
 import { Switch } from '@/components/ui/switch'
 import { formatDateTime } from '@/lib/i18n/format-datetime'
+import { legalSubsectionHeadingClassName } from '@/lib/legal/storefront-typography'
 import { useCookieConsent } from '@/lib/legal/use-cookie-consent'
 import { toast } from '@/lib/toast'
 
@@ -22,7 +23,7 @@ export function CookiePreferencesManager({ locale }: { locale: string }) {
 
   return (
     <div className="rounded-xl border border-border/50 bg-card p-5 shadow-sm">
-      <h3 className="font-serif text-xl font-semibold text-foreground">{t('manageTitle')}</h3>
+      <h3 className={legalSubsectionHeadingClassName}>{t('manageTitle')}</h3>
       <p className="mt-1 text-sm text-muted-foreground">{t('manageHint')}</p>
 
       {consent ? (

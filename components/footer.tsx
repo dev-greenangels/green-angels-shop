@@ -111,9 +111,11 @@ export async function Footer() {
               <Link href="/contacts" className={linkClassName}>
                 {t('contacts')}
               </Link>
-              <Link href="/faq" className={linkClassName}>
-                {t('faq')}
-              </Link>
+              {localization.showFaqInFooter ? (
+                <Link href="/faq" className={linkClassName}>
+                  {t('faq')}
+                </Link>
+              ) : null}
             </nav>
           </div>
 

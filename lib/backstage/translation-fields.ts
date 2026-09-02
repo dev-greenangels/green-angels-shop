@@ -8,11 +8,39 @@ export type TranslationFieldTarget =
   | { kind: 'product-description'; productId: string }
   | { kind: 'product-meta-title'; productId: string }
   | { kind: 'product-meta-desc'; productId: string }
+  | { kind: 'product-search-synonyms'; productId: string }
   | { kind: 'category-name'; categoryId: string }
   | { kind: 'category-description'; categoryId: string }
   | { kind: 'category-footer-description'; categoryId: string }
   | { kind: 'category-meta-title'; categoryId: string }
   | { kind: 'category-meta-desc'; categoryId: string }
+
+export function translationTargetKey(target: TranslationFieldTarget | null | undefined): string | null {
+  if (!target) return null
+  switch (target.kind) {
+    case 'characteristic-name':
+      return `${target.kind}:${target.characteristicId}`
+    case 'characteristic-option-label':
+      return `${target.kind}:${target.characteristicId}:${target.optionId}`
+    case 'variant-attribute-name':
+    case 'variant-attribute-description':
+      return `${target.kind}:${target.attributeId}`
+    case 'variant-attribute-value-label':
+      return `${target.kind}:${target.attributeId}:${target.valueId}`
+    case 'product-name':
+    case 'product-description':
+    case 'product-meta-title':
+    case 'product-meta-desc':
+    case 'product-search-synonyms':
+      return `${target.kind}:${target.productId}`
+    case 'category-name':
+    case 'category-description':
+    case 'category-footer-description':
+    case 'category-meta-title':
+    case 'category-meta-desc':
+      return `${target.kind}:${target.categoryId}`
+  }
+}
 
 function targetPath(target: TranslationFieldTarget): { get: string; patch: string } {
   switch (target.kind) {
@@ -60,6 +88,11 @@ function targetPath(target: TranslationFieldTarget): { get: string; patch: strin
       return {
         get: `/api/backstage/products/${target.productId}/translations/meta-desc`,
         patch: `/api/backstage/products/${target.productId}/translations/meta-desc`,
+      }
+    case 'product-search-synonyms':
+      return {
+        get: `/api/backstage/products/${target.productId}/translations/search-synonyms`,
+        patch: `/api/backstage/products/${target.productId}/translations/search-synonyms`,
       }
     case 'category-name':
       return {

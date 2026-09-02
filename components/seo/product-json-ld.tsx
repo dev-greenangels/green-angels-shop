@@ -7,6 +7,7 @@ export function ProductJsonLd(props: {
   images?: string[]
   gtin?: string | null
   latinName?: string | null
+  alternateNames?: string[]
   offer?: { price: number; currency: string } | null
 }) {
   return (
@@ -16,6 +17,7 @@ export function ProductJsonLd(props: {
         images: props.images,
         gtin: props.gtin,
         latinName: props.latinName,
+        alternateNames: props.alternateNames,
         offer: props.offer,
       })}
     />

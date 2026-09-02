@@ -1,6 +1,8 @@
 import { getTranslations } from 'next-intl/server'
 
 import type { LegalSellerIdentity } from '@/lib/legal/documents'
+import { legalSubsectionHeadingClassName } from '@/lib/legal/storefront-typography'
+import { cn } from '@/lib/utils'
 
 function hasSellerIdentity(seller?: LegalSellerIdentity | null): seller is LegalSellerIdentity {
   if (!seller) return false
@@ -11,11 +13,15 @@ function hasSellerIdentity(seller?: LegalSellerIdentity | null): seller is Legal
 
 export async function LegalSellerDetails({
   seller,
+  identityKind = 'seller',
 }: {
   seller?: LegalSellerIdentity | null
+  /** GDPR pages use prevádzkovateľ; VOP uses predávajúci. */
+  identityKind?: 'seller' | 'controller'
 }) {
   if (!hasSellerIdentity(seller)) return null
   const t = await getTranslations('legalPages')
+  const titleKey = identityKind === 'controller' ? 'controllerTitle' : 'sellerTitle'
 
   const rows: Array<{ label: string; value: string }> = [
     seller.ico ? { label: t('sellerIco'), value: seller.ico } : null,
@@ -26,7 +32,7 @@ export async function LegalSellerDetails({
 
   return (
     <section className="mb-8 rounded-lg border border-border/60 bg-card/40 p-4">
-      <h2 className="font-serif text-xl font-semibold text-foreground mb-3">{t('sellerTitle')}</h2>
+      <h2 className={cn('mb-3', legalSubsectionHeadingClassName)}>{t(titleKey)}</h2>
       {seller.organizationName ? (
         <p className="font-medium text-foreground">{seller.organizationName}</p>
       ) : null}

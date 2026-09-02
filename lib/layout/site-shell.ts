@@ -20,3 +20,6 @@ export const siteStickyToolbarInnerClassName =
 /** Правий кластер кнопок поверх горизонтального скролу чіпсів. */
 export const siteStickyToolbarControlsClusterClassName =
   'relative z-10 flex h-8 shrink-0 items-center gap-2 boty-glass-match pl-1.5 before:pointer-events-none before:absolute before:inset-y-0 before:right-full before:w-5 before:bg-gradient-to-r before:from-transparent before:to-[var(--boty-glass-bg,rgba(255,255,255,0.78))] before:content-[""]'
+
+/** Розділювачі пунктів мобільного меню — той самий відтінок у sticky-панелях каталогу. */
+export const siteMobileMenuDividerClassName = 'border-[#65954f38]'

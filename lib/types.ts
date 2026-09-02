@@ -73,6 +73,7 @@ export interface Plant {
   displayCharacteristics?: ProductDisplayCharacteristic[]
   metaTitle?: string | null
   metaDesc?: string | null
+  searchSynonyms?: string[]
 }
 
 export interface CartItem {

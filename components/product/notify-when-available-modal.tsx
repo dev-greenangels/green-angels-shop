@@ -150,10 +150,15 @@ export function NotifyWhenAvailableModal({
         },
         {
           submitFailed: t('notifySubmitFailed'),
-          success: t('notifySuccess'),
         },
       )
-      setSuccessMessage(result.message)
+      setSuccessMessage(
+        result.alreadySubscribed
+          ? contactType === 'email'
+            ? t('notifyAlreadySubscribedEmail')
+            : t('notifyAlreadySubscribedPhone')
+          : t('notifySuccess'),
+      )
       setSubmitted(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : t('notifySubmitFailed'))

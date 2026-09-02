@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import Image from 'next/image'
 import { Loader2, Search, X } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
+import { CategoryCoverImage } from '@/components/catalog/category-cover-image'
+import { ProductCoverImage } from '@/components/product/product-cover-image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Link, useRouter } from '@/i18n/navigation'
@@ -55,6 +56,15 @@ function computePanelLayout(
   const width = Math.min(anchor.width, window.innerWidth - 32)
   const left = Math.max(16, Math.min(anchor.left, window.innerWidth - width - 16))
   return { top: anchor.bottom + 6, left, width }
+}
+
+function SearchHitLatinName({ latinName }: { latinName?: string | null }) {
+  if (!latinName?.trim()) return null
+  return (
+    <span className="line-clamp-1 text-[10px] leading-tight italic text-muted-foreground">
+      {latinName.trim()}
+    </span>
+  )
 }
 
 export function SiteSearchField({
@@ -229,7 +239,10 @@ export function SiteSearchField({
                   onClick={() => navigateTo(item.href)}
                 >
                   <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <span className="line-clamp-1">{item.label}</span>
+                  <div className="min-w-0 flex-1">
+                    <span className="line-clamp-2 leading-snug">{item.label}</span>
+                    <SearchHitLatinName latinName={item.latinName} />
+                  </div>
                 </button>
               </li>
             ))}
@@ -252,15 +265,12 @@ export function SiteSearchField({
                     onClick={() => onNavigate?.()}
                   >
                     <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-md bg-muted">
-                      <Image
-                        src={category.image}
-                        alt=""
-                        fill
-                        className="object-cover"
-                        sizes="28px"
-                      />
+                      <CategoryCoverImage src={category.image} alt={category.name} />
                     </div>
-                    <span className="line-clamp-2 text-xs leading-snug">{category.name}</span>
+                    <div className="min-w-0 flex-1">
+                      <span className="line-clamp-2 text-xs leading-snug">{category.name}</span>
+                      <SearchHitLatinName latinName={category.latinName} />
+                    </div>
                   </Link>
                 </li>
               ))}
@@ -275,15 +285,12 @@ export function SiteSearchField({
                     onClick={() => onNavigate?.()}
                   >
                     <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md bg-muted">
-                      <Image
-                        src={category.image}
-                        alt=""
-                        fill
-                        className="object-cover"
-                        sizes="36px"
-                      />
+                      <CategoryCoverImage src={category.image} alt={category.name} />
                     </div>
-                    <span className="line-clamp-2">{category.name}</span>
+                    <div className="min-w-0 flex-1">
+                      <span className="line-clamp-2">{category.name}</span>
+                      <SearchHitLatinName latinName={category.latinName} />
+                    </div>
                   </Link>
                 </li>
               ))}
@@ -317,17 +324,18 @@ export function SiteSearchField({
                     onClick={() => onNavigate?.()}
                   >
                     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-[4.5rem] sm:w-[4.5rem]">
-                      <Image
+                      <ProductCoverImage
                         src={product.image}
                         alt={product.name}
-                        fill
-                        className="object-cover"
                         sizes="72px"
                       />
                     </div>
-                    <span className="line-clamp-3 text-sm font-medium leading-snug text-foreground">
-                      {product.name}
-                    </span>
+                    <div className="min-w-0 flex-1">
+                      <span className="line-clamp-3 text-sm font-medium leading-snug text-foreground">
+                        {product.name}
+                      </span>
+                      <SearchHitLatinName latinName={product.latinName} />
+                    </div>
                   </Link>
                 </li>
               ))}
@@ -342,17 +350,18 @@ export function SiteSearchField({
                   onClick={() => onNavigate?.()}
                 >
                   <div className="relative aspect-square overflow-hidden rounded-md bg-muted">
-                    <Image
+                    <ProductCoverImage
                       src={product.image}
                       alt={product.name}
-                      fill
-                      className="object-cover"
                       sizes="40vw"
                     />
                   </div>
-                  <span className="line-clamp-2 text-xs leading-snug text-foreground">
-                    {product.name}
-                  </span>
+                  <div className="space-y-0.5">
+                    <span className="line-clamp-2 text-xs leading-snug text-foreground">
+                      {product.name}
+                    </span>
+                    <SearchHitLatinName latinName={product.latinName} />
+                  </div>
                 </Link>
               ))}
             </div>

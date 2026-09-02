@@ -107,10 +107,12 @@ export type BackstageProductVariant = {
 
 export type BackstageProductDetail = BackstageProductListItem & {
   description: string | null
+  searchSynonyms: string | null
   metaTitle: string | null
   metaDesc: string | null
   nameHint?: { locale: string; text: string } | null
   descriptionHint?: { locale: string; text: string } | null
+  searchSynonymsHint?: { locale: string; text: string } | null
   metaTitleHint?: { locale: string; text: string } | null
   metaDescHint?: { locale: string; text: string } | null
   additionalCategoryIds: string[]
@@ -128,6 +130,7 @@ export type ProductPayload = {
   primaryCategoryId: string
   additionalCategoryIds: string[]
   description?: string
+  searchSynonyms?: string
   metaTitle?: string
   metaDesc?: string
   isPublished: boolean
@@ -273,6 +276,7 @@ export function buildProductPayload(
     primaryCategoryId: form.primaryCategoryId,
     additionalCategoryIds: form.additionalCategoryIds,
     description: form.description.trim() || undefined,
+    searchSynonyms: form.searchSynonyms.trim() || undefined,
     metaTitle: form.metaTitle.trim() || undefined,
     metaDesc: form.metaDesc.trim() || undefined,
     isPublished: form.isPublished,
@@ -490,6 +494,7 @@ export function productDetailToFormState(
     primaryCategoryId: detail.categoryId,
     additionalCategoryIds: detail.additionalCategoryIds,
     description: detail.description ?? '',
+    searchSynonyms: detail.searchSynonyms ?? '',
     metaTitle: detail.metaTitle ?? '',
     metaDesc: detail.metaDesc ?? '',
     pricingMode: detail.pricingMode,

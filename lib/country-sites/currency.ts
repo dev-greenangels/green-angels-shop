@@ -50,6 +50,7 @@ export function applyLocalizationOverlay(
     ...localization,
     availableLocales: overlay.availableLocales,
     showLanguageSwitcher: localization.showLanguageSwitcher,
+    showFaqInFooter: localization.showFaqInFooter,
   }
 }
 

@@ -32,7 +32,7 @@ export function ProductPagePurchaseClient({ plant }: ProductPagePurchaseClientPr
       if (prev && next.some((variant) => variant.id === prev)) return prev
       return next[0]?.id ?? null
     })
-  }, [plant])
+  }, [plant.id, plant.variants])
 
   const handleBuy = (variant: ProductVariant, targetQuantity: number, unitPrice: number) => {
     const inCart = getCartLineQuantity(cartItems, plant.id, variant.id)

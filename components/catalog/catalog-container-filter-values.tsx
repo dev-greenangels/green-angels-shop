@@ -1,5 +1,6 @@
 'use client'
 
+import { type PointerEvent } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
@@ -17,6 +18,7 @@ import {
   type PackagingKind,
 } from '@/lib/catalog/packaging-kind'
 import { catalogSidebarScrollClassName } from '@/lib/catalog/sidebar-panel-styles'
+import { useStickyToolbarAccordionScroll } from '@/lib/layout/use-sticky-toolbar-accordion-scroll'
 import { cn } from '@/lib/utils'
 
 type CatalogContainerFilterValuesProps = {
@@ -27,6 +29,8 @@ type CatalogContainerFilterValuesProps = {
   collapseGroups?: boolean
   /** Не обмежувати висоту списків значень — панель підлаштовується під вміст */
   fitContent?: boolean
+  /** Прокрутити розгорнуту групу у видиму зону мобільної sticky-панелі */
+  scrollExpandedIntoToolbarPanel?: boolean
 }
 
 function packagingGroupLabel(
@@ -95,6 +99,8 @@ function ContainerFilterGroup({
   onFilterChange,
   fitContent,
   collapseGroups,
+  accordionValue,
+  onTriggerPointerDown,
 }: {
   attribute: VariantAttributeFilterDefinition
   group: ReturnType<typeof groupContainerFilterValues>[number]
@@ -103,6 +109,8 @@ function ContainerFilterGroup({
   onFilterChange: (filters: CatalogFilters) => void
   fitContent?: boolean
   collapseGroups?: boolean
+  accordionValue?: string
+  onTriggerPointerDown?: (event: PointerEvent<HTMLButtonElement>) => void
 }) {
   const t = useTranslations('filter')
   const groupSlugs = group.values.map((value) => value.slug)
@@ -169,10 +177,17 @@ function ContainerFilterGroup({
   }
 
   return (
-    <AccordionItem value={group.kind} className="border-0">
+    <AccordionItem
+      value={accordionValue ?? group.kind}
+      data-accordion-value={accordionValue ?? group.kind}
+      className="border-0"
+    >
       <div className="flex items-center gap-2">
         {groupCheckbox}
-        <AccordionTrigger className="flex-1 py-2 text-sm font-semibold hover:no-underline [&>svg]:ml-auto">
+        <AccordionTrigger
+          className="flex-1 py-2 text-sm font-semibold hover:no-underline [&>svg]:ml-auto"
+          onPointerDown={onTriggerPointerDown}
+        >
           <Label htmlFor={groupId} className="pointer-events-none text-sm font-semibold leading-snug">
             {groupLabel}
           </Label>
@@ -198,13 +213,20 @@ export function CatalogContainerFilterValues({
   onFilterChange,
   collapseGroups = false,
   fitContent = false,
+  scrollExpandedIntoToolbarPanel = false,
 }: CatalogContainerFilterValuesProps) {
   const groups = groupContainerFilterValues(attribute.values)
   const selected = filters.variantAttributes[attribute.slug] ?? []
+  const { onAccordionValueChange, onTriggerPointerDown } = useStickyToolbarAccordionScroll()
 
   if (collapseGroups) {
     return (
-      <Accordion type="multiple" defaultValue={[]} className="w-full pt-2">
+      <Accordion
+        type="multiple"
+        defaultValue={[]}
+        onValueChange={scrollExpandedIntoToolbarPanel ? onAccordionValueChange : undefined}
+        className="w-full pt-2"
+      >
         {groups.map((group) => (
           <ContainerFilterGroup
             key={group.kind}
@@ -215,6 +237,8 @@ export function CatalogContainerFilterValues({
             onFilterChange={onFilterChange}
             fitContent={fitContent}
             collapseGroups
+            accordionValue={`container-${attribute.slug}-${group.kind}`}
+            onTriggerPointerDown={scrollExpandedIntoToolbarPanel ? onTriggerPointerDown : undefined}
           />
         ))}
       </Accordion>

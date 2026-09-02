@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLocale } from 'next-intl'
 
+import { googleConsentFromCookie } from '@/lib/analytics/consent-mode'
+import { pushGoogleConsentUpdate } from '@/lib/analytics/push-consent-update'
+
 import {
   COOKIE_CONSENT_COOKIE_NAME,
   COOKIE_CONSENT_MAX_AGE_SECONDS,
@@ -76,6 +79,7 @@ export function useCookieConsent() {
         .filter(Boolean)
         .join('; ')
       setConsent(value)
+      pushGoogleConsentUpdate(googleConsentFromCookie(value))
       recordCookieConsentEvent({ analytics, locale, anonymousId })
       router.refresh()
       return value

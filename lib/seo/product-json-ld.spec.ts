@@ -179,6 +179,7 @@ describe('Product JSON-LD — single variant', () => {
       ctx: uaCtx,
     })
     assert.equal(json!['@type'], 'Product')
+    assert.equal(json!.image, 'https://media.example/uploads/products/a.jpg')
     const offers = json!.offers as Record<string, unknown>
     assert.equal(offers['@type'], 'Offer')
     assert.equal(offers.priceCurrency, 'UAH')
@@ -199,22 +200,26 @@ describe('ProductGroup JSON-LD — multi-variant', () => {
     assert.equal(json!['@type'], 'ProductGroup')
     assert.equal(json!.productGroupID, 'THU-PARENT')
     assert.deepEqual(json!.variesBy, ['https://schema.org/size'])
+    assert.equal(json!.image, 'https://media.example/uploads/products/a.jpg')
     const variants = json!.hasVariant as Array<Record<string, unknown>>
     assert.equal(variants.length, 3)
 
     const inStock = variants[0]
     assert.equal(inStock['@type'], 'Product')
     assert.equal(inStock.sku, 'THU-C2')
+    assert.equal(inStock.image, 'https://media.example/uploads/products/a.jpg')
     const offer1 = inStock.offers as Record<string, unknown>
     assert.equal(offer1.price, 10)
     assert.equal(offer1.availability, 'https://schema.org/InStock')
 
     const preorder = variants[2]
+    assert.equal(preorder.image, 'https://media.example/uploads/products/a.jpg')
     const offer3 = preorder.offers as Record<string, unknown>
     assert.equal(offer3.price, 40)
     assert.equal(offer3.availability, 'https://schema.org/PreOrder')
 
     const noGtin = variants[1]
+    assert.equal(noGtin.image, 'https://media.example/uploads/products/a.jpg')
     assert.equal('gtin' in noGtin, false)
     assert.equal('gtin13' in noGtin, false)
   })
@@ -259,5 +264,26 @@ describe('ProductGroup JSON-LD — multi-variant', () => {
     assert.equal(json!['@type'], 'ProductGroup')
     const variants = json!.hasVariant as Array<Record<string, unknown>>
     assert.equal('offers' in variants[0], false)
+    assert.equal(variants[0].image, 'https://media.example/uploads/products/a.jpg')
+  })
+
+  it('puts parent product images on every hasVariant Product node', () => {
+    const images = [
+      'https://media.example/uploads/products/a.jpg',
+      'https://media.example/uploads/products/b.jpg',
+    ]
+    const json = buildProductStructuredData({
+      plant: basePlant,
+      productUrl: 'https://green-angels.sk/sk/thuja/thuja-smaragd',
+      locale: 'sk',
+      brand: 'Green Angels',
+      images,
+      ctx: uaCtx,
+    })
+    assert.deepEqual(json!.image, images)
+    const variants = json!.hasVariant as Array<Record<string, unknown>>
+    for (const variant of variants) {
+      assert.deepEqual(variant.image, images)
+    }
   })
 })

@@ -4,8 +4,10 @@ import { headers } from 'next/headers'
 import { Analytics } from '@vercel/analytics/next'
 import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { GoogleTagManager } from '@/components/analytics/google-tag-manager'
 import { AppProviders } from '@/components/providers/app-providers'
 import { AppToasters } from '@/components/ui/sonner'
+import { getGtmId } from '@/lib/analytics/gtm'
 import { getSession } from '@/lib/auth/get-session'
 import { getMarketBranding } from '@/lib/branding/market-branding'
 import { applyCountrySiteOverlay } from '@/lib/country-sites/apply-overlay'
@@ -132,6 +134,7 @@ export default async function RootLayout({
   const marketSettings = getMarketSettings(siteSettings)
   const cartCheckoutSettings = getCartCheckoutSettings(siteSettings)
   const analyticsAllowed = process.env.NODE_ENV === 'production' && cookieConsent?.analytics === true
+  const gtmId = getGtmId()
   const countryHeader = headerStore.get(GA_COUNTRY_HEADER)
   const countryCode = countryHeader && isCountrySiteCode(countryHeader) ? countryHeader : null
   const canonicalOrigin = resolvePublicOrigin({
@@ -152,6 +155,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} className={`${sourceSans.variable} ${cormorant.variable} bg-background`}>
       <body className="font-sans antialiased">
+        {gtmId ? <GoogleTagManager gtmId={gtmId} initialConsent={cookieConsent} /> : null}
         <AppProviders
           initialSession={session}
           initialStoreSettings={storeSettings}

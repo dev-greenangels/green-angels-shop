@@ -56,20 +56,28 @@ function buildVariantOfferNode(
   }
 }
 
+function productJsonLdImageValue(images: string[]): string | string[] | undefined {
+  if (images.length === 0) return undefined
+  return images.length === 1 ? images[0] : images
+}
+
 function buildVariantProductNode(
   plant: Plant,
   variant: ProductVariant,
   productUrl: string,
   ctx: ProductStructuredDataContext,
+  images: string[],
 ): Record<string, unknown> {
   const name = variantDisplayName(plant.name, variant)
   const offer = buildVariantOfferNode(variant, productUrl, ctx)
   const sku = variant.sku?.trim() || undefined
   const gtinFields = gtinSchemaFields(variant.ean)
+  const image = productJsonLdImageValue(images)
 
   return {
     '@type': 'Product',
     name,
+    ...(image ? { image } : {}),
     ...(sku ? { sku } : {}),
     ...(gtinFields ?? {}),
     ...variantSchemaProperties(variant),
@@ -106,7 +114,7 @@ export function buildProductGroupJsonLd(input: {
     productGroupID: productGroupId(input.plant),
     variesBy: collectProductVariesBy(variants),
     hasVariant: variants.map((variant) =>
-      buildVariantProductNode(input.plant, variant, productUrl, input.ctx),
+      buildVariantProductNode(input.plant, variant, productUrl, input.ctx, images),
     ),
   }
 
@@ -116,8 +124,9 @@ export function buildProductGroupJsonLd(input: {
     input.plant.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
   if (description) schema.description = description
 
-  if (images.length) {
-    schema.image = images.length === 1 ? images[0] : images
+  const image = productJsonLdImageValue(images)
+  if (image) {
+    schema.image = image
   }
 
   if (input.brand.trim()) {

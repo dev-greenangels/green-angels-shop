@@ -11,13 +11,15 @@ import {
 } from './consent-mode'
 
 describe('googleConsentFromPreferences', () => {
-  it('defaults all signals to denied', () => {
-    assert.deepEqual(googleConsentFromPreferences({ analytics: false }), GOOGLE_CONSENT_DENIED)
-    assert.deepEqual(googleConsentFromPreferences({ analytics: false, marketing: false }), GOOGLE_CONSENT_DENIED)
+  it('A0 M0 — all denied', () => {
+    assert.deepEqual(
+      googleConsentFromPreferences({ analytics: false, marketing: false }),
+      GOOGLE_CONSENT_DENIED,
+    )
   })
 
-  it('grants analytics only when marketing is not accepted', () => {
-    assert.deepEqual(googleConsentFromPreferences({ analytics: true }), {
+  it('A1 M0 — analytics granted, ad_* denied', () => {
+    assert.deepEqual(googleConsentFromPreferences({ analytics: true, marketing: false }), {
       analytics_storage: 'granted',
       ad_storage: 'denied',
       ad_user_data: 'denied',
@@ -25,9 +27,18 @@ describe('googleConsentFromPreferences', () => {
     })
   })
 
-  it('grants marketing signals only when marketing is accepted', () => {
+  it('A0 M1 — analytics denied, ad_* granted', () => {
     assert.deepEqual(googleConsentFromPreferences({ analytics: false, marketing: true }), {
       analytics_storage: 'denied',
+      ad_storage: 'granted',
+      ad_user_data: 'granted',
+      ad_personalization: 'granted',
+    })
+  })
+
+  it('A1 M1 — all granted', () => {
+    assert.deepEqual(googleConsentFromPreferences({ analytics: true, marketing: true }), {
+      analytics_storage: 'granted',
       ad_storage: 'granted',
       ad_user_data: 'granted',
       ad_personalization: 'granted',
@@ -40,10 +51,11 @@ describe('googleConsentFromCookie', () => {
     assert.deepEqual(googleConsentFromCookie(null), GOOGLE_CONSENT_DENIED)
   })
 
-  it('restores analytics-only consent from stored cookie', () => {
+  it('restores analytics-only choice from stored cookie', () => {
     assert.deepEqual(
       googleConsentFromCookie({
         analytics: true,
+        marketing: false,
         updatedAt: '2026-01-01T00:00:00.000Z',
       }),
       {
@@ -55,10 +67,27 @@ describe('googleConsentFromCookie', () => {
     )
   })
 
+  it('restores marketing signals when marketing is true', () => {
+    assert.deepEqual(
+      googleConsentFromCookie({
+        analytics: false,
+        marketing: true,
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+      {
+        analytics_storage: 'denied',
+        ad_storage: 'granted',
+        ad_user_data: 'granted',
+        ad_personalization: 'granted',
+      },
+    )
+  })
+
   it('maps reject-all cookie to denied signals', () => {
     assert.deepEqual(
       googleConsentFromCookie({
         analytics: false,
+        marketing: false,
         updatedAt: '2026-01-01T00:00:00.000Z',
       }),
       GOOGLE_CONSENT_DENIED,
@@ -96,10 +125,11 @@ describe('buildConsentBootstrapScript', () => {
   it('restores stored preference before GTM when cookie exists', () => {
     const script = buildConsentBootstrapScript({
       analytics: true,
+      marketing: true,
       updatedAt: '2026-01-01T00:00:00.000Z',
     })
     assert.match(script, /gtag\('consent', 'update'/)
     assert.match(script, /"analytics_storage":"granted"/)
-    assert.match(script, /"ad_storage":"denied"/)
+    assert.match(script, /"ad_storage":"granted"/)
   })
 })

@@ -1252,7 +1252,7 @@
   },
   "cookieConsent": {
     "title": "Wir verwenden Cookies",
-    "description": "Notwendige Cookies sind für die Funktion der Website erforderlich. Mit Ihrer Einwilligung verwenden wir auch Analyse-Cookies. Mehr in unserer <cookies>Cookie-Richtlinie</cookies> und <privacy>Datenschutzerklärung</privacy>.",
+    "description": "Notwendige Cookies sind für die Funktion der Website erforderlich. Mit Ihrer Einwilligung verwenden wir auch Analyse- und Marketing-Cookies. Mehr in unserer <cookies>Cookie-Richtlinie</cookies> und <privacy>Datenschutzerklärung</privacy>.",
     "customize": "Anpassen",
     "rejectAll": "Nur notwendige",
     "acceptAll": "Alle akzeptieren",
@@ -1261,7 +1261,9 @@
     "necessaryDescription": "Grundfunktionen: Warenkorb, Anmeldung, gespeicherte Einstellungen. Immer aktiv.",
     "alwaysOn": "Immer aktiv",
     "analyticsTitle": "Analyse",
-    "analyticsDescription": "Helfen uns zu verstehen, wie Besucher die Website nutzen (Vercel Analytics). Standardmäßig aus."
+    "analyticsDescription": "Helfen uns zu verstehen, wie Besucher die Website nutzen (z. B. Vercel Analytics). Standardmäßig aus.",
+    "marketingTitle": "Marketing",
+    "marketingDescription": "Für Werbemessung und Personalisierung (z. B. Google Ads), nur mit Ihrer Einwilligung. Standardmäßig aus."
   },
   "privacyPage": {
     "title": "Datenschutzerklärung",
@@ -1280,14 +1282,14 @@
         "body": [
           "Profildaten: Vorname, Nachname, Vatersname, Telefon, E-Mail, Lieferadresse.",
           "Bestelldaten: Bestellinhalt, Lieferart und -adresse, Zahlungsart, Statusverlauf.",
-          "Technische Daten: Cookies, Nutzungsdaten der Website (nur bei Einwilligung zu Analyse-Cookies)."
+          "Technische Daten: Cookies sowie optionale Analyse- oder Marketing-/Werbetechnologien (nur nach Einwilligung). Dazu können Geräte-/Browserinformationen, Seiteninteraktionen und der Einwilligungsstatus gehören. Über Tag Manager / dataLayer senden wir keine Namen, E-Mails, Telefonnummern oder Adressen."
         ]
       },
       {
         "heading": "3. Zweck und Rechtsgrundlage",
         "body": [
           "Kundendaten werden zur Aufgabe und Abwicklung von Bestellungen sowie zur Kommunikation über Lieferung und Support verarbeitet — auf Basis der Vertragserfüllung und Nutzereinwilligung.",
-          "Analyse-Cookies werden nur mit separater Einwilligung verwendet, die Sie jederzeit auf der Cookie-Richtlinien-Seite widerrufen können."
+          "Optionale Analyse- und Marketing-/Werbetechnologien werden nur mit separater Einwilligung verwendet. Wir nutzen Google Tag Manager zur Steuerung freigegebener Tags; Google Analytics 4 und Google Ads sind derzeit nicht aktiv. Einwilligungen können Sie auf der Cookie-Richtlinien-Seite ändern oder widerrufen."
         ]
       },
       {
@@ -1315,26 +1317,28 @@
   },
   "cookiesPage": {
     "title": "Cookie-Richtlinie",
-    "intro": "Diese Seite erläutert, welche Cookies die Website verwendet, zu welchem Zweck und wie Sie Ihre Einwilligung verwalten. Dieser Text ist eine Basisvorlage und bedarf der rechtlichen Prüfung.",
+    "intro": "Diese Seite erläutert, welche Cookies die Website verwendet, zu welchem Zweck und wie Sie Ihre Einwilligung verwalten.",
     "sections": [
       {
         "heading": "Was sind Cookies",
         "body": [
-          "Cookies sind kleine Textdateien, die in Ihrem Browser gespeichert werden, wenn Sie die Website besuchen. Sie helfen der Website korrekt zu funktionieren und Ihre Einstellungen zu speichern."
+          "Cookies sind kleine Textdateien im Browser. Sie helfen der Website zu funktionieren und Einstellungen zu speichern."
         ]
       },
       {
         "heading": "Wie wir Cookies verwenden",
         "body": [
-          "Notwendige Cookies ermöglichen Warenkorb, Anmeldung und gespeicherte Sprach-/Regionseinstellungen — ohne sie funktioniert die Website nicht korrekt.",
-          "Analyse-Cookies (Vercel Analytics) helfen uns zu verstehen, welche Seiten beliebt sind und wie wir die Website verbessern können. Sie werden nur nach Ihrer Einwilligung aktiviert."
+          "Notwendige Cookies ermöglichen Kernfunktionen (Warenkorb, Anmeldung/Sitzung, Sprache, Speicherung Ihrer Cookie-Wahl). Diese Kategorie kann nicht deaktiviert werden.",
+          "Analyse-Cookies/Technologien sind optional (derzeit einschließlich Vercel Analytics). Sie werden erst nach Einwilligung aktiv. Google Analytics 4 ist derzeit nicht aktiv.",
+          "Marketing-Cookies/Technologien sind optional und können Werbemessung oder Conversions unterstützen, wenn aktiviert. Sie werden erst nach Einwilligung aktiv. Google Ads ist derzeit nicht implementiert und erhebt keine Daten.",
+          "Google Tag Manager dient dem Tag-Management und ist selbst keine Werbedienstleistung."
         ]
       },
       {
         "heading": "Ihre Wahl",
         "body": [
-          "Beim ersten Besuch sehen Sie ein Banner, in dem Sie alle Cookies akzeptieren, nur notwendige behalten oder Kategorien einzeln anpassen können.",
-          "Sie können Ihre Wahl jederzeit unten auf dieser Seite ändern."
+          "Vor Ihrer Entscheidung bleiben Analyse und Marketing aus. Sie können alles akzeptieren, nur Notwendige behalten oder Analyse und Marketing einzeln steuern.",
+          "Sie können Ihre Wahl jederzeit unten auf dieser Seite ändern. Das Einwilligungs-Cookie (ga-cookie-consent) gilt etwa 180 Tage, sofern Sie es nicht ändern."
         ]
       }
     ],
@@ -1349,7 +1353,11 @@
     "necessaryDescription": "Grundfunktionen: Warenkorb, Anmeldung, gespeicherte Einstellungen. Immer aktiv.",
     "alwaysOn": "Immer aktiv",
     "analyticsTitle": "Analyse",
-    "analyticsDescription": "Vercel Analytics — Statistiken zu Website-Besuchen. Standardmäßig aus."
+    "analyticsDescription": "Besuchsstatistiken (z. B. Vercel Analytics). Standardmäßig aus.",
+    "marketingTitle": "Marketing",
+    "marketingDescription": "Werbemessung und Personalisierung. Standardmäßig aus.",
+    "marketingEnabled": "Marketing aktiviert",
+    "marketingDisabled": "Marketing deaktiviert"
   },
   "returnsPage": {
     "title": "Rückgabe und Widerruf",

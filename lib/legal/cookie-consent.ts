@@ -5,19 +5,38 @@ export const COOKIE_CONSENT_MAX_AGE_SECONDS = 60 * 60 * 24 * 180
 
 export type CookieConsentValue = {
   analytics: boolean
+  marketing: boolean
   updatedAt: string
   anonymousId?: string
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+/**
+ * Valid consent requires explicit boolean `analytics` and `marketing`.
+ * Legacy analytics-only cookies (and other incomplete shapes) return null
+ * so the banner is shown again — no silent defaults.
+ */
 export function parseCookieConsent(raw: string | null | undefined): CookieConsentValue | null {
   if (!raw) return null
   try {
     const parsed = JSON.parse(raw) as unknown
-    if (!parsed || typeof parsed !== 'object') return null
-    const record = parsed as Record<string, unknown>
-    const updatedAt = typeof record.updatedAt === 'string' ? record.updatedAt : new Date().toISOString()
-    const anonymousId = typeof record.anonymousId === 'string' ? record.anonymousId : undefined
-    return { analytics: Boolean(record.analytics), updatedAt, anonymousId }
+    if (!isPlainObject(parsed)) return null
+    if (typeof parsed.analytics !== 'boolean') return null
+    if (typeof parsed.marketing !== 'boolean') return null
+    const updatedAt =
+      typeof parsed.updatedAt === 'string' && parsed.updatedAt.trim()
+        ? parsed.updatedAt
+        : new Date().toISOString()
+    const anonymousId = typeof parsed.anonymousId === 'string' ? parsed.anonymousId : undefined
+    return {
+      analytics: parsed.analytics,
+      marketing: parsed.marketing,
+      updatedAt,
+      ...(anonymousId ? { anonymousId } : {}),
+    }
   } catch {
     return null
   }

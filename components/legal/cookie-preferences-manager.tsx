@@ -15,10 +15,22 @@ export function CookiePreferencesManager({ locale }: { locale: string }) {
   if (!hydrated) return null
 
   const analyticsEnabled = consent?.analytics ?? false
+  const marketingEnabled = consent?.marketing ?? false
 
-  const handleToggle = (checked: boolean) => {
-    saveConsent(checked)
+  const handleAnalyticsToggle = (checked: boolean) => {
+    saveConsent({ analytics: checked, marketing: marketingEnabled })
     toast.success(t('saved'))
+  }
+
+  const handleMarketingToggle = (checked: boolean) => {
+    saveConsent({ analytics: analyticsEnabled, marketing: checked })
+    toast.success(t('saved'))
+  }
+
+  const statusParts: string[] = []
+  if (consent) {
+    statusParts.push(analyticsEnabled ? t('analyticsEnabled') : t('analyticsDisabled'))
+    statusParts.push(marketingEnabled ? t('marketingEnabled') : t('marketingDisabled'))
   }
 
   return (
@@ -29,9 +41,7 @@ export function CookiePreferencesManager({ locale }: { locale: string }) {
       {consent ? (
         <p className="mt-3 text-sm text-muted-foreground">
           {t('currentStatusLabel')}{' '}
-          <span className="font-medium text-foreground">
-            {analyticsEnabled ? t('analyticsEnabled') : t('analyticsDisabled')}
-          </span>
+          <span className="font-medium text-foreground">{statusParts.join(' · ')}</span>
           {' · '}
           {t('updatedAtLabel', {
             date: formatDateTime(consent.updatedAt, locale, 'datetimeLong'),
@@ -52,7 +62,22 @@ export function CookiePreferencesManager({ locale }: { locale: string }) {
             <p className="text-sm font-medium text-foreground">{t('analyticsTitle')}</p>
             <p className="text-xs text-muted-foreground">{t('analyticsDescription')}</p>
           </div>
-          <Switch checked={analyticsEnabled} onCheckedChange={handleToggle} aria-label={t('analyticsTitle')} />
+          <Switch
+            checked={analyticsEnabled}
+            onCheckedChange={handleAnalyticsToggle}
+            aria-label={t('analyticsTitle')}
+          />
+        </div>
+        <div className="flex items-start justify-between gap-4 rounded-md border border-border/40 bg-background/60 p-3">
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium text-foreground">{t('marketingTitle')}</p>
+            <p className="text-xs text-muted-foreground">{t('marketingDescription')}</p>
+          </div>
+          <Switch
+            checked={marketingEnabled}
+            onCheckedChange={handleMarketingToggle}
+            aria-label={t('marketingTitle')}
+          />
         </div>
       </div>
     </div>

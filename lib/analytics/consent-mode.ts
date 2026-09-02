@@ -18,7 +18,7 @@ export const GOOGLE_CONSENT_DENIED: GoogleConsentState = {
 
 export type ConsentPreferences = {
   analytics: boolean
-  marketing?: boolean
+  marketing: boolean
 }
 
 /** Maps stored cookie / UI preferences to Google Consent Mode v2 signals. */
@@ -36,14 +36,16 @@ export function googleConsentFromPreferences(prefs: ConsentPreferences): GoogleC
 
 export function googleConsentFromCookie(consent: CookieConsentValue | null): GoogleConsentState {
   if (!consent) return { ...GOOGLE_CONSENT_DENIED }
-  return googleConsentFromPreferences({ analytics: consent.analytics })
+  return googleConsentFromPreferences({
+    analytics: consent.analytics,
+    marketing: consent.marketing,
+  })
 }
 
 export function googleConsentRejectAll(): GoogleConsentState {
-  return { ...GOOGLE_CONSENT_DENIED }
+  return googleConsentFromPreferences({ analytics: false, marketing: false })
 }
 
-/** All signals granted — used when marketing category exists or explicit accept-all CMP action. */
 export function googleConsentAcceptAll(): GoogleConsentState {
   return googleConsentFromPreferences({ analytics: true, marketing: true })
 }

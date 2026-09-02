@@ -18,6 +18,7 @@ export function CookieConsentBanner() {
   const { consent, hydrated, saveConsent } = useCookieConsent()
   const [expanded, setExpanded] = useState(false)
   const [analyticsChoice, setAnalyticsChoice] = useState(false)
+  const [marketingChoice, setMarketingChoice] = useState(false)
 
   if (pathname.startsWith('/backstage')) return null
   if (!hydrated || consent !== null) return null
@@ -56,10 +57,19 @@ export function CookieConsentBanner() {
             <Button type="button" variant="ghost" size="sm" onClick={() => setExpanded((v) => !v)}>
               {t('customize')}
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => saveConsent(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => saveConsent({ analytics: false, marketing: false })}
+            >
               {t('rejectAll')}
             </Button>
-            <Button type="button" size="sm" onClick={() => saveConsent(true)}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => saveConsent({ analytics: true, marketing: true })}
+            >
               {t('acceptAll')}
             </Button>
           </div>
@@ -85,8 +95,25 @@ export function CookieConsentBanner() {
                 aria-label={t('analyticsTitle')}
               />
             </div>
+            <div className="flex items-start justify-between gap-4 rounded-md border border-border/40 bg-background/60 p-3">
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium text-foreground">{t('marketingTitle')}</p>
+                <p className="text-xs text-muted-foreground">{t('marketingDescription')}</p>
+              </div>
+              <Switch
+                checked={marketingChoice}
+                onCheckedChange={setMarketingChoice}
+                aria-label={t('marketingTitle')}
+              />
+            </div>
             <div className="flex justify-end">
-              <Button type="button" size="sm" onClick={() => saveConsent(analyticsChoice)}>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() =>
+                  saveConsent({ analytics: analyticsChoice, marketing: marketingChoice })
+                }
+              >
                 {t('savePreferences')}
               </Button>
             </div>

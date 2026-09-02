@@ -1251,17 +1251,19 @@
     "sellerAddress": "Sídlo"
   },
   "cookieConsent": {
-    "title": "We use cookies",
-    "description": "Necessary cookies are required for the site to work. With your consent we also use analytics cookies. Learn more in our <cookies>Cookie policy</cookies> and <privacy>Privacy policy</privacy>.",
-    "customize": "Customize",
-    "rejectAll": "Necessary only",
-    "acceptAll": "Accept all",
-    "savePreferences": "Save preferences",
-    "necessaryTitle": "Necessary",
-    "necessaryDescription": "Power core features: cart, sign-in, saved preferences. Always active.",
-    "alwaysOn": "Always active",
-    "analyticsTitle": "Analytics",
-    "analyticsDescription": "Help us understand how visitors use the site (Vercel Analytics). Off by default."
+    "title": "Používáme cookies",
+    "description": "Nezbytné cookies jsou nutné pro fungování webu. S vaším souhlasem používáme také analytické a marketingové cookies. Více v <cookies>Zásadách používání cookies</cookies> a <privacy>Zásadách ochrany osobních údajů</privacy>.",
+    "customize": "Přizpůsobit",
+    "rejectAll": "Jen nezbytné",
+    "acceptAll": "Přijmout vše",
+    "savePreferences": "Uložit volbu",
+    "necessaryTitle": "Nezbytné",
+    "necessaryDescription": "Zajišťují fungování webu: košík, přihlášení, uložená nastavení. Vždy aktivní.",
+    "alwaysOn": "Vždy aktivní",
+    "analyticsTitle": "Analytické",
+    "analyticsDescription": "Pomáhají nám pochopit, jak návštěvníci používají web (např. Vercel Analytics). Ve výchozím stavu vypnuté.",
+    "marketingTitle": "Marketingové",
+    "marketingDescription": "Slouží k měření reklamy a personalizaci (např. Google Ads), pouze s vaším souhlasem. Ve výchozím stavu vypnuté."
   },
   "privacyPage": {
     "title": "Privacy policy",
@@ -1280,14 +1282,14 @@
         "body": [
           "Profile data: first name, last name, patronymic, phone, email, delivery address.",
           "Order data: order contents, delivery method and address, payment method, status history.",
-          "Technical data: cookies, site usage data (only if you consented to analytics cookies)."
+          "Technická data: cookies a volitelné analytické nebo marketingové/reklamní technologie (pouze po souhlasu). Mohou zahrnovat informace o zařízení/prohlížeči, interakce se stránkou a stav souhlasu. Přes Tag Manager / dataLayer neodesíláme jméno, e-mail, telefon ani adresu."
         ]
       },
       {
         "heading": "3. Purpose and legal basis",
         "body": [
           "Customer data is processed to place and fulfil orders and to communicate about delivery and support — based on contract performance and user consent.",
-          "Analytics cookies are used only with a separate consent, which you can withdraw at any time on the Cookie policy page."
+          "Volitelné analytické a marketingové/reklamní technologie používáme jen se samostatným souhlasem. Google Tag Manager používáme ke správě schválených značek; Google Analytics 4 a Google Ads momentálně nejsou aktivní. Souhlas můžete změnit nebo odvolat na stránce Zásady cookies."
         ]
       },
       {
@@ -1315,26 +1317,28 @@
   },
   "cookiesPage": {
     "title": "Cookie policy",
-    "intro": "This page explains which cookies the site uses, for what purpose, and how to manage your consent. This text is a baseline template pending legal review.",
+    "intro": "Tato stránka vysvětluje, které cookies web používá, za jakým účelem a jak spravovat souhlas.",
     "sections": [
       {
-        "heading": "What are cookies",
+        "heading": "Co jsou cookies",
         "body": [
-          "Cookies are small text files stored in your browser when you visit the site. They help it work correctly and remember your preferences."
+          "Cookies jsou malé textové soubory uložené v prohlížeči. Pomáhají webu fungovat a pamatovat si nastavení."
         ]
       },
       {
-        "heading": "How we use cookies",
+        "heading": "Jak cookies používáme",
         "body": [
-          "Necessary cookies power the cart, sign-in and saved language/region preferences — without them the site will not work correctly.",
-          "Analytics cookies (Vercel Analytics) help us understand which pages are popular and how to improve the site. They only activate after you consent."
+          "Nezbytné cookies zajišťují základní funkce (košík, přihlášení/relace, jazyk, uložení volby souhlasu). Tuto kategorii nelze vypnout.",
+          "Analytické cookies/technologie jsou volitelné (aktuálně včetně Vercel Analytics). Spouštějí se až po souhlasu. Google Analytics 4 momentálně není aktivní.",
+          "Marketingové cookies/technologie jsou volitelné a mohou sloužit k měření reklamy nebo konverzí, pokud jsou zapnuté. Spouštějí se až po souhlasu. Google Ads momentálně není implementován a údaje nesbírá.",
+          "Google Tag Manager používáme ke správě značek; sám o sobě není reklamní služba."
         ]
       },
       {
-        "heading": "Your choice",
+        "heading": "Vaše volba",
         "body": [
-          "On your first visit you see a banner where you can accept all cookies, keep only necessary ones, or customize categories individually.",
-          "You can change your choice at any time below on this page."
+          "Před volbou zůstávají analytika i marketing vypnuté. Můžete přijmout vše, ponechat jen nezbytné, nebo samostatně nastavit Analytické a Marketingové.",
+          "Volbu můžete kdykoli změnit níže na této stránce. Cookie souhlasu (ga-cookie-consent) platí přibližně 180 dní, dokud ji nezměníte."
         ]
       }
     ],
@@ -1349,7 +1353,11 @@
     "necessaryDescription": "Power core features: cart, sign-in, saved preferences. Always active.",
     "alwaysOn": "Always active",
     "analyticsTitle": "Analytics",
-    "analyticsDescription": "Vercel Analytics — site visit statistics. Off by default."
+    "analyticsDescription": "Statistiky návštěv (např. Vercel Analytics). Ve výchozím stavu vypnuté.",
+    "marketingTitle": "Marketingové",
+    "marketingDescription": "Měření reklamy a personalizace. Ve výchozím stavu vypnuté.",
+    "marketingEnabled": "marketing zapnutý",
+    "marketingDisabled": "marketing vypnutý"
   },
   "returnsPage": {
     "title": "Vrácení zboží a odstoupení od smlouvy",

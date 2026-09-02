@@ -1252,7 +1252,7 @@
   },
   "cookieConsent": {
     "title": "Sütiket használunk",
-    "description": "A szükséges sütik az oldal működéséhez kellenek. Az Ön hozzájárulásával analitikai sütiket is használunk. További információ: <cookies>Süti szabályzat</cookies> és <privacy>Adatvédelmi irányelvek</privacy>.",
+    "description": "A szükséges sütik az oldal működéséhez kellenek. Az Ön hozzájárulásával analitikai és marketing sütiket is használunk. További információ: <cookies>Süti szabályzat</cookies> és <privacy>Adatvédelmi irányelvek</privacy>.",
     "customize": "Testreszabás",
     "rejectAll": "Csak a szükségesek",
     "acceptAll": "Összes elfogadása",
@@ -1261,7 +1261,9 @@
     "necessaryDescription": "Alapfunkciók: kosár, bejelentkezés, mentett beállítások. Mindig aktív.",
     "alwaysOn": "Mindig aktív",
     "analyticsTitle": "Analitika",
-    "analyticsDescription": "Segít megérteni, hogyan használják látogatók az oldalt (Vercel Analytics). Alapértelmezetten ki van kapcsolva."
+    "analyticsDescription": "Segít megérteni, hogyan használják a látogatók az oldalt (pl. Vercel Analytics). Alapértelmezetten ki van kapcsolva.",
+    "marketingTitle": "Marketing",
+    "marketingDescription": "Hirdetésméréshez és személyre szabáshoz (pl. Google Ads), csak az Ön hozzájárulásával. Alapértelmezetten ki van kapcsolva."
   },
   "privacyPage": {
     "title": "Adatvédelmi irányelvek",
@@ -1280,14 +1282,14 @@
         "body": [
           "Profiladatok: keresztnév, vezetéknév, apai név, telefon, e-mail, szállítási cím.",
           "Rendelési adatok: rendelés tartalma, szállítási mód és cím, fizetési mód, állapotelőzmények.",
-          "Technikai adatok: sütik, oldalhasználati adatok (csak ha hozzájárult az analitikai sütikhez)."
+          "Technikai adatok: sütik, valamint opcionális analitikai vagy marketing/hirdetési technológiák (csak hozzájárulás után). Ide tartozhatnak eszköz-/böngészőadatok, oldalinterakciók és a hozzájárulás állapota. A Tag Manager / dataLayer révén nem küldünk nevet, e-mailt, telefont vagy címet."
         ]
       },
       {
         "heading": "3. Cél és jogalap",
         "body": [
           "Az ügyféladatokat rendelések leadásához és teljesítéséhez, valamint a szállításról és támogatásról való kommunikációhoz kezeljük — szerződés teljesítése és felhasználói hozzájárulás alapján.",
-          "Az analitikai sütiket csak külön hozzájárulással használjuk, amelyet bármikor visszavonhat a Süti szabályzat oldalon."
+          "Az opcionális analitikai és marketing/hirdetési technológiákat csak külön hozzájárulással használjuk. A Google Tag Managert a jóváhagyott címkék vezérlésére használjuk; a Google Analytics 4 és a Google Ads jelenleg nem aktív. A hozzájárulást a Süti szabályzat oldalon módosíthatja vagy visszavonhatja."
         ]
       },
       {
@@ -1315,26 +1317,28 @@
   },
   "cookiesPage": {
     "title": "Süti szabályzat",
-    "intro": "Ez az oldal ismerteti, milyen sütiket használ az oldal, milyen célból, és hogyan kezelheti hozzájárulását. Ez a szöveg alap sablon, jogi felülvizsgálat alatt.",
+    "intro": "Ez az oldal ismerteti, milyen sütiket használ az oldal, milyen célból, és hogyan kezelheti hozzájárulását.",
     "sections": [
       {
         "heading": "Mik azok a sütik",
         "body": [
-          "A sütik kis szöveges fájlok, amelyeket a böngésző tárol, amikor meglátogatja az oldalt. Segítenek a helyes működésben és a beállítások megjegyzésében."
+          "A sütik kis szöveges fájlok a böngészőben. Segítenek az oldal működésében és a beállítások megjegyzésében."
         ]
       },
       {
         "heading": "Hogyan használjuk a sütiket",
         "body": [
-          "A szükséges sütik működtetik a kosarat, a bejelentkezést és a mentett nyelvi/régiós beállításokat — ezek nélkül az oldal nem működik megfelelően.",
-          "Az analitikai sütik (Vercel Analytics) segítenek megérteni, mely oldalak népszerűek, és hogyan javíthatjuk az oldalt. Csak hozzájárulás után aktiválódnak."
+          "A szükséges sütik az alapfunkciókat biztosítják (kosár, bejelentkezés/munkamenet, nyelv, a sütihozzájárulás mentése). Ezt a kategóriát nem lehet kikapcsolni.",
+          "Az analitikai sütik/technológiák opcionálisak (jelenleg beleértve a Vercel Analytics szolgáltatást). Csak hozzájárulás után aktívak. A Google Analytics 4 jelenleg nem aktív.",
+          "A marketing sütik/technológiák opcionálisak, és hirdetés- vagy konverziómérést támogathatnak, ha be vannak kapcsolva. Csak hozzájárulás után aktívak. A Google Ads jelenleg nincs implementálva, és nem gyűjt adatokat.",
+          "A Google Tag Managert címkekezelésre használjuk; önmagában nem hirdetési szolgáltatás."
         ]
       },
       {
         "heading": "Az Ön választása",
         "body": [
-          "Az első látogatáskor egy sáv jelenik meg, ahol elfogadhatja az összes sütit, megtarthatja csak a szükségeseket, vagy egyenként testreszabhatja a kategóriákat.",
-          "Választását bármikor módosíthatja az alábbiakban ezen az oldalon."
+          "Döntése előtt az Analitika és a Marketing ki van kapcsolva. Elfogadhatja az összeset, megtarthatja csak a szükségeseket, vagy külön állíthatja az Analitikát és a Marketinget.",
+          "Választását bármikor módosíthatja az alábbiakban. A hozzájárulási süti (ga-cookie-consent) körülbelül 180 napig érvényes, amíg nem változtatja meg."
         ]
       }
     ],
@@ -1349,7 +1353,11 @@
     "necessaryDescription": "Alapfunkciók: kosár, bejelentkezés, mentett beállítások. Mindig aktív.",
     "alwaysOn": "Mindig aktív",
     "analyticsTitle": "Analitika",
-    "analyticsDescription": "Vercel Analytics — oldalletöltési statisztikák. Alapértelmezetten ki van kapcsolva."
+    "analyticsDescription": "Látogatási statisztikák (pl. Vercel Analytics). Alapértelmezetten ki van kapcsolva.",
+    "marketingTitle": "Marketing",
+    "marketingDescription": "Hirdetésmérés és személyre szabás. Alapértelmezetten ki van kapcsolva.",
+    "marketingEnabled": "marketing bekapcsolva",
+    "marketingDisabled": "marketing kikapcsolva"
   },
   "returnsPage": {
     "title": "Visszaküldés és elállás a szerződéstől",

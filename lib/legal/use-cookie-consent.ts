@@ -15,6 +15,11 @@ import {
   type CookieConsentValue,
 } from './cookie-consent'
 
+export type CookieConsentPreferences = {
+  analytics: boolean
+  marketing: boolean
+}
+
 function readCookieValue(name: string): string | null {
   if (typeof document === 'undefined') return null
   const match = document.cookie
@@ -25,8 +30,13 @@ function readCookieValue(name: string): string | null {
   return value ? decodeURIComponent(value) : null
 }
 
+/**
+ * One HTTP request; backend expands into independent COOKIES_ANALYTICS +
+ * COOKIES_MARKETING audit rows. Does not use purpose MARKETING (email newsletter).
+ */
 function recordCookieConsentEvent(input: {
   analytics: boolean
+  marketing: boolean
   locale: string
   anonymousId: string
 }) {
@@ -36,11 +46,17 @@ function recordCookieConsentEvent(input: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       purpose: 'COOKIES_ANALYTICS',
+      // Envelope only; backend derives per-category actions from analytics/marketing.
       action: input.analytics ? 'GRANTED' : 'WITHDRAWN',
       locale: input.locale,
       source: 'COOKIE_BANNER',
       anonymousConsentId: input.anonymousId,
       analytics: input.analytics,
+      marketing: input.marketing,
+      metadata: {
+        analytics: input.analytics,
+        marketing: input.marketing,
+      },
     }),
   }).catch(() => {})
 }
@@ -57,14 +73,15 @@ export function useCookieConsent() {
   }, [])
 
   const saveConsent = useCallback(
-    (analytics: boolean) => {
+    (prefs: CookieConsentPreferences) => {
       const anonymousId =
         consent?.anonymousId ||
         (typeof crypto !== 'undefined' && crypto.randomUUID
           ? crypto.randomUUID()
           : `anon-${Date.now()}`)
       const value: CookieConsentValue = {
-        analytics,
+        analytics: prefs.analytics === true,
+        marketing: prefs.marketing === true,
         updatedAt: new Date().toISOString(),
         anonymousId,
       }
@@ -80,7 +97,12 @@ export function useCookieConsent() {
         .join('; ')
       setConsent(value)
       pushGoogleConsentUpdate(googleConsentFromCookie(value))
-      recordCookieConsentEvent({ analytics, locale, anonymousId })
+      recordCookieConsentEvent({
+        analytics: value.analytics,
+        marketing: value.marketing,
+        locale,
+        anonymousId,
+      })
       router.refresh()
       return value
     },

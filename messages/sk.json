@@ -1252,7 +1252,7 @@
   },
   "cookieConsent": {
     "title": "Používame cookies",
-    "description": "Nevyhnutné cookies sú potrebné na fungovanie stránky. S vaším súhlasom používame aj analytické cookies. Viac v <cookies>Zásadách používania cookies</cookies> a <privacy>Zásadách ochrany osobných údajov</privacy>.",
+    "description": "Nevyhnutné cookies sú potrebné na fungovanie stránky. S vaším súhlasom používame aj analytické a marketingové cookies. Viac v <cookies>Zásadách používania cookies</cookies> a <privacy>Zásadách ochrany osobných údajov</privacy>.",
     "customize": "Prispôsobiť",
     "rejectAll": "Len nevyhnutné",
     "acceptAll": "Prijať všetko",
@@ -1261,7 +1261,9 @@
     "necessaryDescription": "Zabezpečujú fungovanie stránky: košík, prihlásenie, uložené nastavenia. Vždy aktívne.",
     "alwaysOn": "Vždy aktívne",
     "analyticsTitle": "Analytické",
-    "analyticsDescription": "Pomáhajú nám pochopiť, ako návštevníci používajú stránku (Vercel Analytics). Predvolene vypnuté."
+    "analyticsDescription": "Pomáhajú nám pochopiť, ako návštevníci používajú stránku (napr. Vercel Analytics). Predvolene vypnuté.",
+    "marketingTitle": "Marketingové",
+    "marketingDescription": "Slúžia na meranie reklamy a personalizáciu (napr. Google Ads), iba s vaším súhlasom. Predvolene vypnuté."
   },
   "privacyPage": {
     "title": "Ochrana osobných údajov",
@@ -1280,14 +1282,14 @@
         "body": [
           "Údaje profilu: meno, priezvisko, telefón, email, doručovacia adresa.",
           "Údaje o objednávkach: obsah objednávky, spôsob a adresa doručenia, spôsob platby, história stavov.",
-          "Technické údaje: cookies, údaje o používaní stránky (len ak ste súhlasili s analytickými cookies)."
+          "Technické údaje: cookies a voliteľné analytické alebo marketingové/reklamné technológie (len po súhlase). Môžu zahŕňať informácie o zariadení/prehliadači, interakcie so stránkou a stav súhlasu. Cez Tag Manager / dataLayer neposielame meno, e-mail, telefón ani adresu."
         ]
       },
       {
         "heading": "3. Účel a právny základ spracovania",
         "body": [
           "Údaje klientov spracúvame na vybavenie a splnenie objednávok a na komunikáciu ohľadom doručenia a podpory — na základe plnenia zmluvy a súhlasu užívateľa.",
-          "Analytické cookies používame len na základe samostatného súhlasu, ktorý môžete kedykoľvek odvolať na stránke Zásady používania cookies."
+          "Voliteľné analytické a marketingové/reklamné technológie používame len so samostatným súhlasom. Google Tag Manager používame na správu schválených značiek; Google Analytics 4 a Google Ads momentálne nie sú aktívne. Súhlas môžete zmeniť alebo odvolať na stránke Politika cookies."
         ]
       },
       {
@@ -1316,26 +1318,28 @@
   },
   "cookiesPage": {
     "title": "Zásady používania cookies",
-    "intro": "Táto stránka vysvetľuje, aké cookies stránka používa, na aký účel a ako môžete správu súhlasu meniť. Text je základná šablóna, ktorá čaká na právnu kontrolu.",
+    "intro": "Táto stránka vysvetľuje, ktoré cookies web používa, na aký účel a ako spravovať súhlas.",
     "sections": [
       {
         "heading": "Čo sú cookies",
         "body": [
-          "Cookies sú malé textové súbory, ktoré sa ukladajú vo vašom prehliadači počas návštevy stránky a pomáhajú jej správne fungovať a pamätať si vaše nastavenia."
+          "Cookies sú malé textové súbory uložené v prehliadači. Pomáhajú stránke fungovať a zapamätať si nastavenia."
         ]
       },
       {
-        "heading": "Ako používame cookies",
+        "heading": "Ako cookies používame",
         "body": [
-          "Nevyhnutné cookies zabezpečujú fungovanie košíka, prihlásenia a uložených jazykových/regionálnych nastavení — bez nich stránka nebude fungovať správne.",
-          "Analytické cookies (Vercel Analytics) nám pomáhajú pochopiť, ktoré stránky sú populárne a ako stránku vylepšiť. Aktivujú sa len po vašom súhlase."
+          "Nevyhnutné cookies zabezpečujú základné funkcie (košík, prihlásenie/relácia, jazyk, uloženie voľby súhlasu). Túto kategóriu nemožno vypnúť.",
+          "Analytické cookies/technológie sú voliteľné (momentálne vrátane Vercel Analytics). Spúšťajú sa len po súhlase. Google Analytics 4 momentálne nie je aktívny.",
+          "Marketingové cookies/technológie sú voliteľné a môžu slúžiť na meranie reklamy alebo konverzií, keď sú zapnuté. Spúšťajú sa len po súhlase. Google Ads momentálne nie je implementovaný a údaje nezbiera.",
+          "Google Tag Manager používame na správu značiek; sám o sebe nie je reklamná služba."
         ]
       },
       {
-        "heading": "Vaša voľba",
+        "heading": "Váš výber",
         "body": [
-          "Pri prvej návšteve stránky sa zobrazí banner, kde môžete prijať všetky cookies, zachovať len nevyhnutné alebo si kategórie prispôsobiť samostatne.",
-          "Svoju voľbu môžete kedykoľvek zmeniť nižšie na tejto stránke."
+          "Pred voľbou sú analytika aj marketing vypnuté. Môžete prijať všetko, ponechať len nevyhnutné, alebo samostatne nastaviť Analytické a Marketingové.",
+          "Voľbu môžete kedykoľvek zmeniť nižšie na tejto stránke. Cookie súhlasu (ga-cookie-consent) platí približne 180 dní, kým ju nezmeníte."
         ]
       }
     ],
@@ -1350,7 +1354,11 @@
     "necessaryDescription": "Zabezpečujú fungovanie stránky: košík, prihlásenie, uložené nastavenia. Vždy aktívne.",
     "alwaysOn": "Vždy aktívne",
     "analyticsTitle": "Analytické",
-    "analyticsDescription": "Vercel Analytics — štatistiky návštevnosti stránky. Predvolene vypnuté."
+    "analyticsDescription": "Štatistiky návštev (napr. Vercel Analytics). Predvolene vypnuté.",
+    "marketingTitle": "Marketingové",
+    "marketingDescription": "Meranie reklamy a personalizácia. Predvolene vypnuté.",
+    "marketingEnabled": "marketing zapnutý",
+    "marketingDisabled": "marketing vypnutý"
   },
   "returnsPage": {
     "title": "Vrátenie tovaru a odstúpenie od zmluvy",

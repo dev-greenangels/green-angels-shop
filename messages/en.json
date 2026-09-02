@@ -1252,7 +1252,7 @@
   },
   "cookieConsent": {
     "title": "We use cookies",
-    "description": "Necessary cookies are required for the site to work. With your consent we also use analytics cookies. Learn more in our <cookies>Cookie policy</cookies> and <privacy>Privacy policy</privacy>.",
+    "description": "Necessary cookies are required for the site to work. With your consent we also use analytics and marketing cookies. Learn more in our <cookies>Cookie policy</cookies> and <privacy>Privacy policy</privacy>.",
     "customize": "Customize",
     "rejectAll": "Necessary only",
     "acceptAll": "Accept all",
@@ -1261,7 +1261,9 @@
     "necessaryDescription": "Power core features: cart, sign-in, saved preferences. Always active.",
     "alwaysOn": "Always active",
     "analyticsTitle": "Analytics",
-    "analyticsDescription": "Help us understand how visitors use the site (Vercel Analytics). Off by default."
+    "analyticsDescription": "Help us understand how visitors use the site (for example Vercel Analytics). Off by default.",
+    "marketingTitle": "Marketing",
+    "marketingDescription": "Used for advertising measurement and personalization (for example Google Ads), only with your consent. Off by default."
   },
   "privacyPage": {
     "title": "Privacy policy",
@@ -1280,14 +1282,14 @@
         "body": [
           "Profile data: first name, last name, patronymic, phone, email, delivery address.",
           "Order data: order contents, delivery method and address, payment method, status history.",
-          "Technical data: cookies, site usage data (only if you consented to analytics cookies)."
+          "Technical data: cookies and optional analytics or marketing/advertising technologies (only after consent). This may include device/browser information, page interactions and consent state. We do not send name, email, phone or address via Tag Manager / dataLayer."
         ]
       },
       {
         "heading": "3. Purpose and legal basis",
         "body": [
           "Customer data is processed to place and fulfil orders and to communicate about delivery and support — based on contract performance and user consent.",
-          "Analytics cookies are used only with a separate consent, which you can withdraw at any time on the Cookie policy page."
+          "Optional analytics and marketing/advertising technologies are used only with separate consent. We use Google Tag Manager to manage approved tags; Google Analytics 4 and Google Ads are not currently active. You can change or withdraw consent on the Cookie policy page."
         ]
       },
       {
@@ -1315,7 +1317,7 @@
   },
   "cookiesPage": {
     "title": "Cookie policy",
-    "intro": "This page explains which cookies the site uses, for what purpose, and how to manage your consent. This text is a baseline template pending legal review.",
+    "intro": "This page explains which cookies the site uses, for what purpose, and how to manage your consent.",
     "sections": [
       {
         "heading": "What are cookies",
@@ -1326,15 +1328,17 @@
       {
         "heading": "How we use cookies",
         "body": [
-          "Necessary cookies power the cart, sign-in and saved language/region preferences — without them the site will not work correctly.",
-          "Analytics cookies (Vercel Analytics) help us understand which pages are popular and how to improve the site. They only activate after you consent."
+          "Necessary cookies power core functions such as the cart, sign-in/session, language and storing your cookie choice. This category cannot be switched off.",
+          "Analytics cookies/technologies are optional (currently including Vercel Analytics). They run only after Analytics consent. Google Analytics 4 is not currently active.",
+          "Marketing cookies/technologies are optional and may support advertising or conversion measurement when enabled. They run only after Marketing consent. Google Ads is not currently implemented or collecting data.",
+          "Google Tag Manager is used as a tag-management tool; it is not itself an advertising service."
         ]
       },
       {
         "heading": "Your choice",
         "body": [
-          "On your first visit you see a banner where you can accept all cookies, keep only necessary ones, or customize categories individually.",
-          "You can change your choice at any time below on this page."
+          "Before you choose, Analytics and Marketing stay off. You can accept all, keep Necessary only, or customise Analytics and Marketing independently.",
+          "You can change your choice at any time below on this page. The consent preference cookie (ga-cookie-consent) lasts about 180 days unless you change it."
         ]
       }
     ],
@@ -1349,7 +1353,11 @@
     "necessaryDescription": "Power core features: cart, sign-in, saved preferences. Always active.",
     "alwaysOn": "Always active",
     "analyticsTitle": "Analytics",
-    "analyticsDescription": "Vercel Analytics — site visit statistics. Off by default."
+    "analyticsDescription": "Site visit statistics (for example Vercel Analytics). Off by default.",
+    "marketingTitle": "Marketing",
+    "marketingDescription": "Advertising measurement and personalization. Off by default.",
+    "marketingEnabled": "marketing enabled",
+    "marketingDisabled": "marketing disabled"
   },
   "returnsPage": {
     "title": "Returns & Withdrawal",

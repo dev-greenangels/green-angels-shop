@@ -522,7 +522,10 @@
       "codFee": "COD fee",
       "withoutDelivery": "Subtotal excluding delivery",
       "vatOfWhich": "of which VAT ({rate}%)",
-      "paidWithoutVat": "Total excl. VAT"
+      "paidWithoutVat": "Total excl. VAT",
+      "deliveryUnavailable": "Delivery cannot be calculated",
+      "deliveryUnavailableMissingWeight": "An item in the cart has no weight — choose pickup or contact the shop.",
+      "deliveryUnavailableNoTariff": "No shipping tariff for this weight or country."
     },
     "unavailableOne": "1 item is out of stock and excluded from the total.",
     "unavailableMany": "{count} items are out of stock and excluded from the total.",
@@ -708,24 +711,26 @@
     "noAdditionalDiscount": "Promo code {code}: not applied — a better price is already active on these items."
   },
   "checkout": {
-    "pageTitle": "Checkout",
-    "orderPlaced": "Order placed",
-    "redirecting": "Redirecting to confirmation…",
-    "successLoadingDetails": "Loading order details…",
-    "successOrderNumberLabel": "Order number",
-    "successOrderNumbersLabel": "Order numbers",
-    "successLimitedHint": "Order details are available in the email if you provided an email address at checkout.",
+    "pageTitle": "Pokladna",
+    "orderPlaced": "Objednávka byla přijata",
+    "redirecting": "Přesměrování na potvrzení…",
+    "successLoadingDetails": "Načítáme detaily objednávky…",
+    "successOrderNumberLabel": "Číslo objednávky",
+    "successOrderNumbersLabel": "Čísla objednávek",
+    "successLimitedHint": "Detaily objednávky jsou v e-mailu, pokud jste při objednávce uvedli e-mailovou adresu.",
     "paymentCancelled": {
       "loading": "Načítání…",
       "breadcrumbCheckout": "Pokladna",
       "breadcrumbCurrent": "Zrušeno",
-      "title": "Platba zrušena",
+      "title": "Objednávka byla zrušena",
       "orderLabel": "Číslo objednávky",
       "description": "Objednávka {number} byla zrušena. Zboží je opět k dispozici pro ostatní zákazníky.",
       "descriptionGeneric": "Objednávka byla zrušena. Zboží je opět k dispozici pro ostatní zákazníky.",
       "hint": "Položky se do košíku automaticky nevrátily — přidejte je znovu z katalogu.",
       "home": "Domů",
-      "catalog": "Do katalogu"
+      "catalog": "Do katalogu",
+      "unverifiedTitle": "Stav objednávky se nepodařilo ověřit",
+      "unverifiedBody": "Otevřete odkaz z potvrzovacího e-mailu znovu nebo pokračujte v nákupu."
     },
     "noStockTitle": "No items in stock",
     "noCheckoutableItems": "No in-stock items in your cart to checkout.",
@@ -827,12 +832,12 @@
     "lastNameUaPlaceholder": "Last name in Ukrainian",
     "deliveryMethod": "Delivery method",
     "deliveryMethods": {
-      "nova-poshta-branch": "Nova Poshta branch",
-      "nova-poshta-address": "Nova Poshta address delivery",
-      "pickup": "Pickup",
-      "packeta-box": "Packeta pickup point",
-      "packeta-courier": "Packeta courier",
-      "gls-courier": "GLS courier"
+      "nova-poshta-branch": "Výdejní místo Nova Poshta",
+      "nova-poshta-address": "Doručení na adresu Nova Poshta",
+      "pickup": "Osobní odběr",
+      "packeta-box": "Packeta — výdejní místo",
+      "packeta-courier": "Packeta — kurýr",
+      "gls-courier": "GLS — kurýr"
     },
     "packetaPickupPointLabel": "Packeta pickup point",
     "packetaPickupPointUnavailable": "Pickup point selection is temporarily unavailable",
@@ -889,20 +894,20 @@
     "paymentMethod": "Payment method",
     "paymentMethods": {
       "card-online": {
-        "title": "Pay online",
-        "description": "Visa, Mastercard, Apple Pay, Google Pay — full prepayment"
+        "title": "Platit online",
+        "description": "Visa, Mastercard, Apple Pay, Google Pay — úplná předplatba"
       },
       "bank-transfer": {
-        "title": "Bank transfer",
-        "description": "Full or partial prepayment to our bank details"
+        "title": "Bankovní převod",
+        "description": "Úplná nebo částečná předplatba podle našich údajů"
       },
       "bank-transfer-legal": {
-        "title": "Bank transfer (company)",
-        "description": "Payment on behalf of a company with EDRPOU details"
+        "title": "Bankovní převod (právnická osoba)",
+        "description": "Platba na účet společnosti s IČO"
       },
       "dobierka": {
-        "title": "Cash on Delivery (COD)",
-        "description": "Pay the courier or at the pickup point on receipt"
+        "title": "Dobírka (platba při převzetí)",
+        "description": "Platba kurýrovi nebo na výdejním místě při převzetí zásilky"
       }
     },
     "edrpou": "EDRPOU",
@@ -1010,12 +1015,12 @@
     "packetaPointPlaceholder": "Hledejte podle ulice, názvu nebo PSČ",
     "packetaPointSelectCityFirst": "Nejprve vyberte město",
     "packetaPointSearchHint": "Vyberte místo ze seznamu nebo upřesněte hledání",
-    "successTitle": "Objednávka byla odeslána!",
+    "successTitle": "Objednávka byla přijata",
     "successSubtitle": "Děkujeme za vaši objednávku.",
     "successSubtitleCardPaid": "Platba byla přijata. Připravujeme objednávku k odeslání.",
     "successSubtitleCardPending": "Objednávka byla vytvořena. Dokončete platbu kartou, pokud jste tak ještě neučinili.",
-    "successSubtitleBank": "Objednávka byla přijata. Zaplaťte bankovním převodem — potvrdíme ji po připsání platby.",
-    "successSubtitleCod": "Objednávka byla přijata. Platíte hotově nebo kartou při převzetí (dobírka).",
+    "successSubtitleBank": "Zaplaťte bankovním převodem podle údajů níže. Objednávku potvrdíme po připsání platby.",
+    "successSubtitleCod": "Objednávka byla přijata. Platíte hotově nebo kartou při převzetí — předplatba teď není potřeba.",
     "downloadPdf": "Stáhnout PDF",
     "pdfNoOrderData": "Chybí data objednávky pro PDF",
     "pdfFailed": "PDF se nepodařilo vytvořit",
@@ -1083,7 +1088,42 @@
     "createAccountBody": "Sledujte objednávky, ukládejte oblíbené rostliny a získejte osobní nabídky.",
     "createAccountCta": "Přihlásit se nebo registrovat",
     "home": "Domů",
-    "continueShopping": "Pokračovat v nákupu"
+    "continueShopping": "Pokračovat v nákupu",
+    "resultLoadingTitle": "Načítání…",
+    "resultOrderReceivedTitle": "Objednávka byla přijata",
+    "resultOrderReceivedSubtitleBank": "Zaplaťte bankovním převodem podle údajů níže. Objednávku potvrdíme po připsání platby.",
+    "resultOrderReceivedSubtitleCod": "Platíte hotově nebo kartou při převzetí. Předplatba teď není potřeba.",
+    "resultOrderReceivedSubtitleGeneric": "Děkujeme za objednávku. Připravíme ji podle zvolené platby a dopravy.",
+    "resultPaymentSuccessTitle": "Platba byla úspěšná",
+    "resultPaymentSuccessSubtitle": "Platbu jsme přijali a připravujeme vaši objednávku.",
+    "resultPaymentProcessingTitle": "Potvrzujeme platbu",
+    "resultPaymentProcessingSubtitle": "Potvrzujeme platbu u poskytovatele. Obvykle to trvá několik sekund.",
+    "resultPaymentProcessingStepTitle": "Skoro hotovo",
+    "resultPaymentProcessingStepBody": "Obnovte stav, pokud potvrzení trvá déle, než jste očekávali.",
+    "resultPaymentNotCompletedTitle": "Platba nebyla dokončena",
+    "resultPaymentNotCompletedSubtitle": "Objednávka je rezervovaná, ale ještě není zaplacená. Můžete pokračovat v platbě nebo objednávku zrušit.",
+    "resultPaymentFailedTitle": "Platba selhala",
+    "resultPaymentFailedSubtitle": "Kartovou platbu se nepodařilo dokončit. Můžete to zkusit znovu pro tutéž objednávku.",
+    "resultOrderCancelledTitle": "Objednávka byla zrušena",
+    "resultOrderCancelledSubtitle": "Objednávka {number} byla zrušena. Zboží je opět k dispozici pro ostatní zákazníky.",
+    "resultOrderCancelledSubtitleGeneric": "Objednávka byla zrušena. Zboží je opět k dispozici pro ostatní zákazníky.",
+    "resultUnverifiedTitle": "Objednávku se nepodařilo ověřit",
+    "resultUnverifiedBody": "Otevřete odkaz z e-mailu znovu nebo pokračujte v nákupu. Detaily objednávky bez ověření nezobrazujeme.",
+    "resultContinuePayment": "Pokračovat v platbě",
+    "resultCancelOrder": "Zrušit objednávku",
+    "resultTryAgain": "Zkusit znovu",
+    "resultRefreshStatus": "Obnovit stav",
+    "resultViewOrder": "Zobrazit objednávku",
+    "resultContactSupport": "Kontaktovat podporu",
+    "resultCancelFailed": "Objednávku se nepodařilo zrušit.",
+    "resultRetryFailed": "Nepodařilo se vytvořit novou platební relaci pro tuto objednávku.",
+    "resultPaymentDeadline": "Zaplaťte do {time}",
+    "resultAmountDueOnDelivery": "Částka k úhradě při převzetí",
+    "resultAmountToPay": "Částka k úhradě",
+    "deliveryInfoPickupTitle": "Informace o osobním odběru",
+    "deliveryInfoPickupPrepare": "Připravíme vaši objednávku k osobnímu odběru.",
+    "deliveryInfoPickupNotify": "Dáme vám vědět, až bude připravená.",
+    "deliveryInfoPickupLocation": "Místo odběru"
   },
   "product": {
     "newBadge": "New",

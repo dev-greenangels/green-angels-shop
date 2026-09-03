@@ -5,6 +5,11 @@ import { Loader2 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
 import { FormSaveBar } from '@/components/backstage/form-save-bar'
+import {
+  PacketaShippingSettingsSection,
+  buildPacketaCarrierRateTablesPatch,
+  buildPacketaCarrierSurchargesPatch,
+} from '@/components/backstage/packeta-shipping-settings-section'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -15,6 +20,13 @@ import {
   updatePacketaSettings,
   type PacketaAdminSettings,
 } from '@/lib/backstage/packeta'
+import {
+  fetchBackstageSettings,
+  updateBackstageCartCheckoutSettings,
+} from '@/lib/backstage/settings'
+import { normalizeCartCheckoutSettings } from '@/lib/settings/cart-checkout.normalize'
+import { DEFAULT_CART_CHECKOUT_SETTINGS } from '@/lib/settings/defaults'
+import type { CartCheckoutSettings } from '@/lib/settings/types'
 
 const EMPTY: PacketaAdminSettings = {
   enabled: false,
@@ -30,6 +42,15 @@ const EMPTY: PacketaAdminSettings = {
   apiPasswordConfigured: false,
 }
 
+function packetaCartSlice(cart: CartCheckoutSettings) {
+  return {
+    defaultMissingWeightKg: cart.defaultMissingWeightKg,
+    standardParcelMaxWeightKg: cart.standardParcelMaxWeightKg,
+    carrierRateTables: cart.carrierRateTables ?? {},
+    carrierSurcharges: cart.carrierSurcharges ?? {},
+  }
+}
+
 export function PacketaSettingsForm() {
   const [settings, setSettings] = useState<PacketaAdminSettings>(EMPTY)
   const [senderLabel, setSenderLabel] = useState('')
@@ -41,11 +62,13 @@ export function PacketaSettingsForm() {
   const [branchMaxSideSumCm, setBranchMaxSideSumCm] = useState(150)
   const [apiKey, setApiKey] = useState('')
   const [apiPassword, setApiPassword] = useState('')
+  const [cart, setCart] = useState<CartCheckoutSettings>(DEFAULT_CART_CHECKOUT_SETTINGS)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [baseline, setBaseline] = useState<string | null>(null)
+  const [baselineApi, setBaselineApi] = useState<string | null>(null)
+  const [baselineCart, setBaselineCart] = useState<string | null>(null)
 
-  const snapshot = useCallback(
+  const snapshotApi = useCallback(
     (next: {
       enabled: boolean
       senderLabel: string
@@ -72,9 +95,9 @@ export function PacketaSettingsForm() {
   )
 
   const dirty = useMemo(() => {
-    if (!baseline) return false
-    return (
-      snapshot({
+    if (!baselineApi || !baselineCart) return false
+    const apiDirty =
+      snapshotApi({
         enabled,
         senderLabel,
         includeZbox,
@@ -84,23 +107,26 @@ export function PacketaSettingsForm() {
         branchMaxSideSumCm,
         apiKey,
         apiPassword,
-      }) !== baseline
-    )
+      }) !== baselineApi
+    const cartDirty = JSON.stringify(packetaCartSlice(cart)) !== baselineCart
+    return apiDirty || cartDirty
   }, [
     apiKey,
     apiPassword,
-    baseline,
+    baselineApi,
+    baselineCart,
     branchMaxLongestSideCm,
     branchMaxSideSumCm,
+    cart,
     enabled,
     includeZbox,
     senderLabel,
-    snapshot,
+    snapshotApi,
     zboxMaxLongestSideCm,
     zboxMaxSideSumCm,
   ])
 
-  const applyLoaded = useCallback(
+  const applyLoadedApi = useCallback(
     (next: PacketaAdminSettings) => {
       setSettings(next)
       setEnabled(next.enabled)
@@ -112,8 +138,8 @@ export function PacketaSettingsForm() {
       setBranchMaxSideSumCm(next.branchMaxSideSumCm ?? 150)
       setApiKey('')
       setApiPassword('')
-      setBaseline(
-        snapshot({
+      setBaselineApi(
+        snapshotApi({
           enabled: next.enabled,
           senderLabel: next.senderLabel,
           includeZbox: next.includeZbox !== false,
@@ -126,28 +152,42 @@ export function PacketaSettingsForm() {
         }),
       )
     },
-    [snapshot],
+    [snapshotApi],
   )
+
+  const applyLoadedCart = useCallback((next: CartCheckoutSettings) => {
+    const normalized = normalizeCartCheckoutSettings(next)
+    setCart(normalized)
+    setBaselineCart(JSON.stringify(packetaCartSlice(normalized)))
+  }, [])
 
   const load = useCallback(async () => {
     try {
-      const next = await fetchPacketaSettings()
-      applyLoaded(next)
+      const [apiNext, site] = await Promise.all([
+        fetchPacketaSettings(),
+        fetchBackstageSettings(),
+      ])
+      applyLoadedApi(apiNext)
+      applyLoadedCart(normalizeCartCheckoutSettings(site.cart ?? null))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося завантажити Packeta.')
     } finally {
       setLoading(false)
     }
-  }, [applyLoaded])
+  }, [applyLoadedApi, applyLoadedCart])
 
   useEffect(() => {
     void load()
   }, [load])
 
+  const patchCart = (patch: Partial<CartCheckoutSettings>) => {
+    setCart((prev) => normalizeCartCheckoutSettings({ ...prev, ...patch }))
+  }
+
   const save = async () => {
     setSaving(true)
     try {
-      const payload: {
+      const apiPayload: {
         enabled: boolean
         senderLabel: string
         includeZbox: boolean
@@ -166,14 +206,23 @@ export function PacketaSettingsForm() {
         branchMaxLongestSideCm,
         branchMaxSideSumCm,
       }
-      if (apiKey.trim()) payload.apiKey = apiKey.trim()
-      if (apiPassword) payload.apiPassword = apiPassword
+      if (apiKey.trim()) apiPayload.apiKey = apiKey.trim()
+      if (apiPassword) apiPayload.apiPassword = apiPassword
 
-      const next = await updatePacketaSettings(payload)
-      applyLoaded(next)
+      const [apiNext, cartNext] = await Promise.all([
+        updatePacketaSettings(apiPayload),
+        updateBackstageCartCheckoutSettings({
+          defaultMissingWeightKg: cart.defaultMissingWeightKg,
+          standardParcelMaxWeightKg: cart.standardParcelMaxWeightKg,
+          carrierRateTables: buildPacketaCarrierRateTablesPatch(cart.carrierRateTables),
+          carrierSurcharges: buildPacketaCarrierSurchargesPatch(cart.carrierSurcharges),
+        }),
+      ])
+      applyLoadedApi(apiNext)
+      applyLoadedCart(cartNext)
       toast.success(
-        next.configured
-          ? 'Packeta збережено. Пошук výdejních míst увімкнено.'
+        apiNext.configured
+          ? 'Packeta збережено (API + тарифи).'
           : 'Packeta збережено. Для пошуку пунктів потрібні API key і Sender.',
       )
     } catch (err) {
@@ -196,11 +245,12 @@ export function PacketaSettingsForm() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Packeta (Zásilkovna)</CardTitle>
+          <CardTitle>Connection / API</CardTitle>
           <CardDescription>
             API key і Sender потрібні, щоб на checkout працював пошук výdejních míst / Z-BOX.
             API password — для майбутнього створення посилок (зараз не обовʼязковий). Ключі з{' '}
             <span className="font-medium text-foreground">Packeta Client → User support</span>.
+            Storage: <code className="text-xs">integration.packeta</code>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -226,7 +276,11 @@ export function PacketaSettingsForm() {
 
           <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm">
             Статус:{' '}
-            <span className={settings.configured ? 'font-medium text-emerald-700' : 'font-medium text-amber-700'}>
+            <span
+              className={
+                settings.configured ? 'font-medium text-emerald-700' : 'font-medium text-amber-700'
+              }
+            >
               {settings.configured ? 'готово до пошуку пунктів' : 'не налаштовано'}
             </span>
           </div>
@@ -338,6 +392,8 @@ export function PacketaSettingsForm() {
           </div>
         </CardContent>
       </Card>
+
+      <PacketaShippingSettingsSection cart={cart} onChange={patchCart} />
 
       <FormSaveBar isDirty={dirty} saving={saving} onSave={() => void save()} />
     </div>

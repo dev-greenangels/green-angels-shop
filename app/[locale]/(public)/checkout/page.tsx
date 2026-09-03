@@ -424,6 +424,12 @@ export default function CheckoutPage() {
     }
     const checkout = pricingQuote?.checkout
     if (!checkout) return null
+    if (checkout.deliveryUnavailableReason === 'missing_weight') {
+      return tCart('totals.deliveryUnavailableMissingWeight')
+    }
+    if (checkout.deliveryUnavailableReason === 'no_tariff') {
+      return tCart('totals.deliveryUnavailableNoTariff')
+    }
     return formatMinOrderCheckoutMessage(tMinOrder, formatMoney, {
       belowMinOrder: checkout.belowMinOrder,
       canPlaceOrder: checkout.canPlaceOrder,
@@ -439,6 +445,7 @@ export default function CheckoutPage() {
     pricingQuote,
     tMinOrder,
     formatMoney,
+    tCart,
   ])
   const displayedAppliedPromos = useMemo(
     () =>
@@ -582,7 +589,12 @@ export default function CheckoutPage() {
     }
     clearStripePendingPayments()
     setStripePending(null)
-    router.replace(`/checkout/cancelled?${checkoutCancelledSearch(payment.orderNumber)}`)
+    router.replace(
+      `/checkout/cancelled?${checkoutCancelledSearch(
+        payment.orderNumber,
+        payment.confirmationToken,
+      )}`,
+    )
   }, [router, stripePayIndex, stripePending])
 
   const handleRetryPayment = useCallback(async () => {
@@ -621,38 +633,66 @@ export default function CheckoutPage() {
     if (params.get('stripe_return') !== '1' || stripeReturnHandled.current) return
     stripeReturnHandled.current = true
 
+    // session_id is appended by Stripe Elements return_url; Nest sync uses DB stripePaymentId.
     const orderNumber = params.get('order')?.trim()
     const confirmation = params.get('confirmation')?.trim() ?? ''
     const stored = loadStripePendingPayments()
-    if (!stored?.payments.length) {
-      if (orderNumber) {
-        goToCheckoutSuccess([{ orderNumber, confirmationToken: confirmation }])
-      }
-      return
-    }
-
-    const startIndex = orderNumber
-      ? stored.payments.findIndex((row) => row.orderNumber === orderNumber)
-      : stored.index
-    const index = startIndex >= 0 ? startIndex : stored.index
-    setStripePending(stored.payments)
-    setStripePayIndex(index)
-
-    const payment = stored.payments[index]
-    if (!payment) return
 
     let cancelled = false
     void (async () => {
-      const sync = await syncStripePayment(payment.orderNumber, payment.confirmationToken)
+      if (!orderNumber && !stored?.payments.length) return
+
+      const targetOrderNumber =
+        orderNumber ||
+        stored?.payments[stored.index]?.orderNumber ||
+        stored?.payments[0]?.orderNumber
+      const targetToken =
+        confirmation ||
+        stored?.payments.find((row) => row.orderNumber === targetOrderNumber)?.confirmationToken ||
+        stored?.payments[stored.index]?.confirmationToken ||
+        ''
+
+      if (!targetOrderNumber) return
+
+      const sync = await syncStripePayment(targetOrderNumber, targetToken || undefined)
       if (cancelled) return
-      if (sync?.paymentStatus !== 'success') return
-      const nextIndex = index + 1
-      if (nextIndex >= stored.payments.length) {
-        goToCheckoutSuccess(stored.payments)
+
+      const paymentStatus = sync?.paymentStatus ?? null
+      const paid = paymentStatus === 'success'
+
+      if (paid) {
+        if (stored?.payments.length) {
+          const startIndex = orderNumber
+            ? stored.payments.findIndex((row) => row.orderNumber === orderNumber)
+            : stored.index
+          const index = startIndex >= 0 ? startIndex : stored.index
+          const nextIndex = index + 1
+          if (nextIndex >= stored.payments.length) {
+            goToCheckoutSuccess(stored.payments)
+            return
+          }
+          saveStripePendingPayments(stored.payments, nextIndex)
+          setStripePending(stored.payments)
+          setStripePayIndex(nextIndex)
+          return
+        }
+        goToCheckoutSuccess([{ orderNumber: targetOrderNumber, confirmationToken: targetToken }])
         return
       }
-      saveStripePendingPayments(stored.payments, nextIndex)
-      setStripePayIndex(nextIndex)
+
+      // Unpaid / processing / failed: sessionStorage may restore Elements UI.
+      // Otherwise land on result page — chrome resolved from Nest confirmation, not URL.
+      if (stored?.payments.length) {
+        const startIndex = orderNumber
+          ? stored.payments.findIndex((row) => row.orderNumber === orderNumber)
+          : stored.index
+        const index = startIndex >= 0 ? startIndex : stored.index
+        setStripePending(stored.payments)
+        setStripePayIndex(index)
+        return
+      }
+
+      goToCheckoutSuccess([{ orderNumber: targetOrderNumber, confirmationToken: targetToken }])
     })()
 
     return () => {
@@ -1211,6 +1251,7 @@ export default function CheckoutPage() {
                   ? vatCountryCode
                   : undefined,
               returnBaseUrl: shopPublicBaseUrl(locale),
+              locale,
               ...orderPhoneMarket,
             },
           ),
@@ -1240,6 +1281,7 @@ export default function CheckoutPage() {
                   ? vatCountryCode
                   : undefined,
               returnBaseUrl: shopPublicBaseUrl(locale),
+              locale,
               ...orderPhoneMarket,
             },
           ),
@@ -1284,6 +1326,7 @@ export default function CheckoutPage() {
         vatCountryCode:
           marketSettings.region === 'sk' && buyerType === 'company' ? vatCountryCode : undefined,
         returnBaseUrl: shopPublicBaseUrl(locale),
+        locale,
         ...orderPhoneMarket,
       })
       if (!payload.items.length) {

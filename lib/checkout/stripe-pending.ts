@@ -102,13 +102,3 @@ export function clearStripePendingPayments(): void {
   if (typeof window === 'undefined') return
   sessionStorage.removeItem(STORAGE_KEY)
 }
-
-export function stripeReturnQuery(payment: Pick<StripePendingPayment, 'orderNumber' | 'confirmationToken'>): string {
-  const params = new URLSearchParams()
-  params.set('stripe_return', '1')
-  params.set('order', payment.orderNumber)
-  if (payment.confirmationToken) {
-    params.set('confirmation', payment.confirmationToken)
-  }
-  return params.toString()
-}

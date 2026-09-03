@@ -107,7 +107,10 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
     }
   }, [needsNameEntry])
 
-  const showGoogleNameFields = identification.returningVerified && showNameEntryPanel
+  // SK market already collects name on the contact step (step 1) for authenticated users,
+  // so only show the name panel here for UA/other markets (e.g. Google OAuth flow).
+  const showGoogleNameFields =
+    identification.returningVerified && showNameEntryPanel && marketRegion !== 'sk'
 
   return (
     <div className={checkoutPanelClassName}>

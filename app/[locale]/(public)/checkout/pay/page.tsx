@@ -152,7 +152,9 @@ function CheckoutPayInner() {
     const orderNumber = payment.orderNumber
     const result = await cancelUnpaidOrder(orderNumber, payment.confirmationToken)
     if (!result.ok) throw new Error(result.error || 'cancel failed')
-    router.replace(`/checkout/cancelled?${checkoutCancelledSearch(orderNumber)}`)
+    router.replace(
+      `/checkout/cancelled?${checkoutCancelledSearch(orderNumber, payment.confirmationToken)}`,
+    )
   }, [payment, router])
 
   const handleRetry = useCallback(async () => {

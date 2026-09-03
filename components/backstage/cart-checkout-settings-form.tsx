@@ -182,7 +182,7 @@ export function CartCheckoutSettingsForm({
             </Select>
             <p className="text-xs text-muted-foreground">
               {cart.deliveryMode === 'carrier_rates'
-                ? 'Сума рахується з тарифної таблиці за вагою кошика і способом доставки, одразу додається до «Разом». Якщо для методу немає рядка — fallback на фіксовану суму нижче (або 0).'
+                ? 'Тарифи Packeta керуються у вкладці Settings → Packeta. Тут лише режим доставки та нейтральні опції кошика. Без тарифу для країни — доставка недоступна.'
                 : cart.deliveryMode === 'fixed'
                   ? 'Однакова сума доставки для всіх способів (крім самовивозу, якщо увімкнено безкоштовно).'
                   : 'Доставка завжди 0.'}
@@ -192,7 +192,7 @@ export function CartCheckoutSettingsForm({
             <div className="space-y-2">
               <Label>
                 {cart.deliveryMode === 'carrier_rates'
-                  ? 'Fallback сума доставки (якщо немає тарифу)'
+                  ? 'Fallback лише для UA/NP методів без таблиці (не для Packeta/GLS)'
                   : 'Сума доставки'}
               </Label>
               <Input
@@ -202,31 +202,6 @@ export function CartCheckoutSettingsForm({
                 value={cart.deliveryAmount}
                 onChange={(e) => patch({ deliveryAmount: Number(e.target.value) || 0 })}
               />
-            </div>
-          ) : null}
-          {cart.deliveryMode === 'carrier_rates' ? (
-            <div className="space-y-2 sm:col-span-2">
-              <Label>Тарифні таблиці за вагою (JSON)</Label>
-              <Textarea
-                rows={10}
-                className="font-mono text-xs"
-                value={JSON.stringify(cart.carrierRateTables ?? {}, null, 2)}
-                onChange={(e) => {
-                  try {
-                    const parsed = JSON.parse(e.target.value) as CartCheckoutSettings['carrierRateTables']
-                    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-                      patch({ carrierRateTables: parsed })
-                    }
-                  } catch {
-                    /* ignore incomplete JSON while typing */
-                  }
-                }}
-                placeholder='{"packeta-box":[{"maxWeightKg":5,"amount":3.49}]}'
-              />
-              <p className="text-xs text-muted-foreground">
-                Ключі — slug способу доставки (`packeta-box`, `packeta-courier`, `gls-courier`). Для кожної
-                ваги кошика береться перший tier з `maxWeightKg` ≥ ваги. Сума в валюті деплою (EUR / UAH).
-              </p>
             </div>
           ) : null}
           <div className="space-y-2">
@@ -248,7 +223,7 @@ export function CartCheckoutSettingsForm({
           </div>
           {(cart.packagingMode ?? 'flat') === 'flat' ? (
             <div className="space-y-2">
-              <Label>Пакування (валюта деплою)</Label>
+              <Label>Пакування — NET (без ПДВ), валюта деплою</Label>
               <Input
                 type="number"
                 min={0}
@@ -280,7 +255,7 @@ export function CartCheckoutSettingsForm({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Ціна однієї коробки (з ПДВ, валюта деплою)</Label>
+                <Label>Ціна однієї коробки — NET (без ПДВ)</Label>
                 <Input
                   type="number"
                   min={0}
@@ -369,6 +344,18 @@ export function CartCheckoutSettingsForm({
           </div>
           <div className="flex items-center justify-between gap-4 sm:col-span-2">
             <div>
+              <Label>Пакування введено як NET</Label>
+              <p className="text-xs text-muted-foreground">
+                Legacy без прапорця = GROSS (не подвоювати ПДВ). Нові суми пакування — NET.
+              </p>
+            </div>
+            <Switch
+              checked={cart.packagingAmountsAreNet === true}
+              onCheckedChange={(packagingAmountsAreNet) => patch({ packagingAmountsAreNet })}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-4 sm:col-span-2">
+            <div>
               <Label>Безкоштовна доставка при самовивозі</Label>
             </div>
             <Switch
@@ -377,7 +364,7 @@ export function CartCheckoutSettingsForm({
             />
           </div>
           <div className="space-y-2">
-            <Label>Комісія dobierka (післяплата)</Label>
+            <Label>Комісія dobierka (післяплата) — NET, якщо увімкнено прапорець нижче</Label>
             <Input
               type="number"
               min={0}
@@ -402,6 +389,19 @@ export function CartCheckoutSettingsForm({
                 <SelectItem value="percent">Відсоток від товарів</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex items-center justify-between gap-4 sm:col-span-2">
+            <div>
+              <Label>Dobierka введена як NET (той самий VAT шлях, що доставка)</Label>
+              <p className="text-xs text-muted-foreground">
+                Legacy без прапорця — COD не входить у витяг ПДВ (історично). Увімкніть для SK, щоб
+                checkout і ABRA sDph збігались.
+              </p>
+            </div>
+            <Switch
+              checked={cart.codFeeAmountsAreNet === true}
+              onCheckedChange={(codFeeAmountsAreNet) => patch({ codFeeAmountsAreNet })}
+            />
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label>Вага кошика для доставки</Label>

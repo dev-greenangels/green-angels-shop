@@ -121,6 +121,14 @@ export function checkoutSuccessSearch(
     .join('&')
 }
 
-export function checkoutCancelledSearch(orderNumber: string): string {
-  return `order=${encodeURIComponent(orderNumber.trim())}`
+export function checkoutCancelledSearch(
+  orderNumber: string,
+  confirmationToken?: string,
+): string {
+  const parts = [`order=${encodeURIComponent(orderNumber.trim())}`]
+  const token = confirmationToken?.trim()
+  if (token) {
+    parts.push(`confirmation=${encodeURIComponent(token)}`)
+  }
+  return parts.join('&')
 }

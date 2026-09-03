@@ -230,12 +230,22 @@ export type CartCheckoutSettings = {
     maxWeightKg: number
     allowedMethods: import('@/lib/checkout/methods').CheckoutDeliveryMethodSlug[]
   }>
-  carrierRateTables?: Partial<
-    Record<
-      import('@/lib/checkout/methods').CheckoutDeliveryMethodSlug,
-      Array<{ maxWeightKg: number; amount: number }>
-    >
+  carrierRateTables?: Record<string, Array<{ maxWeightKg: number; amount: number }>>
+  carrierSurcharges?: Record<
+    string,
+    {
+      fuelPercent: number
+      fuelMode: 'separate' | 'included' | 'none'
+      tollPerStartedKgNet: number
+      tollMode: 'separate' | 'included' | 'none'
+      maxParcelWeightKg: number
+    }
   >
+  standardParcelMaxWeightKg?: number
+  /** Shipping-only fallback kg per unit when variant weight missing (default 1). */
+  defaultMissingWeightKg?: number
+  packagingAmountsAreNet?: boolean
+  codFeeAmountsAreNet?: boolean
   cartWeight: {
     enabled: boolean
     useFactKg: boolean

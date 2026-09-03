@@ -46,6 +46,7 @@ export type CreateOrderPayload = {
   vatCountryCode?: string
   returnBaseUrl?: string
   promoCode?: string
+  locale?: string
   promoCodes?: string[]
   splitCheckout?: {
     partIndex: number
@@ -99,6 +100,7 @@ export function buildOrderPayload(
     buyerType?: 'individual' | 'company'
     vatCountryCode?: string
     returnBaseUrl?: string
+    locale?: string
     marketRegion?: CheckoutMarketRegion
     deliveryPhonePolicy?: PhonePolicy
     /** Override form.preferredShipDate (e.g. immediate half of a split checkout). */
@@ -228,6 +230,7 @@ export function buildOrderPayload(
   if (options?.buyerType) payload.buyerType = options.buyerType
   if (options?.vatCountryCode) payload.vatCountryCode = options.vatCountryCode
   if (options?.returnBaseUrl) payload.returnBaseUrl = options.returnBaseUrl
+  if (options?.locale) payload.locale = options.locale
 
   const promoCodes = (form.promoCodes ?? [])
     .map((code) => code.trim().toUpperCase())

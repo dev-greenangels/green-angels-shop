@@ -122,7 +122,8 @@ function normalizeNextSteps(raw: unknown): CheckoutNextStepItem[] {
 export function normalizeCartCheckoutSettings(
   raw: Partial<CartCheckoutSettings> | null | undefined,
 ): CartCheckoutSettings {
-  const base = { ...DEFAULT_CART_CHECKOUT_SETTINGS, ...raw }
+  const source = raw && typeof raw === 'object' ? raw : {}
+  const base = { ...DEFAULT_CART_CHECKOUT_SETTINGS, ...source }
 
   let deliveryMode = base.deliveryMode
   if (deliveryMode !== 'free' && deliveryMode !== 'carrier_rates' && deliveryMode !== 'fixed') {
@@ -178,7 +179,60 @@ export function normalizeCartCheckoutSettings(
     ),
     showPromoCode: base.showPromoCode !== false,
     deliveryWeightRules: normalizeDeliveryWeightRules(base.deliveryWeightRules),
-    carrierRateTables: base.carrierRateTables ?? {},
+    carrierRateTables: (() => {
+      const raw = source.carrierRateTables
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+      const out: CartCheckoutSettings['carrierRateTables'] = {}
+      const allowed = new Set(CHECKOUT_DELIVERY_METHODS)
+      for (const [key, value] of Object.entries(raw)) {
+        const trimmed = key.trim()
+        const colon = trimmed.lastIndexOf(':')
+        let normalized: string | null = null
+        if (colon > 0) {
+          const method = trimmed.slice(0, colon).trim()
+          const country = trimmed.slice(colon + 1).trim().toUpperCase()
+          if (allowed.has(method as CheckoutDeliveryMethodSlug) && /^[A-Z]{2}$/.test(country)) {
+            normalized = `${method}:${country}`
+          }
+        } else if (allowed.has(trimmed as CheckoutDeliveryMethodSlug)) {
+          normalized = trimmed
+        }
+        if (!normalized || !Array.isArray(value)) continue
+        const tiers = value
+          .map((item) => {
+            if (!item || typeof item !== 'object') return null
+            const maxWeightKg = Number(item.maxWeightKg)
+            const amount = Number(item.amount)
+            if (!Number.isFinite(maxWeightKg) || maxWeightKg <= 0) return null
+            if (!Number.isFinite(amount) || amount < 0) return null
+            return { maxWeightKg, amount }
+          })
+          .filter((row): row is { maxWeightKg: number; amount: number } => Boolean(row))
+        if (tiers.length) out[normalized] = tiers
+      }
+      return out
+    })(),
+    carrierSurcharges:
+      source.carrierSurcharges &&
+      typeof source.carrierSurcharges === 'object' &&
+      !Array.isArray(source.carrierSurcharges)
+        ? source.carrierSurcharges
+        : DEFAULT_CART_CHECKOUT_SETTINGS.carrierSurcharges,
+    standardParcelMaxWeightKg:
+      Math.max(0, Number(source.standardParcelMaxWeightKg) || 0) ||
+      DEFAULT_CART_CHECKOUT_SETTINGS.standardParcelMaxWeightKg,
+    defaultMissingWeightKg: (() => {
+      const raw = Number(
+        source.defaultMissingWeightKg ?? DEFAULT_CART_CHECKOUT_SETTINGS.defaultMissingWeightKg,
+      )
+      return Number.isFinite(raw) && raw > 0
+        ? raw
+        : DEFAULT_CART_CHECKOUT_SETTINGS.defaultMissingWeightKg
+    })(),
+    packagingAmountsAreNet:
+      'packagingAmountsAreNet' in source ? Boolean(source.packagingAmountsAreNet) : false,
+    codFeeAmountsAreNet:
+      'codFeeAmountsAreNet' in source ? Boolean(source.codFeeAmountsAreNet) : false,
     cartWeight: (() => {
       const cw = base.cartWeight ?? DEFAULT_CART_CHECKOUT_SETTINGS.cartWeight
       const divisor = Number(cw.volumetricDivisor)

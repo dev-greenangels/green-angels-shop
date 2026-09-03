@@ -347,6 +347,7 @@
     );
   }
 
+
   /** Same fill as `.boty-glass` (for sticky rows inside the menu — no double blur). */
   .boty-glass-match {
     background-color: var(--boty-glass-bg, rgba(255, 255, 255, 0.78));

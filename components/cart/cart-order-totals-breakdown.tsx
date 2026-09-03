@@ -115,6 +115,12 @@ export function CartOrderTotalsBreakdown({
     if (combined > 0) {
       return formatFee(combined)
     }
+    if (checkoutTotals.deliveryUnavailableReason === 'missing_weight') {
+      return t('totals.deliveryUnavailable')
+    }
+    if (checkoutTotals.deliveryUnavailableReason === 'no_tariff') {
+      return t('totals.deliveryUnavailable')
+    }
     if (checkoutTotals.showDelivery) {
       if (checkoutTotals.deliveryMode === 'free') return tc('free')
       return t('totals.deliveryCarrierRates')
@@ -181,6 +187,17 @@ export function CartOrderTotalsBreakdown({
             {formatRaw(checkout!.codFeeAmount!)}
           </span>
         </div>
+      ) : null}
+
+      {checkout?.deliveryUnavailableReason === 'missing_weight' ? (
+        <p className="text-xs text-destructive" role="alert">
+          {t('totals.deliveryUnavailableMissingWeight')}
+        </p>
+      ) : null}
+      {checkout?.deliveryUnavailableReason === 'no_tariff' ? (
+        <p className="text-xs text-destructive" role="alert">
+          {t('totals.deliveryUnavailableNoTariff')}
+        </p>
       ) : null}
 
       {minOrderMessage ? (

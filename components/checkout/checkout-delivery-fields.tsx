@@ -76,10 +76,29 @@ import {
   type PhonePolicy,
 } from '@/lib/settings/market'
 import type { CheckoutDeliveryMethodSlug } from '@/lib/checkout/methods'
+import { useVatDisplayPolicy } from '@/components/providers/vat-display-provider'
+import { useFormatPrice } from '@/lib/commerce/use-format-price'
+import { formatDeliveryMethodButtonPrice } from '@/lib/pricing/format-delivery-method-button-price'
+import { useDeliveryMethodPrices } from '@/lib/pricing/use-delivery-method-prices'
 
 const phoneLeadingIcon = <Phone className="h-4 w-4" />
 
 type DeliveryCountryCode = string
+
+export type CheckoutDeliveryPriceQuoteInput = {
+  items: Array<{ productVariantId: string; quantity: number }>
+  itemsKey: string
+  audienceKey?: string | null
+  promoCodes?: string[]
+  paymentMethod?: string
+  splitOrderParts?: number
+  splitOrderPartIndex?: number
+  countryCode?: 'sk' | 'hu' | 'at'
+  buyerType?: 'individual' | 'company'
+  vatCountryCode?: string
+  viesValid?: boolean
+  enabled?: boolean
+}
 
 const DELIVERY_OPTIONS: {
   value: CheckoutDeliveryMethod
@@ -113,6 +132,7 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
   enabledDeliveryCountries,
   beforeRecipientSlot,
   packetaCartFit,
+  priceQuote,
 }: {
   idPrefix: string
   orderer: CheckoutFormValues
@@ -135,10 +155,15 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
   enabledDeliveryCountries?: DeliveryCountryCode[]
   /** e.g. preferred ship date — rendered above «other recipient» */
   beforeRecipientSlot?: ReactNode
+  /** When set, method buttons show a short delivery price (amount + currency). */
+  priceQuote?: CheckoutDeliveryPriceQuoteInput
 }) {
   const t = useTranslations('checkout')
   const tc = useTranslations('common')
   const store = useStoreSettings()
+  const vat = useVatDisplayPolicy()
+  const formatShelf = useFormatPrice('shelf')
+  const formatRaw = useFormatPrice('raw')
   const isPickup = shipment.deliveryMethod === 'pickup'
   const deliveryPhonePolicy =
     deliveryPhonePolicyProp ?? defaultDeliveryPhonePolicy(marketRegion)
@@ -161,6 +186,11 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
     [enabledDeliveryMethods],
   )
 
+  const visibleMethodValues = useMemo(
+    () => visibleDeliveryOptions.map((opt) => opt.value),
+    [visibleDeliveryOptions],
+  )
+
   const countryOptions = useMemo(() => {
     if (enabledDeliveryCountries?.length) {
       return enabledDeliveryCountries.map((c) => c.toLowerCase())
@@ -181,6 +211,38 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
     }
     return countryOptions[0] ?? ''
   }, [shipment.deliveryCountryCode, countryOptions])
+
+  const { pricesByMethod } = useDeliveryMethodPrices({
+    methods: visibleMethodValues,
+    items: priceQuote?.items ?? [],
+    itemsKey: priceQuote?.itemsKey ?? '',
+    audienceKey: priceQuote?.audienceKey,
+    promoCodes: priceQuote?.promoCodes,
+    paymentMethod: priceQuote?.paymentMethod,
+    splitOrderParts: priceQuote?.splitOrderParts,
+    splitOrderPartIndex: priceQuote?.splitOrderPartIndex,
+    countryCode: priceQuote?.countryCode,
+    deliveryCountryCode: isSk
+      ? resolvedDeliveryCountry || priceQuote?.countryCode
+      : undefined,
+    buyerType: priceQuote?.buyerType,
+    vatCountryCode: priceQuote?.vatCountryCode,
+    viesValid: priceQuote?.viesValid,
+    enabled: Boolean(priceQuote?.enabled && priceQuote.itemsKey && visibleMethodValues.length),
+  })
+
+  const methodPriceLabels = useMemo(() => {
+    const labels: Partial<Record<CheckoutDeliveryMethod, string>> = {}
+    for (const method of visibleMethodValues) {
+      const label = formatDeliveryMethodButtonPrice(pricesByMethod[method], {
+        formatShelf,
+        formatRaw,
+        vat,
+      })
+      if (label) labels[method] = label
+    }
+    return labels
+  }, [formatRaw, formatShelf, pricesByMethod, vat, visibleMethodValues])
 
   useEffect(() => {
     if (!isSk || countryOptions.length <= 1) return
@@ -303,7 +365,21 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
               ) : (
                 <PickupStoreIcon />
               )}
-              <span className="text-left leading-tight">{t(`deliveryMethods.${opt.value}`)}</span>
+              <span className="flex min-w-0 flex-col text-left leading-tight">
+                <span>{t(`deliveryMethods.${opt.value}`)}</span>
+                {methodPriceLabels[opt.value] ? (
+                  <span
+                    className={cn(
+                      'mt-0.5 text-xs font-semibold tabular-nums',
+                      shipment.deliveryMethod === opt.value
+                        ? 'text-primary'
+                        : 'text-muted-foreground',
+                    )}
+                  >
+                    {methodPriceLabels[opt.value]}
+                  </span>
+                ) : null}
+              </span>
             </button>
           ))}
         </div>

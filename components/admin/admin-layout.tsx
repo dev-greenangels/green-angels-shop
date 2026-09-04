@@ -40,6 +40,7 @@ import {
   Undo2,
   Workflow,
   Mail,
+  ShoppingBag,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -161,6 +162,11 @@ const navGroups: NavGroup[] = [
       { href: '/backstage/reference-data', labelKey: 'referenceData', icon: Scale },
       { href: '/backstage/tedb', labelKey: 'tedb', icon: Landmark },
       { href: '/backstage/jobs', labelKey: 'jobs', icon: Workflow },
+      {
+        href: '/backstage/google-merchant',
+        labelKey: 'googleMerchant',
+        icon: ShoppingBag,
+      },
     ],
   },
 ]

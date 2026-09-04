@@ -1,4 +1,4 @@
-import { ArrowRight, Camera, Handshake, Sprout, Truck } from 'lucide-react'
+import { ArrowRight, Camera, Sprout, Truck } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 
 import { Button } from '@/components/ui/button'
@@ -64,11 +64,16 @@ export async function HeroSection({
 
   return (
     <section className="w-full py-6 sm:py-8 lg:py-10">
-      <div className={siteContentShellClassName}>
+      <div
+        className={cn(
+          siteContentShellClassName,
+          'max-lg:max-w-none max-lg:px-0',
+        )}
+      >
         <div
           className={cn(
             'relative overflow-hidden',
-            hasHeroImage && 'rounded-xl ring-1 ring-border/40',
+            hasHeroImage && 'lg:rounded-xl lg:ring-1 lg:ring-border/40',
             hasHeroImage ? heroMinHeight.withImage : heroMinHeight.withoutImage,
           )}
         >
@@ -89,7 +94,7 @@ export async function HeroSection({
 
           {hasHeroImage ? (
             <div
-              className="hero-fog-panel pointer-events-none absolute inset-y-0 left-0 z-[1] w-[min(100%,46rem)] rounded-l-xl"
+              className="hero-fog-panel pointer-events-none absolute inset-y-0 left-0 z-[1] w-[min(100%,46rem)] lg:rounded-l-xl"
               aria-hidden
             />
           ) : null}
@@ -98,11 +103,11 @@ export async function HeroSection({
             className={cn(
               'relative z-10 flex items-center',
               hasHeroImage
-                ? cn('p-4 sm:p-6 lg:p-8', heroMinHeight.withImage)
-                : cn('py-12 sm:py-14 lg:py-16', heroMinHeight.withoutImage),
+                ? cn('px-0 py-4 sm:py-6 lg:p-8', heroMinHeight.withImage)
+                : cn('px-0 py-12 sm:py-14 lg:px-0 lg:py-16', heroMinHeight.withoutImage),
             )}
           >
-            <div className="w-full max-w-xl lg:max-w-[34rem]">
+            <div className="w-full max-w-xl px-4 sm:px-6 lg:max-w-[34rem] lg:px-0">
               <h1
                 className={cn(
                   'font-serif text-3xl font-bold leading-[1.15] sm:text-4xl lg:text-[2.35rem]',
@@ -141,11 +146,11 @@ export async function HeroSection({
                 ))}
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center gap-3 sm:gap-4">
+              <div className="mt-6 flex flex-wrap items-center gap-2.5 sm:gap-4">
                 <Button
                   size="lg"
                   asChild
-                  className="h-12 rounded-xl px-7 text-base font-semibold shadow-md shadow-primary/25 transition-transform hover:-translate-y-0.5"
+                  className="h-10 rounded-lg px-5 text-sm font-semibold shadow-md shadow-primary/25 transition-transform hover:-translate-y-0.5 sm:h-12 sm:rounded-xl sm:px-7 sm:text-base"
                 >
                   <Link href={settings.primaryCtaHref}>
                     {pickHomeCmsText(
@@ -153,7 +158,7 @@ export async function HeroSection({
                       DEFAULT_HOME_SETTINGS.hero.primaryCtaLabel,
                       t('heroPrimaryCta'),
                     )}
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                    <ArrowRight className="ml-1.5 h-4 w-4 sm:ml-2 sm:h-5 sm:w-5" />
                   </Link>
                 </Button>
                 <Button
@@ -161,10 +166,10 @@ export async function HeroSection({
                   size="lg"
                   asChild
                   className={cn(
-                    'h-12 rounded-xl px-7 text-base font-semibold',
+                    'h-10 rounded-lg px-5 text-sm font-semibold shadow-md transition-transform hover:-translate-y-0.5 sm:h-12 sm:rounded-xl sm:px-7 sm:text-base',
                     hasHeroImage
-                      ? 'border-white/40 bg-white/10 text-white hover:bg-white/15 hover:text-white'
-                      : 'border-foreground/15 bg-white/80 hover:bg-white',
+                      ? 'border-white/40 bg-white/10 text-white shadow-black/20 hover:bg-white/15 hover:text-white'
+                      : 'border-foreground/15 bg-white/80 shadow-foreground/10 hover:bg-white',
                   )}
                 >
                   <Link href={settings.secondaryCtaHref}>
@@ -173,23 +178,23 @@ export async function HeroSection({
                       DEFAULT_HOME_SETTINGS.hero.secondaryCtaLabel,
                       t('heroSecondaryCta'),
                     )}
+                    <ArrowRight className="ml-1.5 h-4 w-4 sm:ml-2 sm:h-5 sm:w-5" />
                   </Link>
                 </Button>
                 {wholesaleEnabled ? (
                   <Button
-                    variant="ghost"
                     size="lg"
                     asChild
                     className={cn(
-                      'h-12 rounded-xl border border-dashed px-6 text-base font-semibold',
+                      'h-10 rounded-lg border-2 px-5 text-sm font-semibold shadow-md transition-transform hover:-translate-y-0.5 sm:h-12 sm:rounded-xl sm:px-6 sm:text-base',
                       hasHeroImage
-                        ? 'border-white/35 bg-transparent text-white hover:bg-white/10 hover:text-white'
-                        : 'border-primary/35 bg-primary/[0.06] text-primary hover:bg-primary/10 hover:text-primary',
+                        ? 'border-amber-300 bg-amber-400/25 text-white shadow-amber-500/35 hover:bg-amber-400/40 hover:text-white'
+                        : 'border-amber-500 bg-amber-50 text-amber-950 shadow-amber-500/25 hover:bg-amber-100 hover:text-amber-950',
                     )}
                   >
                     <Link href="/wholesale">
-                      <Handshake className="mr-2 h-5 w-5" />
                       {t('heroWholesaleCta')}
+                      <ArrowRight className="ml-1.5 h-4 w-4 sm:ml-2 sm:h-5 sm:w-5" />
                     </Link>
                   </Button>
                 ) : null}

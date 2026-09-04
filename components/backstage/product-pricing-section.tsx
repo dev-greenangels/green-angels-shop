@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { ChevronDown, Plus, Trash2, X } from 'lucide-react'
@@ -335,9 +334,9 @@ function VariantAccordionItem({
           {attributes.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               {tp('createAttributesPrefix')}{' '}
-              <Link href="/backstage/attributes" className="text-primary underline">
+              <a href="/backstage/attributes" className="text-primary underline">
                 {tp('attributesSection')}
-              </Link>
+              </a>
               .
             </p>
           ) : (

@@ -14,6 +14,7 @@ import {
   checkoutInputClassName,
 } from '@/components/checkout/checkout-utils'
 import { CheckoutDeliveryFields } from '@/components/checkout/checkout-delivery-fields'
+import type { CheckoutDeliveryPriceQuoteInput } from '@/components/checkout/checkout-delivery-fields'
 import type { PacketaCartFit } from '@/components/checkout/packeta-pickup-point-field'
 import { Button } from '@/components/ui/button'
 import { InputWithClear } from '@/components/ui/input-with-clear'
@@ -59,6 +60,7 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
   enabledDeliveryCountries,
   beforeRecipientSlot,
   packetaCartFit,
+  priceQuote,
 }: {
   formData: CheckoutFormValues
   enabledDeliveryMethods?: CheckoutDeliveryMethodSlug[]
@@ -84,6 +86,7 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
   enabledDeliveryCountries?: string[]
   beforeRecipientSlot?: ReactNode
   packetaCartFit?: PacketaCartFit
+  priceQuote?: CheckoutDeliveryPriceQuoteInput
 }) {
   const t = useTranslations('checkout')
   const tc = useTranslations('common')
@@ -221,6 +224,7 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
             moveDeliveryPhoneCursorToEnd={moveDeliveryPhoneCursorToEnd}
             beforeRecipientSlot={beforeRecipientSlot}
             packetaCartFit={packetaCartFit}
+            priceQuote={priceQuote}
           />
         ) : null}
       </div>

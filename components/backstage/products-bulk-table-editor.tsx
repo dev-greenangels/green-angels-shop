@@ -2,7 +2,6 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ChevronDown, ChevronRight, Loader2, Plus, Save, Upload } from 'lucide-react'
 import { toast } from '@/lib/toast'
@@ -693,10 +692,10 @@ export function ProductsBulkTableEditor() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button type="button" variant="outline" asChild>
-                <Link href="/backstage/add-plant">
+                <a href="/backstage/add-plant">
                   <Plus className="mr-2 h-4 w-4" />
                   Додати товар
-                </Link>
+                </a>
               </Button>
               <Button type="button" onClick={() => void handleSave()} disabled={saving || dirtyCount === 0}>
                 {saving ? (
@@ -760,7 +759,7 @@ export function ProductsBulkTableEditor() {
                 Далі
               </Button>
               <Button type="button" variant="ghost" size="sm" asChild>
-                <Link href="/backstage/products">До списку</Link>
+                <a href="/backstage/products">До списку</a>
               </Button>
             </div>
           </div>
@@ -904,7 +903,7 @@ export function ProductsBulkTableEditor() {
                     </td>
                     <td className="border-b border-border/60 px-3 py-2">
                       <Button type="button" variant="link" size="sm" asChild>
-                        <Link href={`/backstage/products/${row.id}/edit`}>Редактор</Link>
+                        <a href={`/backstage/products/${row.id}/edit`}>Редактор</a>
                       </Button>
                     </td>
                   </tr>

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 
 import { MinOrderPolicyBanner } from '@/components/cart/min-order-policy-banner'
 import { ProductVariantsTable } from '@/components/product/product-variants-table'
+import { resolveInitialVariantId } from '@/lib/catalog/variant-query'
 import { showAddedToCartToast } from '@/lib/cart-toast'
 import { getCartLineQuantity } from '@/lib/cart-limits'
 import { useCartActions, useCartItems } from '@/lib/cart-store'
@@ -13,26 +14,31 @@ import type { Plant, ProductVariant } from '@/lib/types'
 
 type ProductPagePurchaseClientProps = {
   plant: Plant
+  /** From `?variant=<SKU>` — preselects existing row when SKU matches a visible variant. */
+  initialVariantSku?: string | null
 }
 
-export function ProductPagePurchaseClient({ plant }: ProductPagePurchaseClientProps) {
+export function ProductPagePurchaseClient({
+  plant,
+  initialVariantSku = null,
+}: ProductPagePurchaseClientProps) {
   const tc = useTranslations('cart')
   const cartItems = useCartItems()
   const { addItem, updateQuantity } = useCartActions()
 
   const variants = getVisiblePlantVariants(plant)
   const fullyUnavailable = isPlantFullyUnavailable(variants)
-  const [activeVariantId, setActiveVariantId] = useState<string | null>(
-    () => variants[0]?.id ?? null,
+  const [activeVariantId, setActiveVariantId] = useState<string | null>(() =>
+    resolveInitialVariantId({ variants, preferredSku: initialVariantSku }),
   )
 
   useEffect(() => {
     const next = getVisiblePlantVariants(plant)
     setActiveVariantId((prev) => {
       if (prev && next.some((variant) => variant.id === prev)) return prev
-      return next[0]?.id ?? null
+      return resolveInitialVariantId({ variants: next, preferredSku: initialVariantSku })
     })
-  }, [plant.id, plant.variants])
+  }, [plant.id, plant.variants, initialVariantSku])
 
   const handleBuy = (variant: ProductVariant, targetQuantity: number, unitPrice: number) => {
     const inCart = getCartLineQuantity(cartItems, plant.id, variant.id)

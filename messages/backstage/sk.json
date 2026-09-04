@@ -35,7 +35,8 @@
     "tedb": "TEDB / DPH",
     "stockNotifications": "Upozornenia o dostupnosti",
     "marketingSubscribers": "Odberatelia marketingu",
-    "jobs": "Joby"
+    "jobs": "Joby",
+    "googleMerchant": "Google Merchant"
   },
   "common": {
     "backstageLabel": "Back office",
@@ -986,6 +987,48 @@
     "openTedb": "Otvoriť TEDB",
     "appTitle": "Fronta app (objednávky / e-maily)",
     "appBody": "Expire unpaid a e-maily objednávok v spoločnej fronte app."
+  },
+  "googleMerchant": {
+    "title": "Google Merchant feedy",
+    "subtitle": "Diagnostika eligibility podľa rovnakých pravidiel ako verejné XML feedy. Vyžaduje prihlásenie do back office.",
+    "refresh": "Obnoviť",
+    "loading": "Načítava sa…",
+    "loadError": "Nepodarilo sa načítať diagnostiku Merchant.",
+    "included": "Zahrnuté",
+    "excluded": "Vylúčené",
+    "productsFetched": "Načítané produkty",
+    "variantsInspected": "Skontrolované varianty",
+    "detailTitle": "Feed {feed}",
+    "detailHint": "Vyberte kartu feedu vyššie.",
+    "emptyRows": "Žiadne riadky pre tento filter.",
+    "colProduct": "Produkt",
+    "colSku": "SKU",
+    "colReason": "Dôvod",
+    "colStock": "Sklad",
+    "colPrice": "Cena",
+    "colImage": "Obrázok",
+    "colEdit": "Upraviť",
+    "editProduct": "Upraviť",
+    "imageOk": "{count} verejných",
+    "imageMissing": "Chýba ({raw} raw)",
+    "prev": "Späť",
+    "next": "Ďalej",
+    "pageOf": "Str. {page} z {totalPages} ({total})",
+    "view": {
+      "excluded": "Vylúčené",
+      "included": "Zahrnuté",
+      "all": "Všetky"
+    },
+    "reason": {
+      "unpublished_product": "Nezverejnený produkt",
+      "missing_locale_name": "Chýba názov locale",
+      "missing_category_slug": "Chýba slug kategórie",
+      "stock_le_0": "Sklad ≤ 0",
+      "missing_sku": "Chýba SKU",
+      "invalid_missing_price": "Chýba/neplatná cena",
+      "missing_non_public_image": "Chýba/neverejný obrázok",
+      "other": "Iné"
+    }
   },
   "marketingSubscribers": {
     "title": "Odberatelia marketingu",

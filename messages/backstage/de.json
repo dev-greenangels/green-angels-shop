@@ -32,7 +32,8 @@
     "photos": "Fresh photos",
     "tedb": "TEDB / MwSt.",
     "stockNotifications": "Lager-Benachrichtigungen",
-    "jobs": "Jobs"
+    "jobs": "Jobs",
+    "googleMerchant": "Google Merchant"
   },
   "common": {
     "backstageLabel": "Back office",
@@ -879,5 +880,47 @@
     "openTedb": "Open TEDB",
     "appTitle": "App queue (orders / email)",
     "appBody": "Expire unpaid and order emails share the app queue."
+  },
+  "googleMerchant": {
+    "title": "Google Merchant feeds",
+    "subtitle": "Eligibility diagnostics using the same rules as public XML feeds. Requires back-office login.",
+    "refresh": "Refresh",
+    "loading": "Loading…",
+    "loadError": "Could not load Merchant diagnostics.",
+    "included": "Included",
+    "excluded": "Excluded",
+    "productsFetched": "Products fetched",
+    "variantsInspected": "Variants inspected",
+    "detailTitle": "Feed {feed}",
+    "detailHint": "Select a feed card above.",
+    "emptyRows": "No rows for this filter.",
+    "colProduct": "Product",
+    "colSku": "SKU",
+    "colReason": "Reason",
+    "colStock": "Stock",
+    "colPrice": "Price",
+    "colImage": "Image",
+    "colEdit": "Edit",
+    "editProduct": "Edit",
+    "imageOk": "{count} public",
+    "imageMissing": "Missing ({raw} raw)",
+    "prev": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {totalPages} ({total})",
+    "view": {
+      "excluded": "Excluded",
+      "included": "Included",
+      "all": "All"
+    },
+    "reason": {
+      "unpublished_product": "Unpublished product",
+      "missing_locale_name": "Missing locale name",
+      "missing_category_slug": "Missing category slug",
+      "stock_le_0": "Stock ≤ 0",
+      "missing_sku": "Missing SKU",
+      "invalid_missing_price": "Missing/invalid price",
+      "missing_non_public_image": "Missing/non-public image",
+      "other": "Other"
+    }
   }
 }

@@ -4,7 +4,6 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { ChevronLeft, ChevronRight, Edit, Filter, Loader2, Plus, Search, Trash2, X } from 'lucide-react'
-import Link from 'next/link'
 import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
@@ -370,14 +369,15 @@ function ProductsPageContent() {
             <p className="text-muted-foreground">{tp('subtitle')}</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {/* Hard <a>: Next soft Link hangs on /backstage (same as admin-layout NavLink). */}
             <Button type="button" variant="outline" asChild>
-              <Link href="/backstage/products/table">Таблиця</Link>
+              <a href="/backstage/products/table">Таблиця</a>
             </Button>
             <Button asChild>
-              <Link href={`/backstage/add-plant?returnTo=${returnToParam}`}>
+              <a href={`/backstage/add-plant?returnTo=${returnToParam}`}>
                 <Plus className="mr-2 h-4 w-4" />
                 {tp('addProduct')}
-              </Link>
+              </a>
             </Button>
           </div>
         </div>
@@ -669,12 +669,12 @@ function ProductsPageContent() {
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-2">
                             <Button variant="ghost" size="icon" asChild>
-                              <Link
+                              <a
                                 href={`/backstage/products/${product.id}/edit?returnTo=${returnToParam}`}
                               >
                                 <Edit className="h-4 w-4" />
                                 <span className="sr-only">{ta('edit')}</span>
-                              </Link>
+                              </a>
                             </Button>
                           </div>
                         </td>

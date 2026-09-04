@@ -35,7 +35,8 @@
     "tedb": "TEDB / ПДВ",
     "stockNotifications": "Сповіщення про наявність",
     "marketingSubscribers": "Підписники розсилки",
-    "jobs": "Джоби"
+    "jobs": "Джоби",
+    "googleMerchant": "Google Merchant"
   },
   "common": {
     "backstageLabel": "Бек-офіс",
@@ -986,6 +987,48 @@
     "openTedb": "Відкрити TEDB",
     "appTitle": "Черга app (замовлення / листи)",
     "appBody": "Expire unpaid і листи замовлень у спільній черзі app."
+  },
+  "googleMerchant": {
+    "title": "Google Merchant фіди",
+    "subtitle": "Діагностика eligibility за тими ж правилами, що й публічні XML-фіди. Потрібен вхід у бек-офіс.",
+    "refresh": "Оновити",
+    "loading": "Завантаження…",
+    "loadError": "Не вдалося завантажити діагностику Merchant.",
+    "included": "Включено",
+    "excluded": "Виключено",
+    "productsFetched": "Товарів завантажено",
+    "variantsInspected": "Варіантів перевірено",
+    "detailTitle": "Фід {feed}",
+    "detailHint": "Оберіть картку фіду вище.",
+    "emptyRows": "Немає рядків для цього фільтра.",
+    "colProduct": "Товар",
+    "colSku": "SKU",
+    "colReason": "Причина",
+    "colStock": "Сток",
+    "colPrice": "Ціна",
+    "colImage": "Зображення",
+    "colEdit": "Редагувати",
+    "editProduct": "Редагувати",
+    "imageOk": "{count} публічних",
+    "imageMissing": "Немає ({raw} raw)",
+    "prev": "Назад",
+    "next": "Далі",
+    "pageOf": "Стор. {page} з {totalPages} ({total})",
+    "view": {
+      "excluded": "Виключені",
+      "included": "Включені",
+      "all": "Усі"
+    },
+    "reason": {
+      "unpublished_product": "Неопублікований товар",
+      "missing_locale_name": "Немає назви локалі",
+      "missing_category_slug": "Немає slug категорії",
+      "stock_le_0": "Сток ≤ 0",
+      "missing_sku": "Немає SKU",
+      "invalid_missing_price": "Немає/невалідна ціна",
+      "missing_non_public_image": "Немає/непублічне зображення",
+      "other": "Інше"
+    }
   },
   "marketingSubscribers": {
     "title": "Підписники розсилки",

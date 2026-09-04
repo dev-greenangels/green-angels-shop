@@ -29,6 +29,7 @@ export async function ProductPageView({
   catalogRootSlug = null,
   relatedPlants,
   productReviewsPage,
+  initialVariantSku = null,
 }: {
   plant: Plant
   categoryBreadcrumbs?: CatalogCategoryBreadcrumb[]
@@ -36,6 +37,7 @@ export async function ProductPageView({
   relatedPlants: Plant[]
   productReviewsPage: ReviewsPageResult
   canonicalOrigin?: string
+  initialVariantSku?: string | null
 }) {
   const t = await getTranslations('product')
 
@@ -107,7 +109,7 @@ export async function ProductPageView({
             </div>
           </div>
 
-          <ProductPagePurchaseClient plant={plant} />
+          <ProductPagePurchaseClient plant={plant} initialVariantSku={initialVariantSku} />
 
           {plant.description ? (
             <section

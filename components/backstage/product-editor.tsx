@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react'
 import { toast } from '@/lib/toast'
@@ -123,7 +122,6 @@ export function ProductEditor({
   productId?: string
   returnTo?: string
 }) {
-  const router = useRouter()
   const { locale: contentLocale, ready: contentLocaleReady } = useBackstageContentLocale()
   const tp = useTranslations('pages.products')
   const ta = useTranslations('actions')
@@ -248,7 +246,7 @@ export function ProductEditor({
       .catch((err) => {
         if (!cancelled) {
           toast.error(err instanceof Error ? err.message : tt('loadFailed'))
-          router.push(productsListHref)
+          window.location.assign(productsListHref)
         }
       })
       .finally(() => {
@@ -258,7 +256,7 @@ export function ProductEditor({
     return () => {
       cancelled = true
     }
-  }, [productId, router, contentLocale, contentLocaleReady, productsListHref])
+  }, [productId, contentLocale, contentLocaleReady, productsListHref])
 
   const patch = useCallback(
     (patchValues: Partial<ProductFormState>) => {
@@ -446,7 +444,8 @@ export function ProductEditor({
       const created = await createProduct(payload)
       toast.success(tt('productCreated'))
       const returnToQuery = returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''
-      router.replace(`/backstage/products/${created.id}/edit${returnToQuery}`)
+      // Hard nav: Next soft router hangs on /backstage (Turbopack).
+      window.location.assign(`/backstage/products/${created.id}/edit${returnToQuery}`)
       return true
     } catch (err) {
       toast.error(err instanceof Error ? err.message : tt('saveFailed'))
@@ -462,7 +461,7 @@ export function ProductEditor({
   }
 
   const navigateBack = () => {
-    router.push(productsListHref)
+    window.location.assign(productsListHref)
   }
 
   const handleBack = () => {

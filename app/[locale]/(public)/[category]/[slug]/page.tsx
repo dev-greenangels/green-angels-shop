@@ -9,6 +9,7 @@ import { RELATED_PRODUCTS_LIMIT } from '@/lib/catalog/constants'
 import { productHref } from '@/lib/catalog/paths'
 import { fetchCatalogProductBySlug, fetchCatalogProducts } from '@/lib/catalog/products'
 import { buildProductPageMetadata } from '@/lib/catalog/product-metadata'
+import { parseVariantSkuQueryParam } from '@/lib/catalog/variant-query'
 import { fetchCommerceSettings } from '@/lib/commerce/fetch'
 import { applyCountrySiteOverlay } from '@/lib/country-sites/apply-overlay'
 import { localePath } from '@/lib/locale-path'
@@ -28,6 +29,7 @@ import { notFound, permanentRedirect } from 'next/navigation'
 
 type PageProps = {
   params: Promise<{ category: string; slug: string; locale: string }>
+  searchParams: Promise<{ variant?: string | string[] }>
 }
 
 async function loadProductReviewsPage(productId: string): Promise<ReviewsPageResult> {
@@ -49,8 +51,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return buildProductPageMetadata(locale, category, slug)
 }
 
-export default async function ProductInCategoryPage({ params }: PageProps) {
+export default async function ProductInCategoryPage({ params, searchParams }: PageProps) {
   const { category: categorySlug, slug } = await params
+  const query = await searchParams
+  const initialVariantSku = parseVariantSkuQueryParam(query.variant)
   const locale = await getLocale()
 
   const productResult = await fetchCatalogProductBySlug(slug, locale)
@@ -142,6 +146,7 @@ export default async function ProductInCategoryPage({ params }: PageProps) {
         relatedPlants={relatedResult.data}
         productReviewsPage={productReviewsPage}
         canonicalOrigin={origin}
+        initialVariantSku={initialVariantSku}
       />
     </>
   )

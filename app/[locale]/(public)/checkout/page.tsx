@@ -371,6 +371,71 @@ export default function CheckoutPage() {
     enabled: splitQuotesEnabled && datedItemsKey.length > 0,
   })
   const splitQuoteLoading = immediateSplitQuoteLoading || datedSplitQuoteLoading
+  const deliveryPriceQuoteBase = useMemo(
+    () => ({
+      audienceKey: user?.id ?? null,
+      promoCodes: appliedPromoCodes.length ? appliedPromoCodes : undefined,
+      paymentMethod: formData.paymentMethod,
+      splitOrderParts,
+      countryCode,
+      buyerType: isSkMarket ? buyerType : undefined,
+      vatCountryCode: isSkMarket && buyerType === 'company' ? vatCountryCode : undefined,
+      viesValid:
+        isSkMarket && buyerType === 'company' && viesValid != null ? viesValid : undefined,
+      enabled: mounted && catalogReady,
+    }),
+    [
+      appliedPromoCodes,
+      buyerType,
+      catalogReady,
+      countryCode,
+      formData.paymentMethod,
+      isSkMarket,
+      mounted,
+      splitOrderParts,
+      user?.id,
+      vatCountryCode,
+      viesValid,
+    ],
+  )
+  const mainDeliveryPriceQuote = useMemo(
+    () => ({
+      ...deliveryPriceQuoteBase,
+      items: quoteLineItems,
+      itemsKey: quoteItemsKey,
+      enabled: deliveryPriceQuoteBase.enabled && quoteItemsKey.length > 0,
+    }),
+    [deliveryPriceQuoteBase, quoteItemsKey, quoteLineItems],
+  )
+  const immediateDeliveryPriceQuote = useMemo(
+    () => ({
+      ...deliveryPriceQuoteBase,
+      items: immediateLineItems,
+      itemsKey: immediateItemsKey,
+      splitOrderPartIndex: 0 as const,
+      enabled:
+        deliveryPriceQuoteBase.enabled &&
+        splitQuotesEnabled &&
+        immediateItemsKey.length > 0,
+    }),
+    [
+      deliveryPriceQuoteBase,
+      immediateItemsKey,
+      immediateLineItems,
+      splitQuotesEnabled,
+    ],
+  )
+  const datedDeliveryPriceQuote = useMemo(
+    () => ({
+      ...deliveryPriceQuoteBase,
+      items: datedLineItems,
+      itemsKey: datedItemsKey,
+      splitOrderPartIndex: 1 as const,
+      enabled:
+        deliveryPriceQuoteBase.enabled && splitQuotesEnabled && datedItemsKey.length > 0,
+    }),
+    [datedItemsKey, datedLineItems, deliveryPriceQuoteBase, splitQuotesEnabled],
+  )
   const [promoError, setPromoError] = useState<string | null>(null)
   const [promoInfo, setPromoInfo] = useState<string | null>(null)
   const [privacyConsent, setPrivacyConsent] = useState(false)
@@ -1527,6 +1592,7 @@ export default function CheckoutPage() {
                     enabledCountrySites={marketSettings.countrySites}
                     enabledDeliveryCountries={enabledDeliveryCountries}
                     packetaCartFit={packetaCartFit}
+                    priceQuote={mainDeliveryPriceQuote}
                     identification={identification}
                     contactTouched={contactTouched}
                     shippingTouched={shippingTouched}
@@ -1654,8 +1720,9 @@ export default function CheckoutPage() {
                                     marketRegion={isSkMarket ? 'sk' : 'ua'}
                                     deliveryPhonePolicy={marketSettings.deliveryPhonePolicy}
                                     enabledCountrySites={marketSettings.countrySites}
-                    enabledDeliveryCountries={enabledDeliveryCountries}
+                                    enabledDeliveryCountries={enabledDeliveryCountries}
                                     packetaCartFit={packetaCartFit}
+                                    priceQuote={immediateDeliveryPriceQuote}
                                     shippingTouched={splitShippingTouched.immediate}
                                     recipientTouched={splitRecipientTouched.immediate}
                                     onPatchShipment={patchImmediateShipment}
@@ -1685,8 +1752,9 @@ export default function CheckoutPage() {
                                     marketRegion={isSkMarket ? 'sk' : 'ua'}
                                     deliveryPhonePolicy={marketSettings.deliveryPhonePolicy}
                                     enabledCountrySites={marketSettings.countrySites}
-                    enabledDeliveryCountries={enabledDeliveryCountries}
+                                    enabledDeliveryCountries={enabledDeliveryCountries}
                                     packetaCartFit={packetaCartFit}
+                                    priceQuote={datedDeliveryPriceQuote}
                                     shippingTouched={splitShippingTouched.dated}
                                     recipientTouched={splitRecipientTouched.dated}
                                     onPatchShipment={patchDatedShipment}

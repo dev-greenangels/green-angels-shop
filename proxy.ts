@@ -17,10 +17,26 @@ import {
 } from '@/lib/country-sites/resolve-country-host'
 import { COUNTRY_LOCALES } from '@/lib/country-sites/edge-locales'
 import type { CountrySiteCode } from '@/lib/country-sites/types'
+import { GA_SURFACE_BACKSTAGE, GA_SURFACE_HEADER } from '@/lib/analytics/gtm'
 import { localePath, stripLocalePrefix } from '@/lib/locale-path'
 import { resolveRedirectForPath } from '@/lib/redirects/middleware-cache'
 
 const handleI18nRouting = createIntlMiddleware(routing)
+
+/** Forward surface onto the request so root layout `headers()` can skip analytics. */
+function applyBackstageSurfaceHeader(response: NextResponse): NextResponse {
+  response.headers.set(GA_SURFACE_HEADER, GA_SURFACE_BACKSTAGE)
+  const override = response.headers.get('x-middleware-override-headers')
+  const list = new Set(
+    (override ? override.split(',') : [])
+      .map((h) => h.trim())
+      .filter(Boolean),
+  )
+  list.add(GA_SURFACE_HEADER)
+  response.headers.set('x-middleware-override-headers', [...list].join(','))
+  response.headers.set(`x-middleware-request-${GA_SURFACE_HEADER}`, GA_SURFACE_BACKSTAGE)
+  return response
+}
 
 async function hasCustomerSession(request: NextRequest): Promise<boolean> {
   const token =
@@ -87,14 +103,14 @@ async function handleBackstage(request: NextRequest) {
       url.search = ''
       return NextResponse.redirect(url)
     }
-    return NextResponse.next()
+    return applyBackstageSurfaceHeader(NextResponse.next())
   }
 
   if (!(await hasBackstageAccess(request))) {
     return backstageLoginRedirect(request, pathname)
   }
 
-  return NextResponse.next()
+  return applyBackstageSurfaceHeader(NextResponse.next())
 }
 
 function resolveLocaleFromPathname(pathname: string): AppLocale {

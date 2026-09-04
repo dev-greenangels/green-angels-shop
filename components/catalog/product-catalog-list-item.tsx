@@ -381,22 +381,6 @@ function CatalogProductVariantRow({
 
   const hasDesktopCartHint = Boolean(limitHint || atCartMax || hasPartialInCart)
 
-  const desktopCartHintSlot = (
-    <div className="flex min-h-[1.125rem] items-center justify-end text-xs leading-none">
-      {hasDesktopCartHint ? (
-        <span className="pointer-events-auto">{cartHints}</span>
-      ) : (
-        <p
-          className="invisible inline-flex items-center gap-x-1 font-medium text-primary"
-          aria-hidden
-        >
-          <span>{cartT('inCartCount', { count: 1 })}</span>
-          <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
-        </p>
-      )}
-    </div>
-  )
-
   const orderControls = canOrder ? (
     <div className="flex w-full items-center gap-1.5 sm:w-auto sm:gap-2">
       <div
@@ -478,10 +462,10 @@ function CatalogProductVariantRow({
         <span className="text-xs sm:hidden">{preorder ? t('preorder') : t('addToCart')}</span>
       </Button>
 
-      <FavoriteButton productId={plant.id} tone="brand" size="sm" className="shrink-0" />
+      <FavoriteButton productId={plant.id} tone="brand" size="sm" className="shrink-0 sm:hidden" />
     </div>
   ) : (
-    <FavoriteButton productId={plant.id} tone="brand" size="sm" className="shrink-0" />
+    <FavoriteButton productId={plant.id} tone="brand" size="sm" className="shrink-0 sm:hidden" />
   )
 
   const mobileActions = (
@@ -491,19 +475,7 @@ function CatalogProductVariantRow({
     </div>
   )
 
-  const desktopActions = (
-    <div className="relative hidden shrink-0 sm:block sm:self-center">
-      <div className="pointer-events-none absolute right-0 bottom-full mb-1.5 w-max max-w-[14rem]">
-        {desktopCartHintSlot}
-      </div>
-      <div className="inline-flex flex-col items-stretch gap-1.5">
-        {orderControls}
-        {hasShipment && variant.availableFrom ? (
-          <ShipmentDateBadge date={variant.availableFrom} block />
-        ) : null}
-      </div>
-    </div>
-  )
+  const sizeLabelText = packaging ? `${packaging} · ${sizeLabel}` : sizeLabel
 
   return (
     <article className={catalogListRowClassName}>
@@ -516,54 +488,87 @@ function CatalogProductVariantRow({
         />
       </div>
 
-      <div className="min-w-0 max-sm:col-start-2 sm:flex sm:min-w-0 sm:flex-1 sm:items-center sm:gap-4">
-        <div className="flex min-w-0 flex-col justify-center gap-0.5 sm:max-w-[52%] lg:max-w-[48%]">
-          <Link href={href} className="group/title block min-w-0">
-            <h3 className="line-clamp-2 font-sans text-base font-medium leading-snug text-foreground transition-colors group-hover/title:text-primary sm:text-lg sm:leading-[1.25]">
+      <div className="min-w-0 max-sm:col-start-2 sm:flex sm:min-w-0 sm:flex-1 sm:flex-col sm:justify-center sm:gap-1.5">
+        <div className="flex min-w-0 items-start gap-3">
+          <Link href={href} className="group/title block min-w-0 flex-1">
+            <h3 className="font-sans text-sm font-medium leading-tight text-foreground transition-colors group-hover/title:text-primary sm:text-base sm:leading-snug">
               {plant.name}
             </h3>
+            {plant.latinName?.trim() ? (
+              <p className="mt-0.5 font-sans text-[11px] italic leading-tight text-muted-foreground sm:text-xs">
+                {plant.latinName.trim()}
+              </p>
+            ) : null}
           </Link>
-          <VariantSizeLabel
-            as="p"
-            label={packaging ? `${packaging} · ${sizeLabel}` : sizeLabel}
-            variant={variant}
-            className="font-sans text-xs leading-snug text-muted-foreground sm:text-sm"
-          />
-          <p className="hidden font-sans text-sm text-muted-foreground sm:block">
-            {canOrder ? (
-              <>
-                {t('availability')}:{' '}
-                <span className="font-semibold tabular-nums text-foreground">
-                  {getVariantDisplayStock(variant)} {tc('pieceShort')}
-                </span>
-              </>
-            ) : (
-              tc('outOfStock')
-            )}
-          </p>
+          <div className="hidden shrink-0 items-center gap-2 sm:flex">
+            {hasDesktopCartHint ? (
+              <div className="pt-0.5 text-xs leading-none">{cartHints}</div>
+            ) : null}
+            <FavoriteButton productId={plant.id} tone="brand" size="sm" className="shrink-0" />
+          </div>
         </div>
 
-        <div className="hidden min-w-0 flex-1 flex-col items-end justify-center gap-1.5 sm:flex">
-          <PriceWithExVatUnder storedAmount={salePrice} align="end">
-            <DiscountedUnitPrice
-              originalPrice={variant.basePrice}
-              salePrice={salePrice}
-              perUnit="sale-only"
-              unitSymbol={variant.salesUnitSymbol}
-              stacked
-              className="items-end"
-              originalClassName="font-sans text-xs"
-              saleClassName="font-sans text-base font-semibold tabular-nums"
-            />
-          </PriceWithExVatUnder>
-          <CatalogVariantDiscountChips
-            variant={variant}
-            className="ml-auto max-w-full"
-            onTierClick={(tierMinQuantity) => {
-              const addQty = Math.max(1, tierMinQuantity - inCart)
-              applyQuantity(addQty, true)
-            }}
-          />
+        <VariantSizeLabel
+          as="p"
+          label={sizeLabelText}
+          variant={variant}
+          className="font-sans text-xs leading-snug text-muted-foreground sm:hidden"
+        />
+
+        <div className="hidden min-w-0 flex-col gap-1.5 sm:flex">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+              <VariantSizeLabel
+                as="p"
+                label={sizeLabelText}
+                variant={variant}
+                className="font-sans text-sm leading-snug text-muted-foreground"
+              />
+              <p className="font-sans text-sm text-muted-foreground">
+                {canOrder ? (
+                  <>
+                    {t('availability')}:{' '}
+                    <span className="font-semibold tabular-nums text-foreground">
+                      {getVariantDisplayStock(variant)} {tc('pieceShort')}
+                    </span>
+                  </>
+                ) : (
+                  tc('outOfStock')
+                )}
+              </p>
+            </div>
+
+            <div className="flex shrink-0 flex-col items-end justify-center gap-1.5">
+              <PriceWithExVatUnder storedAmount={salePrice} align="end" className="gap-0 leading-none">
+                <DiscountedUnitPrice
+                  originalPrice={variant.basePrice}
+                  salePrice={salePrice}
+                  perUnit="sale-only"
+                  unitSymbol={variant.salesUnitSymbol}
+                  stacked
+                  className="items-end leading-none"
+                  originalClassName="font-sans text-xs leading-none"
+                  saleClassName="font-sans text-base font-semibold leading-none tabular-nums"
+                />
+              </PriceWithExVatUnder>
+              <CatalogVariantDiscountChips
+                variant={variant}
+                className="ml-auto max-w-full"
+                onTierClick={(tierMinQuantity) => {
+                  const addQty = Math.max(1, tierMinQuantity - inCart)
+                  applyQuantity(addQty, true)
+                }}
+              />
+            </div>
+
+            <div className="shrink-0 self-center">{orderControls}</div>
+          </div>
+
+          {hasShipment && variant.availableFrom ? (
+            <div className="flex justify-end">
+              <ShipmentDateBadge date={variant.availableFrom} block />
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -580,16 +585,20 @@ function CatalogProductVariantRow({
             tc('outOfStock')
           )}
         </p>
-        <PriceWithExVatUnder storedAmount={salePrice} align="end" className="shrink-0">
+        <PriceWithExVatUnder
+          storedAmount={salePrice}
+          align="end"
+          className="shrink-0 gap-0 leading-none"
+        >
           <DiscountedUnitPrice
             originalPrice={variant.basePrice}
             salePrice={salePrice}
             perUnit="sale-only"
             unitSymbol={variant.salesUnitSymbol}
             stacked={hasVariantSalePrice(variant, salePrice)}
-            className="shrink-0 items-end"
-            originalClassName="font-sans text-xs text-muted-foreground"
-            saleClassName="font-sans text-xs font-semibold tabular-nums"
+            className="shrink-0 items-end leading-none"
+            originalClassName="font-sans text-xs leading-none text-muted-foreground"
+            saleClassName="font-sans text-xs font-semibold leading-none tabular-nums"
           />
         </PriceWithExVatUnder>
       </div>
@@ -607,7 +616,6 @@ function CatalogProductVariantRow({
       </div>
 
       {mobileActions}
-      {desktopActions}
 
       {hasShipment && variant.availableFrom ? (
         <div className="max-sm:col-span-2 sm:hidden">
@@ -638,9 +646,14 @@ function CatalogProductUnavailableRow({ plant }: { plant: Plant }) {
         <div className="min-w-0 max-sm:col-start-2 sm:flex sm:min-w-0 sm:flex-1 sm:items-center">
           <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
             <Link href={href} className="group/title min-w-0">
-              <h3 className="line-clamp-2 font-sans text-base font-medium leading-snug text-foreground transition-colors group-hover/title:text-primary sm:text-lg sm:leading-[1.25]">
+              <h3 className="font-sans text-sm font-medium leading-tight text-foreground transition-colors group-hover/title:text-primary sm:text-base sm:leading-snug">
                 {plant.name}
               </h3>
+              {plant.latinName?.trim() ? (
+                <p className="mt-0.5 font-sans text-[11px] italic leading-tight text-muted-foreground sm:text-xs">
+                  {plant.latinName.trim()}
+                </p>
+              ) : null}
             </Link>
             <p className="font-sans text-xs font-medium text-muted-foreground sm:text-sm">{tc('outOfStock')}</p>
           </div>

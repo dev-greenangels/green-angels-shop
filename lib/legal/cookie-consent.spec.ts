@@ -96,8 +96,12 @@ describe('banner visibility from consent cookie', () => {
 })
 
 describe('Vercel Analytics gate', () => {
-  function vercelAnalyticsAllowed(consent: CookieConsentValue | null, nodeEnv: string) {
-    return nodeEnv === 'production' && consent?.analytics === true
+  function vercelAnalyticsAllowed(
+    consent: CookieConsentValue | null,
+    nodeEnv: string,
+    isBackstage = false,
+  ) {
+    return !isBackstage && nodeEnv === 'production' && consent?.analytics === true
   }
 
   it('enables only when analytics is true in production', () => {
@@ -114,5 +118,10 @@ describe('Vercel Analytics gate', () => {
     )
     assert.equal(vercelAnalyticsAllowed({ ...base, analytics: true }, 'development'), false)
     assert.equal(vercelAnalyticsAllowed(null, 'production'), false)
+  })
+
+  it('stays off on backstage even with analytics consent', () => {
+    const base = { marketing: false, updatedAt: '2026-01-01T00:00:00.000Z' }
+    assert.equal(vercelAnalyticsAllowed({ ...base, analytics: true }, 'production', true), false)
   })
 })

@@ -53,7 +53,7 @@ export default function HomePageSettingsPanel() {
     if (!home) return
     setSaving(true)
     try {
-      const updated = await updateBackstageHomeSettings(home)
+      const updated = normalizeHomeSettings(await updateBackstageHomeSettings(home))
       setHome(updated)
       setBaselineHome(stableJson(updated))
       toast.success(t('saveSuccess'))

@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import {
@@ -241,7 +240,8 @@ function NavLink({
   const active = isNavActive(pathname, item)
 
   return (
-    <Link
+    // Hard navigation: Next 16.2 + Turbopack soft nav hangs on /backstage ("Rendering…" forever).
+    <a
       href={item.href}
       className={cn(
         'flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors',
@@ -257,7 +257,7 @@ function NavLink({
           {formatBadgeCount(badgeCount)}
         </span>
       ) : null}
-    </Link>
+    </a>
   )
 }
 
@@ -401,9 +401,9 @@ function Sidebar({
   return (
     <div className="flex h-full min-h-0 flex-col bg-sidebar text-sidebar-foreground">
       <div className="shrink-0 border-b border-sidebar-border p-6">
-        <Link href="/backstage" className="mb-3 block">
+        <a href="/backstage" className="mb-3 block">
           <BrandLogo alt="Зелені Янголи" variant="onDark" imgClassName="max-h-8 md:max-h-9" />
-        </Link>
+        </a>
         <div className="space-y-2">
           <span className="text-xs text-sidebar-foreground/60">{tCommon('backstageLabel')}</span>
           <BackstageUiLocaleSwitcher variant="sidebar" className="w-full" />
@@ -577,12 +577,12 @@ export function AdminLayout({ children, addClassName }: AdminLayoutProps) {
                       {index === breadcrumbs.length - 1 ? (
                         <span className="truncate font-medium text-foreground">{crumb.label}</span>
                       ) : (
-                        <Link
+                        <a
                           href={crumb.href}
                           className="truncate text-muted-foreground transition-colors hover:text-foreground"
                         >
                           {crumb.label}
-                        </Link>
+                        </a>
                       )}
                     </div>
                   ))}

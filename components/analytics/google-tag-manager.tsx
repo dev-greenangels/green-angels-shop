@@ -10,7 +10,7 @@ type GoogleTagManagerProps = {
 }
 
 /**
- * Single GTM installation path (root layout only).
+ * Single GTM installation path (root layout only; skipped on `/backstage` via `x-ga-surface`).
  * Consent default + optional restore run before the GTM loader (`beforeInteractive`).
  */
 export function GoogleTagManager({ gtmId, initialConsent }: GoogleTagManagerProps) {

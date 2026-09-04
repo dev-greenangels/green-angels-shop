@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useSearchParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 
-import { CatalogActiveFilters } from '@/components/catalog/catalog-active-filters'
 import { CatalogAlphabetNav } from '@/components/catalog/catalog-alphabet-nav'
 import {
   CatalogFilterSheet,
@@ -25,11 +24,7 @@ import { useCatalogSettings } from '@/components/providers/catalog-settings-prov
 import { emptyCatalogFilters } from '@/lib/catalog/filter-plants'
 import { hasVisibleCatalogFilters } from '@/lib/catalog/filter-visibility'
 import type { CatalogProductsPageMeta } from '@/lib/catalog/products'
-import {
-  plantsActiveFiltersStickyOuterClassName,
-  plantsAlphabetStickyOuterClassName,
-} from '@/lib/catalog/sidebar-panel-styles'
-import { useCatalogFilterDefinitions } from '@/lib/catalog/use-catalog-filter-definitions'
+import { plantsAlphabetStickyOuterClassName } from '@/lib/catalog/sidebar-panel-styles'
 import { usePathname, useRouter } from '@/i18n/navigation'
 import {
   siteContentShellClassName,
@@ -65,40 +60,7 @@ function PlantsAlphabetStickyNav({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <div ref={ref} className={cn(plantsAlphabetStickyOuterClassName, 'mb-6')}>
-      <div className={cn(siteStickyToolbarInnerClassName, 'px-3 sm:px-4')}>{children}</div>
-    </div>
-  )
-}
-
-function PlantsAlphabetActiveFiltersSticky({ children }: { children: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const element = ref.current
-    if (!element) return
-
-    const syncHeight = () => {
-      document.documentElement.style.setProperty(
-        '--plants-alphabet-active-filters-height',
-        `${element.offsetHeight}px`,
-      )
-    }
-
-    syncHeight()
-    const observer = new ResizeObserver(syncHeight)
-    observer.observe(element)
-    window.addEventListener('resize', syncHeight)
-
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', syncHeight)
-      document.documentElement.style.removeProperty('--plants-alphabet-active-filters-height')
-    }
-  }, [])
-
-  return (
-    <div ref={ref} className={cn(plantsActiveFiltersStickyOuterClassName, 'overflow-visible')}>
+    <div ref={ref} className={plantsAlphabetStickyOuterClassName}>
       {children}
     </div>
   )
@@ -127,8 +89,6 @@ export function PlantsAlphabetPageContent() {
     [letter],
   )
 
-  const { definitions, priceBounds } = useCatalogFilterDefinitions(undefined, filters)
-
   const setLetter = useCallback(
     (nextLetter: string | null) => {
       const params = new URLSearchParams(searchParams.toString())
@@ -142,6 +102,10 @@ export function PlantsAlphabetPageContent() {
       router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
     },
     [pathname, router, searchParams],
+  )
+
+  const alphabetNav = (
+    <CatalogAlphabetNav embedded activeLetter={letter} onLetterChange={setLetter} />
   )
 
   return (
@@ -172,22 +136,14 @@ export function PlantsAlphabetPageContent() {
           </div>
 
           <PlantsAlphabetStickyNav>
-            <CatalogAlphabetNav
-              embedded
-              activeLetter={letter}
-              onLetterChange={setLetter}
-            />
-          </PlantsAlphabetStickyNav>
-
-          {showFilters ? (
-            <PlantsAlphabetActiveFiltersSticky>
+            {showFilters ? (
               <StickyToolbarShell
                 compact
                 outerClassName="!static top-auto mx-0 mb-0 w-full max-w-none px-0"
-                innerClassName="rounded-none border-0 bg-transparent shadow-none ![backdrop-filter:none] ![-webkit-backdrop-filter:none] dark:bg-transparent"
-                glass={false}
+                innerClassName="rounded-b-[0.5rem] border-b border-border/40"
               >
-                <StickyToolbarRow className="h-10 px-3 py-1 sm:px-4">
+                <StickyToolbarRow className="h-11 gap-2 px-2.5 py-1.5 sm:px-3">
+                  <div className="min-w-0 flex-1 overflow-hidden">{alphabetNav}</div>
                   <div className="shrink-0 lg:hidden">
                     <CatalogFilterSheet
                       filters={filters}
@@ -197,21 +153,13 @@ export function PlantsAlphabetPageContent() {
                       collapseContainerGroupsByDefault
                       fitContent
                       compact
+                      showDotBadge
                     />
                   </div>
-                  <CatalogActiveFilters
-                    filters={filters}
-                    definitions={definitions}
-                    priceBounds={priceBounds}
-                    onFilterChange={setFilters}
-                    showEmptyState
-                    scrollable
-                    className="min-w-0 flex-1"
-                  />
                 </StickyToolbarRow>
                 <StickyToolbarPanel
                   id={CATALOG_FILTER_PANEL_ID}
-                  contentClassName="max-h-[min(70vh,28rem)] px-3 sm:px-4"
+                  contentClassName="max-h-[min(70vh,28rem)] px-2.5 sm:px-3"
                 >
                   <CatalogFilterToolbarPanel
                     filters={filters}
@@ -223,8 +171,10 @@ export function PlantsAlphabetPageContent() {
                   />
                 </StickyToolbarPanel>
               </StickyToolbarShell>
-            </PlantsAlphabetActiveFiltersSticky>
-          ) : null}
+            ) : (
+              <div className={cn(siteStickyToolbarInnerClassName, 'px-2.5 py-1.5 sm:px-3')}>{alphabetNav}</div>
+            )}
+          </PlantsAlphabetStickyNav>
 
           <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-start lg:gap-x-8">
             {showFilters ? (

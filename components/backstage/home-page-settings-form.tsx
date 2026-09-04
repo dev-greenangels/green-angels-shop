@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { isHomeHeroMobileImagePath } from '@/lib/media/paths'
 import { DEFAULT_HOME_SETTINGS } from '@/lib/settings/defaults'
 import type {
   HomeGalleryImage,
@@ -155,6 +156,18 @@ export function HomePageSettingsForm({
         imageUrl={home.hero.imageUrl}
         onImageUrlChange={(imageUrl) =>
           setHome({ ...home, hero: { ...home.hero, imageUrl } })
+        }
+      />
+      <HeroImageField
+        label="Зображення хіро (мобільне)"
+        emptyHint="Опційно. Якщо не завантажено — на мобільному показується основне зображення."
+        filledHint="Мобільне зображення в R2. Після заміни або видалення натисніть «Зберегти головну»."
+        uploadPath="/api/backstage/settings/home-hero-mobile/upload"
+        deletePath="/api/backstage/settings/home-hero-mobile/delete"
+        isStoredPath={isHomeHeroMobileImagePath}
+        imageUrl={home.hero.mobileImageUrl ?? ''}
+        onImageUrlChange={(mobileImageUrl) =>
+          setHome({ ...home, hero: { ...home.hero, mobileImageUrl } })
         }
       />
       <div className="grid gap-4 sm:grid-cols-2">

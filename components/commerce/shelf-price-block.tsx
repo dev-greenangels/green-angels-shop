@@ -47,7 +47,10 @@ export function ExVatSecondaryLine({
     <span
       ref={measureRef}
       suppressHydrationWarning
-      className={cn('block whitespace-nowrap font-normal leading-tight text-muted-foreground', className)}
+      className={cn(
+        'block whitespace-nowrap font-normal leading-none text-muted-foreground',
+        className,
+      )}
       style={{ fontSize: fontSizePx != null ? `${fontSizePx}px` : '0.72em' }}
     >
       {t('exclVatColon', { amount: amountFormatted })}
@@ -227,12 +230,12 @@ export function PriceWithExVatUnder({
   return (
     <span
       className={cn(
-        'inline-flex flex-col gap-0.5',
+        'inline-flex flex-col gap-0.5 leading-none',
         align === 'end' ? 'items-end' : 'items-start',
         className,
       )}
     >
-      <span ref={primaryRef} className="inline-flex">
+      <span ref={primaryRef} className="inline-flex leading-none">
         {children}
       </span>
       {show && parts.secondaryFormatted ? (

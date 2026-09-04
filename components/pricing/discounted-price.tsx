@@ -41,7 +41,7 @@ export function DiscountedUnitPrice({
 
   if (!hasDiscount) {
     return (
-      <span suppressHydrationWarning className={className}>
+      <span suppressHydrationWarning className={cn('leading-none', className)}>
         {perUnit ? formatPerUnit(salePrice) : formatPrice(salePrice)}
         {!perUnit ? saleSuffix : null}
       </span>
@@ -52,21 +52,24 @@ export function DiscountedUnitPrice({
     <span
       className={cn(
         stacked || perUnit === true
-          ? 'inline-flex flex-col items-end gap-0.5'
-          : 'inline-flex flex-wrap items-baseline gap-x-1',
+          ? 'inline-flex flex-col items-end gap-0 leading-none'
+          : 'inline-flex flex-wrap items-baseline gap-x-1 leading-none',
         className,
       )}
     >
       <span
         suppressHydrationWarning
-        className={cn('line-through text-muted-foreground', originalClassName)}
+        className={cn('leading-none line-through text-muted-foreground', originalClassName)}
       >
         {perUnit === true ? formatPerUnit(originalPrice) : formatPrice(originalPrice)}
         {perUnit === true ? null : originalSuffix}
       </span>
       <span
         suppressHydrationWarning
-        className={cn('font-medium text-red-500 dark:text-red-400', saleClassName)}
+        className={cn(
+          'font-medium leading-none text-red-500 dark:text-red-400',
+          saleClassName,
+        )}
       >
         {perUnit ? formatPerUnit(salePrice) : formatPrice(salePrice)}
         {!perUnit ? saleSuffix : null}

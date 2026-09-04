@@ -1,20 +1,20 @@
 import { cn } from '@/lib/utils'
 
-/** Sticky top для сайдбару на сторінці «Рослини А-Я» (під хедером, алфавітом і рядком обраних фільтрів). */
+/** Sticky top для сайдбару на сторінці «Рослини А-Я» (під хедером і алфавітом). */
 export const plantsSidebarStickyTopClassName =
-  'top-[calc(var(--site-header-offset,2.75rem)+var(--plants-alphabet-sticky-height,0px)+var(--plants-alphabet-active-filters-height,0px)+0.5rem)]'
+  'top-[calc(var(--site-header-offset,2.75rem)+var(--plants-alphabet-sticky-height,0px)+0.5rem)]'
 
 export const plantsSidebarMaxHeightClassName =
-  'max-h-[calc(100dvh-var(--site-header-offset,2.75rem)-var(--plants-alphabet-sticky-height,0px)-var(--plants-alphabet-active-filters-height,0px)-1.5rem)]'
+  'max-h-[calc(100dvh-var(--site-header-offset,2.75rem)-var(--plants-alphabet-sticky-height,0px)-1.5rem)]'
 
 /** Ширина бокової панелі фільтрів (desktop). */
 export const catalogSidebarWidthClassName = 'lg:w-64 lg:shrink-0'
 
-/** Sticky алфавіт на «Рослини А-Я» — та сама ширина, що й рядок обраних фільтрів. */
+/** Sticky алфавіт на «Рослини А-Я» — ширина як у списку карток (+4px з кожного боку). */
 export const plantsAlphabetStickyOuterClassName =
-  'sticky top-[calc(var(--site-header-offset,5rem)-2px)] z-40 -mx-[var(--site-shell-padding-x)] w-[calc(100%+2*var(--site-shell-padding-x))] max-w-none min-w-0 lg:mx-0 lg:w-full'
+  'sticky top-[calc(var(--site-header-offset,5rem)-2px)] z-40 -mx-1 mb-6 w-[calc(100%+8px)] min-w-0'
 
-/** Sticky-рядок обраних фільтрів під липким алфавітом. */
+/** @deprecated Рядок «Обрано» прибрано — лишаємо експорт для сумісності імпортів. */
 export const plantsActiveFiltersStickyOuterClassName =
   'sticky top-[calc(var(--site-header-offset,2.75rem)+var(--plants-alphabet-sticky-height,0px))] z-40 -mx-[var(--site-shell-padding-x)] mb-6 w-[calc(100%+2*var(--site-shell-padding-x))] max-w-none min-w-0 overflow-x-hidden overflow-y-visible border-b border-border/40 bg-background/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:mx-0 lg:w-full'
 

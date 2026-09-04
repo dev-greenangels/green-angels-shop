@@ -33,7 +33,16 @@ export function normalizeHomeSettings(
   return {
     sectionOrder: normalizeHomeSectionOrder(base.sectionOrder),
     sectionHidden,
-    hero: { ...DEFAULT_HOME_SETTINGS.hero, ...base.hero },
+    hero: {
+      ...DEFAULT_HOME_SETTINGS.hero,
+      ...base.hero,
+      imageUrl: sanitizeCmsImageUrl(
+        base.hero?.imageUrl ?? DEFAULT_HOME_SETTINGS.hero.imageUrl,
+      ),
+      mobileImageUrl: sanitizeCmsImageUrl(
+        base.hero?.mobileImageUrl ?? DEFAULT_HOME_SETTINGS.hero.mobileImageUrl,
+      ),
+    },
     categories: {
       ...DEFAULT_HOME_SETTINGS.categories,
       ...base.categories,

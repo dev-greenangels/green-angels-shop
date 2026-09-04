@@ -7,7 +7,7 @@ import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server'
 import { GoogleTagManager } from '@/components/analytics/google-tag-manager'
 import { AppProviders } from '@/components/providers/app-providers'
 import { AppToasters } from '@/components/ui/sonner'
-import { getGtmId } from '@/lib/analytics/gtm'
+import { GA_SURFACE_HEADER, getGtmId, isBackstageSurface } from '@/lib/analytics/gtm'
 import { getSession } from '@/lib/auth/get-session'
 import { getMarketBranding } from '@/lib/branding/market-branding'
 import { applyCountrySiteOverlay } from '@/lib/country-sites/apply-overlay'
@@ -133,8 +133,10 @@ export default async function RootLayout({
       }
   const marketSettings = getMarketSettings(siteSettings)
   const cartCheckoutSettings = getCartCheckoutSettings(siteSettings)
-  const analyticsAllowed = process.env.NODE_ENV === 'production' && cookieConsent?.analytics === true
-  const gtmId = getGtmId()
+  const isBackstage = isBackstageSurface(headerStore.get(GA_SURFACE_HEADER))
+  const analyticsAllowed =
+    !isBackstage && process.env.NODE_ENV === 'production' && cookieConsent?.analytics === true
+  const gtmId = !isBackstage ? getGtmId() : null
   const countryHeader = headerStore.get(GA_COUNTRY_HEADER)
   const countryCode = countryHeader && isCountrySiteCode(countryHeader) ? countryHeader : null
   const canonicalOrigin = resolvePublicOrigin({

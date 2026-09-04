@@ -130,6 +130,7 @@ export type HomePageSettings = {
     secondaryCtaLabel: string
     secondaryCtaHref: string
     imageUrl: string
+    mobileImageUrl: string
     highlights: HomeHighlight[]
   }
   categories: {

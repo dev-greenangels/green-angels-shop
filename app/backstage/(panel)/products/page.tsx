@@ -129,7 +129,9 @@ function ProductsPageContent() {
     writeUrl(search, (params) => {
       params.delete('page')
     })
-  }, [search, writeUrl])
+    // writeUrl identity changes on every searchParams update — do not re-trigger replace.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when committed search changes
+  }, [search])
 
   const [loading, setLoading] = useState(true)
   const [bulkLoading, setBulkLoading] = useState(false)

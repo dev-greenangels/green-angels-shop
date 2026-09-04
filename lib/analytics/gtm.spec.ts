@@ -1,7 +1,23 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { buildGtmScript, getGtmId, gtmNoscriptSrc, isGtmEnabled } from './gtm'
+import {
+  buildGtmScript,
+  GA_SURFACE_BACKSTAGE,
+  getGtmId,
+  gtmNoscriptSrc,
+  isBackstageSurface,
+  isGtmEnabled,
+} from './gtm'
+
+describe('isBackstageSurface', () => {
+  it('is true only for the backstage surface header value', () => {
+    assert.equal(isBackstageSurface(GA_SURFACE_BACKSTAGE), true)
+    assert.equal(isBackstageSurface('storefront'), false)
+    assert.equal(isBackstageSurface(null), false)
+    assert.equal(isBackstageSurface(undefined), false)
+  })
+})
 
 describe('getGtmId', () => {
   it('accepts a valid GTM container id', () => {

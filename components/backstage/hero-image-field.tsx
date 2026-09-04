@@ -11,11 +11,22 @@ import { isHomeHeroImagePath } from '@/lib/media/paths'
 import { validateImageFile } from '@/lib/media/validate'
 import { cn } from '@/lib/utils'
 
-async function uploadHomeHeroImage(file: File): Promise<string> {
+type HeroImageFieldProps = {
+  imageUrl: string
+  onImageUrlChange: (imageUrl: string) => void
+  label?: string
+  emptyHint?: string
+  filledHint?: string
+  uploadPath?: string
+  deletePath?: string
+  isStoredPath?: (url: string) => boolean
+}
+
+async function uploadHeroImage(uploadPath: string, file: File): Promise<string> {
   const formData = new FormData()
   formData.append('file', file)
 
-  const res = await fetch('/api/backstage/settings/home-hero/upload', {
+  const res = await fetch(uploadPath, {
     method: 'POST',
     credentials: 'include',
     body: formData,
@@ -27,8 +38,8 @@ async function uploadHomeHeroImage(file: File): Promise<string> {
   return data.url
 }
 
-async function deleteHomeHeroImageFromStorage(): Promise<void> {
-  const res = await fetch('/api/backstage/settings/home-hero/delete', {
+async function deleteHeroImageFromStorage(deletePath: string): Promise<void> {
+  const res = await fetch(deletePath, {
     method: 'POST',
     credentials: 'include',
   })
@@ -45,10 +56,13 @@ function hasRemovableHeroImage(imageUrl: string | null | undefined): boolean {
 export function HeroImageField({
   imageUrl,
   onImageUrlChange,
-}: {
-  imageUrl: string
-  onImageUrlChange: (imageUrl: string) => void
-}) {
+  label = 'Зображення хіро',
+  emptyHint = 'Завантажте фото для правої частини хіро-блоку на головній сторінці.',
+  filledHint = 'Зображення зберігається в R2. Після заміни або видалення натисніть «Зберегти головну».',
+  uploadPath = '/api/backstage/settings/home-hero/upload',
+  deletePath = '/api/backstage/settings/home-hero/delete',
+  isStoredPath = isHomeHeroImagePath,
+}: HeroImageFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [previewUrl, setPreviewUrl] = useState(() => resolveHeroPreviewUrl(imageUrl))
   const [uploading, setUploading] = useState(false)
@@ -64,8 +78,8 @@ export function HeroImageField({
     setError(null)
     setUploading(true)
     try {
-      if (isHomeHeroImagePath(imageUrl)) {
-        await deleteHomeHeroImageFromStorage()
+      if (isStoredPath(imageUrl)) {
+        await deleteHeroImageFromStorage(deletePath)
       }
       onImageUrlChange('')
       setPreviewUrl('')
@@ -87,7 +101,7 @@ export function HeroImageField({
 
     setUploading(true)
     try {
-      const url = await uploadHomeHeroImage(file)
+      const url = await uploadHeroImage(uploadPath, file)
       onImageUrlChange(url)
       setPreviewUrl(resolveHeroPreviewUrl(url))
     } catch (err) {
@@ -100,7 +114,7 @@ export function HeroImageField({
 
   return (
     <div className="space-y-2">
-      <Label>Зображення хіро</Label>
+      <Label>{label}</Label>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div
           className={cn(
@@ -181,9 +195,7 @@ export function HeroImageField({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            {canRemoveImage
-              ? 'Зображення зберігається в R2. Після заміни або видалення натисніть «Зберегти головну».'
-              : 'Завантажте фото для правої частини хіро-блоку на головній сторінці.'}
+            {canRemoveImage ? filledHint : emptyHint}
           </p>
 
           {error ? (

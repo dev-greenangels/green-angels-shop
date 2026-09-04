@@ -10,9 +10,9 @@ export const siteContentShellNarrowClassName = 'site-shell site-shell--narrow'
 /** Компактна сторінка (особистий кабінет). */
 export const siteContentShellCompactClassName = 'site-shell site-shell--compact'
 
-/** Sticky-панель каталогу: та сама ширина/відступи, що й плаваючий хедер; -2px щоб прилипала без просвіту. */
+/** Sticky-панель каталогу: ширина як у списку карток (без full-bleed -mx). */
 export const siteStickyToolbarOuterClassName =
-  'sticky top-[calc(var(--site-header-offset,5rem)-2px)] z-40 -mx-[var(--site-shell-padding-x)] mb-6 px-3 sm:px-4'
+  'sticky top-[calc(var(--site-header-offset,5rem)-2px)] z-40 mb-6 w-full min-w-0'
 
 export const siteStickyToolbarInnerClassName =
   'boty-glass-sticky flex items-center gap-2 rounded-b-[0.5rem] border-b border-border/40 px-2.5 py-2 sm:px-3'

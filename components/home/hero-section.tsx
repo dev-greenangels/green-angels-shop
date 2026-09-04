@@ -1,5 +1,4 @@
 import { ArrowRight, Camera, Handshake, Sprout, Truck } from 'lucide-react'
-import Image from 'next/image'
 import { getTranslations } from 'next-intl/server'
 
 import { Button } from '@/components/ui/button'
@@ -55,8 +54,13 @@ export async function HeroSection({
     { icon: Truck, label: deliveryLabel },
   ] as const
 
-  const heroImageSrc = resolveHeroDisplayUrl(settings.imageUrl)
+  const heroDesktopSrc = resolveHeroDisplayUrl(settings.imageUrl)
+  const heroMobileOnlySrc = resolveHeroDisplayUrl(settings.mobileImageUrl)
+  const heroImageSrc = heroDesktopSrc ?? heroMobileOnlySrc
   const hasHeroImage = Boolean(heroImageSrc)
+  const useMobilePictureSource = Boolean(
+    heroDesktopSrc && heroMobileOnlySrc && heroDesktopSrc !== heroMobileOnlySrc,
+  )
 
   return (
     <section className="w-full py-6 sm:py-8 lg:py-10">
@@ -69,14 +73,18 @@ export async function HeroSection({
           )}
         >
           {heroImageSrc ? (
-            <Image
-              src={heroImageSrc}
-              alt=""
-              fill
-              priority
-              className="object-cover object-center"
-              sizes="(max-width: 1280px) 100vw, 1280px"
-            />
+            <picture className="absolute inset-0 block">
+              {useMobilePictureSource && heroMobileOnlySrc ? (
+                <source media="(max-width: 639px)" srcSet={heroMobileOnlySrc} />
+              ) : null}
+              <img
+                src={heroImageSrc}
+                alt=""
+                fetchPriority="high"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover object-center"
+              />
+            </picture>
           ) : null}
 
           {hasHeroImage ? (

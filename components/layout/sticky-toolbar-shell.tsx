@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -94,6 +95,28 @@ export function StickyToolbarShell({
     return () => window.clearTimeout(timer)
   }, [openPanel])
 
+  useEffect(() => {
+    if (!openPanel) return
+
+    const onPointerDown = (event: PointerEvent) => {
+      const root = rootRef.current
+      if (!root) return
+      if (event.target instanceof Node && root.contains(event.target)) return
+      setOpenPanel(null)
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpenPanel(null)
+    }
+
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [openPanel])
+
   const value = useMemo(
     () => ({ openPanel, setOpenPanel, togglePanel, isOpen }),
     [openPanel, togglePanel, isOpen],
@@ -109,7 +132,7 @@ export function StickyToolbarShell({
         className={cn(siteStickyToolbarOuterClassName, outerClassName, className)}
       >
         {/* Layout slot = row height only; glass expands absolutely over content */}
-        <div className={cn('relative', compact ? 'h-10' : 'h-12')}>
+        <div className={cn('relative', compact ? 'h-11' : 'h-12')}>
           <div
             className={cn(
               'absolute inset-x-0 top-0 z-50 overflow-hidden rounded-b-[0.5rem]',

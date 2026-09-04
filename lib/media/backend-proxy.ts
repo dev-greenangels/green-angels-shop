@@ -95,3 +95,17 @@ export async function deleteHomeHeroImageOnBackend(
   return { ok: true, status: result.status }
 }
 
+export async function deleteHomeHeroMobileImageOnBackend(
+  request: Request,
+): Promise<{ ok: boolean; status: number; error?: unknown }> {
+  const result = await postBackendJson<{ ok?: boolean }>(
+    '/backstage/media/settings/home-hero-mobile/delete',
+    request,
+    {},
+  )
+  if (!result.ok) {
+    return { ok: false, status: result.status, error: result.data }
+  }
+  return { ok: true, status: result.status }
+}
+

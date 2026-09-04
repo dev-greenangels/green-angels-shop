@@ -131,6 +131,7 @@ export const DEFAULT_HOME_SETTINGS: HomePageSettings = {
     secondaryCtaLabel: 'Хіти продажів',
     secondaryCtaHref: '/#bestsellers',
     imageUrl: '',
+    mobileImageUrl: '',
     highlights: [
       { title: 'Власне виробництво', description: 'Вирощуємо на розсаднику, не перепродаємо' },
       { title: 'Якість і сортність', description: 'Стабільний посадковий матеріал' },

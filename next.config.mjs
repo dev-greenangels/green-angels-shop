@@ -44,7 +44,16 @@ function buildImageRemotePatterns() {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ['192.168.0.62', '192.168.0.63'],
+  // Local LAN hosts used in this workspace (Next blocks unknown origins in dev).
+  allowedDevOrigins: [
+    '192.168.0.62',
+    '192.168.0.63',
+    '192.168.0.243',
+    '127.0.0.1',
+    'localhost',
+  ],
+  // Next 16.2 Turbopack soft-nav hangs on /backstage; hide noisy indicator.
+  devIndicators: false,
   typescript: {
     ignoreBuildErrors: true,
   },

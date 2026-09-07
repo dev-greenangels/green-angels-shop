@@ -1,6 +1,6 @@
 import { DEFAULT_STORE_SETTINGS } from '@/lib/settings/defaults'
 import type { StoreContactSettings } from '@/lib/settings/types'
-import { formatStoreAddress, getStorePhones } from '@/lib/settings/store-helpers'
+import { formatStoreAddress, getStoreEmails, getStorePhones } from '@/lib/settings/store-helpers'
 
 export function shouldEmitStoreAddress(
   store: StoreContactSettings,
@@ -51,6 +51,11 @@ export function buildOrganizationJsonLd(input: {
   const safePhone =
     input.marketRegion !== 'ua' && telephone === defaultPhone ? undefined : telephone
 
+  const email = getStoreEmails(input.store)[0]?.email?.trim() || undefined
+  const defaultEmail = DEFAULT_STORE_SETTINGS.emails[0]?.email
+  const safeEmail =
+    input.marketRegion !== 'ua' && email && email === defaultEmail ? undefined : email
+
   const emitAddress = shouldEmitStoreAddress(input.store, input.marketRegion)
   const addressLine1 = input.store.addressLine1.trim()
   const addressLine2 = input.store.addressLine2.trim()
@@ -63,6 +68,16 @@ export function buildOrganizationJsonLd(input: {
     url: origin,
     ...(sameAs.length ? { sameAs } : {}),
     ...(safePhone ? { telephone: safePhone } : {}),
+    ...(safeEmail ? { email: safeEmail } : {}),
+  }
+
+  if (safePhone || safeEmail) {
+    schema.contactPoint = {
+      '@type': 'ContactPoint',
+      contactType: 'customer service',
+      ...(safePhone ? { telephone: safePhone } : {}),
+      ...(safeEmail ? { email: safeEmail } : {}),
+    }
   }
 
   if (emitAddress) {

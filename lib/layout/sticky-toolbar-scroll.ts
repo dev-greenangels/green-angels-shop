@@ -1,3 +1,5 @@
+import { forceUnlockBodyScroll } from '@/lib/body-scroll-lock'
+
 /** Matches `siteStickyToolbarOuterClassName` sticky top offset (−2px). */
 const STICKY_TOP_ADJUST_PX = 2
 const STICKY_SCROLL_TOLERANCE_PX = 4
@@ -5,6 +7,12 @@ const STICKY_TOOLBAR_PANEL_SCROLL_PADDING_PX = 8
 
 export const STICKY_TOOLBAR_ROOT_ATTR = 'data-sticky-toolbar-root'
 export const STICKY_TOOLBAR_PANEL_SCROLL_ATTR = 'data-sticky-toolbar-panel-scroll'
+export const CATALOG_PRODUCTS_LIST_ATTR = 'data-catalog-products-list'
+export const CATALOG_PRODUCTS_TOOLBAR_ATTR = 'data-catalog-products-toolbar'
+/** Non-sticky products title block — scroll target under the site header. */
+export const CATALOG_PRODUCTS_ANCHOR_ATTR = 'data-catalog-products-anchor'
+/** Dispatched to close mobile sticky filter/sort panels before scrolling the catalog list. */
+export const CLOSE_STICKY_TOOLBAR_PANELS_EVENT = 'ga-close-sticky-toolbar-panels'
 
 export function readSiteStickyToolbarTopPx(): number {
   if (typeof window === 'undefined') return 78
@@ -49,6 +57,80 @@ export function scrollStickyToolbarIntoPlace(
   const top = window.scrollY + delta
   window.scrollTo({ top, left: window.scrollX, behavior: options?.behavior ?? 'auto' })
 }
+
+function setWindowScrollTop(top: number): void {
+  const y = Math.max(0, Math.round(top))
+  const scrollingElement = document.scrollingElement ?? document.documentElement
+  scrollingElement.scrollTop = y
+  document.documentElement.scrollTop = y
+  document.body.scrollTop = y
+  window.scrollTo({ top: y, left: 0, behavior: 'auto' })
+}
+
+/** Prefer the on-screen node — layout used to mount desktop+mobile copies. */
+function queryVisibleElement(selector: string): HTMLElement | null {
+  const nodes = document.querySelectorAll(selector)
+  for (const node of nodes) {
+    if (!(node instanceof HTMLElement)) continue
+    if (node.getClientRects().length === 0) continue
+    const style = getComputedStyle(node)
+    if (style.display === 'none' || style.visibility === 'hidden') continue
+    return node
+  }
+  return null
+}
+
+/**
+ * Scroll so products title + toolbar + list sit under the site header (mobile screenshot).
+ * Uses explicit scrollTop — more reliable than scrollIntoView on iOS.
+ */
+export function scrollCatalogProductsListIntoView(): boolean {
+  if (typeof window === 'undefined') return false
+
+  forceUnlockBodyScroll()
+
+  const anchor = queryVisibleElement(`[${CATALOG_PRODUCTS_ANCHOR_ATTR}]`)
+  if (!anchor) return false
+
+  const headerOffset = readSiteStickyToolbarTopPx()
+  const top = window.scrollY + anchor.getBoundingClientRect().top - headerOffset
+  setWindowScrollTop(top)
+
+  const drift = anchor.getBoundingClientRect().top - headerOffset
+  if (Math.abs(drift) >= 2) {
+    setWindowScrollTop(window.scrollY + drift)
+  }
+
+  return Math.abs(anchor.getBoundingClientRect().top - headerOffset) < 16
+}
+
+/**
+ * Close mobile filter panel, unlock body, then scroll to the products block.
+ * Retries until the anchor sits under the header (mobile layout settles late).
+ */
+export function requestCatalogProductsListScroll(): void {
+  if (typeof window === 'undefined') return
+
+  document.dispatchEvent(new Event(CLOSE_STICKY_TOOLBAR_PANELS_EVENT))
+  forceUnlockBodyScroll()
+
+  let tries = 0
+  const run = () => {
+    forceUnlockBodyScroll()
+    const ok = scrollCatalogProductsListIntoView()
+    tries += 1
+    if (ok || tries >= 20) return
+    window.setTimeout(run, 32)
+  }
+
+  run()
+  window.requestAnimationFrame(run)
+  window.setTimeout(run, 100)
+  window.setTimeout(run, 250)
+}
+
+/** @deprecated */
+export function flushCatalogProductsListScrollIfPending(): void {}
 
 export function findStickyToolbarPanelScrollContainer(
   from?: HTMLElement | null,

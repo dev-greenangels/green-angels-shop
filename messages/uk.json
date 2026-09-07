@@ -646,6 +646,7 @@
     "loading": "Завантаження фільтрів…",
     "clear": "Очистити фільтри",
     "clearAll": "Очистити все",
+    "clearAllShort": "Все",
     "price": "Ціна",
     "priceFrom": "Від",
     "priceTo": "До",

@@ -4,7 +4,8 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --site-header-offset: 5rem;
+  /* Collapsed sticky header: padding + bar (menu expands absolutely — no JS measure). */
+  --site-header-offset: 4.5rem; /* pt-3 + h-[60px] mobile */
 
   /*
    * Surfaces: clean white UI · soft sage bands · mid green accents · bright CTA
@@ -166,12 +167,14 @@
 @media (min-width: 640px) {
   :root {
     --site-shell-padding-x: 2rem;
+    --site-header-offset: 4.75rem; /* sm:pt-4 + h-[60px] */
   }
 }
 
 @media (min-width: 1024px) {
   :root {
     --site-shell-padding-x: 2.5rem;
+    --site-header-offset: 5.25rem; /* lg:pt-4 + min-h-[68px] bar */
   }
 }
 

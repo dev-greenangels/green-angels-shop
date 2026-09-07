@@ -77,7 +77,6 @@ export function Navigation() {
   const [mounted, setMounted] = useState(false)
   const mobileSearchRef = useRef<HTMLInputElement>(null)
   const desktopSearchRef = useRef<HTMLInputElement>(null)
-  const headerRef = useRef<HTMLElement>(null)
   const mobileSearchPanelRef = useRef<HTMLDivElement>(null)
   const mobileMenuPanelRef = useRef<HTMLDivElement>(null)
   const { openCart } = useCartActions()
@@ -102,15 +101,6 @@ export function Navigation() {
     })
     return () => window.cancelAnimationFrame(frame)
   }, [searchOpen])
-
-  const syncHeaderOffset = () => {
-    const header = headerRef.current
-    if (!header) return
-    document.documentElement.style.setProperty(
-      '--site-header-offset',
-      `${header.offsetHeight}px`,
-    )
-  }
 
   const toggleMobileSearch = () => {
     const nextOpen = !mobileSearchOpen
@@ -147,26 +137,6 @@ export function Navigation() {
     setMobileMenuOpen(false)
   }
 
-  useEffect(() => {
-    const header = headerRef.current
-    if (!header) return
-
-    let frame = 0
-    const onResize = () => {
-      cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(syncHeaderOffset)
-    }
-
-    syncHeaderOffset()
-    const observer = new ResizeObserver(onResize)
-    observer.observe(header)
-
-    return () => {
-      cancelAnimationFrame(frame)
-      observer.disconnect()
-    }
-  }, [])
-
   const navLinks = useMemo(
     () =>
       navigationSettings.items
@@ -197,7 +167,6 @@ export function Navigation() {
   return (
     <>
       <header
-        ref={headerRef}
         id="site-header"
         className="sticky top-0 z-50 w-full overflow-visible px-3 pt-3 pb-0 sm:px-4 sm:pt-4"
       >

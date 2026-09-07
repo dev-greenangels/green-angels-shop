@@ -21,6 +21,12 @@ export function releaseBodyScrollLock() {
   if (lockCount === 0) clearBodyScrollLock()
 }
 
+/** Drop all locks immediately (needed before programmatic scroll on iOS). */
+export function forceUnlockBodyScroll() {
+  lockCount = 0
+  clearBodyScrollLock()
+}
+
 export function useBodyScrollLock(locked: boolean) {
   useEffect(() => {
     if (!locked) return

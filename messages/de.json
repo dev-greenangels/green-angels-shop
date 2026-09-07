@@ -647,6 +647,7 @@
     "loading": "Filter werden geladen…",
     "clear": "Filter zurücksetzen",
     "clearAll": "Alle zurücksetzen",
+    "clearAllShort": "Alles",
     "price": "Preis",
     "priceFrom": "Von",
     "priceTo": "Bis",

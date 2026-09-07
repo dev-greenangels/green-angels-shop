@@ -166,11 +166,11 @@ export function CatalogLandingClient({
           productsSection={
             showProducts && initialProducts ? (
               <section className={cn(showSubcategories && 'border-t border-border/70 pt-10 md:pt-12')}>
-                {showSubcategories ? (
+                <div data-catalog-products-anchor>
                   <h2 className="mb-6 font-serif text-2xl font-semibold text-foreground">
                     {catalogRoot ? t('categoryProducts') : t('allProducts')}
                   </h2>
-                ) : null}
+                </div>
                 <CatalogProductsToolbar
                   countText={
                     meta

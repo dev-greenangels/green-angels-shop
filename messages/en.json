@@ -647,6 +647,7 @@
     "loading": "Loading filters…",
     "clear": "Clear filters",
     "clearAll": "Clear all",
+    "clearAllShort": "All",
     "price": "Price",
     "priceFrom": "From",
     "priceTo": "To",

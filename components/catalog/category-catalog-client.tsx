@@ -166,11 +166,12 @@ export function CategoryCatalogClient({
           productsSection={
             showProducts ? (
               <section className={cn(showSubcategories && 'border-t border-border/70 pt-10 md:pt-12')}>
-                {showSubcategories ? (
+                {/* Scroll target after filter apply/clear — title + toolbar under site header */}
+                <div data-catalog-products-anchor>
                   <h2 className="mb-6 font-serif text-2xl font-semibold text-foreground">
                     {t('categoryProducts')}
                   </h2>
-                ) : null}
+                </div>
                 <CatalogProductsToolbar
                   countText={t('plantsInCategory', {
                     count: meta.total.toLocaleString(numberLocale),

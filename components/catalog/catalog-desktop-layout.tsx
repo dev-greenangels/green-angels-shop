@@ -29,6 +29,11 @@ type CatalogDesktopLayoutProps = {
   productsSection: ReactNode
 }
 
+/**
+ * One products tree only (never duplicate). Desktop uses CSS grid; mobile stacks.
+ * Duplicating productsSection used to mount two PaginatedCatalogGrids and broke
+ * mobile filter-scroll (querySelector hit the hidden desktop anchor).
+ */
 export function CatalogDesktopLayout({
   showFilters,
   showSubcategories,
@@ -66,90 +71,92 @@ export function CatalogDesktopLayout({
     ? { top: collapse.filterStickyTopPx }
     : undefined
 
-  return (
-    <>
-      <div
-        className={cn(
-          'hidden lg:grid lg:w-full lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-start lg:gap-x-8 lg:gap-y-10',
-        )}
-      >
-        {splitSidebar ? (
-          <>
-            <div
-              className={cn(
-                'sticky z-10 row-start-1 self-start',
-                catalogSidebarStickyTopClassName,
-              )}
-            >
-              <CatalogCategorySidebar
-                compact={collapse.compact}
-                maxHeightPx={collapse.maxHeightPx}
-              />
-            </div>
-            <div className="row-start-1 min-w-0">{subcategoriesSection}</div>
-            <div
-              ref={filterStickyRef}
-              className={cn(
-                'sticky z-20 row-start-2 self-start',
-                collapse.filterStuck
-                  ? 'transition-[top] duration-200 ease-out'
-                  : catalogSidebarStickyTopClassName,
-              )}
-              style={filterStickyStyle}
-            >
-              <div
-                data-catalog-filter-sticky-sentinel
-                className="pointer-events-none h-px w-full"
-                aria-hidden
-              />
-              <CatalogFilterPanel
-                filters={filters}
-                onFilterChange={onFilterChange}
-                filterScope={filterScope}
-                filterVisibility={filterVisibility}
-                filterDefinitionsOptions={filterDefinitionsOptions}
-                maxHeightPx={filterMaxHeightPx}
-              />
-            </div>
-            <div className="row-start-2 min-w-0">{productsSection}</div>
-          </>
-        ) : null}
+  if (splitSidebar) {
+    return (
+      <div className="grid w-full grid-cols-1 items-start gap-y-10 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-x-8">
+        <div
+          className={cn(
+            'sticky z-10 hidden self-start lg:block',
+            catalogSidebarStickyTopClassName,
+          )}
+        >
+          <CatalogCategorySidebar
+            compact={collapse.compact}
+            maxHeightPx={collapse.maxHeightPx}
+          />
+        </div>
 
-        {!splitSidebar && showFilters ? (
-          <>
-            <div
-              className={cn(
-                'sticky flex flex-col gap-4 self-start',
-                catalogSidebarStickyTopClassName,
-              )}
-            >
-              <CatalogCategorySidebar />
-              <CatalogFilterPanel
-                filters={filters}
-                onFilterChange={onFilterChange}
-                filterScope={filterScope}
-                filterVisibility={filterVisibility}
-                filterDefinitionsOptions={filterDefinitionsOptions}
-              />
-            </div>
-            <div className="min-w-0">{productsSection}</div>
-          </>
-        ) : null}
+        <div className="min-w-0 lg:col-start-2">{subcategoriesSection}</div>
 
-        {!splitSidebar && !showFilters && showSubcategories ? (
-          <>
-            <div className={cn('sticky self-start', catalogSidebarStickyTopClassName)}>
-              <CatalogCategorySidebar />
-            </div>
-            <div className="min-w-0">{subcategoriesSection}</div>
-          </>
-        ) : null}
+        <div
+          ref={filterStickyRef}
+          className={cn(
+            'sticky z-20 hidden self-start lg:block',
+            collapse.filterStuck
+              ? 'transition-[top] duration-200 ease-out'
+              : catalogSidebarStickyTopClassName,
+          )}
+          style={filterStickyStyle}
+        >
+          <div
+            data-catalog-filter-sticky-sentinel
+            className="pointer-events-none h-px w-full"
+            aria-hidden
+          />
+          <CatalogFilterPanel
+            filters={filters}
+            onFilterChange={onFilterChange}
+            filterScope={filterScope}
+            filterVisibility={filterVisibility}
+            filterDefinitionsOptions={filterDefinitionsOptions}
+            maxHeightPx={filterMaxHeightPx}
+          />
+        </div>
+
+        <div className="min-w-0 lg:col-start-2">{productsSection}</div>
       </div>
+    )
+  }
 
-      <div className="min-w-0 space-y-10 lg:hidden">
-        {subcategoriesSection}
-        {productsSection}
+  if (showFilters) {
+    return (
+      <div className="grid w-full grid-cols-1 items-start gap-y-10 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-x-8">
+        <div
+          className={cn(
+            'sticky hidden flex-col gap-4 self-start lg:flex',
+            catalogSidebarStickyTopClassName,
+          )}
+        >
+          <CatalogCategorySidebar />
+          <CatalogFilterPanel
+            filters={filters}
+            onFilterChange={onFilterChange}
+            filterScope={filterScope}
+            filterVisibility={filterVisibility}
+            filterDefinitionsOptions={filterDefinitionsOptions}
+          />
+        </div>
+        <div className="min-w-0 space-y-10">
+          {showSubcategories ? subcategoriesSection : null}
+          {productsSection}
+        </div>
       </div>
-    </>
-  )
+    )
+  }
+
+  if (showSubcategories) {
+    return (
+      <div className="grid w-full grid-cols-1 items-start gap-y-10 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-x-8">
+        <div className={cn('sticky hidden self-start lg:block', catalogSidebarStickyTopClassName)}>
+          <CatalogCategorySidebar />
+        </div>
+        <div className="min-w-0 space-y-10">
+          {subcategoriesSection}
+          {productsSection}
+        </div>
+      </div>
+    )
+  }
+
+  return <div className="min-w-0">{productsSection}</div>
 }

@@ -19,7 +19,7 @@ import {
 } from '@/lib/layout/site-shell'
 import {
   scrollStickyToolbarIntoPlace,
-  STICKY_TOOLBAR_ROOT_ATTR,
+  CLOSE_STICKY_TOOLBAR_PANELS_EVENT,
 } from '@/lib/layout/sticky-toolbar-scroll'
 import { cn } from '@/lib/utils'
 
@@ -57,6 +57,8 @@ type StickyToolbarShellProps = {
   lockBodyScroll?: boolean
   /** Shorter toolbar row (h-10 instead of h-12). */
   compact?: boolean
+  /** Marks this shell as the catalog products list scroll anchor. */
+  catalogProductsAnchor?: boolean
 }
 
 /**
@@ -71,6 +73,7 @@ export function StickyToolbarShell({
   glass = true,
   lockBodyScroll = true,
   compact = false,
+  catalogProductsAnchor = false,
 }: StickyToolbarShellProps) {
   const [openPanel, setOpenPanel] = useState<string | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -94,6 +97,12 @@ export function StickyToolbarShell({
 
     return () => window.clearTimeout(timer)
   }, [openPanel])
+
+  useEffect(() => {
+    const onClosePanels = () => setOpenPanel(null)
+    document.addEventListener(CLOSE_STICKY_TOOLBAR_PANELS_EVENT, onClosePanels)
+    return () => document.removeEventListener(CLOSE_STICKY_TOOLBAR_PANELS_EVENT, onClosePanels)
+  }, [])
 
   useEffect(() => {
     if (!openPanel) return
@@ -129,6 +138,7 @@ export function StickyToolbarShell({
       <div
         ref={rootRef}
         data-sticky-toolbar-root
+        {...(catalogProductsAnchor ? { 'data-catalog-products-toolbar': '' } : {})}
         className={cn(siteStickyToolbarOuterClassName, outerClassName, className)}
       >
         {/* Layout slot = row height only; glass expands absolutely over content */}

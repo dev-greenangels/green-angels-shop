@@ -11,7 +11,7 @@ type GoogleTagManagerProps = {
 
 /**
  * Single GTM installation path (root layout only; skipped on `/backstage` via `x-ga-surface`).
- * Consent default + optional restore run before the GTM loader (`beforeInteractive`).
+ * Consent Mode defaults stay `beforeInteractive`; container loads `lazyOnload` to shorten critical path.
  */
 export function GoogleTagManager({ gtmId, initialConsent }: GoogleTagManagerProps) {
   return (
@@ -19,7 +19,7 @@ export function GoogleTagManager({ gtmId, initialConsent }: GoogleTagManagerProp
       <Script id="ga-consent-mode" strategy="beforeInteractive">
         {buildConsentBootstrapScript(initialConsent)}
       </Script>
-      <Script id="google-tag-manager" strategy="beforeInteractive">
+      <Script id="google-tag-manager" strategy="lazyOnload">
         {buildGtmScript(gtmId)}
       </Script>
       <noscript>

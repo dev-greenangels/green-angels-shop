@@ -1,6 +1,6 @@
 'use client'
 
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { useVatDisplayPolicy } from '@/components/providers/vat-display-provider'
@@ -11,47 +11,23 @@ import {
 } from '@/lib/commerce/use-format-price'
 import { cn } from '@/lib/utils'
 
-/** Secondary “без ПДВ: …” line scaled to match primary line width. */
+/** Secondary “без ПДВ: …” line — CSS size only (no layout measurement). */
 export function ExVatSecondaryLine({
   amountFormatted,
-  primaryWidthPx,
   className,
 }: {
   amountFormatted: string
-  /** Target width in px (primary line). When 0, renders at ~0.72em. */
-  primaryWidthPx: number
   className?: string
 }) {
   const t = useTranslations('price')
-  const measureRef = useRef<HTMLSpanElement>(null)
-  const [fontSizePx, setFontSizePx] = useState<number | null>(null)
-
-  useLayoutEffect(() => {
-    const el = measureRef.current
-    if (!el || primaryWidthPx <= 0) {
-      setFontSizePx(null)
-      return
-    }
-    // Measure at a known font-size, then scale to match primary width.
-    const probeSize = 12
-    el.style.fontSize = `${probeSize}px`
-    const natural = el.getBoundingClientRect().width
-    if (natural <= 0) {
-      setFontSizePx(null)
-      return
-    }
-    setFontSizePx(Math.max(8, Math.min(probeSize, (primaryWidthPx / natural) * probeSize)))
-  }, [amountFormatted, primaryWidthPx])
 
   return (
     <span
-      ref={measureRef}
       suppressHydrationWarning
       className={cn(
-        'block whitespace-nowrap font-normal leading-none text-muted-foreground',
+        'block max-w-full truncate text-[0.72em] font-normal leading-none text-muted-foreground',
         className,
       )}
-      style={{ fontSize: fontSizePx != null ? `${fontSizePx}px` : '0.72em' }}
     >
       {t('exclVatColon', { amount: amountFormatted })}
     </span>
@@ -76,8 +52,8 @@ type ShelfPriceBlockProps = {
 
 /**
  * Card / PDP shelf price:
- * - one size: «Ціна 3,00 ₴» + matched-width «без ПДВ: …»
- * - several: «від 3,00 ₴» (+ «— 5,00 ₴») + matched excl-VAT line
+ * - one size: «Ціна 3,00 ₴» + «без ПДВ: …»
+ * - several: «від 3,00 ₴» (+ «— 5,00 ₴») + excl-VAT line
  */
 export function ShelfPriceBlock({
   amount,
@@ -95,8 +71,6 @@ export function ShelfPriceBlock({
   const vat = useVatDisplayPolicy()
   const formatPrice = useFormatPrice(mode)
   const shelfParts = useShelfPriceParts()
-  const primaryRef = useRef<HTMLSpanElement>(null)
-  const [primaryWidth, setPrimaryWidth] = useState(0)
 
   const primaryParts = shelfParts(amount)
   const maxParts = amountMax != null && Math.abs(amountMax - amount) > 0.001 ? shelfParts(amountMax) : null
@@ -112,24 +86,6 @@ export function ShelfPriceBlock({
   const labelText =
     label === 'price' ? tPrice('label') : label === 'from' ? tProduct('from') : null
 
-  useLayoutEffect(() => {
-    const el = primaryRef.current
-    if (!el) return
-    const measure = () => setPrimaryWidth(el.getBoundingClientRect().width)
-    measure()
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null
-    ro?.observe(el)
-    return () => ro?.disconnect()
-  }, [
-    amount,
-    amountMax,
-    originalAmount,
-    label,
-    primaryParts.primaryFormatted,
-    maxParts?.primaryFormatted,
-    hasDiscount,
-  ])
-
   return (
     <span
       className={cn(
@@ -139,7 +95,6 @@ export function ShelfPriceBlock({
       )}
     >
       <span
-        ref={primaryRef}
         className={cn(
           'inline-flex flex-wrap items-baseline gap-x-1 gap-y-0.5 whitespace-nowrap',
           primaryClassName,
@@ -183,7 +138,6 @@ export function ShelfPriceBlock({
               ? `${primaryParts.secondaryFormatted} — ${maxParts.secondaryFormatted}`
               : primaryParts.secondaryFormatted
           }
-          primaryWidthPx={primaryWidth}
         />
       ) : null}
     </span>
@@ -208,24 +162,12 @@ export function PriceWithExVatUnder({
 }) {
   const vat = useVatDisplayPolicy()
   const shelfParts = useShelfPriceParts()
-  const primaryRef = useRef<HTMLSpanElement>(null)
-  const [primaryWidth, setPrimaryWidth] = useState(0)
   const parts = shelfParts(storedAmount)
   const show =
     showVatHint &&
     mode === 'shelf' &&
     vat.storefrontShowExVatSecondary &&
     Boolean(parts.secondaryFormatted)
-
-  useLayoutEffect(() => {
-    const el = primaryRef.current
-    if (!el) return
-    const measure = () => setPrimaryWidth(el.getBoundingClientRect().width)
-    measure()
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null
-    ro?.observe(el)
-    return () => ro?.disconnect()
-  }, [storedAmount, parts.primaryFormatted, parts.secondaryFormatted])
 
   return (
     <span
@@ -235,14 +177,9 @@ export function PriceWithExVatUnder({
         className,
       )}
     >
-      <span ref={primaryRef} className="inline-flex leading-none">
-        {children}
-      </span>
+      <span className="inline-flex leading-none">{children}</span>
       {show && parts.secondaryFormatted ? (
-        <ExVatSecondaryLine
-          amountFormatted={parts.secondaryFormatted}
-          primaryWidthPx={primaryWidth}
-        />
+        <ExVatSecondaryLine amountFormatted={parts.secondaryFormatted} />
       ) : null}
     </span>
   )

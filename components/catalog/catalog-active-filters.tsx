@@ -139,12 +139,13 @@ export function CatalogActiveFilters({
       ))}
       <Button
         type="button"
-        variant="ghost"
-        size="sm"
-        className="h-7 px-2 text-xs"
+        size="icon"
+        variant="secondary"
+        className="h-7 w-7 shrink-0 rounded-full border border-border/70 bg-background shadow-sm hover:bg-muted"
         onClick={() => onFilterChange(clearCatalogFilters())}
+        aria-label={t('clearAll')}
       >
-        {t('clearAll')}
+        <X className="h-3.5 w-3.5" />
       </Button>
     </div>
   )

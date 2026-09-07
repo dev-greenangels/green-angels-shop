@@ -647,6 +647,7 @@
     "loading": "Szűrők betöltése…",
     "clear": "Szűrők törlése",
     "clearAll": "Összes törlése",
+    "clearAllShort": "Összes",
     "price": "Ár",
     "priceFrom": "Tól",
     "priceTo": "Ig",

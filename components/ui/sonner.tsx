@@ -1,14 +1,13 @@
 'use client'
 
 import type { CSSProperties } from 'react'
-import { useEffect } from 'react'
-import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { Toaster as Sonner, type ToasterProps } from 'sonner'
 
 const TOAST_OFFSET_BOTTOM = 'calc(1.25rem + env(safe-area-inset-bottom, 0px))'
 const TOAST_OFFSET_LEFT = 'calc(1rem + env(safe-area-inset-left, 0px))'
-const CENTER_TOAST_OFFSET_TOP = 'calc(var(--site-header-offset, 2.75rem) + 0.75rem)'
+/** Uses CSS `--site-header-offset` from globals.css (no JS measure). */
+const CENTER_TOAST_OFFSET_TOP = 'calc(var(--site-header-offset, 4.5rem) + 0.75rem)'
 
 const toasterStyle = {
   '--normal-bg': 'var(--card)',
@@ -68,16 +67,6 @@ const Toaster = ({
 }
 
 function AppToasters() {
-  const pathname = usePathname()
-
-  useEffect(() => {
-    const isBackstage = pathname?.startsWith('/backstage')
-    document.documentElement.style.setProperty(
-      '--site-header-offset',
-      isBackstage ? '2.25rem' : '2.75rem',
-    )
-  }, [pathname])
-
   return <Toaster />
 }
 

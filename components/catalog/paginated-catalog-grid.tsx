@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
@@ -26,6 +26,7 @@ import {
 import type { Plant } from '@/lib/types'
 import type { CatalogViewMode } from '@/lib/catalog/view-mode'
 import { usePathname, useRouter } from '@/i18n/navigation'
+import { requestCatalogProductsListScroll } from '@/lib/layout/sticky-toolbar-scroll'
 import { cn } from '@/lib/utils'
 
 const EMPTY_QUERY_PARAMS: Omit<CatalogProductsParams, 'limit' | 'page' | 'pageSize'> = {}
@@ -110,6 +111,10 @@ export function PaginatedCatalogGrid({
   const skipUrlFetchRef = useRef(false)
   const prevSortRef = useRef(sortBy)
   const prevQueryRef = useRef(queryKey)
+  const prevFiltersKeyRef = useRef<string | null>(null)
+  const prevSortForScrollRef = useRef(sortBy)
+  const skipScrollOnMountRef = useRef(true)
+  const scrollListAfterReplaceRef = useRef(false)
 
   const skipInitialFetchRef = useRef(initialFetchKey ?? null)
 
@@ -156,6 +161,31 @@ export function PaginatedCatalogGrid({
         : { characteristics: '', variantAttributes: '', stock: 'in_stock' as const },
     [filters],
   )
+
+  useEffect(() => {
+    if (skipScrollOnMountRef.current) {
+      skipScrollOnMountRef.current = false
+      prevFiltersKeyRef.current = filtersKey
+      prevSortForScrollRef.current = sortBy
+      return
+    }
+
+    const filtersChanged = prevFiltersKeyRef.current !== filtersKey
+    const sortChanged = prevSortForScrollRef.current !== sortBy
+    prevFiltersKeyRef.current = filtersKey
+    prevSortForScrollRef.current = sortBy
+
+    if (filtersChanged || sortChanged) {
+      scrollListAfterReplaceRef.current = true
+    }
+  }, [filtersKey, sortBy])
+
+  // Scroll AFTER React commits the new list height (critical on mobile — rAF in runFetch was too early).
+  useLayoutEffect(() => {
+    if (loading || !scrollListAfterReplaceRef.current) return
+    scrollListAfterReplaceRef.current = false
+    requestCatalogProductsListScroll()
+  }, [loading, plants, total])
 
   const fetchPage = useCallback(
     async (targetPage: number, mode: 'replace' | 'append') => {
@@ -212,7 +242,7 @@ export function PaginatedCatalogGrid({
         if (showLoading) setLoading(false)
       }
     },
-    [fetchPage],
+    [fetchPage, tCatalog],
   )
 
   useEffect(() => {
@@ -307,7 +337,7 @@ export function PaginatedCatalogGrid({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center gap-2 py-24 text-muted-foreground">
+      <div data-catalog-products-list className="flex items-center justify-center gap-2 py-24 text-muted-foreground">
         <Loader2 className="h-5 w-5 animate-spin" />
         {tc('loading')}
       </div>
@@ -316,16 +346,18 @@ export function PaginatedCatalogGrid({
 
   if (unavailable) {
     return (
-      <ServiceUnavailableNotice
-        message={te('catalogUnavailable')}
-        className="mx-auto max-w-lg"
-      />
+      <div data-catalog-products-list>
+        <ServiceUnavailableNotice
+          message={te('catalogUnavailable')}
+          className="mx-auto max-w-lg"
+        />
+      </div>
     )
   }
 
   if (error) {
     return (
-      <div className="py-12 text-center">
+      <div data-catalog-products-list className="py-12 text-center">
         <p className="text-lg text-destructive">{error}</p>
       </div>
     )
@@ -333,14 +365,14 @@ export function PaginatedCatalogGrid({
 
   if (displayedPlants.length === 0) {
     return (
-      <div className="py-12 text-center">
+      <div data-catalog-products-list className="py-12 text-center">
         <p className="text-lg text-muted-foreground">{resolvedEmptyMessage}</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
+    <div data-catalog-products-list className="space-y-8">
       <div
         className={cn(
           viewMode === 'grid'

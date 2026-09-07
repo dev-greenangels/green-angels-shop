@@ -1,5 +1,6 @@
 'use client'
 
+import { X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { CatalogActiveFilters } from '@/components/catalog/catalog-active-filters'
@@ -16,6 +17,10 @@ import {
 } from '@/components/catalog/catalog-sort-sheet'
 import { CATALOG_SORT_OPTIONS } from '@/lib/catalog/sort-options'
 import type { CatalogFilterDefinitions } from '@/lib/backstage/characteristics'
+import {
+  clearCatalogFilters,
+  hasActiveCatalogFilters,
+} from '@/lib/catalog/filter-plants'
 import type { CatalogFiltersVisibilitySettings } from '@/lib/catalog/filter-visibility'
 import type { CatalogFilterScope } from '@/lib/catalog/use-catalog-filter-definitions'
 import { useCatalogFilterDefinitions } from '@/lib/catalog/use-catalog-filter-definitions'
@@ -24,7 +29,9 @@ import {
   StickyToolbarPanel,
   StickyToolbarRow,
   StickyToolbarShell,
+  useStickyToolbar,
 } from '@/components/layout/sticky-toolbar-shell'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -55,6 +62,63 @@ type CatalogProductsToolbarProps = {
   }
 }
 
+function MobileFilterClearButton({
+  filters,
+  priceBounds,
+  onFilterChange,
+}: {
+  filters: CatalogFiltersState
+  priceBounds: { min: number; max: number }
+  onFilterChange: (filters: CatalogFiltersState) => void
+}) {
+  const t = useTranslations('filter')
+  const hasActive = hasActiveCatalogFilters(filters, priceBounds)
+  if (!hasActive) return null
+
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="secondary"
+      className="h-8 shrink-0 gap-1 rounded-full border border-border/70 bg-background px-2.5 text-xs shadow-sm hover:bg-muted"
+      onClick={() => onFilterChange(clearCatalogFilters())}
+      aria-label={t('clearAll')}
+    >
+      <X className="h-3.5 w-3.5" />
+      {t('clearAllShort')}
+    </Button>
+  )
+}
+
+function MobileToolbarLeading({
+  viewMode,
+  onViewModeChange,
+  filters,
+  priceBounds,
+  onFilterChange,
+}: {
+  viewMode: CatalogViewMode
+  onViewModeChange: (value: CatalogViewMode) => void
+  filters: CatalogFiltersState
+  priceBounds: { min: number; max: number }
+  onFilterChange: (filters: CatalogFiltersState) => void
+}) {
+  const { isOpen } = useStickyToolbar()
+  const filterPanelOpen = isOpen(CATALOG_FILTER_PANEL_ID)
+
+  if (filterPanelOpen) {
+    return (
+      <MobileFilterClearButton
+        filters={filters}
+        priceBounds={priceBounds}
+        onFilterChange={onFilterChange}
+      />
+    )
+  }
+
+  return <CatalogViewModeToggle value={viewMode} onChange={onViewModeChange} />
+}
+
 export function CatalogProductsToolbar({
   countText,
   sortBy,
@@ -77,7 +141,10 @@ export function CatalogProductsToolbar({
 
   return (
     <>
-      <div className={cn(siteStickyToolbarOuterClassName, 'hidden lg:block')}>
+      <div
+        data-catalog-products-toolbar
+        className={cn(siteStickyToolbarOuterClassName, 'hidden lg:block')}
+      >
         <div className={cn(siteStickyToolbarInnerClassName, 'flex-col items-stretch gap-2')}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
@@ -110,9 +177,15 @@ export function CatalogProductsToolbar({
         </div>
       </div>
 
-      <StickyToolbarShell className="lg:hidden">
+      <StickyToolbarShell className="lg:hidden" catalogProductsAnchor lockBodyScroll={false}>
         <StickyToolbarRow>
-          <CatalogViewModeToggle value={viewMode} onChange={onViewModeChange} />
+          <MobileToolbarLeading
+            viewMode={viewMode}
+            onViewModeChange={onViewModeChange}
+            filters={filters}
+            priceBounds={priceBounds}
+            onFilterChange={onFilterChange}
+          />
           <p className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{countText}</p>
           <div className="flex shrink-0 items-center gap-1.5">
             <CatalogFilterSheet

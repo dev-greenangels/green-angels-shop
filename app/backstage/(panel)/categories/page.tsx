@@ -470,6 +470,7 @@ export default function CategoriesPage() {
       name: node.name,
       slug: node.slug,
       parentId: node.parentId,
+      legacyId: node.legacyId,
       image: node.image,
       description: node.description ?? '',
       footerDescription: node.footerDescription ?? '',

@@ -279,6 +279,27 @@ export async function runFlexiStromSync(opts?: {
   return res.json()
 }
 
+export type FlexiCategoryLegacyBackfillResult = {
+  ok: boolean
+  matched: number
+  updated: number
+  skippedAlreadySet: number
+  skippedNoMatch: number
+  skippedConflict: number
+  skippedNonNumericId: number
+  message: string
+  errors: string[]
+}
+
+export async function runFlexiCategoryLegacyBackfill(): Promise<FlexiCategoryLegacyBackfillResult> {
+  const res = await fetch('/api/backstage/flexi/backfill-category-legacy-ids/run', {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
 export async function runFlexiImport(): Promise<FlexiImportResult> {
   const res = await fetch('/api/backstage/flexi/import-new-products/run', {
     method: 'POST',

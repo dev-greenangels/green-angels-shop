@@ -27,6 +27,7 @@ import {
   runFlexiFullSync,
   runFlexiPollChanges,
   runFlexiStromSync,
+  runFlexiCategoryLegacyBackfill,
   testFlexiConnection,
   updateFlexiSettings,
   DEFAULT_FLEXI_IMPORT_UPDATE_FIELDS,
@@ -674,13 +675,14 @@ export function FlexiSettingsForm() {
                     ['categoryDescriptions', 'Опис (txtNad)'],
                     ['categoryFooters', 'Footer опис (txtPod)'],
                     ['categoryLatinName', 'Latin name'],
-                    ['categoryTree', 'Дерево (parent, position)'],
+                    ['categoryTree', 'Дерево (parent, position) — лише при створенні'],
                   ] as const
                 ).map(([key, label]) => (
                   <div key={key} className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
                     <span className="text-sm">{label}</span>
                     <Switch
-                      checked={settings.importUpdateFields[key]}
+                      checked={key === 'categoryTree' ? true : settings.importUpdateFields[key]}
+                      disabled={key === 'categoryTree'}
                       onCheckedChange={(checked) =>
                         setSettings((s) => ({
                           ...s,
@@ -1045,6 +1047,34 @@ export function FlexiSettingsForm() {
               >
                 {busy === 'strom-update' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Оновити існуючі
+              </Button>
+            </div>
+
+            <div className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 space-y-1">
+                <p className="font-medium">Записати Legacy ID категорій</p>
+                <p className="text-sm text-muted-foreground">
+                  Для існуючих категорій на сайті проставляє Category.legacyId = id вузла ABRA,
+                  якщо slug збігається з slugify(kod). Не створює категорії і не міняє slug /
+                  parent / position. Запускайте один раз після деплою перед опорою на матч по id.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="shrink-0"
+                disabled={Boolean(busy)}
+                onClick={() =>
+                  void run('category-legacy-backfill', async () => {
+                    const r = await runFlexiCategoryLegacyBackfill()
+                    return { ok: r.ok, message: r.message }
+                  })
+                }
+              >
+                {busy === 'category-legacy-backfill' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : null}
+                Записати Legacy ID
               </Button>
             </div>
 

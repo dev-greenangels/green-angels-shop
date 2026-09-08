@@ -48,6 +48,7 @@ export type CategoryFormValues = {
   name: string
   slug: string
   parentId: string | null
+  legacyId: number | null
   image: string | null
   description: string
   footerDescription: string
@@ -143,6 +144,7 @@ export async function createCategory(
       name: payload.name.trim(),
       slug: payload.slug.trim().toLowerCase(),
       parentId: payload.parentId || undefined,
+      legacyId: payload.legacyId ?? undefined,
       image: payload.image || undefined,
       description: payload.description.trim() || undefined,
       footerDescription: payload.footerDescription.trim() || undefined,
@@ -170,6 +172,7 @@ export async function patchCategory(
   }
   if (payload.slug !== undefined) body.slug = payload.slug.trim().toLowerCase()
   if (payload.parentId !== undefined) body.parentId = payload.parentId
+  if (payload.legacyId !== undefined) body.legacyId = payload.legacyId
   if (payload.image !== undefined) body.image = payload.image
   if (payload.description !== undefined) body.description = payload.description.trim() || undefined
   if (payload.footerDescription !== undefined) {

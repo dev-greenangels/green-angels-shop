@@ -40,6 +40,7 @@ const emptyForm: CategoryFormValues = {
   name: '',
   slug: '',
   parentId: null,
+  legacyId: null,
   image: null,
   description: '',
   footerDescription: '',
@@ -203,6 +204,30 @@ export function CategoryFormDialog({
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              {tLabels('categoryParentId')}:{' '}
+              <span className="font-mono">{form.parentId ?? '—'}</span>
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category-legacy-id">{tLabels('categoryLegacyId')}</Label>
+            <Input
+              id="category-legacy-id"
+              inputMode="numeric"
+              value={form.legacyId ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value.trim()
+                if (!raw) {
+                  patch({ legacyId: null })
+                  return
+                }
+                if (!/^\d+$/.test(raw)) return
+                patch({ legacyId: Number(raw) })
+              }}
+              placeholder={tHints('optionalLegacyId')}
+            />
+            <p className="text-xs text-muted-foreground">{tHints('categoryLegacyIdHint')}</p>
           </div>
 
           <div className="flex items-start gap-3 rounded-lg border border-border/60 p-3">

@@ -258,6 +258,7 @@ export default function BackstageMarketingSubscribersPage() {
                             row.userId ? (
                               <Link
                                 href={`/backstage/users/${row.userId}`}
+                                prefetch={false}
                                 className="text-primary underline-offset-2 hover:underline"
                               >
                                 {t('clientType.registered')}

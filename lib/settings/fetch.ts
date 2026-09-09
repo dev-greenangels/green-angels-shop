@@ -1,6 +1,6 @@
 import { cache } from 'react'
 
-import { getBackendApiUrl } from '@/lib/api/backend-url'
+import { fetchBackendHttp } from '@/lib/api/backend-http'
 import {
   DEFAULT_CART_CHECKOUT_SETTINGS,
   DEFAULT_CATALOG_SETTINGS,
@@ -88,7 +88,7 @@ function unavailableSettingsFallback(): FetchedPublicSiteSettings {
 
 async function fetchPublicSiteSettingsUncached(): Promise<FetchedPublicSiteSettings> {
   try {
-    const res = await fetch(`${getBackendApiUrl()}/settings/public`, { cache: 'no-store' })
+    const res = await fetchBackendHttp('/settings/public', { cache: 'no-store' })
     if (!res.ok) throw new Error(await parseError(res))
     const settings = (await res.json()) as PublicSiteSettings
     return { settings, storeUnavailable: false }

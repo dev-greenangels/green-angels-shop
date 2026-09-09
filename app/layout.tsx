@@ -23,6 +23,7 @@ import { isIndexingAllowed, previewRobotsDirective } from '@/lib/seo/indexing-po
 import { fetchCommerceSettings } from '@/lib/commerce/fetch'
 import { fetchCatalogRootSlug } from '@/lib/catalog/paths'
 import { getCookieConsent } from '@/lib/legal/cookie-consent.server'
+import { timeSsrPhase } from '@/lib/observability/ssr-phase'
 import { buildVatDisplayPolicy } from '@/lib/pricing/vat-price'
 
 import './globals.css'
@@ -110,14 +111,16 @@ export default async function RootLayout({
   const locale = await getLocale()
   setRequestLocale(locale)
   const [session, siteSettings, commerceSettings, catalogRootSlug, cookieConsent, headerStore] =
-    await Promise.all([
-      getSession(),
-      fetchPublicSiteSettings(),
-      fetchCommerceSettings(locale),
-      fetchCatalogRootSlug(locale),
-      getCookieConsent(),
-      headers(),
-    ])
+    await timeSsrPhase('root-layout-blocking-data', () =>
+      Promise.all([
+        getSession(),
+        fetchPublicSiteSettings(),
+        fetchCommerceSettings(locale),
+        fetchCatalogRootSlug(locale),
+        getCookieConsent(),
+        headers(),
+      ]),
+    )
   const storeSettings = getStoreSettings(siteSettings)
   const catalogSettings = getCatalogPageSettings(siteSettings)
   const localizationSettings = getLocalizationSettings(siteSettings)

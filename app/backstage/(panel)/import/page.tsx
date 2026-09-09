@@ -560,7 +560,7 @@ export default function ImportPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Імпорт каталогу</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Excel (нативний формат GA) або PrestaShop CSV. Повторний імпорт оновлює існуючі записи.{' '}
-            <Link href="/backstage/settings" className="underline underline-offset-2">
+            <Link href="/backstage/settings" prefetch={false} className="underline underline-offset-2">
               URL шаблони зображень Presta — у Налаштуваннях
             </Link>
             .

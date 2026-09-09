@@ -202,6 +202,7 @@ export default function BackstageReviewsPage() {
                           {tStatus('productLabel')}{' '}
                           <Link
                             href={`/product/${review.productSlug}`}
+                            prefetch={false}
                             className="font-medium text-primary hover:underline"
                             target="_blank"
                           >

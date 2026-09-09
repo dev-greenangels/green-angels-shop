@@ -1,11 +1,10 @@
 'use client'
 
-import { createNavigation } from 'next-intl/navigation'
 import { forwardRef, type ComponentProps } from 'react'
 
-import { routing } from './routing'
+import { navigation } from './navigation-base'
 
-const { Link: IntlLink } = createNavigation(routing)
+const IntlLink = navigation.Link
 
 type IntlLinkProps = ComponentProps<typeof IntlLink>
 

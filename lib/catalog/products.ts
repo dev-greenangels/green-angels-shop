@@ -1,6 +1,6 @@
 import { cache } from 'react'
 
-import { getBackendApiUrl } from '@/lib/api/backend-url'
+import { fetchBackendHttp } from '@/lib/api/backend-http'
 import {
   availableResult,
   type FetchResult,
@@ -144,7 +144,7 @@ async function fetchPageFromBackend(
   params: CatalogProductsParams & { page: number; pageSize: number },
 ): Promise<CatalogProductsPageResult> {
   const query = buildProductsQuery(params)
-  const res = await fetch(`${getBackendApiUrl()}/products?${query}`, { cache: 'no-store' })
+  const res = await fetchBackendHttp(`/products?${query}`, { cache: 'no-store' })
   if (!res.ok) throw new Error(await parseError(res))
   const data = await res.json()
 
@@ -196,7 +196,7 @@ async function fetchListFromBackend(
   params: CatalogProductsParams = {},
 ): Promise<CatalogProductListItem[]> {
   const query = buildProductsQuery(params)
-  const res = await fetch(`${getBackendApiUrl()}/products?${query}`, { cache: 'no-store' })
+  const res = await fetchBackendHttp(`/products?${query}`, { cache: 'no-store' })
   if (!res.ok) throw new Error(await parseError(res))
   const data = await res.json()
   const rows = isPaginatedResponse(data) ? data.items : (data as CatalogProductListItem[])
@@ -218,9 +218,10 @@ async function fetchListFromApiRoute(
 async function fetchDetailFromBackend(slug: string, locale?: string): Promise<CatalogProductDetail> {
   const loc = locale && isAppLocale(locale) ? locale : defaultLocale
   const query = new URLSearchParams({ locale: loc })
-  const res = await fetch(`${getBackendApiUrl()}/products/by-slug/${encodeURIComponent(slug)}?${query}`, {
-    cache: 'no-store',
-  })
+  const res = await fetchBackendHttp(
+    `/products/by-slug/${encodeURIComponent(slug)}?${query}`,
+    { cache: 'no-store' },
+  )
   if (res.status === 404) throw new ProductNotFoundError()
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()

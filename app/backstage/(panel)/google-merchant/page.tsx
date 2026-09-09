@@ -306,6 +306,7 @@ export default function GoogleMerchantDiagnosticsPage() {
                             <td className="px-3 py-2 align-top">
                               <Link
                                 href={row.editHref}
+                                prefetch={false}
                                 className="text-primary underline-offset-2 hover:underline"
                               >
                                 {t('editProduct')}

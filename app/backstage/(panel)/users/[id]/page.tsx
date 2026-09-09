@@ -154,7 +154,7 @@ export default function UserDetailPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-2">
             <Button variant="ghost" size="sm" className="-ml-2 w-fit" asChild>
-              <Link href="/backstage/users">
+              <Link href="/backstage/users" prefetch={false}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 До списку
               </Link>

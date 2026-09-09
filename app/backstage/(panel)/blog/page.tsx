@@ -351,7 +351,12 @@ export default function BlogPage() {
                           <div className="flex flex-wrap justify-end gap-2">
                             {post.isPublished ? (
                               <Button variant="outline" size="sm" asChild>
-                                <Link href={`/uk/blog/${post.slug}`} target="_blank" rel="noreferrer">
+                                <Link
+                                  href={`/uk/blog/${post.slug}`}
+                                  prefetch={false}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
                                   <ExternalLink className="mr-1.5 h-4 w-4" />
                                   Сайт
                                 </Link>

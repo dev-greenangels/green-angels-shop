@@ -36,6 +36,7 @@ import {
   getRecentlyViewedSettings,
   getWholesalePageSettings,
 } from '@/lib/settings/fetch'
+import { timeSsrPhase } from '@/lib/observability/ssr-phase'
 
 export async function generateMetadata({
   params,
@@ -50,7 +51,9 @@ export default async function HomePage() {
   const locale = await getLocale()
   setRequestLocale(locale)
 
-  const siteSettingsResult = await fetchPublicSiteSettings()
+  const siteSettingsResult = await timeSsrPhase('homepage-settings', () =>
+    fetchPublicSiteSettings(),
+  )
   const home = getHomeSettings(siteSettingsResult)
   const market = getMarketSettings(siteSettingsResult)
   const wholesalePage = getWholesalePageSettings(siteSettingsResult)
@@ -61,30 +64,42 @@ export default async function HomePage() {
   const emptyProducts: HomeProductsResult = { plants: [], unavailable: false }
 
   const [categoriesResult, newArrivalsResult, bestsellersResult, lowStockResult, freshPhotosResult, reviewsResult] =
-    await Promise.all([
-      show('categories')
-        ? fetchCatalogCategories(locale)
-        : Promise.resolve({ data: [], unavailable: false }),
-      show('newArrivals')
-        ? fetchNewArrivalProducts(home.newArrivals, locale)
-        : Promise.resolve(emptyProducts),
-      show('bestsellers')
-        ? fetchBestsellerProducts(home.bestsellers, locale)
-        : Promise.resolve(emptyProducts),
-      show('lowStock')
-        ? fetchLowStockProducts(home.lowStock, locale)
-        : Promise.resolve(emptyProducts),
-      show('freshPlantPhotos')
-        ? fetchHomeFreshPhotos(home.freshPlantPhotos.limit)
-        : Promise.resolve({ items: [], total: 0, page: 1, pageSize: 0, totalPages: 1 }),
-      show('reviews')
-        ? fetchHomeReviews({
-            page: 1,
-            pageSize: home.reviews.limit,
-            sort: home.reviews.sort,
-          })
-        : Promise.resolve(EMPTY_REVIEWS_PAGE),
-    ])
+    await timeSsrPhase('homepage-sections', () =>
+      Promise.all([
+        show('categories')
+          ? timeSsrPhase('homepage-categories', () => fetchCatalogCategories(locale))
+          : Promise.resolve({ data: [], unavailable: false }),
+        show('newArrivals')
+          ? timeSsrPhase('homepage-products-new-arrivals', () =>
+              fetchNewArrivalProducts(home.newArrivals, locale),
+            )
+          : Promise.resolve(emptyProducts),
+        show('bestsellers')
+          ? timeSsrPhase('homepage-products-bestsellers', () =>
+              fetchBestsellerProducts(home.bestsellers, locale),
+            )
+          : Promise.resolve(emptyProducts),
+        show('lowStock')
+          ? timeSsrPhase('homepage-products-low-stock', () =>
+              fetchLowStockProducts(home.lowStock, locale),
+            )
+          : Promise.resolve(emptyProducts),
+        show('freshPlantPhotos')
+          ? timeSsrPhase('homepage-fresh-photos', () =>
+              fetchHomeFreshPhotos(home.freshPlantPhotos.limit),
+            )
+          : Promise.resolve({ items: [], total: 0, page: 1, pageSize: 0, totalPages: 1 }),
+        show('reviews')
+          ? timeSsrPhase('homepage-reviews', () =>
+              fetchHomeReviews({
+                page: 1,
+                pageSize: home.reviews.limit,
+                sort: home.reviews.sort,
+              }),
+            )
+          : Promise.resolve(EMPTY_REVIEWS_PAGE),
+      ]),
+    )
 
   const sectionRenderers: Record<HomeSectionKey, ReactNode> = {
     categories: (

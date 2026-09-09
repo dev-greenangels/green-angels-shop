@@ -2,7 +2,7 @@ import 'server-only'
 
 import { cookies } from 'next/headers'
 
-import { getBackendApiUrl } from '@/lib/api/backend-url'
+import { fetchBackendHttp } from '@/lib/api/backend-http'
 
 async function resolveCookieHeader(request?: Request): Promise<string | null> {
   const fromRequest = request?.headers.get('cookie')?.trim()
@@ -23,7 +23,7 @@ export async function fetchBackend(
 
   const { request: _request, ...fetchInit } = init ?? {}
 
-  return fetch(`${getBackendApiUrl()}${path}`, {
+  return fetchBackendHttp(path, {
     ...fetchInit,
     headers,
     cache: 'no-store',

@@ -1,6 +1,6 @@
 import { cache } from 'react'
 
-import { getBackendApiUrl } from '@/lib/api/backend-url'
+import { fetchBackendHttp } from '@/lib/api/backend-http'
 import {
   availableResult,
   type FetchResult,
@@ -117,7 +117,7 @@ function resolveLocale(locale?: string) {
 
 async function fetchTreeFromBackend(locale?: string): Promise<CategoryTreeNode[]> {
   const loc = resolveLocale(locale)
-  const res = await fetch(`${getBackendApiUrl()}/categories?locale=${encodeURIComponent(loc)}`, {
+  const res = await fetchBackendHttp(`/categories?locale=${encodeURIComponent(loc)}`, {
     cache: 'no-store',
   })
   if (!res.ok) throw new Error(await parseError(res))

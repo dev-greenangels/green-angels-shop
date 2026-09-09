@@ -99,7 +99,9 @@ export default function BackstageJobsPage() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Button asChild variant="outline" size="sm">
-                    <Link href="/backstage/stock-notifications">{t('openStock')}</Link>
+                    <Link href="/backstage/stock-notifications" prefetch={false}>
+                      {t('openStock')}
+                    </Link>
                   </Button>
                   <Button
                     type="button"
@@ -136,7 +138,9 @@ export default function BackstageJobsPage() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Button asChild variant="outline" size="sm">
-                    <Link href="/backstage/settings">{t('openFlexi')}</Link>
+                    <Link href="/backstage/settings" prefetch={false}>
+                      {t('openFlexi')}
+                    </Link>
                   </Button>
                   <Button
                     type="button"
@@ -181,7 +185,9 @@ export default function BackstageJobsPage() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Button asChild variant="outline" size="sm">
-                    <Link href="/backstage/settings">{t('openNp')}</Link>
+                    <Link href="/backstage/settings" prefetch={false}>
+                      {t('openNp')}
+                    </Link>
                   </Button>
                   <Button
                     type="button"
@@ -216,7 +222,9 @@ export default function BackstageJobsPage() {
                   {data?.tedb.lastError || data?.tedb.lastRunAt || t('tedbIdle')}
                 </p>
                 <Button asChild variant="outline" size="sm">
-                  <Link href="/backstage/tedb">{t('openTedb')}</Link>
+                  <Link href="/backstage/tedb" prefetch={false}>
+                    {t('openTedb')}
+                  </Link>
                 </Button>
               </CardContent>
             </Card>

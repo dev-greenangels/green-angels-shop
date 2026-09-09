@@ -1,6 +1,10 @@
 import { resolveThumbUrl } from '@/lib/media/paths'
 import { toPublicMediaUrl } from '@/lib/media/public-url'
 
+/** Must match `<source media>` / desktop preload in `HeroSection`. */
+export const HERO_MOBILE_MEDIA = '(max-width: 639px)' as const
+export const HERO_DESKTOP_MEDIA = '(min-width: 640px)' as const
+
 /** Public hero image URL for storefront / OG (uploads → CDN when configured). */
 export function resolveHeroDisplayUrl(imageUrl: string | null | undefined): string | null {
   const trimmed = imageUrl?.trim()

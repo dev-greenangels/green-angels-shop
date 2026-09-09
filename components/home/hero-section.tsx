@@ -2,7 +2,8 @@ import { ArrowRight, Camera, Sprout, Truck } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 
 import { Button } from '@/components/ui/button'
-import { resolveHeroDisplayUrl } from '@/lib/home/hero-image'
+import { HERO_MOBILE_MEDIA, resolveHeroDisplayUrl } from '@/lib/home/hero-image'
+import { preloadHomeHeroImages } from '@/lib/home/hero-preload'
 import { resolveHeroDeliveryCountryCode } from '@/lib/home/hero-delivery-label'
 import { pickHomeCmsText } from '@/lib/home/cms-or-translated'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
@@ -62,6 +63,11 @@ export async function HeroSection({
     heroDesktopSrc && heroMobileOnlySrc && heroDesktopSrc !== heroMobileOnlySrc,
   )
 
+  preloadHomeHeroImages({
+    desktopSrc: heroDesktopSrc,
+    mobileSrc: heroMobileOnlySrc,
+  })
+
   return (
     <section className="w-full py-6 sm:py-8 lg:py-10">
       <div
@@ -80,7 +86,7 @@ export async function HeroSection({
           {heroImageSrc ? (
             <picture className="absolute inset-0 block">
               {useMobilePictureSource && heroMobileOnlySrc ? (
-                <source media="(max-width: 639px)" srcSet={heroMobileOnlySrc} />
+                <source media={HERO_MOBILE_MEDIA} srcSet={heroMobileOnlySrc} />
               ) : null}
               <img
                 src={heroImageSrc}

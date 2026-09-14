@@ -90,7 +90,7 @@ export default async function HomePage() {
           : Promise.resolve(emptyProducts),
         show('freshPlantPhotos')
           ? timeSsrPhase('homepage-fresh-photos', () =>
-              fetchHomeFreshPhotos(home.freshPlantPhotos.limit),
+              fetchHomeFreshPhotos(home.freshPlantPhotos.limit, locale),
             )
           : Promise.resolve({ items: [], total: 0, page: 1, pageSize: 0, totalPages: 1 }),
         show('reviews')

@@ -241,6 +241,7 @@ export function FreshPhotosPageContent() {
     const params = new URLSearchParams()
     params.set('page', String(page))
     params.set('pageSize', '24')
+    params.set('locale', locale)
     if (searchFromUrl) params.set('search', searchFromUrl)
     if (categoryFromUrl) params.set('category', categoryFromUrl)
 
@@ -263,7 +264,7 @@ export function FreshPhotosPageContent() {
     return () => {
       cancelled = true
     }
-  }, [page, searchFromUrl, categoryFromUrl])
+  }, [page, searchFromUrl, categoryFromUrl, locale])
 
   const isInitialLoading = loading && !data
   const isRefreshing = loading && Boolean(data)

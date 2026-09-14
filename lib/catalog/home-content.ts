@@ -29,7 +29,10 @@ export async function fetchHomeReviews(filters?: ReviewFilters): Promise<Reviews
   }
 }
 
-export async function fetchHomeFreshPhotos(limit: number): Promise<CatalogPhotosPage> {
+export async function fetchHomeFreshPhotos(
+  limit: number,
+  locale?: string,
+): Promise<CatalogPhotosPage> {
   const empty: CatalogPhotosPage = {
     items: [],
     total: 0,
@@ -39,9 +42,12 @@ export async function fetchHomeFreshPhotos(limit: number): Promise<CatalogPhotos
   }
 
   try {
-    const res = await fetchBackend(
-      `/catalog/photos?page=1&pageSize=${Math.min(Math.max(limit, 1), 24)}`,
-    )
+    const params = new URLSearchParams({
+      page: '1',
+      pageSize: String(Math.min(Math.max(limit, 1), 24)),
+    })
+    if (locale?.trim()) params.set('locale', locale.trim())
+    const res = await fetchBackend(`/catalog/photos?${params.toString()}`)
     if (!res.ok) return empty
     const data = await readBackendJson<CatalogPhotosPage>(res)
     if (!data?.items?.length) return empty

@@ -27,17 +27,15 @@ export function sanitizeReviewText(value: string): string {
 
 export function validateReviewFullName(value: string): string | null {
   const trimmed = value.trim()
-  if (!trimmed) return 'Вкажіть ПІБ.'
-  if (!isValidReviewFullName(trimmed)) {
-    return 'ПІБ має містити лише літери, пробіли та дефіс (2–120 символів).'
-  }
+  if (!trimmed) return 'reviewFullNameRequired'
+  if (!isValidReviewFullName(trimmed)) return 'reviewFullNameInvalid'
   return null
 }
 
 export function validateReviewEmail(email: string): string | null {
   const trimmed = email.trim()
   if (!trimmed) return null
-  if (!isValidEmail(trimmed)) return 'Невірний формат email.'
+  if (!isValidEmail(trimmed)) return 'invalidEmail'
   return null
 }
 
@@ -50,7 +48,7 @@ export function validateReviewPhone(phone: string): string | null {
 export function validateReviewContact(email: string, phone: string): string | null {
   const hasEmail = email.trim().length > 0
   const hasPhone = phone.trim().length > 0
-  if (!hasEmail && !hasPhone) return 'Вкажіть email або телефон.'
+  if (!hasEmail && !hasPhone) return 'reviewContactRequired'
   if (hasEmail && validateReviewEmail(email)) return validateReviewEmail(email)
   if (hasPhone && validateReviewPhone(phone)) return validateReviewPhone(phone)
   return null
@@ -58,29 +56,29 @@ export function validateReviewContact(email: string, phone: string): string | nu
 
 export function validateReviewText(text: string): string | null {
   const trimmed = text.trim()
-  if (trimmed.length < 10) return 'Текст відгуку має містити щонайменше 10 символів.'
-  if (trimmed.length > 2000) return 'Текст відгуку занадто довгий.'
-  if (/[<>]/.test(trimmed)) return 'Текст не може містити HTML-теги.'
+  if (trimmed.length < 10) return 'reviewTextMin'
+  if (trimmed.length > 2000) return 'reviewTextMax'
+  if (/[<>]/.test(trimmed)) return 'reviewTextNoHtml'
   return null
 }
 
 export function validateReviewImageUrl(imageUrl: string | null): string | null {
   if (!imageUrl?.trim()) return null
   if (!REVIEW_IMAGE_PATH_REGEX.test(imageUrl.trim())) {
-    return 'Некоректне зображення.'
+    return 'reviewImageInvalid'
   }
   return null
 }
 
 export function validateReviewRating(rating: number): string | null {
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    return 'Оберіть оцінку від 1 до 5 зірок.'
+    return 'reviewRatingRequired'
   }
   return null
 }
 
 export function validateReviewImages(imageUrls: string[]): string | null {
-  if (imageUrls.length > 3) return 'Можна додати не більше 3 фото.'
+  if (imageUrls.length > 3) return 'reviewPhotosMax'
   for (const url of imageUrls) {
     const error = validateReviewImageUrl(url)
     if (error) return error

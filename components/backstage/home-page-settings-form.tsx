@@ -3,6 +3,8 @@
 import { Loader2, Plus, Save, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
+import { CmsLocaleFieldLabel } from '@/components/backstage/cms-locale-fields-dialog'
+import { ContentLocaleBanner } from '@/components/backstage/content-locale-banner'
 import { HomeSectionOrderControls } from '@/components/backstage/home-section-order-controls'
 import { HeroImageField } from '@/components/backstage/hero-image-field'
 import { Button } from '@/components/ui/button'
@@ -10,8 +12,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import type { AppLocale } from '@/lib/i18n/locales'
 import { isHomeHeroMobileImagePath } from '@/lib/media/paths'
 import { DEFAULT_HOME_SETTINGS } from '@/lib/settings/defaults'
+import {
+  applyHomeCmsFieldTranslations,
+  collectHomeCmsFieldValues,
+  type HomePageCmsCopy,
+} from '@/lib/settings/home-cms'
 import type {
   HomeGalleryImage,
   HomeHighlight,
@@ -32,12 +40,16 @@ function listToLines(items: string[]): string {
 
 export function HomePageSettingsForm({
   settings: home,
+  contentLocale,
+  marketRegion,
   onChange,
   onSave,
   saving,
   isDirty,
 }: {
   settings: HomePageSettings
+  contentLocale: AppLocale
+  marketRegion: 'ua' | 'sk'
   onChange: (next: HomePageSettings) => void
   onSave: () => void
   saving: boolean
@@ -46,6 +58,18 @@ export function HomePageSettingsForm({
   const tBanner = useTranslations('contentBanner')
 
   const setHome = onChange
+
+  const patchFieldTranslations = (
+    setter: (copy: HomePageCmsCopy, value: string) => HomePageCmsCopy,
+    translations: Partial<Record<AppLocale, string>>,
+  ) => {
+    setHome(
+      applyHomeCmsFieldTranslations(home, contentLocale, marketRegion, setter, translations),
+    )
+  }
+
+  const fieldValues = (getter: (copy: HomePageCmsCopy) => string) =>
+    collectHomeCmsFieldValues(home, getter, marketRegion)
 
   const updateHeroHighlight = (index: number, patch: Partial<HomeHighlight>) => {
     const highlights = home.hero.highlights.map((item, i) =>
@@ -88,8 +112,11 @@ export function HomePageSettingsForm({
 
   return (
     <div className="space-y-6">
-  <p className="rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-    {tBanner('cmsNotTranslated')}
+  <ContentLocaleBanner hint={tBanner('switchAutoSave')} />
+  <p className="text-sm text-muted-foreground">
+    Тексти хіро та секцій зберігаються окремо для кожної мови контенту (перемикач у шапці).
+    Зображення, посилання CTA, ліміти та slug — спільні для деплою (
+    {marketRegion === 'sk' ? 'SK / EU' : 'UA'}). Зараз редагуєте: {contentLocale}.
   </p>
   <HomeSectionOrderControls
     order={home.sectionOrder}
@@ -111,10 +138,24 @@ export function HomePageSettingsForm({
   <Card>
     <CardHeader>
       <CardTitle>Хіро-блок</CardTitle>
+      <CardDescription>
+        Тексти хіро — для поточної мови; кнопка локалі біля поля відкриває переклади на всі мови.
+        Зображення та URL кнопок спільні.
+      </CardDescription>
     </CardHeader>
     <CardContent className="space-y-4">
       <div className="space-y-2">
-        <Label>Бейдж</Label>
+        <CmsLocaleFieldLabel
+          values={fieldValues((c) => c.hero.badge)}
+          onSaveTranslations={(translations) =>
+            patchFieldTranslations(
+              (c, value) => ({ ...c, hero: { ...c.hero, badge: value } }),
+              translations,
+            )
+          }
+        >
+          Бейдж
+        </CmsLocaleFieldLabel>
         <Input
           value={home.hero.badge}
           onChange={(e) =>
@@ -124,7 +165,17 @@ export function HomePageSettingsForm({
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Заголовок</Label>
+          <CmsLocaleFieldLabel
+            values={fieldValues((c) => c.hero.title)}
+            onSaveTranslations={(translations) =>
+              patchFieldTranslations(
+                (c, value) => ({ ...c, hero: { ...c.hero, title: value } }),
+                translations,
+              )
+            }
+          >
+            Заголовок
+          </CmsLocaleFieldLabel>
           <Input
             value={home.hero.title}
             onChange={(e) =>
@@ -133,7 +184,17 @@ export function HomePageSettingsForm({
           />
         </div>
         <div className="space-y-2">
-          <Label>Акцент у заголовку</Label>
+          <CmsLocaleFieldLabel
+            values={fieldValues((c) => c.hero.titleAccent)}
+            onSaveTranslations={(translations) =>
+              patchFieldTranslations(
+                (c, value) => ({ ...c, hero: { ...c.hero, titleAccent: value } }),
+                translations,
+              )
+            }
+          >
+            Акцент у заголовку
+          </CmsLocaleFieldLabel>
           <Input
             value={home.hero.titleAccent}
             onChange={(e) =>
@@ -143,7 +204,18 @@ export function HomePageSettingsForm({
         </div>
       </div>
       <div className="space-y-2">
-        <Label>Підзаголовок</Label>
+        <CmsLocaleFieldLabel
+          values={fieldValues((c) => c.hero.subtitle)}
+          multiline
+          onSaveTranslations={(translations) =>
+            patchFieldTranslations(
+              (c, value) => ({ ...c, hero: { ...c.hero, subtitle: value } }),
+              translations,
+            )
+          }
+        >
+          Підзаголовок
+        </CmsLocaleFieldLabel>
         <Textarea
           rows={3}
           value={home.hero.subtitle}
@@ -172,7 +244,17 @@ export function HomePageSettingsForm({
       />
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Кнопка 1 — текст</Label>
+          <CmsLocaleFieldLabel
+            values={fieldValues((c) => c.hero.primaryCtaLabel)}
+            onSaveTranslations={(translations) =>
+              patchFieldTranslations(
+                (c, value) => ({ ...c, hero: { ...c.hero, primaryCtaLabel: value } }),
+                translations,
+              )
+            }
+          >
+            Кнопка 1 — текст
+          </CmsLocaleFieldLabel>
           <Input
             value={home.hero.primaryCtaLabel}
             onChange={(e) =>
@@ -190,7 +272,17 @@ export function HomePageSettingsForm({
           />
         </div>
         <div className="space-y-2">
-          <Label>Кнопка 2 — текст</Label>
+          <CmsLocaleFieldLabel
+            values={fieldValues((c) => c.hero.secondaryCtaLabel)}
+            onSaveTranslations={(translations) =>
+              patchFieldTranslations(
+                (c, value) => ({ ...c, hero: { ...c.hero, secondaryCtaLabel: value } }),
+                translations,
+              )
+            }
+          >
+            Кнопка 2 — текст
+          </CmsLocaleFieldLabel>
           <Input
             value={home.hero.secondaryCtaLabel}
             onChange={(e) =>
@@ -218,16 +310,50 @@ export function HomePageSettingsForm({
         <Label>Переваги (3 блоки)</Label>
         {home.hero.highlights.map((item, index) => (
           <div key={index} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-2">
-            <Input
-              placeholder="Заголовок"
-              value={item.title}
-              onChange={(e) => updateHeroHighlight(index, { title: e.target.value })}
-            />
-            <Input
-              placeholder="Опис"
-              value={item.description}
-              onChange={(e) => updateHeroHighlight(index, { description: e.target.value })}
-            />
+            <div className="space-y-1">
+              <CmsLocaleFieldLabel
+                values={fieldValues((c) => c.hero.highlights[index]?.title ?? '')}
+                onSaveTranslations={(translations) =>
+                  patchFieldTranslations((c, value) => {
+                    const highlights = [...c.hero.highlights]
+                    while (highlights.length <= index) {
+                      highlights.push({ title: '', description: '' })
+                    }
+                    highlights[index] = { ...highlights[index]!, title: value }
+                    return { ...c, hero: { ...c.hero, highlights } }
+                  }, translations)
+                }
+              >
+                Заголовок
+              </CmsLocaleFieldLabel>
+              <Input
+                placeholder="Заголовок"
+                value={item.title}
+                onChange={(e) => updateHeroHighlight(index, { title: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <CmsLocaleFieldLabel
+                values={fieldValues((c) => c.hero.highlights[index]?.description ?? '')}
+                onSaveTranslations={(translations) =>
+                  patchFieldTranslations((c, value) => {
+                    const highlights = [...c.hero.highlights]
+                    while (highlights.length <= index) {
+                      highlights.push({ title: '', description: '' })
+                    }
+                    highlights[index] = { ...highlights[index]!, description: value }
+                    return { ...c, hero: { ...c.hero, highlights } }
+                  }, translations)
+                }
+              >
+                Опис
+              </CmsLocaleFieldLabel>
+              <Input
+                placeholder="Опис"
+                value={item.description}
+                onChange={(e) => updateHeroHighlight(index, { description: e.target.value })}
+              />
+            </div>
           </div>
         ))}
       </div>
@@ -244,7 +370,17 @@ export function HomePageSettingsForm({
     <CardContent className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Заголовок блоку</Label>
+          <CmsLocaleFieldLabel
+            values={fieldValues((c) => c.categories.title)}
+            onSaveTranslations={(translations) =>
+              patchFieldTranslations(
+                (c, value) => ({ ...c, categories: { ...c.categories, title: value } }),
+                translations,
+              )
+            }
+          >
+            Заголовок блоку
+          </CmsLocaleFieldLabel>
           <Input
             value={home.categories.title}
             onChange={(e) =>
@@ -276,7 +412,18 @@ export function HomePageSettingsForm({
         </div>
       </div>
       <div className="space-y-2">
-        <Label>Підзаголовок блоку</Label>
+        <CmsLocaleFieldLabel
+          values={fieldValues((c) => c.categories.subtitle)}
+          multiline
+          onSaveTranslations={(translations) =>
+            patchFieldTranslations(
+              (c, value) => ({ ...c, categories: { ...c.categories, subtitle: value } }),
+              translations,
+            )
+          }
+        >
+          Підзаголовок блоку
+        </CmsLocaleFieldLabel>
         <Textarea
           rows={2}
           value={home.categories.subtitle}
@@ -318,7 +465,17 @@ export function HomePageSettingsForm({
     <CardContent className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Заголовок</Label>
+          <CmsLocaleFieldLabel
+            values={fieldValues((c) => c.newArrivals.title)}
+            onSaveTranslations={(translations) =>
+              patchFieldTranslations(
+                (c, value) => ({ ...c, newArrivals: { ...c.newArrivals, title: value } }),
+                translations,
+              )
+            }
+          >
+            Заголовок
+          </CmsLocaleFieldLabel>
           <Input
             value={home.newArrivals.title}
             onChange={(e) =>
@@ -349,7 +506,18 @@ export function HomePageSettingsForm({
         </div>
       </div>
       <div className="space-y-2">
-        <Label>Підзаголовок</Label>
+        <CmsLocaleFieldLabel
+          values={fieldValues((c) => c.newArrivals.subtitle)}
+          multiline
+          onSaveTranslations={(translations) =>
+            patchFieldTranslations(
+              (c, value) => ({ ...c, newArrivals: { ...c.newArrivals, subtitle: value } }),
+              translations,
+            )
+          }
+        >
+          Підзаголовок
+        </CmsLocaleFieldLabel>
         <Textarea
           rows={2}
           value={home.newArrivals.subtitle}
@@ -391,7 +559,17 @@ export function HomePageSettingsForm({
     <CardContent className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Заголовок</Label>
+          <CmsLocaleFieldLabel
+            values={fieldValues((c) => c.bestsellers.title)}
+            onSaveTranslations={(translations) =>
+              patchFieldTranslations(
+                (c, value) => ({ ...c, bestsellers: { ...c.bestsellers, title: value } }),
+                translations,
+              )
+            }
+          >
+            Заголовок
+          </CmsLocaleFieldLabel>
           <Input
             value={home.bestsellers.title}
             onChange={(e) =>
@@ -422,7 +600,18 @@ export function HomePageSettingsForm({
         </div>
       </div>
       <div className="space-y-2">
-        <Label>Підзаголовок</Label>
+        <CmsLocaleFieldLabel
+          values={fieldValues((c) => c.bestsellers.subtitle)}
+          multiline
+          onSaveTranslations={(translations) =>
+            patchFieldTranslations(
+              (c, value) => ({ ...c, bestsellers: { ...c.bestsellers, subtitle: value } }),
+              translations,
+            )
+          }
+        >
+          Підзаголовок
+        </CmsLocaleFieldLabel>
         <Textarea
           rows={2}
           value={home.bestsellers.subtitle}
@@ -464,7 +653,17 @@ export function HomePageSettingsForm({
     <CardContent className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2 sm:col-span-2">
-          <Label>Заголовок</Label>
+          <CmsLocaleFieldLabel
+            values={fieldValues((c) => c.lowStock.title)}
+            onSaveTranslations={(translations) =>
+              patchFieldTranslations(
+                (c, value) => ({ ...c, lowStock: { ...c.lowStock, title: value } }),
+                translations,
+              )
+            }
+          >
+            Заголовок
+          </CmsLocaleFieldLabel>
           <Input
             value={home.lowStock.title}
             onChange={(e) =>
@@ -495,7 +694,18 @@ export function HomePageSettingsForm({
         </div>
       </div>
       <div className="space-y-2">
-        <Label>Підзаголовок</Label>
+        <CmsLocaleFieldLabel
+          values={fieldValues((c) => c.lowStock.subtitle)}
+          multiline
+          onSaveTranslations={(translations) =>
+            patchFieldTranslations(
+              (c, value) => ({ ...c, lowStock: { ...c.lowStock, subtitle: value } }),
+              translations,
+            )
+          }
+        >
+          Підзаголовок
+        </CmsLocaleFieldLabel>
         <Textarea
           rows={2}
           value={home.lowStock.subtitle}
@@ -553,7 +763,17 @@ export function HomePageSettingsForm({
     </CardHeader>
     <CardContent className="space-y-4">
       <div className="space-y-2">
-        <Label>Заголовок</Label>
+        <CmsLocaleFieldLabel
+          values={fieldValues((c) => c.whyUs.title)}
+          onSaveTranslations={(translations) =>
+            patchFieldTranslations(
+              (c, value) => ({ ...c, whyUs: { ...c.whyUs, title: value } }),
+              translations,
+            )
+          }
+        >
+          Заголовок
+        </CmsLocaleFieldLabel>
         <Input
           value={home.whyUs.title}
           onChange={(e) =>
@@ -562,7 +782,18 @@ export function HomePageSettingsForm({
         />
       </div>
       <div className="space-y-2">
-        <Label>Підзаголовок</Label>
+        <CmsLocaleFieldLabel
+          values={fieldValues((c) => c.whyUs.subtitle)}
+          multiline
+          onSaveTranslations={(translations) =>
+            patchFieldTranslations(
+              (c, value) => ({ ...c, whyUs: { ...c.whyUs, subtitle: value } }),
+              translations,
+            )
+          }
+        >
+          Підзаголовок
+        </CmsLocaleFieldLabel>
         <Textarea
           rows={3}
           value={home.whyUs.subtitle}
@@ -572,7 +803,21 @@ export function HomePageSettingsForm({
         />
       </div>
       <div className="space-y-2">
-        <Label>Переваги (по одній в рядку)</Label>
+        <CmsLocaleFieldLabel
+          values={fieldValues((c) => listToLines(c.whyUs.features))}
+          multiline
+          onSaveTranslations={(translations) =>
+            patchFieldTranslations(
+              (c, value) => ({
+                ...c,
+                whyUs: { ...c.whyUs, features: linesToList(value) },
+              }),
+              translations,
+            )
+          }
+        >
+          Переваги (по одній в рядку)
+        </CmsLocaleFieldLabel>
         <Textarea
           rows={6}
           value={listToLines(home.whyUs.features)}
@@ -588,16 +833,50 @@ export function HomePageSettingsForm({
         <Label>Статистика</Label>
         {home.whyUs.stats.map((stat, index) => (
           <div key={index} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-2">
-            <Input
-              placeholder="Значення"
-              value={stat.value}
-              onChange={(e) => updateStat(index, { value: e.target.value })}
-            />
-            <Input
-              placeholder="Підпис"
-              value={stat.label}
-              onChange={(e) => updateStat(index, { label: e.target.value })}
-            />
+            <div className="space-y-1">
+              <CmsLocaleFieldLabel
+                values={fieldValues((c) => c.whyUs.stats[index]?.value ?? '')}
+                onSaveTranslations={(translations) =>
+                  patchFieldTranslations((c, value) => {
+                    const stats = [...c.whyUs.stats]
+                    while (stats.length <= index) {
+                      stats.push({ value: '', label: '' })
+                    }
+                    stats[index] = { ...stats[index]!, value }
+                    return { ...c, whyUs: { ...c.whyUs, stats } }
+                  }, translations)
+                }
+              >
+                Значення
+              </CmsLocaleFieldLabel>
+              <Input
+                placeholder="Значення"
+                value={stat.value}
+                onChange={(e) => updateStat(index, { value: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <CmsLocaleFieldLabel
+                values={fieldValues((c) => c.whyUs.stats[index]?.label ?? '')}
+                onSaveTranslations={(translations) =>
+                  patchFieldTranslations((c, value) => {
+                    const stats = [...c.whyUs.stats]
+                    while (stats.length <= index) {
+                      stats.push({ value: '', label: '' })
+                    }
+                    stats[index] = { ...stats[index]!, label: value }
+                    return { ...c, whyUs: { ...c.whyUs, stats } }
+                  }, translations)
+                }
+              >
+                Підпис
+              </CmsLocaleFieldLabel>
+              <Input
+                placeholder="Підпис"
+                value={stat.label}
+                onChange={(e) => updateStat(index, { label: e.target.value })}
+              />
+            </div>
           </div>
         ))}
       </div>
@@ -614,7 +893,20 @@ export function HomePageSettingsForm({
     </CardHeader>
     <CardContent className="space-y-4">
       <div className="space-y-2">
-        <Label>Заголовок</Label>
+        <CmsLocaleFieldLabel
+          values={fieldValues((c) => c.nurseryGallery.title)}
+          onSaveTranslations={(translations) =>
+            patchFieldTranslations(
+              (c, value) => ({
+                ...c,
+                nurseryGallery: { ...c.nurseryGallery, title: value },
+              }),
+              translations,
+            )
+          }
+        >
+          Заголовок
+        </CmsLocaleFieldLabel>
         <Input
           value={home.nurseryGallery.title}
           onChange={(e) =>
@@ -626,7 +918,21 @@ export function HomePageSettingsForm({
         />
       </div>
       <div className="space-y-2">
-        <Label>Підзаголовок</Label>
+        <CmsLocaleFieldLabel
+          values={fieldValues((c) => c.nurseryGallery.subtitle)}
+          multiline
+          onSaveTranslations={(translations) =>
+            patchFieldTranslations(
+              (c, value) => ({
+                ...c,
+                nurseryGallery: { ...c.nurseryGallery, subtitle: value },
+              }),
+              translations,
+            )
+          }
+        >
+          Підзаголовок
+        </CmsLocaleFieldLabel>
         <Textarea
           rows={2}
           value={home.nurseryGallery.subtitle}
@@ -641,16 +947,39 @@ export function HomePageSettingsForm({
       {home.nurseryGallery.images.map((image, index) => (
         <div key={index} className="flex gap-2 rounded-lg border p-3">
           <div className="grid flex-1 gap-2 sm:grid-cols-2">
-            <Input
-              placeholder="URL зображення"
-              value={image.url}
-              onChange={(e) => updateGalleryImage(index, { url: e.target.value })}
-            />
-            <Input
-              placeholder="Підпис"
-              value={image.caption}
-              onChange={(e) => updateGalleryImage(index, { caption: e.target.value })}
-            />
+            <div className="space-y-1">
+              <Label>URL зображення</Label>
+              <Input
+                placeholder="URL зображення"
+                value={image.url}
+                onChange={(e) => updateGalleryImage(index, { url: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <CmsLocaleFieldLabel
+                values={fieldValues((c) => c.nurseryGallery.imageCaptions[index] ?? '')}
+                onSaveTranslations={(translations) =>
+                  patchFieldTranslations((c, value) => {
+                    const imageCaptions = [...c.nurseryGallery.imageCaptions]
+                    while (imageCaptions.length <= index) {
+                      imageCaptions.push('')
+                    }
+                    imageCaptions[index] = value
+                    return {
+                      ...c,
+                      nurseryGallery: { ...c.nurseryGallery, imageCaptions },
+                    }
+                  }, translations)
+                }
+              >
+                Підпис
+              </CmsLocaleFieldLabel>
+              <Input
+                placeholder="Підпис"
+                value={image.caption}
+                onChange={(e) => updateGalleryImage(index, { caption: e.target.value })}
+              />
+            </div>
           </div>
           <Button
             type="button"
@@ -676,7 +1005,20 @@ export function HomePageSettingsForm({
     <CardContent className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Заголовок</Label>
+          <CmsLocaleFieldLabel
+            values={fieldValues((c) => c.freshPlantPhotos.title)}
+            onSaveTranslations={(translations) =>
+              patchFieldTranslations(
+                (c, value) => ({
+                  ...c,
+                  freshPlantPhotos: { ...c.freshPlantPhotos, title: value },
+                }),
+                translations,
+              )
+            }
+          >
+            Заголовок
+          </CmsLocaleFieldLabel>
           <Input
             value={home.freshPlantPhotos.title}
             onChange={(e) =>
@@ -709,7 +1051,21 @@ export function HomePageSettingsForm({
         </div>
       </div>
       <div className="space-y-2">
-        <Label>Підзаголовок</Label>
+        <CmsLocaleFieldLabel
+          values={fieldValues((c) => c.freshPlantPhotos.subtitle)}
+          multiline
+          onSaveTranslations={(translations) =>
+            patchFieldTranslations(
+              (c, value) => ({
+                ...c,
+                freshPlantPhotos: { ...c.freshPlantPhotos, subtitle: value },
+              }),
+              translations,
+            )
+          }
+        >
+          Підзаголовок
+        </CmsLocaleFieldLabel>
         <Textarea
           rows={2}
           value={home.freshPlantPhotos.subtitle}
@@ -734,7 +1090,17 @@ export function HomePageSettingsForm({
     <CardContent className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Заголовок</Label>
+          <CmsLocaleFieldLabel
+            values={fieldValues((c) => c.reviews.title)}
+            onSaveTranslations={(translations) =>
+              patchFieldTranslations(
+                (c, value) => ({ ...c, reviews: { ...c.reviews, title: value } }),
+                translations,
+              )
+            }
+          >
+            Заголовок
+          </CmsLocaleFieldLabel>
           <Input
             value={home.reviews.title}
             onChange={(e) =>
@@ -762,7 +1128,18 @@ export function HomePageSettingsForm({
         </div>
       </div>
       <div className="space-y-2">
-        <Label>Підзаголовок</Label>
+        <CmsLocaleFieldLabel
+          values={fieldValues((c) => c.reviews.subtitle)}
+          multiline
+          onSaveTranslations={(translations) =>
+            patchFieldTranslations(
+              (c, value) => ({ ...c, reviews: { ...c.reviews, subtitle: value } }),
+              translations,
+            )
+          }
+        >
+          Підзаголовок
+        </CmsLocaleFieldLabel>
         <Textarea
           rows={2}
           value={home.reviews.subtitle}

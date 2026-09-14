@@ -7,15 +7,23 @@ import { buildIndexablePageMetadata } from '@/lib/seo/build-page-metadata'
 export async function buildAboutMetadata(locale: string): Promise<Metadata> {
   const tNav = await getTranslations({ locale, namespace: 'nav' })
   const tCommon = await getTranslations({ locale, namespace: 'common' })
+  const tAbout = await getTranslations({ locale, namespace: 'aboutPage' })
   const siteName = tCommon('brand')
   const fallbackTitle = tNav('about')
-  const fallbackDescription = fallbackTitle
+  const fallbackDescription = tAbout('unavailableBody')
 
   try {
     const fetched = await fetchPublicSiteSettings()
     const page = getResolvedAboutPageSettings(fetched, locale)
-    const title = page.seoTitle.trim() || page.heroTitle.trim() || fallbackTitle
-    const description = page.seoDescription.trim() || fallbackDescription
+    if (!page) {
+      return buildIndexablePageMetadata(locale, '/about', {
+        title: `${fallbackTitle} · ${siteName}`,
+        description: fallbackDescription,
+        siteName,
+      })
+    }
+    const title = page.seo.title.trim() || page.hero.title.trim() || fallbackTitle
+    const description = page.seo.description.trim() || fallbackDescription
     return buildIndexablePageMetadata(locale, '/about', {
       title: title.includes(siteName) ? title : `${title} · ${siteName}`,
       description,

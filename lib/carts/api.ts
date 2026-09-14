@@ -1,13 +1,21 @@
 import type { CartMergePreview, CartMergeStrategy, ServerCartLine } from '@/lib/carts/types'
+import { extractCustomerErrorCode } from '@/lib/api/extract-customer-error-code'
 import { buildPricingQuoteLineItems } from '@/lib/pricing/quote-line-items'
 import type { CartItem } from '@/lib/types'
 
-async function parseError(res: Response): Promise<string> {
-  const data = (await res.json().catch(() => ({}))) as { message?: string | string[]; error?: string }
-  if (Array.isArray(data.message)) return data.message.join(' ')
-  if (typeof data.message === 'string') return data.message
-  if (typeof data.error === 'string') return data.error
-  return 'Помилка кошика.'
+export class CartApiError extends Error {
+  readonly code?: string
+
+  constructor(message: string, code?: string) {
+    super(message)
+    this.name = 'CartApiError'
+    this.code = code
+  }
+}
+
+function throwCartError(data: unknown): never {
+  const code = extractCustomerErrorCode(data) ?? undefined
+  throw new CartApiError(code ?? 'CART_ERROR', code)
 }
 
 export async function fetchServerCart(): Promise<ServerCartLine[]> {
@@ -25,8 +33,8 @@ export async function syncServerCart(items: CartItem[]): Promise<ServerCartLine[
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items: payload }),
   })
-  const data = (await res.json().catch(() => ({}))) as { items?: ServerCartLine[]; message?: string }
-  if (!res.ok) throw new Error(await parseError(res))
+  const data = (await res.json().catch(() => ({}))) as { items?: ServerCartLine[] }
+  if (!res.ok) throwCartError(data)
   return Array.isArray(data.items) ? data.items : []
 }
 
@@ -45,6 +53,6 @@ export async function applyCartMerge(strategy: CartMergeStrategy): Promise<Serve
     body: JSON.stringify({ strategy }),
   })
   const data = (await res.json().catch(() => ({}))) as { items?: ServerCartLine[] }
-  if (!res.ok) throw new Error(await parseError(res))
+  if (!res.ok) throwCartError(data)
   return Array.isArray(data.items) ? data.items : []
 }

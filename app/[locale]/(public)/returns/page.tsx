@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { ContractWithdrawalModelForm } from '@/components/legal/contract-withdrawal-model-form'
 import { ContractWithdrawalPublicForm } from '@/components/legal/contract-withdrawal-public-form'
 import { ReturnsLegalContent } from '@/components/legal/returns-legal-content'
+import { LegalTemplateNotice } from '@/components/legal/legal-template-notice'
 import { Navigation } from '@/components/navigation'
 import { PublicPageBreadcrumbs } from '@/components/public-page-breadcrumbs'
 import { resolveWithdrawalReturnAddressText } from '@/lib/settings/withdrawal-return-address'
@@ -10,6 +11,7 @@ import { staticPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
 import { fetchCurrentLegalDocument, sellerFromBankDetails } from '@/lib/legal/documents'
 import {
   legalPageTitleClassName,
+  legalProseClassName,
   legalSectionHeadingClassName,
   legalSubsectionHeadingClassName,
 } from '@/lib/legal/storefront-typography'
@@ -24,7 +26,7 @@ import {
   getStoreSettings,
 } from '@/lib/settings/fetch'
 import { resolveStoreForCountrySite } from '@/lib/settings/store-contact-country'
-import { getSupportEmail } from '@/lib/settings/store-helpers'
+import { resolvePublicSupportEmail } from '@/lib/settings/public-support-email'
 import { cn } from '@/lib/utils'
 
 const subsectionClassName =
@@ -44,14 +46,23 @@ export default async function ReturnsPage({
     getRequestCountrySiteCode(),
   ])
   const market = getMarketSettings(settings)
-  const store = resolveStoreForCountrySite(getStoreSettings(settings), market, countryCode)
+  const store = resolveStoreForCountrySite(
+    getStoreSettings(settings, { locale }),
+    market,
+    countryCode,
+  )
   const returnAddress = resolveWithdrawalReturnAddressText(settings, store)
   const fallbackSeller = sellerFromBankDetails(
     resolveCheckoutBankDetails(getCartCheckoutSettings(settings), store),
   )
-  const document = await fetchCurrentLegalDocument('RETURNS', locale)
-  const contactEmail = getSupportEmail(store) || 'info@green-angels.sk'
-  const pageTitle = document?.title ?? t('title')
+  const document = await fetchCurrentLegalDocument('RETURNS', locale, countryCode)
+  const contactEmail = resolvePublicSupportEmail({
+    store,
+    market,
+    countrySiteCode: countryCode,
+  })
+  const pageTitle = document?.title ?? tLegal('returnsUnavailableTitle')
+  // Never invent an address; never leave raw `{returnAddress}` on the page.
   const displayReturnAddress = returnAddress || t('section5AddressPending')
 
   const formsSlot = (
@@ -93,9 +104,7 @@ export default async function ReturnsPage({
                 </span>
                 {formatDateTime(document.effectiveAt, locale, 'dateLong')}
               </p>
-            ) : (
-              <p className="mt-3 text-sm text-muted-foreground">{t('intro')}</p>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -110,11 +119,9 @@ export default async function ReturnsPage({
               formsSlot={formsSlot}
             />
           ) : (
-            <div className="legal-document mx-auto max-w-3xl space-y-8">
-              <p className="text-sm text-muted-foreground">{t('intro')}</p>
-              <section id="withdrawal" className="rounded-2xl border border-border/70 bg-[rgba(232,240,227,0.35)] p-5 shadow-sm md:p-8">
-                {formsSlot}
-              </section>
+            <div className={cn(legalProseClassName, 'mx-auto max-w-3xl space-y-4')}>
+              <LegalTemplateNotice />
+              <p className="text-muted-foreground">{tLegal('returnsUnavailableBody')}</p>
             </div>
           )}
         </div>

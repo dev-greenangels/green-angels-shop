@@ -15,7 +15,6 @@ type ContractWithdrawalModelFormProps = {
 const DEFAULT_SK_SELLER = {
   organizationName: 'Green Angels International s.r.o.',
   legalAddress: 'Bardoňovo 483, 941 49 Bardoňovo, Slovenská republika',
-  email: 'info@green-angels.sk',
 }
 
 export function ContractWithdrawalModelForm({
@@ -28,7 +27,7 @@ export function ContractWithdrawalModelForm({
 
   const organizationName = seller?.organizationName?.trim() || DEFAULT_SK_SELLER.organizationName
   const legalAddress = seller?.legalAddress?.trim() || DEFAULT_SK_SELLER.legalAddress
-  const email = contactEmail.trim() || DEFAULT_SK_SELLER.email
+  const email = contactEmail.trim()
 
   if (isSk) {
     return (

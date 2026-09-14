@@ -21,11 +21,11 @@ export function getLoginFieldError(
 ): string | null {
   switch (field) {
     case 'email':
-      if (!values.email.trim()) return 'Обовʼязкове поле'
-      if (!isValidEmail(values.email)) return 'Невірний формат email'
+      if (!values.email.trim()) return 'required'
+      if (!isValidEmail(values.email)) return 'invalidEmail'
       return null
     case 'password':
-      if (!values.password) return 'Обовʼязкове поле'
+      if (!values.password) return 'required'
       return null
     default:
       return null

@@ -1,10 +1,13 @@
 import { ArrowRight, Camera, Sprout, Truck } from 'lucide-react'
-import { getTranslations } from 'next-intl/server'
+import { getLocale, getTranslations } from 'next-intl/server'
 
 import { Button } from '@/components/ui/button'
 import { HERO_MOBILE_MEDIA, resolveHeroDisplayUrl } from '@/lib/home/hero-image'
 import { preloadHomeHeroImages } from '@/lib/home/hero-preload'
-import { resolveHeroDeliveryCountryCode } from '@/lib/home/hero-delivery-label'
+import {
+  formatHeroDeliveryCountryList,
+  resolveHeroDeliveryCountryCodes,
+} from '@/lib/home/hero-delivery-label'
 import { pickHomeCmsText } from '@/lib/home/cms-or-translated'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import type { CountrySiteCode } from '@/lib/country-sites/types'
@@ -32,6 +35,7 @@ export async function HeroSection({
   hostCountryCode = null,
   wholesaleEnabled = false,
 }: HeroSectionProps) {
+  const locale = await getLocale()
   const t = await getTranslations('home')
   const tCheckout = await getTranslations('checkout')
   const title = pickHomeCmsText(settings.title, DEFAULT_HOME_SETTINGS.hero.title, t('heroTitle'))
@@ -41,13 +45,18 @@ export async function HeroSection({
     t('heroTitleAccent'),
   )
 
-  const deliveryCountryCode = resolveHeroDeliveryCountryCode(market, hostCountryCode)
+  const deliveryCountryCodes = resolveHeroDeliveryCountryCodes(market, hostCountryCode)
   const deliveryLabel =
     market.region === 'ua'
       ? t('heroHighlightDeliveryUa')
-      : t('heroHighlightDeliveryTo', {
-          country: tCheckout(`deliveryCountries.${deliveryCountryCode}`),
-        })
+      : deliveryCountryCodes.length > 0
+        ? t('heroHighlightDeliveryTo', {
+            country: formatHeroDeliveryCountryList(
+              deliveryCountryCodes.map((code) => tCheckout(`deliveryCountries.${code}`)),
+              locale,
+            ),
+          })
+        : t('heroHighlightDeliverySk')
 
   const highlights = [
     { icon: Camera, label: t('heroHighlightPhotos') },

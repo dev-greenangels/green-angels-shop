@@ -1,4 +1,5 @@
 import type { CreateOrderPayload } from '@/lib/checkout/build-order-payload'
+import { extractCustomerErrorCode } from '@/lib/api/extract-customer-error-code'
 
 export const ONLINE_CARD_UNAVAILABLE_CODE = 'ONLINE_CARD_UNAVAILABLE'
 
@@ -58,13 +59,6 @@ function extractErrorMessage(data: unknown, fallback: string): string {
   return fallback
 }
 
-function extractErrorCode(data: unknown): string | undefined {
-  if (!data || typeof data !== 'object') return undefined
-  const record = data as Record<string, unknown>
-  if (typeof record.code === 'string' && record.code.trim()) return record.code.trim()
-  return undefined
-}
-
 export async function createOrder(
   payload: CreateOrderPayload,
   options?: CreateOrderOptions,
@@ -83,9 +77,11 @@ export async function createOrder(
 
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
+    const code = extractCustomerErrorCode(data) ?? undefined
     throw new CreateOrderError(
-      extractErrorMessage(data, 'Не вдалося оформити замовлення.'),
-      extractErrorCode(data),
+      // Prefer stable code as Error.message so UI can map without leaking UA Nest prose.
+      code ?? extractErrorMessage(data, 'ORDER_CREATE_FAILED'),
+      code,
     )
   }
 

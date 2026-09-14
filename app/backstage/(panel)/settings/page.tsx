@@ -6,6 +6,10 @@ import { useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
+import {
+  useBackstageContentLocale,
+  useContentLocaleSwitchSave,
+} from '@/components/backstage/backstage-content-locale'
 import { CartCheckoutSettingsForm } from '@/components/backstage/cart-checkout-settings-form'
 import { CatalogSettingsForm } from '@/components/backstage/catalog-settings-form'
 import { NovaPoshtaSettingsForm } from '@/components/backstage/nova-poshta-settings-form'
@@ -48,6 +52,12 @@ import { normalizeMarketSettings } from '@/lib/settings/market'
 import { normalizeMediaWatermarkSettings } from '@/lib/settings/media-watermark.normalize'
 import { normalizeStoreContactSettings } from '@/lib/settings/store-contact.normalize'
 import {
+  applyStoreContactCmsCopy,
+  commitStoreCmsForLocale,
+  getStoreContactCmsForEdit,
+} from '@/lib/settings/store-contact-cms'
+import type { AppLocale } from '@/lib/i18n/locales'
+import {
   DEFAULT_PRESTA_IMPORT_SETTINGS,
   normalizePrestaImportSettings,
   type PrestaImportSettings,
@@ -67,8 +77,8 @@ function stableJson(value: unknown): string {
 }
 
 export default function SettingsPage() {
-  const tBanner = useTranslations('contentBanner')
   const tSettings = useTranslations('pages.settings')
+  const { locale: contentLocale, ready: contentLocaleReady } = useBackstageContentLocale()
   const [loading, setLoading] = useState(true)
   const [savingStore, setSavingStore] = useState(false)
   const [savingCart, setSavingCart] = useState(false)
@@ -95,6 +105,7 @@ export default function SettingsPage() {
   const [baselinePrestaImport, setBaselinePrestaImport] = useState<string | null>(null)
   const [baselineMarket, setBaselineMarket] = useState<string | null>(null)
   const [baselineWithdrawal, setBaselineWithdrawal] = useState<string | null>(null)
+  const [activeStoreLocale, setActiveStoreLocale] = useState<AppLocale | null>(null)
 
   const storeDirty = useMemo(
     () => Boolean(store && baselineStore && stableJson(store) !== baselineStore),
@@ -150,7 +161,8 @@ export default function SettingsPage() {
         fetchBackstageSettings(),
         fetchCurrencies().catch(() => [] as CurrencyInfo[]),
       ])
-      const nextStore = normalizeStoreContactSettings(data.store)
+      const nextMarket = normalizeMarketSettings(data.market ?? DEFAULT_MARKET_SETTINGS)
+      const nextStore = normalizeStoreContactSettings(data.store, nextMarket.region)
       const nextCart = normalizeCartCheckoutSettings(data.cart ?? DEFAULT_CART_CHECKOUT_SETTINGS)
       const nextCatalog = normalizeCatalogPageSettings(data.catalog ?? DEFAULT_CATALOG_SETTINGS)
       const nextMediaWatermark = normalizeMediaWatermarkSettings(
@@ -160,7 +172,6 @@ export default function SettingsPage() {
       const nextPresta = normalizePrestaImportSettings(
         data.prestaImport ?? DEFAULT_PRESTA_IMPORT_SETTINGS,
       )
-      const nextMarket = normalizeMarketSettings(data.market ?? DEFAULT_MARKET_SETTINGS)
       const nextWithdrawal = data.withdrawalFull ?? null
       setStore(nextStore)
       setCart(nextCart)
@@ -179,6 +190,7 @@ export default function SettingsPage() {
       setBaselinePrestaImport(stableJson(nextPresta))
       setBaselineMarket(stableJson(nextMarket))
       setBaselineWithdrawal(nextWithdrawal ? stableJson(nextWithdrawal) : null)
+      setActiveStoreLocale(null)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося завантажити налаштування.')
       setStore(null)
@@ -199,20 +211,42 @@ export default function SettingsPage() {
     void load()
   }, [load])
 
+  useEffect(() => {
+    if (!store || !contentLocaleReady) return
+    if (activeStoreLocale === contentLocale) return
+    const copy = getStoreContactCmsForEdit(store, contentLocale, market?.region ?? 'ua')
+    const next = applyStoreContactCmsCopy(store, copy)
+    setStore(next)
+    setBaselineStore(stableJson(next))
+    setActiveStoreLocale(contentLocale)
+  }, [contentLocale, contentLocaleReady, store, activeStoreLocale, market?.region])
+
   const saveStore = async () => {
     if (!store) return
     setSavingStore(true)
     try {
-      const updated = await updateBackstageStoreSettings(store)
-      setStore(updated)
-      setBaselineStore(stableJson(updated))
+      const payload = commitStoreCmsForLocale(store, contentLocale)
+      const updated = normalizeStoreContactSettings(
+        await updateBackstageStoreSettings(payload),
+        market?.region ?? 'ua',
+      )
+      const forEdit = applyStoreContactCmsCopy(
+        updated,
+        getStoreContactCmsForEdit(updated, contentLocale, market?.region ?? 'ua'),
+      )
+      setStore(forEdit)
+      setBaselineStore(stableJson(forEdit))
+      setActiveStoreLocale(contentLocale)
       toast.success('Контакти магазину збережено.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти.')
+      throw err
     } finally {
       setSavingStore(false)
     }
   }
+
+  useContentLocaleSwitchSave(() => saveStore(), { when: () => storeDirty })
 
   const saveCart = async () => {
     if (!cart) return
@@ -395,13 +429,11 @@ export default function SettingsPage() {
           </TabsList>
 
           <TabsContent value="store" className="mt-6 space-y-6">
-            <p className="rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-              {tBanner('cmsNotTranslated')}
-            </p>
-            {store ? (
+            {store && contentLocaleReady ? (
               <StoreContactSettingsForm
                 store={store}
-                onChange={setStore}
+                contentLocale={contentLocale}
+                onChange={(next) => setStore(commitStoreCmsForLocale(next, contentLocale))}
                 onSave={() => void saveStore()}
                 saving={savingStore}
                 isDirty={storeDirty}

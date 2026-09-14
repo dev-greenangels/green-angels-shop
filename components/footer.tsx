@@ -10,6 +10,7 @@ import { categoryHref, fetchCatalogRootSlug, resolveCatalogHref } from '@/lib/ca
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import { resolvePublicCompanyName } from '@/lib/settings/company-name'
 import { getRequestCountrySiteCode } from '@/lib/country-sites/request-country'
+import { isStorefrontFaqEnabled } from '@/lib/faq/visibility'
 import {
   fetchPublicSiteSettings,
   getLocalizationSettings,
@@ -39,7 +40,11 @@ export async function Footer() {
 
   const localization = getLocalizationSettings(siteSettings)
   const market = getMarketSettings(siteSettings)
-  const store = resolveStoreForCountrySite(getStoreSettings(siteSettings), market, countryCode)
+  const store = resolveStoreForCountrySite(
+    getStoreSettings(siteSettings, { locale }),
+    market,
+    countryCode,
+  )
   const wholesalePage = getWholesalePageSettings(siteSettings)
   const branding = getMarketBranding(market.region)
   const isSkMarket = market.region === 'sk'
@@ -111,7 +116,7 @@ export async function Footer() {
               <Link href="/contacts" className={linkClassName}>
                 {t('contacts')}
               </Link>
-              {localization.showFaqInFooter ? (
+              {isStorefrontFaqEnabled(localization) ? (
                 <Link href="/faq" className={linkClassName}>
                   {t('faq')}
                 </Link>

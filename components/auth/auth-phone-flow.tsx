@@ -25,9 +25,13 @@ import {
 import { startGoogleOAuth } from '@/lib/auth/google-oauth-client'
 import { isGoogleOAuthConfigured } from '@/lib/auth/google-oauth'
 import { hardRedirectToInternalPath } from '@/lib/auth/post-auth-redirect'
+import type { AppLocale } from '@/i18n/routing'
+import { SUPPORTED_LOCALES } from '@/lib/i18n/locales'
 import { useOAuthReturn, type OAuthReturnPayload } from '@/lib/auth/use-oauth-return'
+import { mapOtpAuthError } from '@/lib/api/map-otp-auth-error'
 import { cn } from '@/lib/utils'
 import { isValidEmail, sanitizeEmail } from '@/lib/validation/register-form'
+import { useFormatFieldError } from '@/lib/validation/use-field-error-messages'
 import { useRouter } from '@/i18n/navigation'
 import {
   formatPhoneDisplay,
@@ -37,6 +41,7 @@ import {
   DEFAULT_MARKET_SETTINGS,
   isOtpChannelEnabled,
   phoneErrorForPolicy,
+  phoneErrorCodeForPolicy,
   phonePlaceholderForPolicy,
   type OtpPurpose,
   type MarketSettings,
@@ -89,12 +94,9 @@ async function createEmailSession(email: string, verificationToken: string) {
   return data.user
 }
 
-function getEmailError(
-  email: string,
-  messages: { required: string; invalid: string },
-): string | null {
-  if (!email.trim()) return messages.required
-  if (!isValidEmail(email)) return messages.invalid
+function getEmailError(email: string): string | null {
+  if (!email.trim()) return 'required'
+  if (!isValidEmail(email)) return 'invalidEmail'
   return null
 }
 
@@ -113,6 +115,11 @@ function pickDefaultChannel(
   return null
 }
 
+function resolveAppLocale(raw: string): AppLocale {
+  const code = raw.trim().toLowerCase().slice(0, 2)
+  return (SUPPORTED_LOCALES as readonly string[]).includes(code) ? (code as AppLocale) : 'en'
+}
+
 export function AuthPhoneFlow({
   redirectTo,
   onSuccess,
@@ -124,10 +131,12 @@ export function AuthPhoneFlow({
   purpose?: OtpPurpose
   market?: MarketSettings
 }) {
+  const fe = useFormatFieldError()
+  const locale = useLocale()
   const t = useTranslations('auth')
   const tc = useTranslations('common')
   const tMarketing = useTranslations('marketingConsent')
-  const locale = useLocale()
+  const tApi = useTranslations('apiErrors')
   const router = useRouter()
   const { user, setUser } = useSession()
 
@@ -171,7 +180,7 @@ export function AuthPhoneFlow({
   const finishAuthSuccess = useCallback(
     (target: string) => {
       if (purpose === 'login') {
-        hardRedirectToInternalPath(target, locale)
+        hardRedirectToInternalPath(target, resolveAppLocale(locale))
         return
       }
       onSuccess(target)
@@ -181,7 +190,7 @@ export function AuthPhoneFlow({
 
   useEffect(() => {
     if (purpose !== 'login' || !user) return
-    hardRedirectToInternalPath(redirectTo, locale)
+    hardRedirectToInternalPath(redirectTo, resolveAppLocale(locale))
   }, [purpose, user, redirectTo, locale])
 
   useEffect(() => {
@@ -225,17 +234,15 @@ export function AuthPhoneFlow({
     }
   }, [marketReady, smsEnabled, emailEnabled, channel, market.region, step])
 
-  const phoneError = phoneErrorForPolicy(phone, market.authPhonePolicy)
-  const emailError = getEmailError(email, {
-    required: tc('requiredField'),
-    invalid: tc('invalidEmail'),
-  })
+  const phoneError = fe(phoneErrorForPolicy(phone, market.authPhonePolicy))
+  const emailError = fe(getEmailError(email))
   const identifier =
     channel === 'phone' ? phone.trim() : email.trim().toLowerCase()
   const mapAuthError = (e: unknown, fallbackKey: 'sendCodeFailed' | 'signInError' | 'sessionCreateFailed') => {
     if (e instanceof Error) {
       if (e.message === 'SESSION_CREATE_FAILED') return tc('sessionCreateFailed')
-      if (e.message && !e.message.startsWith('SESSION_')) return e.message
+      if (e.message.startsWith('SESSION_')) return tc(fallbackKey)
+      return mapOtpAuthError(e, tApi, tc(fallbackKey))
     }
     return tc(fallbackKey)
   }
@@ -325,10 +332,10 @@ export function AuthPhoneFlow({
     setCodeError(null)
     try {
       if (channel === 'phone') {
-        await sendAuthSmsCode(phone, purpose)
+        await sendAuthSmsCode(phone, purpose, locale)
         toast.success(tc('codeSentSms'))
       } else {
-        await sendAuthEmailCode(email, purpose)
+        await sendAuthEmailCode(email, purpose, locale)
         toast.success(tc('codeSentEmail'))
       }
       setStep('otp')
@@ -372,10 +379,10 @@ export function AuthPhoneFlow({
     setCodeError(null)
     try {
       if (channel === 'phone') {
-        await sendAuthSmsCode(phone, purpose)
+        await sendAuthSmsCode(phone, purpose, locale)
         toast.success(tc('codeSentSms'))
       } else {
-        await sendAuthEmailCode(email, purpose)
+        await sendAuthEmailCode(email, purpose, locale)
         toast.success(tc('codeSentEmail'))
       }
       setCode('')

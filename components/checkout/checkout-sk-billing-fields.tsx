@@ -16,6 +16,7 @@ import {
   type CheckoutFormValues,
   type CheckoutPaymentFieldKey,
 } from '@/lib/validation/checkout-form'
+import { useFormatFieldError } from '@/lib/validation/use-field-error-messages'
 
 export function CheckoutSkBillingFields({
   formData,
@@ -44,16 +45,17 @@ export function CheckoutSkBillingFields({
   onViesResult?: (result: { valid: boolean | null } | null) => void
   viesValid?: boolean | null
 }) {
+  const fe = useFormatFieldError()
   const t = useTranslations('checkout')
   const requireCompanyFields = buyerType === 'company'
 
   const showPaymentError = (field: CheckoutPaymentFieldKey) =>
     Boolean(
       paymentTouched[field] &&
-        getCheckoutPaymentFieldError(field, formData, {
+        fe(getCheckoutPaymentFieldError(field, formData, {
           requireCompanyFields,
           marketRegion: 'sk',
-        }),
+        })),
     )
 
   const handleBuyerTypeChange = (value: CheckoutBuyerType) => {
@@ -146,10 +148,10 @@ export function CheckoutSkBillingFields({
               <FieldHint
                 id="sk-company-ico-error"
                 show={Boolean(paymentTouched.companyEdrpou)}
-                message={getCheckoutPaymentFieldError('companyEdrpou', formData, {
+                message={fe(getCheckoutPaymentFieldError('companyEdrpou', formData, {
                   requireCompanyFields,
                   marketRegion: 'sk',
-                })}
+                }))}
               />
             </div>
             <div className="space-y-2">
@@ -184,10 +186,10 @@ export function CheckoutSkBillingFields({
             <FieldHint
               id="sk-company-legal-name-error"
               show={Boolean(paymentTouched.companyLegalName)}
-              message={getCheckoutPaymentFieldError('companyLegalName', formData, {
+              message={fe(getCheckoutPaymentFieldError('companyLegalName', formData, {
                 requireCompanyFields,
                 marketRegion: 'sk',
-              })}
+              }))}
             />
           </div>
           <div className="space-y-2">
@@ -207,10 +209,10 @@ export function CheckoutSkBillingFields({
             <FieldHint
               id="sk-company-street-error"
               show={Boolean(paymentTouched.companyStreet)}
-              message={getCheckoutPaymentFieldError('companyStreet', formData, {
+              message={fe(getCheckoutPaymentFieldError('companyStreet', formData, {
                 requireCompanyFields,
                 marketRegion: 'sk',
-              })}
+              }))}
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -232,10 +234,10 @@ export function CheckoutSkBillingFields({
               <FieldHint
                 id="sk-company-psc-error"
                 show={Boolean(paymentTouched.companyPostalCode)}
-                message={getCheckoutPaymentFieldError('companyPostalCode', formData, {
+                message={fe(getCheckoutPaymentFieldError('companyPostalCode', formData, {
                   requireCompanyFields,
                   marketRegion: 'sk',
-                })}
+                }))}
               />
             </div>
             <div className="space-y-2">
@@ -255,10 +257,10 @@ export function CheckoutSkBillingFields({
               <FieldHint
                 id="sk-company-city-error"
                 show={Boolean(paymentTouched.companyCity)}
-                message={getCheckoutPaymentFieldError('companyCity', formData, {
+                message={fe(getCheckoutPaymentFieldError('companyCity', formData, {
                   requireCompanyFields,
                   marketRegion: 'sk',
-                })}
+                }))}
               />
             </div>
           </div>

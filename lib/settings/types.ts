@@ -1,5 +1,5 @@
 import type { RecentlyViewedSettings } from './recently-viewed'
-import type { LocalizationSettings } from '@/lib/i18n/locales'
+import type { AppLocale, LocalizationSettings } from '@/lib/i18n/locales'
 import type { NavigationSettings } from '@/lib/settings/navigation'
 
 export type { LocalizationSettings }
@@ -83,6 +83,14 @@ export type CheckoutBankDetails = {
   icDph: string
 }
 
+/** Per-locale store contact CMS (addresses, block titles, schedules). */
+export type StoreContactCmsCopy = {
+  addressLine1: string
+  addressLine2: string
+  contactBlocks: StoreContactBlock[]
+  schedules: StoreHoursSchedule[]
+}
+
 export type StoreContactSettings = {
   addressLine1: string
   addressLine2: string
@@ -97,6 +105,8 @@ export type StoreContactSettings = {
   social: StoreSocialLinks
   companyDetails: CheckoutBankDetails
   showCompanyOnContacts: boolean
+  /** Locale-specific address / contact titles / opening hours. */
+  byLocale: Partial<Record<AppLocale, StoreContactCmsCopy>>
 }
 
 export type HomeHighlight = {
@@ -116,6 +126,7 @@ export type HomeGalleryImage = {
 
 import type { HomeSectionKey } from '@/lib/settings/home-sections'
 import type { ReviewSortOrder } from '@/lib/reviews/types'
+import type { HomePageCmsCopy } from '@/lib/settings/home-cms'
 
 export type HomePageSettings = {
   sectionOrder: HomeSectionKey[]
@@ -182,6 +193,8 @@ export type HomePageSettings = {
     limit: number
     sort: ReviewSortOrder
   }
+  /** Locale-specific CMS texts (hero labels, section titles, captions, …). */
+  byLocale: Partial<Record<AppLocale, HomePageCmsCopy>>
 }
 
 export type BelowMinOrderBehavior = 'reject' | 'add_packaging_fee'
@@ -276,6 +289,9 @@ export type CartCheckoutSettings = {
   orderPdfDownloadEnabled: boolean
   orderPdfEmailEnabled: boolean
   orderPdfTitle: string
+  allowPayOnPickup: boolean
+  newOrderNotifyEmailEnabled: boolean
+  newOrderNotifyEmail: string
 }
 
 export type CatalogCategoryDisplay = 'subcategories' | 'products' | 'both'

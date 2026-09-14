@@ -117,9 +117,14 @@ function isDocument(value: unknown): value is LegalDocumentView {
 export async function fetchCurrentLegalDocument(
   type: LegalDocumentType,
   locale: string,
+  countrySiteCode?: string | null,
 ): Promise<LegalDocumentView | null> {
   try {
-    const res = await fetchBackend(`/legal/${type}?locale=${encodeURIComponent(locale)}`)
+    const params = new URLSearchParams({ locale })
+    if (countrySiteCode === 'sk' || countrySiteCode === 'hu' || countrySiteCode === 'at') {
+      params.set('countrySiteCode', countrySiteCode)
+    }
+    const res = await fetchBackend(`/legal/${type}?${params.toString()}`)
     if (!res.ok) return null
     const data = await readBackendJson<unknown>(res)
     return isDocument(data) ? data : null

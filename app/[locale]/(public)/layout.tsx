@@ -29,7 +29,11 @@ async function SiteJsonLd() {
     getRequestCountrySiteCode(),
   ])
   const market = getMarketSettings(fetched)
-  const store = resolveStoreForCountrySite(getStoreSettings(fetched), market, countryCode)
+  const store = resolveStoreForCountrySite(
+    getStoreSettings(fetched, { locale }),
+    market,
+    countryCode,
+  )
   const brand = t('brand')
   const company = resolvePublicCompanyName(store, brand)
   return (

@@ -3,18 +3,14 @@ import { getLocale, getTranslations } from 'next-intl/server'
 import { Navigation } from '@/components/navigation'
 import { PublicPageBreadcrumbs } from '@/components/public-page-breadcrumbs'
 import { LegalPageLinks } from '@/components/legal/legal-page-links'
-import { LegalPageSections, type LegalPageSection } from '@/components/legal/legal-page-sections'
 import { LegalRevisionBody } from '@/components/legal/legal-revision-body'
-import { LegalSellerDetails } from '@/components/legal/legal-seller-details'
-import { ServiceUnavailableNotice } from '@/components/ui/service-unavailable-notice'
+import { LegalTemplateNotice } from '@/components/legal/legal-template-notice'
 import { staticPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
-import { SERVICE_UNAVAILABLE_MESSAGE } from '@/lib/api/fetch-result'
 import { getRequestCountrySiteCode } from '@/lib/country-sites/request-country'
 import { fetchCurrentLegalDocument, sellerFromBankDetails } from '@/lib/legal/documents'
 import {
   legalPageTitleClassName,
   legalProseClassName,
-  legalSectionHeadingClassName,
 } from '@/lib/legal/storefront-typography'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import { resolveCheckoutBankDetails } from '@/lib/settings/company-bank-details'
@@ -23,63 +19,34 @@ import {
   getCartCheckoutSettings,
   getMarketSettings,
   getStoreSettings,
-  isStoreContactUnavailable,
 } from '@/lib/settings/fetch'
 import { resolveStoreForCountrySite } from '@/lib/settings/store-contact-country'
-import {
-  formatStoreAddress,
-  getStoreEmails,
-  getStorePhones,
-  getSupportEmail,
-  hasStoreContactInfo,
-  resolveStoreMapsHref,
-} from '@/lib/settings/store-helpers'
+import { resolvePublicSupportEmail } from '@/lib/settings/public-support-email'
 import { cn } from '@/lib/utils'
-
-function withSellerName(sections: LegalPageSection[], sellerName: string): LegalPageSection[] {
-  return sections.map((section) => ({
-    ...section,
-    body: section.body.map((paragraph) =>
-      paragraph.replaceAll('{sellerName}', sellerName),
-    ),
-  }))
-}
 
 export default async function TermsPage() {
   const locale = await getLocale()
   const tNav = await getTranslations('nav')
   const tLegal = await getTranslations('legalPages')
-  const tFallback = await getTranslations('termsFallback')
   const [fetched, countryCode] = await Promise.all([
     fetchPublicSiteSettings(),
     getRequestCountrySiteCode(),
   ])
   const market = getMarketSettings(fetched)
   const store = resolveStoreForCountrySite(
-    getStoreSettings(fetched),
+    getStoreSettings(fetched, { locale }),
     market,
     countryCode,
   )
   const cart = getCartCheckoutSettings(fetched)
   const bank = resolveCheckoutBankDetails(cart, store)
-  const legalDocument = await fetchCurrentLegalDocument('TERMS', locale)
+  const legalDocument = await fetchCurrentLegalDocument('TERMS', locale, countryCode)
   const fallbackSeller = sellerFromBankDetails(bank)
-  const sellerName =
-    legalDocument?.seller?.organizationName ||
-    fallbackSeller?.organizationName ||
-    tFallback('sellerFallback')
-  const contactsUnavailable = isStoreContactUnavailable(fetched) || !hasStoreContactInfo(store)
-  const address = formatStoreAddress(store)
-  const mapsUrl = resolveStoreMapsHref(store)
-  const phones = getStorePhones(store)
-  const emails = getStoreEmails(store)
-  const supportEmail = getSupportEmail(store)
-
-  const marketKey = market.region === 'sk' ? 'sk' : 'ua'
-  const fallbackSections = withSellerName(
-    tFallback.raw(`${marketKey}.sections`) as LegalPageSection[],
-    sellerName,
-  )
+  const supportEmail = resolvePublicSupportEmail({
+    store,
+    market,
+    countrySiteCode: countryCode,
+  })
 
   return (
     <>
@@ -92,7 +59,7 @@ export default async function TermsPage() {
               items={staticPageBreadcrumbs(tNav('terms'))}
             />
             <h1 className={legalPageTitleClassName}>
-              {legalDocument?.title ?? tFallback('title')}
+              {legalDocument?.title ?? tLegal('termsUnavailableTitle')}
             </h1>
           </div>
         </div>
@@ -103,79 +70,25 @@ export default async function TermsPage() {
               <LegalPageLinks current="terms" />
             </div>
 
-            <p className="mb-8 text-lg text-muted-foreground">
-              {legalDocument
-                ? tLegal('revisionLine', { version: legalDocument.version })
-                : tFallback('updated')}
-            </p>
-
             {legalDocument ? (
-              <LegalRevisionBody
-                document={legalDocument}
-                locale={locale}
-                versionLabel=""
-                fallbackSeller={fallbackSeller}
-                supportEmail={supportEmail}
-              />
-            ) : (
               <>
-                <LegalSellerDetails seller={fallbackSeller} />
-                <LegalPageSections sections={fallbackSections} supportEmail={supportEmail} />
+                <p className="mb-8 text-lg text-muted-foreground">
+                  {tLegal('revisionLine', { version: legalDocument.version })}
+                </p>
+                <LegalRevisionBody
+                  document={legalDocument}
+                  locale={locale}
+                  versionLabel=""
+                  fallbackSeller={fallbackSeller}
+                  supportEmail={supportEmail}
+                />
               </>
+            ) : (
+              <div className="space-y-4">
+                <LegalTemplateNotice />
+                <p className="text-muted-foreground">{tLegal('termsUnavailableBody')}</p>
+              </div>
             )}
-
-            {!legalDocument ? (
-              <section className="mb-8">
-                <h2 className={cn('mb-4', legalSectionHeadingClassName)}>
-                  {tFallback('contactHeading')}
-                </h2>
-                <div className="space-y-2 text-muted-foreground">
-                  {fallbackSeller?.organizationName ? (
-                    <p>
-                      <strong className="text-foreground">
-                        {fallbackSeller.organizationName}
-                      </strong>
-                    </p>
-                  ) : null}
-                  {contactsUnavailable ? (
-                    <ServiceUnavailableNotice
-                      compact
-                      title={tFallback('contactsUnavailableTitle')}
-                      message={SERVICE_UNAVAILABLE_MESSAGE}
-                      className="text-left"
-                    />
-                  ) : (
-                    <>
-                      <p>
-                        {tFallback('contactAddress')}:{' '}
-                        {mapsUrl ? (
-                          <a
-                            href={mapsUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary underline-offset-4 hover:underline"
-                          >
-                            {address}
-                          </a>
-                        ) : (
-                          address
-                        )}
-                      </p>
-                      {phones.map((item) => (
-                        <p key={item.phone}>
-                          {tFallback('contactPhone', { label: item.label })}: {item.phone}
-                        </p>
-                      ))}
-                      {emails.map((item) => (
-                        <p key={item.email}>
-                          {tFallback('contactEmail', { label: item.label })}: {item.email}
-                        </p>
-                      ))}
-                    </>
-                  )}
-                </div>
-              </section>
-            ) : null}
           </div>
         </div>
       </main>

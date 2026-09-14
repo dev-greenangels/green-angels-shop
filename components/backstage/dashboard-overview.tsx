@@ -30,6 +30,7 @@ type RecentOrderRow = {
   customerLabel: string
   customerEmail: string | null
   totalAmount: number
+  currency?: string
   status: keyof typeof ORDER_STATUS_LABELS
   createdAt: string
 }
@@ -63,7 +64,9 @@ export function DashboardOverview() {
   const [ordersStatus, setOrdersStatus] = useState<SectionStatus>('loading')
   const [ordersError, setOrdersError] = useState<string | null>(null)
   const [orderCount, setOrderCount] = useState<number | null>(null)
+  const [ordersDesc, setOrdersDesc] = useState<string | null>(null)
   const [revenue, setRevenue] = useState<string | null>(null)
+  const [revenueDesc, setRevenueDesc] = useState<string | null>(null)
   const [recentOrders, setRecentOrders] = useState<RecentOrderRow[]>([])
 
   const [reloadToken, setReloadToken] = useState(0)
@@ -117,9 +120,25 @@ export function DashboardOverview() {
         fetchBackstageOrdersSummary(),
         fetchBackstageOrders({ page: 1, pageSize: 5 }),
       ])
-      setOrderCount(summary.totalOrders)
-      const currency = summary.currency === 'UAH' ? '₴' : summary.currency
-      setRevenue(`${summary.totalRevenue.toLocaleString('uk-UA')} ${currency}`)
+      const currencyLabel = summary.currency === 'UAH' ? '₴' : summary.currency
+      const active = summary.activeOrders ?? summary.totalOrders
+      const cancelled = summary.cancelledOrders ?? 0
+      const ordersValue = summary.ordersValue ?? summary.totalRevenue
+      const paid = summary.paidRevenue ?? 0
+      setOrderCount(active)
+      setOrdersDesc(
+        t('statOrdersDescActive', {
+          cancelled,
+          total: summary.totalOrders,
+        }),
+      )
+      setRevenue(`${ordersValue.toLocaleString('uk-UA')} ${currencyLabel}`)
+      setRevenueDesc(
+        t('statOrdersValueDesc', {
+          paid: paid.toLocaleString('uk-UA'),
+          currency: currencyLabel,
+        }),
+      )
       setRecentOrders(
         recent.items.map((order) => ({
           id: order.id,
@@ -129,12 +148,15 @@ export function DashboardOverview() {
           totalAmount: order.totalAmount,
           status: order.status,
           createdAt: order.createdAt,
+          currency: order.currency,
         })),
       )
       setOrdersStatus('ready')
     } catch (err) {
       setOrderCount(null)
+      setOrdersDesc(null)
       setRevenue(null)
+      setRevenueDesc(null)
       setRecentOrders([])
       setOrdersError(sectionErrorMessage(err, t('loadError')))
       setOrdersStatus('error')
@@ -163,7 +185,7 @@ export function DashboardOverview() {
     {
       key: 'orders',
       title: t('statOrders'),
-      description: t('statOrdersDesc'),
+      description: ordersDesc ?? t('statOrdersDesc'),
       icon: ShoppingCart,
       status: ordersStatus,
       error: ordersError,
@@ -172,8 +194,8 @@ export function DashboardOverview() {
     },
     {
       key: 'revenue',
-      title: t('statRevenue'),
-      description: t('statRevenueDesc'),
+      title: t('statOrdersValue'),
+      description: revenueDesc ?? t('statOrdersValueDescFallback'),
       icon: TrendingUp,
       status: ordersStatus,
       error: ordersError,
@@ -285,7 +307,8 @@ export function DashboardOverview() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm font-medium">
-                        {order.totalAmount.toLocaleString('uk-UA')} ₴
+                        {order.totalAmount.toLocaleString('uk-UA')}{' '}
+                        {order.currency === 'UAH' || !order.currency ? '₴' : order.currency}
                       </td>
                       <td className="px-4 py-3">
                         <span

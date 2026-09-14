@@ -41,11 +41,16 @@ export function collectSitemapPathnames(input: {
   blogPaths: string[]
   /** When false, omit /wholesale from static paths */
   wholesalePageEnabled?: boolean
+  /** When false, omit /faq from static paths (localization.showFaqInFooter) */
+  faqEnabled?: boolean
 }): string[] {
-  const staticPaths =
-    input.wholesalePageEnabled === false
-      ? SITEMAP_STATIC_PATHS.filter((path) => path !== '/wholesale')
-      : SITEMAP_STATIC_PATHS
+  let staticPaths: string[] = [...SITEMAP_STATIC_PATHS]
+  if (input.wholesalePageEnabled === false) {
+    staticPaths = staticPaths.filter((path) => path !== '/wholesale')
+  }
+  if (input.faqEnabled === false) {
+    staticPaths = staticPaths.filter((path) => path !== '/faq')
+  }
   return unique([
     ...staticPaths,
     ...input.categoryPaths,

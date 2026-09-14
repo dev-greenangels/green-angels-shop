@@ -184,8 +184,16 @@ export function UserOrderCard({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Видалити замовлення?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Замовлення {order.orderNumber} буде видалено без можливості відновлення.
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  Замовлення №{order.orderNumber} буде назавжди видалено з бази сайту.
+                </p>
+                <p>
+                  Ця дія НЕ видаляє документ в ABRA, НЕ повертає оплату і НЕ скасовує відправлення.
+                </p>
+                <p>Дію неможливо скасувати.</p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

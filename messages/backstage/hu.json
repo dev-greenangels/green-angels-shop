@@ -591,8 +591,12 @@
       "statPlantsDesc": "Items in catalog",
       "statOrders": "Orders",
       "statOrdersDesc": "Total in system",
+      "statOrdersDescActive": "cancelled {cancelled} · total {total}",
       "statRevenue": "Revenue",
       "statRevenueDesc": "Sum of all orders",
+      "statOrdersValue": "Order value",
+      "statOrdersValueDesc": "excl. cancelled · paid {paid} {currency}",
+      "statOrdersValueDescFallback": "excluding cancelled orders",
       "statCustomers": "Customers",
       "statCustomersDesc": "Registered buyers",
       "statCustomersSoon": "Coming soon",
@@ -620,6 +624,41 @@
       "submit": "Sign in",
       "passwordLabel": "Password",
       "staffOnlyHint": "Staff access only. Separate from customer login on the site."
+    },
+    "contractWithdrawals": {
+      "statusWaitingForReturn": "Áru várása",
+      "statusReturnReceived": "Áru megérkezett",
+      "statusRefundPending": "Visszatérítés függőben",
+      "statusRefunded": "Visszatérítve (kézi)",
+      "statusCancelled": "Törölve",
+      "actionWaitingForReturn": "Áru várása",
+      "actionReturnReceived": "Áru átvéve",
+      "actionRefundPending": "Visszatérítés pending",
+      "actionRefunded": "Visszatérítettnek jelölés",
+      "actionCancel": "Törlés",
+      "actionSubmitted": "Új",
+      "manualRefundHint": "A pénzt a menedzser/könyvelő a webshopon kívül utalja vissza. A gombok csak állapotot rögzítenek — nincs Stripe/bank API.",
+      "confirmRefunded": "Megerősíti, hogy a fizetés már ténylegesen vissza lett térítve a vásárlónak?",
+      "invalidRefundAmount": "Érvénytelen visszatérítési összeg.",
+      "refundSectionTitle": "Return / Withdrawal — kézi visszatérítés",
+      "refundAmount": "Visszatérítés összege",
+      "refundCurrency": "Pénznem",
+      "refundMethod": "Visszatérítés módja",
+      "refundMethodPlaceholder": "Válasszon módot",
+      "refundMethod_ORIGINAL_PAYMENT_METHOD": "Eredeti fizetési mód",
+      "refundMethod_BANK_TRANSFER": "Banki átutalás",
+      "refundMethod_CASH_OR_COD_MANUAL": "Készpénz / utánvét (kézi)",
+      "refundMethod_OTHER": "Egyéb",
+      "refundReference": "Visszatérítési referencia / megjegyzés",
+      "internalNote": "Belső megjegyzés",
+      "returnReceivedAt": "Áru átvéve: {date}",
+      "refundedAt": "Visszatérítés rögzítve: {date}",
+      "orderBreakdownTitle": "Rendelés áttekintése",
+      "orderBreakdownTotal": "Összesen: {amount} {currency}",
+      "orderBreakdownProducts": "Termékek: {amount} {currency}",
+      "orderBreakdownDelivery": "Szállítás: {amount} {currency}",
+      "orderBreakdownPayment": "Fizetés: {method}",
+      "partialRefundManualHint": "Részleges elállás: az összeget kézzel adja meg — nincs automatikus jogi számítás."
     }
   },
   "valueTypes": {
@@ -924,5 +963,8 @@
       "missing_non_public_image": "Missing/non-public image",
       "other": "Other"
     }
+  },
+  "translationDialog": {
+    "fillAllFromCurrent": "Összes nyelv kitöltése az aktuálisból"
   }
 }

@@ -633,7 +633,24 @@
       "bank": "Bank",
       "legalAddress": "Székhely",
       "taxStatus": "Adójogi státusz"
+    },
+    "contactUs": "Lépjen kapcsolatba",
+    "closed": "Zárva",
+    "open": "Nyitva",
+    "weekdayRange": "{from} – {to}",
+    "weekdays": {
+      "mon": "Hé",
+      "tue": "Ke",
+      "wed": "Sze",
+      "thu": "Csü",
+      "fri": "Pé",
+      "sat": "Szo",
+      "sun": "Vas"
     }
+  },
+  "aboutPage": {
+    "unavailableTitle": "Rólunk",
+    "unavailableBody": "A Rólunk oldal ezen a nyelven még nincs közzétéve. Vegye fel velünk a kapcsolatot, vagy válasszon másik nyelvet."
   },
   "errors": {
     "serviceUnavailable": "A szolgáltatás átmenetileg nem elérhető. Frissítse az oldalt, vagy próbálja újra később.",
@@ -909,6 +926,10 @@
       "dobierka": {
         "title": "Utánvét (COD)",
         "description": "Fizetés a futárnak vagy az átvételi ponton átvételkor"
+      },
+      "pay-on-pickup": {
+        "title": "Fizetés átvételkor",
+        "description": "Készpénzes vagy kártyás fizetés személyes átvételkor"
       }
     },
     "edrpou": "EDRPOU",
@@ -1124,7 +1145,8 @@
     "deliveryInfoPickupTitle": "Személyes átvétel",
     "deliveryInfoPickupPrepare": "Előkészítjük a rendelését személyes átvételre.",
     "deliveryInfoPickupNotify": "Értesítjük, ha készen áll.",
-    "deliveryInfoPickupLocation": "Átvételi hely"
+    "deliveryInfoPickupLocation": "Átvételi hely",
+    "shippingInfoLink": "Szállítási és fizetési részletek"
   },
   "product": {
     "newBadge": "Új",
@@ -1289,7 +1311,15 @@
     "sellerIco": "IČO",
     "sellerDic": "DIČ",
     "sellerVat": "IČ DPH",
-    "sellerAddress": "Székhely"
+    "sellerAddress": "Székhely",
+    "termsUnavailableTitle": "Általános Szerződési Feltételek",
+    "termsUnavailableBody": "Az ÁSZF ebben a nyelven még nincs közzétéve. Váltson nyelvet, vagy próbálja meg később.",
+    "privacyUnavailableTitle": "Adatvédelmi tájékoztató",
+    "privacyUnavailableBody": "Az adatvédelmi tájékoztató ebben a nyelven még nincs közzétéve. Váltson nyelvet, vagy próbálja meg később.",
+    "cookiesUnavailableTitle": "Cookie-szabályzat",
+    "cookiesUnavailableBody": "A cookie-szabályzat ebben a nyelven még nincs közzétéve. Váltson nyelvet, vagy próbálja meg később.",
+    "returnsUnavailableTitle": "Termékvisszaküldés és elállási jog",
+    "returnsUnavailableBody": "A visszaküldési tájékoztató ebben a nyelven még nincs közzétéve. Váltson nyelvet, vagy próbálja meg később."
   },
   "cookieConsent": {
     "title": "Sütiket használunk",
@@ -1416,67 +1446,78 @@
     "inclVat": "ÁFA-val"
   },
   "shippingPage": {
+    "seoTitle": "Szállítás és fizetés | Green Angels",
+    "seoDescription": "Szállítási és fizetési információk a Green Angels webáruházban: szállítási országok, szállítási és fizetési módok. A pontos szállítási díj a pénztárban jelenik meg.",
     "title": "Szállítás és fizetés",
+    "intro": "A növényeket az adott webáruházban elérhető országokba szállítjuk. Az aktuális szállítási és fizetési lehetőségek a szállítási ország és a rendelés tartalma alapján jelennek meg.",
+    "introExactPrice": "A pontos szállítási költséget a rendszer a pénztárban, a rendelés leadása előtt számítja ki.",
+    "countriesTitle": "Szállítási országok",
+    "countriesIntro": "Az elérhető szállítási országok attól függnek, hogy melyik Green Angels webáruházat használja.",
     "deliveryTitle": "Szállítási módok",
-    "costsTitle": "Szállítási díjak",
-    "costsOrderCol": "Mód",
-    "costsPriceCol": "Díj",
-    "costsCarrierTariff": "A futárszolgálat díjszabása szerint",
-    "costsFreePickup": "Nincs extra szállítási díj",
-    "paymentTitle": "Fizetési módok",
-    "packingTitle": "Növények csomagolása",
-    "packingIntro": "Gondosan csomagolunk, hogy a növények a lehető legjobb állapotban érkezzenek:",
-    "packingItems": [
-      "Gyökérlabda rögzítése a sérülés elkerülésére",
-      "Korona védelme hálóval vagy papírral",
-      "Nedvességmegtartó anyagok",
-      "Strapabíró dobozok „Törékeny — növények” jelöléssel"
-    ],
-    "pickupUnavailableTitle": "Az átvételi cím átmenetileg nem elérhető",
+    "deliveryIntro": "Az elérhető szállítási módok a szállítási ország és az adott rendeléshez aktuálisan rendelkezésre álló lehetőségek alapján jelennek meg.",
+    "packingNote": "A növényeket fajuknak, méretüknek és aktuális állapotuknak megfelelően készítjük elő és csomagoljuk a szállításhoz. Emiatt nem minden szállítási mód érhető el minden rendeléshez.",
+    "pickupTitle": "Személyes átvétel Szlovákiában",
+    "pickupBody": "Rendelését személyesen is átveheti szlovákiai átvételi helyünkön. A személyes átvételt más országból rendelő vásárlók is választhatják.",
+    "pickupAddressNote": "Az átvétel címe és aktuális feltételei a rendelési folyamat során jelennek meg.",
+    "pickupUnavailableTitle": "A személyes átvétel címe átmenetileg nem érhető el",
+    "pickupAddressFallback": "A cím és a feltételek a pénztárban és a kapcsolati oldalon jelennek meg.",
     "addressLabel": "Cím",
+    "costsFreePickup": "Személyes átvétel: nincs szállítási díj, ha ezt az opciót választja a pénztárban.",
+    "costsTitle": "Szállítási költség",
+    "costsBody1": "A szállítási költség a szállítási országtól, a választott szállítási módtól és a rendelés tartalmától függ.",
+    "costsBody2": "A pontos szállítási költséget mindig látni fogja a pénztárban, mielőtt leadja rendelését.",
+    "costsBody3": "Ha az adott szállítási vagy fizetési módhoz további díj tartozik, az a rendelés megerősítése előtt megjelenik a pénztárban.",
+    "deliveryTimeTitle": "Szállítási idő",
+    "deliveryTimeBody": "A várható szállítási idő általában a rendelés leadásától számított 2–8 nap. A tényleges időtartam a szállítási országtól, a választott szállítási módtól és a megrendelt növények aktuális elérhetőségétől függ.",
+    "dispatchDateTitle": "Feladási dátum kiválasztása",
+    "dispatchDateBody1": "Ha ez a lehetőség elérhető a rendeléshez, a pénztárban kiválaszthatja azt a dátumot, amikor rendelését feladjuk faiskolánkból.",
+    "dispatchDateBody2": "A kiválasztott dátum a csomag feladásának dátuma, nem garantált kézbesítési dátum. A feladást követő kézbesítési idő a fuvarozótól és a célországtól függ.",
+    "paymentTitle": "Fizetési módok",
+    "paymentIntro": "Az elérhető fizetési módok a szállítási ország és a választott szállítási mód alapján jelennek meg.",
+    "codFeeFixed": "Esetleges utánvételi díj: {amount}. A rendelés leadása előtt a pénztárban is megjelenik.",
+    "livePlantsTitle": "Növények és szállítás",
+    "livePlantsBody1": "A növények élő termékek, ezért biztonságos szállításuk megfelelő csomagolást igényel. A csomagolást a növény fajához, méretéhez és aktuális állapotához igazítjuk.",
+    "livePlantsBody2": "Emiatt az elérhető szállítási lehetőségek rendelésenként eltérhetnek. A pénztárban mindig az adott rendeléshez aktuálisan elérhető lehetőségek jelennek meg.",
+    "damageTitle": "Szállítás közbeni sérülés",
+    "damageBody1": "Átvételkor javasoljuk a csomag ellenőrzését. Ha a csomagolás láthatóan sérült, javasoljuk a sérülés dokumentálását, és lehetőség szerint annak rögzítését a fuvarozónál is.",
+    "damageBody2": "Ha a növény vagy a csomag tartalma szállítás közben megsérült, kérjük, mielőbb lépjen kapcsolatba velünk, és csatoljon fényképeket a sérülésről és a csomagolásról.",
+    "damageBody3": "A reklamációkkal és visszaküldéssel kapcsolatos részleteket az Általános Szerződési Feltételekben, valamint az Elállás és visszaküldés oldalon találja.",
+    "helpTitle": "Információra van szüksége a rendelésével kapcsolatban?",
+    "helpBody": "Ha kérdése van a szállítással, fizetéssel vagy egy már leadott rendeléssel kapcsolatban, kérjük, lépjen kapcsolatba velünk a Kapcsolat oldalon megadott elérhetőségeken.",
     "methods": {
       "nova-poshta": {
         "title": "Nova Poshta",
-        "description": "Fiókba vagy címre Ukrajnában.",
-        "eta": "Általában 1–3 nap",
-        "tracking": "Online csomagkövetés"
+        "description": "Fiókba vagy címre történő szállítás — a pénztárban választott mód szerint, ha ez a lehetőség elérhető.",
+        "tracking": "Online csomagkövetés, ha a fuvarozó biztosítja"
       },
       "packeta": {
         "title": "Packeta",
-        "description": "Átvételi pont / Z-BOX vagy futár — a pénztárban választott mód szerint.",
-        "eta": "Az idő a célországtól függ",
-        "tracking": "Online csomagkövetés"
+        "description": "Átvételi pont / Z-BOX vagy futár — a pénztárban választott mód szerint, ha ez a lehetőség elérhető.",
+        "tracking": "Online csomagkövetés, ha a fuvarozó biztosítja"
       },
       "gls": {
         "title": "GLS",
-        "description": "Futárszállítás a címére.",
-        "eta": "Az idő a célországtól függ",
-        "tracking": "Online csomagkövetés"
-      },
-      "pickup": {
-        "title": "Személyes átvétel",
-        "description": "Vegye át a rendelést személyesen a faiskolánkban."
+        "description": "Futárszállítás a címére — a pénztárban választott mód szerint, ha ez a lehetőség elérhető.",
+        "tracking": "Online csomagkövetés, ha a fuvarozó biztosítja"
       }
     },
     "payments": {
       "card-online": {
-        "title": "Kártyás online",
-        "descriptionUa": "Visa, Mastercard és más módok MonoPay-jel.",
-        "descriptionSk": "Visa, Mastercard és más módok Stripe-on, a bolt pénznemében (EUR / HUF)."
+        "title": "Online bankkártyás fizetés",
+        "description": "Rendelését biztonságosan kifizetheti online bankkártyával. A bankkártyás fizetés elérhetősége és a fizetés pénzneme a rendelési folyamat során jelenik meg."
       },
       "bank-transfer": {
         "title": "Banki átutalás",
-        "descriptionUa": "Fizetés az eladó számlájára (UAH).",
-        "descriptionSk": "Átutalás IBAN-ra (EUR / HUF)."
-      },
-      "bank-transfer-legal": {
-        "title": "Átutalás (cég)",
-        "descriptionUa": "Cégeknek, ÁFA-val vagy anélkül.",
-        "descriptionSk": "Cégeknek / B2B cégadatokkal."
+        "description": "Rendelését banki átutalással is kifizetheti. Az átutaláshoz szükséges fizetési adatokat és információkat a rendelési folyamat részeként kapja meg."
       },
       "dobierka": {
         "title": "Utánvét",
-        "description": "Készpénz vagy kártya átvételkor — ha a mód be van kapcsolva."
+        "description": "Utánvétes fizetés akkor érhető el, ha ez a lehetőség az adott rendeléshez és a választott szállítási módhoz engedélyezett.",
+        "feeNote": "Az esetleges utánvételi díj a rendelés leadása előtt megjelenik a pénztárban."
+      },
+      "pay-on-pickup": {
+        "title": "Fizetés személyes átvételkor",
+        "description": "Ha személyes átvétel esetén elérhető helyszíni fizetés, az megjelenik a pénztárban választható fizetési módok között."
       }
     }
   },
@@ -1698,5 +1739,64 @@
       "nonSkTitle": "Tájékoztató fordítás",
       "nonSkBody": "A 108/2024 Z. z. törvény 2. melléklete szerinti hivatalos szlovák minta a szlovák jog szerinti szerződésekre vonatkozik. Más jogrend esetén használja a fenti online nyilatkozatot."
     }
+  },
+  "faq": {
+    "title": "Gyakori kérdések",
+    "ctaTitle": "Nem találta a választ?",
+    "ctaBody": "Lépjen kapcsolatba velünk, szívesen segítünk",
+    "contactsUnavailable": "A kapcsolatok átmenetileg nem elérhetők"
+  },
+  "validation": {
+    "required": "Kötelező mező",
+    "invalidEmail": "Érvénytelen e-mail formátum",
+    "invalidPhone": "Érvénytelen telefonszám",
+    "invalidPhoneUa": "Adjon meg érvényes ukrán számot (+380)",
+    "invalidPhoneSk": "Adjon meg érvényes szlovák számot (+421)",
+    "invalidPhoneIntl": "Adjon meg érvényes nemzetközi számot",
+    "latinCharactersRequired": "Latin betűket használjon (ékezet megengedett)",
+    "minLatinLetters": "Legalább 2 betű szükséges",
+    "requiredForeignPhone": "Kötelező nemzetközi szám esetén",
+    "requiredAddressDelivery": "Kötelező házhozszállításnál",
+    "reviewFullNameRequired": "Adja meg a teljes nevét.",
+    "reviewPhotosMax": "Legfeljebb 3 fénykép adható hozzá.",
+    "invalidIco": "Az IČO 6–8 számjegyből álljon",
+    "invalidEdrpou": "Az EDRPOU 8 számjegyből álljon",
+    "companyLegalNameMin": "Adja meg a teljes cégnevet (min. 3 karakter)",
+    "cyrillicFirstName": "Adja meg a keresztnevet ukránul (cirill)",
+    "cyrillicLastName": "Adja meg a vezetéknevet ukránul (cirill)",
+    "cyrillicNameMin": "Legalább 2 ukrán betű; aposztróf megengedett",
+    "invalidSkPostal": "Érvénytelen irányítószám",
+    "minTwoChars": "Legalább 2 karakter",
+    "reviewFullNameInvalid": "A név betűket, szóközöket és kötőjeleket tartalmazhat (2–120 karakter).",
+    "reviewContactRequired": "Adjon meg e-mail-címet vagy telefonszámot.",
+    "reviewTextMin": "Az értékelés szövege legalább 10 karakter legyen.",
+    "reviewTextMax": "Az értékelés szövege túl hosszú.",
+    "reviewTextNoHtml": "A szöveg nem tartalmazhat HTML-címkéket.",
+    "reviewImageInvalid": "Érvénytelen kép.",
+    "reviewRatingRequired": "Válasszon 1–5 csillagos értékelést.",
+    "passwordMin8": "Legalább 8 karakter",
+    "passwordsMismatch": "A jelszavak nem egyeznek",
+    "agreeTermsRequired": "El kell fogadnia a feltételeket",
+    "phoneUaStartPlus380": "Kezdje a +380-as előhívóval",
+    "phoneUaNeed9After380": "A +380 után még 9 számjegy szükséges",
+    "phoneUaNeed9After0": "A 0 után még 9 számjegy szükséges (összesen 10)"
+  },
+  "apiErrors": {
+    "generic": "Hiba történt. Próbálja újra.",
+    "OTP_INVALID": "Érvénytelen kód.",
+    "OTP_EXPIRED": "A kód lejárt vagy nem lett elküldve.",
+    "OTP_REQUIRED_CONTACT": "Adjon meg telefont vagy e-mailt.",
+    "AUTH_INVALID_CREDENTIALS": "Érvénytelen e-mail vagy jelszó.",
+    "CART_NOT_FOUND": "A kosár nem található.",
+    "CART_ITEMS_UNAVAILABLE": "Egy vagy több termék nem elérhető a kosárhoz.",
+    "ORDER_NOT_FOUND": "A rendelés nem található.",
+    "ONLINE_CARD_UNAVAILABLE": "Az online fizetés átmenetileg nem elérhető.",
+    "OTP_RATE_LIMITED": "Túl sok kérés. Próbálja meg később.",
+    "API_UNAVAILABLE": "A szolgáltatás átmenetileg nem érhető el. Próbálja újra.",
+    "CART_ERROR": "Nem sikerült frissíteni a kosarat.",
+    "ORDER_CREATE_FAILED": "Nem sikerült leadni a rendelést.",
+    "OTP_SEND_FAILED": "Nem sikerült elküldeni a kódot. Próbálja újra.",
+    "OTP_SMS_DISABLED": "Az SMS-bejelentkezés nem érhető el.",
+    "OTP_EMAIL_DISABLED": "Az e-mailes bejelentkezés nem érhető el."
   }
 }

@@ -592,8 +592,12 @@
       "statPlantsDesc": "Items in catalog",
       "statOrders": "Orders",
       "statOrdersDesc": "Total in system",
+      "statOrdersDescActive": "cancelled {cancelled} · total {total}",
       "statRevenue": "Revenue",
       "statRevenueDesc": "Sum of all orders",
+      "statOrdersValue": "Order value",
+      "statOrdersValueDesc": "excl. cancelled · paid {paid} {currency}",
+      "statOrdersValueDescFallback": "excluding cancelled orders",
       "statCustomers": "Customers",
       "statCustomersDesc": "Registered buyers",
       "statCustomersSoon": "Coming soon",
@@ -621,6 +625,41 @@
       "submit": "Sign in",
       "passwordLabel": "Password",
       "staffOnlyHint": "Staff access only. Separate from customer login on the site."
+    },
+    "contractWithdrawals": {
+      "statusWaitingForReturn": "Wartet auf Rücksendung",
+      "statusReturnReceived": "Ware eingegangen",
+      "statusRefundPending": "Erstattung ausstehend",
+      "statusRefunded": "Erstattet (manuell)",
+      "statusCancelled": "Storniert",
+      "actionWaitingForReturn": "Auf Ware warten",
+      "actionReturnReceived": "Ware erhalten",
+      "actionRefundPending": "Erstattung ausstehend",
+      "actionRefunded": "Als erstattet markieren",
+      "actionCancel": "Stornieren",
+      "actionSubmitted": "Eingegangen",
+      "manualRefundHint": "Geld wird außerhalb des Shops manuell erstattet. Diese Aktionen speichern nur den Status — kein Stripe/Bank-API.",
+      "confirmRefunded": "Bestätigen, dass die Zahlung dem Kunden bereits real erstattet wurde?",
+      "invalidRefundAmount": "Ungültiger Erstattungsbetrag.",
+      "refundSectionTitle": "Return / Withdrawal — manuelle Erstattung",
+      "refundAmount": "Erstattungsbetrag",
+      "refundCurrency": "Währung",
+      "refundMethod": "Erstattungsmethode",
+      "refundMethodPlaceholder": "Methode wählen",
+      "refundMethod_ORIGINAL_PAYMENT_METHOD": "Ursprüngliche Zahlungsmethode",
+      "refundMethod_BANK_TRANSFER": "Banküberweisung",
+      "refundMethod_CASH_OR_COD_MANUAL": "Bar / Nachnahme (manuell)",
+      "refundMethod_OTHER": "Sonstiges",
+      "refundReference": "Erstattungsreferenz / Notiz",
+      "internalNote": "Interne Notiz",
+      "returnReceivedAt": "Ware erhalten: {date}",
+      "refundedAt": "Erstattung erfasst: {date}",
+      "orderBreakdownTitle": "Bestellübersicht",
+      "orderBreakdownTotal": "Summe: {amount} {currency}",
+      "orderBreakdownProducts": "Waren: {amount} {currency}",
+      "orderBreakdownDelivery": "Versand: {amount} {currency}",
+      "orderBreakdownPayment": "Zahlung: {method}",
+      "partialRefundManualHint": "Teilwiderruf: Betrag manuell eingeben — keine automatische Rechtsberechnung."
     }
   },
   "valueTypes": {
@@ -925,5 +964,8 @@
       "missing_non_public_image": "Missing/non-public image",
       "other": "Other"
     }
+  },
+  "translationDialog": {
+    "fillAllFromCurrent": "Alle Sprachen aus aktueller füllen"
   }
 }

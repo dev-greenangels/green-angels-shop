@@ -22,6 +22,8 @@ import {
   type HomeProductsResult,
 } from '@/lib/catalog/home-products'
 import { buildHomeMetadata } from '@/lib/home/metadata'
+import { isSupportedLocale } from '@/lib/i18n/locales'
+import { resolveHomePageForLocale } from '@/lib/settings/home-cms'
 import { EMPTY_REVIEWS_PAGE } from '@/lib/reviews/types'
 import {
   isHomeSectionHidden,
@@ -54,7 +56,9 @@ export default async function HomePage() {
   const siteSettingsResult = await timeSsrPhase('homepage-settings', () =>
     fetchPublicSiteSettings(),
   )
-  const home = getHomeSettings(siteSettingsResult)
+  const homeRaw = getHomeSettings(siteSettingsResult)
+  const appLocale = isSupportedLocale(locale) ? locale : 'uk'
+  const home = resolveHomePageForLocale(homeRaw, appLocale)
   const market = getMarketSettings(siteSettingsResult)
   const wholesalePage = getWholesalePageSettings(siteSettingsResult)
   const hostCountryCode = await getRequestCountrySiteCode()

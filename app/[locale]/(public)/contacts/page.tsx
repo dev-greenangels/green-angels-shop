@@ -47,7 +47,11 @@ export default async function ContactsPage({ params }: PageProps) {
     getRequestCountrySiteCode(),
   ])
   const market = getMarketSettings(fetched)
-  const store = resolveStoreForCountrySite(getStoreSettings(fetched), market, countryCode)
+  const store = resolveStoreForCountrySite(
+    getStoreSettings(fetched, { locale }),
+    market,
+    countryCode,
+  )
   const contactsUnavailable = isStoreContactUnavailable(fetched) || !hasStoreContactInfo(store)
   const company = resolvePublicCompanyName(store, tCommon('brand'))
 

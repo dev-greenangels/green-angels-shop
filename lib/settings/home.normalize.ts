@@ -1,9 +1,17 @@
 import { DEFAULT_HOME_SETTINGS } from '@/lib/settings/defaults'
 import { sanitizeCmsImageUrl } from '@/lib/media/cms-image-url'
 import {
+  applyHomeCmsCopy,
+  extractHomeCmsCopy,
+  normalizeHomeByLocale,
+  primaryHomeCmsLocale,
+  type HomePageCmsCopy,
+} from '@/lib/settings/home-cms'
+import {
   normalizeHomeSectionOrder,
   resolveHomeSectionHidden,
 } from '@/lib/settings/home-sections'
+import type { MarketRegion } from '@/lib/settings/market'
 import type { ReviewSortOrder } from '@/lib/reviews/types'
 import type { HomePageSettings } from '@/lib/settings/types'
 
@@ -18,6 +26,7 @@ function normalizeReviewSort(value: unknown): ReviewSortOrder {
 
 export function normalizeHomeSettings(
   home: Partial<HomePageSettings> | null | undefined,
+  region: MarketRegion = 'ua',
 ): HomePageSettings {
   const base = home ?? {}
   const legacyReviews = base.reviews as
@@ -30,7 +39,7 @@ export function normalizeHomeSettings(
     freshPlantPhotosEnabled: base.freshPlantPhotos?.enabled,
   })
 
-  return {
+  const sharedShell: HomePageSettings = {
     sectionOrder: normalizeHomeSectionOrder(base.sectionOrder),
     sectionHidden,
     hero: {
@@ -89,5 +98,19 @@ export function normalizeHomeSettings(
       limit: legacyReviews?.limit ?? DEFAULT_HOME_SETTINGS.reviews.limit,
       sort: normalizeReviewSort(legacyReviews?.sort),
     },
+    byLocale: {},
+  }
+
+  const byLocale = normalizeHomeByLocale(base.byLocale, sharedShell, region)
+  const primary = primaryHomeCmsLocale(region)
+  const primaryCopy: HomePageCmsCopy =
+    byLocale[primary] ?? extractHomeCmsCopy(DEFAULT_HOME_SETTINGS)
+
+  // Keep flat text fields mirrored to primary locale for legacy readers.
+  const withPrimaryTexts = applyHomeCmsCopy(sharedShell, primaryCopy)
+
+  return {
+    ...withPrimaryTexts,
+    byLocale,
   }
 }

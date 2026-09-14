@@ -6,6 +6,17 @@ export type ContractWithdrawalStatus =
   | 'ACCEPTED'
   | 'REJECTED'
   | 'CLOSED'
+  | 'WAITING_FOR_RETURN'
+  | 'RETURN_RECEIVED'
+  | 'REFUND_PENDING'
+  | 'REFUNDED'
+  | 'CANCELLED'
+
+export type ContractWithdrawalRefundMethod =
+  | 'ORIGINAL_PAYMENT_METHOD'
+  | 'BANK_TRANSFER'
+  | 'CASH_OR_COD_MANUAL'
+  | 'OTHER'
 
 export type ContractWithdrawalListItem = {
   id: string
@@ -23,6 +34,22 @@ export type ContractWithdrawalListItem = {
   source: 'PUBLIC_FORM' | 'ACCOUNT'
   locale: string
   acknowledgementSentAt: string | null
+  returnReceivedAt: string | null
+  refundRequired: boolean
+  refundAmount: number | null
+  refundCurrency: string | null
+  refundedAt: string | null
+  refundMethod: ContractWithdrawalRefundMethod | null
+  refundReference: string | null
+  internalNote: string | null
+  processedByUserId: string | null
+  orderTotals: {
+    totalAmount: number
+    productsSubtotal: number | null
+    deliveryAmount: number | null
+    currency: string
+    paymentMethod: string
+  } | null
   lineItems: Array<{
     orderItemId: string | null
     quantity: number
@@ -37,6 +64,17 @@ export type ContractWithdrawalPage = {
   page: number
   pageSize: number
   totalPages: number
+}
+
+export type UpdateContractWithdrawalPayload = {
+  status: ContractWithdrawalStatus
+  refundRequired?: boolean
+  refundAmount?: number | null
+  refundCurrency?: string | null
+  refundMethod?: ContractWithdrawalRefundMethod | null
+  refundReference?: string | null
+  internalNote?: string | null
+  confirmRefundCompleted?: boolean
 }
 
 export async function fetchContractWithdrawals(params?: {
@@ -57,19 +95,27 @@ export async function fetchContractWithdrawals(params?: {
   return data
 }
 
-export async function updateContractWithdrawalStatus(
+export async function updateContractWithdrawal(
   id: string,
-  status: ContractWithdrawalStatus,
+  payload: UpdateContractWithdrawalPayload,
 ): Promise<ContractWithdrawalListItem> {
   const res = await fetch(`/api/backstage/contract-withdrawals/${id}`, {
     method: 'PATCH',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(payload),
   })
-  const data = (await res.json()) as ContractWithdrawalListItem & { error?: string }
-  if (!res.ok) throw new Error(data.error || 'Update failed')
+  const data = (await res.json()) as ContractWithdrawalListItem & { error?: string; message?: string }
+  if (!res.ok) throw new Error(data.error || data.message || 'Update failed')
   return data
+}
+
+/** @deprecated use updateContractWithdrawal */
+export async function updateContractWithdrawalStatus(
+  id: string,
+  status: ContractWithdrawalStatus,
+): Promise<ContractWithdrawalListItem> {
+  return updateContractWithdrawal(id, { status })
 }
 
 export async function fetchContractWithdrawalsNewCount(): Promise<number> {
@@ -83,4 +129,5 @@ export async function fetchContractWithdrawalsNewCount(): Promise<number> {
 
 export const fetchBackstageContractWithdrawals = fetchContractWithdrawals
 export const updateBackstageContractWithdrawalStatus = updateContractWithdrawalStatus
+export const updateBackstageContractWithdrawal = updateContractWithdrawal
 export const fetchBackstageContractWithdrawalsNewCount = fetchContractWithdrawalsNewCount

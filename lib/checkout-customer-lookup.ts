@@ -30,6 +30,11 @@ type ApiErrorBody = {
 }
 
 function extractApiError(data: ApiErrorBody, fallback: string): string {
+  if (typeof data.code === 'string' && data.code.trim()) return data.code.trim()
+  if (data.message && typeof data.message === 'object' && !Array.isArray(data.message)) {
+    const nested = data.message as { code?: string }
+    if (typeof nested.code === 'string' && nested.code.trim()) return nested.code.trim()
+  }
   if (data.error) return data.error
   if (Array.isArray(data.message)) return data.message.join(', ')
   if (typeof data.message === 'string') return data.message
@@ -44,15 +49,20 @@ async function readApiError(res: Response, fallback: string): Promise<string> {
 export async function sendAuthEmailCode(
   email: string,
   purpose: OtpPurpose = 'login',
+  locale?: string,
 ): Promise<void> {
   const res = await fetch('/api/auth/otp/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email.trim().toLowerCase(), purpose }),
+    body: JSON.stringify({
+      email: email.trim().toLowerCase(),
+      purpose,
+      ...(locale ? { locale } : {}),
+    }),
   })
 
   if (!res.ok) {
-    throw new Error(await readApiError(res, 'Не вдалося надіслати лист.'))
+    throw new Error(await readApiError(res, 'OTP_SEND_FAILED'))
   }
 }
 
@@ -68,7 +78,7 @@ export async function verifyAuthEmailCode(
   })
 
   if (!res.ok) {
-    throw new Error(await readApiError(res, 'Невірний код.'))
+    throw new Error(await readApiError(res, 'OTP_INVALID'))
   }
 
   return (await res.json()) as { verificationToken: string }
@@ -77,24 +87,29 @@ export async function verifyAuthEmailCode(
 export async function sendAuthSmsCode(
   phone: string,
   purpose: OtpPurpose = 'login',
+  locale?: string,
 ): Promise<void> {
   const res = await fetch('/api/auth/otp/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone: phone.trim(), purpose }),
+    body: JSON.stringify({
+      phone: phone.trim(),
+      purpose,
+      ...(locale ? { locale } : {}),
+    }),
   })
 
   if (!res.ok) {
-    throw new Error(await readApiError(res, 'Не вдалося надіслати SMS.'))
+    throw new Error(await readApiError(res, 'OTP_SEND_FAILED'))
   }
 }
 
-export async function sendCheckoutSmsCode(phone: string): Promise<void> {
-  return sendAuthSmsCode(phone, 'checkout')
+export async function sendCheckoutSmsCode(phone: string, locale?: string): Promise<void> {
+  return sendAuthSmsCode(phone, 'checkout', locale)
 }
 
-export async function sendCheckoutEmailCode(email: string): Promise<void> {
-  return sendAuthEmailCode(email, 'checkout')
+export async function sendCheckoutEmailCode(email: string, locale?: string): Promise<void> {
+  return sendAuthEmailCode(email, 'checkout', locale)
 }
 
 export async function verifyAuthSmsCode(
@@ -109,7 +124,7 @@ export async function verifyAuthSmsCode(
   })
 
   if (!res.ok) {
-    throw new Error(await readApiError(res, 'Невірний код.'))
+    throw new Error(await readApiError(res, 'OTP_INVALID'))
   }
 
   return (await res.json()) as { verificationToken: string }

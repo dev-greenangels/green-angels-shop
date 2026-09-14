@@ -37,6 +37,10 @@ function formatMoney(amount: number, currency = 'UAH') {
   return `${amount.toLocaleString('uk-UA')} ${currency}`
 }
 
+function orderDetailHref(orderId: string) {
+  return `/backstage/orders/${orderId}`
+}
+
 export default function OrdersPage() {
   const { locale } = useBackstageUiLocale()
   const [orders, setOrders] = useState<BackstageOrderListItem[]>([])
@@ -89,6 +93,11 @@ export default function OrdersPage() {
 
   const handleStatusUpdated = useCallback((updated: BackstageOrderListItem) => {
     setOrders((prev) => prev.map((order) => (order.id === updated.id ? updated : order)))
+  }, [])
+
+  const handleOrderDeleted = useCallback((orderId: string) => {
+    setOrders((prev) => prev.filter((order) => order.id !== orderId))
+    setTotal((n) => Math.max(0, n - 1))
   }, [])
 
   const emptyMessage = useMemo(() => {
@@ -190,36 +199,58 @@ export default function OrdersPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.map((order) => (
-                      <tr
-                        key={order.id}
-                        className="border-b border-border last:border-0 hover:bg-muted/50"
-                      >
-                        <td className="px-4 py-3 text-sm font-medium">{order.orderNumber}</td>
-                        <td className="px-4 py-3">
-                          <div>
-                            <p className="text-sm font-medium">{formatOrderCustomerName(order)}</p>
-                            <p className="text-xs text-muted-foreground">{order.customerPhone}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm">{order.itemCount} шт.</td>
-                        <td className="px-4 py-3 text-sm font-medium">
-                          {formatMoney(order.totalAmount, order.currency)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <OrderRowStatusCell order={order} onUpdated={handleStatusUpdated} />
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">
-                          {formatDateTime(order.createdAt, locale, 'date')}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <OrderDetailsDialog
-                            orderId={order.id}
-                            onStatusUpdated={handleStatusUpdated}
-                          />
-                        </td>
-                      </tr>
-                    ))}
+                    {orders.map((order) => {
+                      const href = orderDetailHref(order.id)
+                      return (
+                        <tr
+                          key={order.id}
+                          className="group border-b border-border last:border-0 hover:bg-muted/50"
+                        >
+                          <td className="px-4 py-3 text-sm font-medium">
+                            <a href={href} className="hover:underline">
+                              {order.orderNumber}
+                            </a>
+                          </td>
+                          <td className="p-0">
+                            <a
+                              href={href}
+                              className="block px-4 py-3"
+                              aria-label={`Відкрити замовлення ${order.orderNumber}`}
+                            >
+                              <p className="text-sm font-medium">
+                                {formatOrderCustomerName(order)}
+                              </p>
+                              <p className="text-xs text-muted-foreground">{order.customerPhone}</p>
+                            </a>
+                          </td>
+                          <td className="p-0 text-sm">
+                            <a href={href} className="block px-4 py-3">
+                              {order.itemCount} шт.
+                            </a>
+                          </td>
+                          <td className="p-0 text-sm font-medium">
+                            <a href={href} className="block px-4 py-3">
+                              {formatMoney(order.totalAmount, order.currency)}
+                            </a>
+                          </td>
+                          <td className="px-4 py-3">
+                            <OrderRowStatusCell order={order} onUpdated={handleStatusUpdated} />
+                          </td>
+                          <td className="p-0 text-sm text-muted-foreground">
+                            <a href={href} className="block px-4 py-3">
+                              {formatDateTime(order.createdAt, locale, 'date')}
+                            </a>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <OrderDetailsDialog
+                              orderId={order.id}
+                              onStatusUpdated={handleStatusUpdated}
+                              onDeleted={handleOrderDeleted}
+                            />
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
                 {!loading && totalPages > 1 ? (
@@ -236,17 +267,23 @@ export default function OrdersPage() {
                       >
                         Назад
                       </Button>
-                      {pageNumbers.map((pageNumber) => (
-                        <Button
-                          key={pageNumber}
-                          variant={pageNumber === page ? 'default' : 'outline'}
-                          size="sm"
-                          className={cn('min-w-9', pageNumber === page && 'pointer-events-none')}
-                          onClick={() => setPage(pageNumber)}
-                        >
-                          {pageNumber}
-                        </Button>
-                      ))}
+                      {pageNumbers.map((pageNumber, index) =>
+                        pageNumber === 'ellipsis' ? (
+                          <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
+                            …
+                          </span>
+                        ) : (
+                          <Button
+                            key={pageNumber}
+                            variant={pageNumber === page ? 'default' : 'outline'}
+                            size="sm"
+                            className={cn('min-w-9', pageNumber === page && 'pointer-events-none')}
+                            onClick={() => setPage(pageNumber)}
+                          >
+                            {pageNumber}
+                          </Button>
+                        ),
+                      )}
                       <Button
                         variant="outline"
                         size="sm"

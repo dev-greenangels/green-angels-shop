@@ -26,7 +26,7 @@ import { DEFAULT_CHECKOUT_BANK_DETAILS } from '@/lib/settings/defaults'
 import type { CartCheckoutSettings, OnlineCardProvider } from '@/lib/settings/types'
 import {
   CHECKOUT_DELIVERY_METHODS,
-  CHECKOUT_PAYMENT_METHODS,
+  TOGGLEABLE_PAYMENT_METHODS,
   DELIVERY_METHOD_BACKSTAGE_LABELS,
   PAYMENT_METHOD_BACKSTAGE_LABELS,
   type CheckoutDeliveryMethodSlug,
@@ -65,6 +65,8 @@ export function CartCheckoutSettingsForm({
   isDirty = false,
 }: CartCheckoutSettingsFormProps) {
   const [providersStatus, setProvidersStatus] = useState<PaymentProvidersStatus | null>(null)
+  const [testingNotify, setTestingNotify] = useState(false)
+  const [testNotifyMessage, setTestNotifyMessage] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -81,6 +83,27 @@ export function CartCheckoutSettingsForm({
   }, [])
 
   const patch = (partial: Partial<CartCheckoutSettings>) => onChange({ ...cart, ...partial })
+
+  const sendTestNotify = async () => {
+    setTestingNotify(true)
+    setTestNotifyMessage(null)
+    try {
+      const res = await fetch('/api/backstage/settings/cart-checkout/test-new-order-notify', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string; to?: string }
+      if (!res.ok) {
+        setTestNotifyMessage(data.error ?? 'Не вдалося надіслати тест.')
+        return
+      }
+      setTestNotifyMessage(`Тест надіслано на ${data.to ?? cart.newOrderNotifyEmail}`)
+    } catch {
+      setTestNotifyMessage('Не вдалося надіслати тест.')
+    } finally {
+      setTestingNotify(false)
+    }
+  }
 
   const toggleDeliveryMethod = (method: CheckoutDeliveryMethodSlug, enabled: boolean) => {
     const current = cart.enabledDeliveryMethods ?? []
@@ -658,7 +681,7 @@ export function CartCheckoutSettingsForm({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {CHECKOUT_PAYMENT_METHODS.map((method) => (
+          {TOGGLEABLE_PAYMENT_METHODS.map((method) => (
             <div key={method} className="flex items-center justify-between gap-4">
               <Label htmlFor={`payment-${method}`}>{PAYMENT_METHOD_BACKSTAGE_LABELS[method]}</Label>
               <Switch
@@ -668,6 +691,69 @@ export function CartCheckoutSettingsForm({
               />
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Оплата при отриманні для самовивозу</CardTitle>
+          <CardDescription>
+            Дозволяє клієнту обрати оплату при отриманні замовлення при самовивозі. За замовчуванням
+            вимкнено.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-4">
+            <Label htmlFor="allow-pay-on-pickup">Увімкнути pay-on-pickup</Label>
+            <Switch
+              id="allow-pay-on-pickup"
+              checked={cart.allowPayOnPickup === true}
+              onCheckedChange={(allowPayOnPickup) => patch({ allowPayOnPickup })}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Сповіщення про замовлення</CardTitle>
+          <CardDescription>
+            Надсилати менеджеру email після створення нового замовлення (не клієнту).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <Label htmlFor="new-order-notify-enabled">Email про нове замовлення</Label>
+            <Switch
+              id="new-order-notify-enabled"
+              checked={cart.newOrderNotifyEmailEnabled === true}
+              onCheckedChange={(newOrderNotifyEmailEnabled) =>
+                patch({ newOrderNotifyEmailEnabled })
+              }
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="new-order-notify-email">Email для сповіщень</Label>
+            <Input
+              id="new-order-notify-email"
+              type="email"
+              value={cart.newOrderNotifyEmail ?? ''}
+              onChange={(e) => patch({ newOrderNotifyEmail: e.target.value })}
+              placeholder="manager@example.com"
+              disabled={cart.newOrderNotifyEmailEnabled !== true}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!cart.newOrderNotifyEmail?.trim() || testingNotify}
+            onClick={() => void sendTestNotify()}
+          >
+            {testingNotify ? 'Надсилання…' : 'Надіслати тестовий email'}
+          </Button>
+          {testNotifyMessage ? (
+            <p className="text-sm text-muted-foreground">{testNotifyMessage}</p>
+          ) : null}
         </CardContent>
       </Card>
 

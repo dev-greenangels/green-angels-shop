@@ -29,6 +29,7 @@ export type CheckoutPaymentMethod =
   | 'bank-transfer'
   | 'bank-transfer-legal'
   | 'dobierka'
+  | 'pay-on-pickup'
 
 /** Методи без адресних НП-полів (самовивіз / Packeta box). */
 const DELIVERY_METHODS_WITHOUT_ADDRESS_FIELDS: CheckoutDeliveryMethod[] = [
@@ -145,7 +146,7 @@ function resolveAuthPhonePolicy(options?: CheckoutValidationOptions): PhonePolic
 function deliveryPhoneError(phone: string, policy: PhonePolicy): string | null {
   if (policy === 'ua_e164') return getRecipientUkrPhoneError(phone)
   const err = phoneErrorForPolicy(phone, policy)
-  if (!phone.trim()) return 'Обовʼязкове поле'
+  if (!phone.trim()) return 'required'
   return err
 }
 
@@ -563,29 +564,29 @@ export function getCheckoutPaymentFieldError(
 
   switch (field) {
     case 'companyEdrpou':
-      if (!values.companyEdrpou.trim()) return 'Обовʼязкове поле'
+      if (!values.companyEdrpou.trim()) return 'required'
       if (!isValidCompanyIco(values.companyEdrpou, options?.marketRegion)) {
         return options?.marketRegion === 'sk'
-          ? 'IČO має містити 6–8 цифр'
-          : `ЄДРПОУ має містити ${EDRPOU_LENGTH} цифр`
+          ? 'invalidIco'
+          : 'invalidEdrpou'
       }
       return null
     case 'companyLegalName':
-      if (!values.companyLegalName.trim()) return 'Обовʼязкове поле'
+      if (!values.companyLegalName.trim()) return 'required'
       if (!isValidLegalEntityName(values.companyLegalName)) {
-        return 'Вкажіть повну назву юридичної особи (мін. 3 символи)'
+        return 'companyLegalNameMin'
       }
       return null
     case 'companyDic':
       return null
     case 'companyStreet':
-      if (options?.marketRegion === 'sk' && !values.companyStreet.trim()) return 'Обовʼязкове поле'
+      if (options?.marketRegion === 'sk' && !values.companyStreet.trim()) return 'required'
       return null
     case 'companyCity':
-      if (options?.marketRegion === 'sk' && !values.companyCity.trim()) return 'Обовʼязкове поле'
+      if (options?.marketRegion === 'sk' && !values.companyCity.trim()) return 'required'
       return null
     case 'companyPostalCode':
-      if (options?.marketRegion === 'sk' && !values.companyPostalCode.trim()) return 'Обовʼязкове поле'
+      if (options?.marketRegion === 'sk' && !values.companyPostalCode.trim()) return 'required'
       return null
     default:
       return null
@@ -601,50 +602,50 @@ export function getCheckoutContactFieldError(
 
   switch (field) {
     case 'firstName':
-      if (!values.firstName.trim()) return 'Обовʼязкове поле'
+      if (!values.firstName.trim()) return 'required'
       if (region === 'sk') {
         if (containsCyrillicLetters(values.firstName)) {
-          return 'Use Latin letters (diacritics allowed)'
+          return 'latinCharactersRequired'
         }
         if (!isValidLatinName(values.firstName)) {
-          return 'At least 2 letters (Latin / diacritics)'
+          return 'minLatinLetters'
         }
         return null
       }
       if (containsLatinLetters(values.firstName)) {
-        return 'Вкажіть імʼя українською мовою (кирилицею)'
+        return 'cyrillicFirstName'
       }
       if (!isValidCyrillicName(values.firstName)) {
-        return 'Від 2 українських літер, апостроф дозволений'
+        return 'cyrillicNameMin'
       }
       return null
     case 'lastName':
-      if (!values.lastName.trim()) return 'Обовʼязкове поле'
+      if (!values.lastName.trim()) return 'required'
       if (region === 'sk') {
         if (containsCyrillicLetters(values.lastName)) {
-          return 'Use Latin letters (diacritics allowed)'
+          return 'latinCharactersRequired'
         }
         if (!isValidLatinName(values.lastName)) {
-          return 'At least 2 letters (Latin / diacritics)'
+          return 'minLatinLetters'
         }
         return null
       }
       if (containsLatinLetters(values.lastName)) {
-        return 'Вкажіть прізвище українською мовою (кирилицею)'
+        return 'cyrillicLastName'
       }
       if (!isValidCyrillicName(values.lastName)) {
-        return 'Від 2 українських літер, апостроф дозволений'
+        return 'cyrillicNameMin'
       }
       return null
     case 'phone': {
       const authPolicy = resolveAuthPhonePolicy(options)
       const err = phoneErrorForPolicy(values.phone, authPolicy)
-      if (!values.phone.trim()) return 'Обовʼязкове поле'
-      return err && err !== 'Обовʼязкове поле' ? err : null
+      if (!values.phone.trim()) return 'required'
+      return err && err !== 'required' ? err : null
     }
     case 'patronymic':
       if (!isOptionalPersonNameValid(values.patronymic, 'ua')) {
-        return 'Від 2 українських літер, апостроф дозволений'
+        return 'cyrillicNameMin'
       }
       return null
     case 'email': {
@@ -654,10 +655,10 @@ export function getCheckoutContactFieldError(
         options?.checkoutEmailRequired,
       )
       if (emailRequired && !values.email.trim()) {
-        return region === 'sk' ? 'Обовʼязкове поле' : 'Обовʼязкове поле для іноземного номера'
+        return region === 'sk' ? 'required' : 'requiredForeignPhone'
       }
       if (values.email.trim() && !isValidEmail(values.email)) {
-        return 'Невірний формат email'
+        return 'invalidEmail'
       }
       return null
     }
@@ -676,32 +677,32 @@ export function getCheckoutRecipientFieldError(
 
   switch (field) {
     case 'recipientFirstName':
-      if (!values.recipientFirstName.trim()) return 'Обовʼязкове поле'
+      if (!values.recipientFirstName.trim()) return 'required'
       if (!isPersonNameValid(values.recipientFirstName, region)) {
         return region === 'sk'
-          ? 'At least 2 letters (Latin / diacritics)'
-          : 'Від 2 українських літер, апостроф дозволений'
+          ? 'minLatinLetters'
+          : 'cyrillicNameMin'
       }
       return null
     case 'recipientLastName':
-      if (!values.recipientLastName.trim()) return 'Обовʼязкове поле'
+      if (!values.recipientLastName.trim()) return 'required'
       if (!isPersonNameValid(values.recipientLastName, region)) {
         return region === 'sk'
-          ? 'At least 2 letters (Latin / diacritics)'
-          : 'Від 2 українських літер, апостроф дозволений'
+          ? 'minLatinLetters'
+          : 'cyrillicNameMin'
       }
       return null
     case 'recipientPatronymic':
       if (region === 'sk') return null
       if (recipientPatronymicRequired(values)) {
-        if (!values.recipientPatronymic.trim()) return 'Обовʼязкове для адресної доставки'
+        if (!values.recipientPatronymic.trim()) return 'requiredAddressDelivery'
         if (!isValidCyrillicName(values.recipientPatronymic)) {
-          return 'Від 2 українських літер, апостроф дозволений'
+          return 'cyrillicNameMin'
         }
         return null
       }
       if (!isOptionalPersonNameValid(values.recipientPatronymic, 'ua')) {
-        return 'Від 2 українських літер, апостроф дозволений'
+        return 'cyrillicNameMin'
       }
       return null
     case 'recipientPhone':
@@ -727,7 +728,7 @@ export function getCheckoutShippingFieldError(
       values.deliveryMethod !== 'pickup' &&
       !values.deliveryCountryCode
     ) {
-      return 'Обовʼязкове поле'
+      return 'required'
     }
     return null
   }
@@ -743,14 +744,14 @@ export function getCheckoutShippingFieldError(
   if (field === 'patronymic') {
     if (region === 'sk' || !shippingPatronymicRequired(values)) return null
     if (values.patronymic.trim() && isValidCyrillicName(values.patronymic)) return null
-    if (!values.patronymic.trim()) return 'Обовʼязкове для адресної доставки'
-    return 'Від 2 українських літер, апостроф дозволений'
+    if (!values.patronymic.trim()) return 'requiredAddressDelivery'
+    return 'cyrillicNameMin'
   }
 
   if (field === 'postalCode') {
     if (!COURIER_METHODS.includes(values.deliveryMethod)) return null
-    if (!values.postalCode.trim()) return 'Обовʼязкове поле'
-    if (!isValidSkPostalCode(values.postalCode)) return 'Невірний формат PSČ'
+    if (!values.postalCode.trim()) return 'required'
+    if (!isValidSkPostalCode(values.postalCode)) return 'invalidSkPostal'
     return null
   }
 
@@ -758,14 +759,14 @@ export function getCheckoutShippingFieldError(
 
   switch (field) {
     case 'city':
-      if (!values.city.trim()) return 'Обовʼязкове поле'
-      if (!isNonEmpty(values.city)) return 'Мінімум 2 символи'
+      if (!values.city.trim()) return 'required'
+      if (!isNonEmpty(values.city)) return 'minTwoChars'
       return null
     case 'postOffice':
       if (values.deliveryMethod !== 'nova-poshta-branch' && values.deliveryMethod !== 'packeta-box') {
         return null
       }
-      if (!values.postOffice.trim()) return 'Обовʼязкове поле'
+      if (!values.postOffice.trim()) return 'required'
       return null
     case 'street':
       if (
@@ -774,7 +775,7 @@ export function getCheckoutShippingFieldError(
       ) {
         return null
       }
-      if (!values.street.trim()) return 'Обовʼязкове поле'
+      if (!values.street.trim()) return 'required'
       return null
     case 'houseNumber':
       if (
@@ -783,7 +784,7 @@ export function getCheckoutShippingFieldError(
       ) {
         return null
       }
-      if (!hasValue(values.houseNumber)) return 'Обовʼязкове поле'
+      if (!hasValue(values.houseNumber)) return 'required'
       return null
     default:
       return null

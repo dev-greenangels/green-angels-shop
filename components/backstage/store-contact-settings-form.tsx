@@ -1,7 +1,10 @@
 'use client'
 
 import { Loader2, Plus, Save, Trash2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
+import { CmsLocaleFieldLabel } from '@/components/backstage/cms-locale-fields-dialog'
+import { ContentLocaleBanner } from '@/components/backstage/content-locale-banner'
 import { CompanyBankDetailsFields } from '@/components/backstage/company-bank-details-fields'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,9 +20,14 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import type { AppLocale } from '@/lib/i18n/locales'
 import { DEFAULT_CHECKOUT_BANK_DETAILS } from '@/lib/settings/defaults'
+import {
+  applyStoreCmsFieldTranslations,
+  collectStoreCmsFieldValues,
+} from '@/lib/settings/store-contact-cms'
 import { CONTACT_LINE_TYPE_OPTIONS, getFooterVisibilityOptionsForStore, isMessengerContactLine } from '@/lib/settings/store-contact-lines'
-import type { StoreContactLineType, StoreContactSettings, StoreSocialLinks } from '@/lib/settings/types'
+import type { StoreContactCmsCopy, StoreContactLineType, StoreContactSettings, StoreSocialLinks } from '@/lib/settings/types'
 
 const SOCIAL_FIELDS = [
   { key: 'instagram', label: 'Instagram' },
@@ -31,6 +39,7 @@ const SOCIAL_FIELDS = [
 
 type StoreContactSettingsFormProps = {
   store: StoreContactSettings
+  contentLocale: AppLocale
   onChange: (store: StoreContactSettings) => void
   onSave: () => void
   saving: boolean
@@ -40,14 +49,29 @@ type StoreContactSettingsFormProps = {
 
 export function StoreContactSettingsForm({
   store,
+  contentLocale,
   onChange,
   onSave,
   saving,
   isDirty = false,
   marketRegion = 'ua',
 }: StoreContactSettingsFormProps) {
+  const tBanner = useTranslations('contentBanner')
   const footerVisibilityOptions = getFooterVisibilityOptionsForStore(store.contactBlocks)
   const companyDetails = store.companyDetails ?? DEFAULT_CHECKOUT_BANK_DETAILS
+
+  const patchFieldTranslations = (
+    getter: (copy: StoreContactCmsCopy) => string,
+    setter: (copy: StoreContactCmsCopy, value: string) => StoreContactCmsCopy,
+    translations: Partial<Record<AppLocale, string>>,
+  ) => {
+    onChange(
+      applyStoreCmsFieldTranslations(store, contentLocale, marketRegion, setter, translations),
+    )
+  }
+
+  const fieldValues = (getter: (copy: StoreContactCmsCopy) => string) =>
+    collectStoreCmsFieldValues(store, getter, marketRegion)
 
   const updateContactBlock = (
     blockIndex: number,
@@ -100,11 +124,14 @@ export function StoreContactSettingsForm({
       <CardHeader>
         <CardTitle>Контакти та графік роботи</CardTitle>
         <CardDescription>
-          Блоки контактів (як на сайті: Підтримка, Гурт тощо), графіки роботи та соцмережі. У кожному
-          блоці можна додати телефон, email, Viber, Telegram та інші посилання.
+          Доданий блок контактів / графік видно на всіх мовах. Тексти (адреса, заголовки) —
+          через перемикач мови або кнопку локалі біля поля (діалог на всі мови). Зараз:{' '}
+          {contentLocale}. Карти, соцмережі, футер і реквізити — спільні (
+          {marketRegion === 'sk' ? 'SK / EU' : 'UA'}).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
+        <ContentLocaleBanner hint={tBanner('switchAutoSave')} />
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="mapsUrl">Посилання Google Maps</Label>
@@ -138,7 +165,19 @@ export function StoreContactSettingsForm({
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="address1">Адреса (рядок 1)</Label>
+            <CmsLocaleFieldLabel
+              htmlFor="address1"
+              values={fieldValues((c) => c.addressLine1)}
+              onSaveTranslations={(translations) =>
+                patchFieldTranslations(
+                  (c) => c.addressLine1,
+                  (c, value) => ({ ...c, addressLine1: value }),
+                  translations,
+                )
+              }
+            >
+              Адреса (рядок 1)
+            </CmsLocaleFieldLabel>
             <Input
               id="address1"
               value={store.addressLine1}
@@ -146,7 +185,19 @@ export function StoreContactSettingsForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="address2">Адреса (рядок 2)</Label>
+            <CmsLocaleFieldLabel
+              htmlFor="address2"
+              values={fieldValues((c) => c.addressLine2)}
+              onSaveTranslations={(translations) =>
+                patchFieldTranslations(
+                  (c) => c.addressLine2,
+                  (c, value) => ({ ...c, addressLine2: value }),
+                  translations,
+                )
+              }
+            >
+              Адреса (рядок 2)
+            </CmsLocaleFieldLabel>
             <Input
               id="address2"
               value={store.addressLine2}
@@ -185,16 +236,38 @@ export function StoreContactSettingsForm({
           {store.contactBlocks.map((block, blockIndex) => (
             <div key={blockIndex} className="space-y-3 rounded-lg border p-4">
               <div className="flex gap-2">
-                <Input
-                  className="flex-1"
-                  placeholder="Заголовок (необовʼязково)"
-                  value={block.title}
-                  onChange={(e) => updateContactBlock(blockIndex, { title: e.target.value })}
-                />
+                <div className="min-w-0 flex-1 space-y-1">
+                  <CmsLocaleFieldLabel
+                    values={fieldValues((c) => c.contactBlocks[blockIndex]?.title ?? '')}
+                    onSaveTranslations={(translations) =>
+                      patchFieldTranslations(
+                        (c) => c.contactBlocks[blockIndex]?.title ?? '',
+                        (c, value) => {
+                          const contactBlocks = [...c.contactBlocks]
+                          const block = contactBlocks[blockIndex] ?? {
+                            title: '',
+                            lines: [{ type: 'phone' as const, value: '' }],
+                          }
+                          contactBlocks[blockIndex] = { ...block, title: value }
+                          return { ...c, contactBlocks }
+                        },
+                        translations,
+                      )
+                    }
+                  >
+                    Заголовок блоку
+                  </CmsLocaleFieldLabel>
+                  <Input
+                    placeholder="Заголовок (необовʼязково)"
+                    value={block.title}
+                    onChange={(e) => updateContactBlock(blockIndex, { title: e.target.value })}
+                  />
+                </div>
                 <Button
                   type="button"
                   size="icon"
                   variant="ghost"
+                  className="mt-6 shrink-0"
                   onClick={() =>
                     onChange({
                       ...store,
@@ -210,7 +283,7 @@ export function StoreContactSettingsForm({
                 {block.lines.map((line, lineIndex) => {
                   const isMessenger = isMessengerContactLine(line.type)
                   return (
-                  <div key={lineIndex} className="flex flex-col gap-2 rounded-md border p-3 sm:flex-row">
+                  <div key={lineIndex} className="flex flex-col gap-2 rounded-md border p-3 sm:flex-row sm:items-end">
                     <Select
                       value={line.type}
                       onValueChange={(value) =>
@@ -230,16 +303,48 @@ export function StoreContactSettingsForm({
                         ))}
                       </SelectContent>
                     </Select>
-                    <Input
-                      className="sm:w-40"
-                      placeholder={isMessenger ? 'Текст на сайті' : 'Підпис (необовʼязково)'}
-                      value={line.label ?? ''}
-                      onChange={(e) =>
-                        updateContactLine(blockIndex, lineIndex, {
-                          label: e.target.value || undefined,
-                        })
-                      }
-                    />
+                    <div className="w-full space-y-1 sm:w-40 sm:shrink-0">
+                      <CmsLocaleFieldLabel
+                        values={fieldValues(
+                          (c) => c.contactBlocks[blockIndex]?.lines[lineIndex]?.label ?? '',
+                        )}
+                        onSaveTranslations={(translations) =>
+                          patchFieldTranslations(
+                            (c) => c.contactBlocks[blockIndex]?.lines[lineIndex]?.label ?? '',
+                            (c, value) => {
+                              const contactBlocks = structuredClone(c.contactBlocks)
+                              while (contactBlocks.length <= blockIndex) {
+                                contactBlocks.push({
+                                  title: '',
+                                  lines: [{ type: 'phone' as const, value: '' }],
+                                })
+                              }
+                              const blockRow = contactBlocks[blockIndex]!
+                              while (blockRow.lines.length <= lineIndex) {
+                                blockRow.lines.push({ type: 'phone', value: '' })
+                              }
+                              blockRow.lines[lineIndex] = {
+                                ...blockRow.lines[lineIndex]!,
+                                label: value || undefined,
+                              }
+                              return { ...c, contactBlocks }
+                            },
+                            translations,
+                          )
+                        }
+                      >
+                        Підпис
+                      </CmsLocaleFieldLabel>
+                      <Input
+                        placeholder={isMessenger ? 'Текст на сайті' : 'Підпис (необовʼязково)'}
+                        value={line.label ?? ''}
+                        onChange={(e) =>
+                          updateContactLine(blockIndex, lineIndex, {
+                            label: e.target.value || undefined,
+                          })
+                        }
+                      />
+                    </div>
                     <Input
                       className="flex-1"
                       placeholder={
@@ -290,12 +395,19 @@ export function StoreContactSettingsForm({
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label>Графіки роботи</Label>
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <Label>Графіки роботи</Label>
+              <p className="text-sm text-muted-foreground">
+                Блок графіка спільний для всіх мов. Підписи днів і назву можна перекласти кнопкою
+                локалі. «пн» / «Mon» / «Pondelok» і «зачинено» на вітрині також нормалізуються.
+              </p>
+            </div>
             <Button
               type="button"
               size="sm"
               variant="outline"
+              className="shrink-0"
               onClick={() =>
                 onChange({
                   ...store,
@@ -314,16 +426,39 @@ export function StoreContactSettingsForm({
           {store.schedules.map((schedule, scheduleIndex) => (
             <div key={scheduleIndex} className="space-y-3 rounded-lg border p-4">
               <div className="flex gap-2">
-                <Input
-                  className="flex-1"
-                  placeholder="Назва (напр. Садовий центр)"
-                  value={schedule.title}
-                  onChange={(e) => updateSchedule(scheduleIndex, { title: e.target.value })}
-                />
+                <div className="min-w-0 flex-1 space-y-1">
+                  <CmsLocaleFieldLabel
+                    values={fieldValues((c) => c.schedules[scheduleIndex]?.title ?? '')}
+                    onSaveTranslations={(translations) =>
+                      patchFieldTranslations(
+                        (c) => c.schedules[scheduleIndex]?.title ?? '',
+                        (c, value) => {
+                          const schedules = [...c.schedules]
+                          const row = schedules[scheduleIndex] ?? {
+                            title: '',
+                            entries: [{ label: '', value: '' }],
+                            note: '',
+                          }
+                          schedules[scheduleIndex] = { ...row, title: value }
+                          return { ...c, schedules }
+                        },
+                        translations,
+                      )
+                    }
+                  >
+                    Назва графіка
+                  </CmsLocaleFieldLabel>
+                  <Input
+                    placeholder="Назва (напр. Садовий центр)"
+                    value={schedule.title}
+                    onChange={(e) => updateSchedule(scheduleIndex, { title: e.target.value })}
+                  />
+                </div>
                 <Button
                   type="button"
                   size="icon"
                   variant="ghost"
+                  className="mt-6 shrink-0"
                   onClick={() =>
                     onChange({
                       ...store,
@@ -337,27 +472,94 @@ export function StoreContactSettingsForm({
 
               <div className="space-y-2">
                 {schedule.entries.map((entry, entryIndex) => (
-                  <div key={entryIndex} className="flex gap-2">
-                    <Input
-                      className="w-36 shrink-0"
-                      placeholder="День"
-                      value={entry.label}
-                      onChange={(e) =>
-                        updateScheduleEntry(scheduleIndex, entryIndex, { label: e.target.value })
-                      }
-                    />
-                    <Input
-                      className="flex-1"
-                      placeholder="Години або «вихідний»"
-                      value={entry.value}
-                      onChange={(e) =>
-                        updateScheduleEntry(scheduleIndex, entryIndex, { value: e.target.value })
-                      }
-                    />
+                  <div key={entryIndex} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                    <div className="w-full space-y-1 sm:w-36 sm:shrink-0">
+                      <CmsLocaleFieldLabel
+                        values={fieldValues(
+                          (c) => c.schedules[scheduleIndex]?.entries[entryIndex]?.label ?? '',
+                        )}
+                        onSaveTranslations={(translations) =>
+                          patchFieldTranslations(
+                            (c) => c.schedules[scheduleIndex]?.entries[entryIndex]?.label ?? '',
+                            (c, value) => {
+                              const schedules = structuredClone(c.schedules)
+                              while (schedules.length <= scheduleIndex) {
+                                schedules.push({
+                                  title: '',
+                                  entries: [{ label: '', value: '' }],
+                                  note: '',
+                                })
+                              }
+                              const row = schedules[scheduleIndex]!
+                              while (row.entries.length <= entryIndex) {
+                                row.entries.push({ label: '', value: '' })
+                              }
+                              row.entries[entryIndex] = {
+                                ...row.entries[entryIndex]!,
+                                label: value,
+                              }
+                              return { ...c, schedules }
+                            },
+                            translations,
+                          )
+                        }
+                      >
+                        День
+                      </CmsLocaleFieldLabel>
+                      <Input
+                        placeholder="День"
+                        value={entry.label}
+                        onChange={(e) =>
+                          updateScheduleEntry(scheduleIndex, entryIndex, { label: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <CmsLocaleFieldLabel
+                        values={fieldValues(
+                          (c) => c.schedules[scheduleIndex]?.entries[entryIndex]?.value ?? '',
+                        )}
+                        onSaveTranslations={(translations) =>
+                          patchFieldTranslations(
+                            (c) => c.schedules[scheduleIndex]?.entries[entryIndex]?.value ?? '',
+                            (c, value) => {
+                              const schedules = structuredClone(c.schedules)
+                              while (schedules.length <= scheduleIndex) {
+                                schedules.push({
+                                  title: '',
+                                  entries: [{ label: '', value: '' }],
+                                  note: '',
+                                })
+                              }
+                              const row = schedules[scheduleIndex]!
+                              while (row.entries.length <= entryIndex) {
+                                row.entries.push({ label: '', value: '' })
+                              }
+                              row.entries[entryIndex] = {
+                                ...row.entries[entryIndex]!,
+                                value,
+                              }
+                              return { ...c, schedules }
+                            },
+                            translations,
+                          )
+                        }
+                      >
+                        Години
+                      </CmsLocaleFieldLabel>
+                      <Input
+                        placeholder="Години або «вихідний»"
+                        value={entry.value}
+                        onChange={(e) =>
+                          updateScheduleEntry(scheduleIndex, entryIndex, { value: e.target.value })
+                        }
+                      />
+                    </div>
                     <Button
                       type="button"
                       size="icon"
                       variant="ghost"
+                      className="shrink-0"
                       onClick={() => {
                         const entries = schedule.entries.filter((_, i) => i !== entryIndex)
                         updateSchedule(scheduleIndex, {
@@ -388,7 +590,33 @@ export function StoreContactSettingsForm({
               </Button>
 
               <div className="space-y-2">
-                <Label>Примітка (свята, особливі дні)</Label>
+                <CmsLocaleFieldLabel
+                  values={fieldValues((c) => c.schedules[scheduleIndex]?.note ?? '')}
+                  multiline
+                  onSaveTranslations={(translations) =>
+                    patchFieldTranslations(
+                      (c) => c.schedules[scheduleIndex]?.note ?? '',
+                      (c, value) => {
+                        const schedules = structuredClone(c.schedules)
+                        while (schedules.length <= scheduleIndex) {
+                          schedules.push({
+                            title: '',
+                            entries: [{ label: '', value: '' }],
+                            note: '',
+                          })
+                        }
+                        schedules[scheduleIndex] = {
+                          ...schedules[scheduleIndex]!,
+                          note: value,
+                        }
+                        return { ...c, schedules }
+                      },
+                      translations,
+                    )
+                  }
+                >
+                  Примітка (свята, особливі дні)
+                </CmsLocaleFieldLabel>
                 <Textarea
                   rows={2}
                   placeholder="Напр.: у святкові дні графік може змінюватися"

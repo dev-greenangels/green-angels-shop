@@ -633,7 +633,24 @@
       "bank": "Bank",
       "legalAddress": "Sitz",
       "taxStatus": "Steuerstatus"
+    },
+    "contactUs": "Kontaktieren Sie uns",
+    "closed": "Geschlossen",
+    "open": "Geöffnet",
+    "weekdayRange": "{from} – {to}",
+    "weekdays": {
+      "mon": "Mo",
+      "tue": "Di",
+      "wed": "Mi",
+      "thu": "Do",
+      "fri": "Fr",
+      "sat": "Sa",
+      "sun": "So"
     }
+  },
+  "aboutPage": {
+    "unavailableTitle": "Über uns",
+    "unavailableBody": "Die Seite Über uns ist für diese Sprache noch nicht veröffentlicht. Kontaktieren Sie uns oder wählen Sie eine andere Sprache."
   },
   "errors": {
     "serviceUnavailable": "Dienst vorübergehend nicht verfügbar. Aktualisieren Sie die Seite oder versuchen Sie es später erneut.",
@@ -909,6 +926,10 @@
       "dobierka": {
         "title": "Nachnahme (COD)",
         "description": "Beim Kurier oder an der Abholstelle bei Erhalt bezahlen"
+      },
+      "pay-on-pickup": {
+        "title": "Zahlung bei Abholung",
+        "description": "Bar oder mit Karte bei der Abholung im Lager"
       }
     },
     "edrpou": "EDRPOU",
@@ -1124,7 +1145,8 @@
     "deliveryInfoPickupTitle": "Abholinformationen",
     "deliveryInfoPickupPrepare": "Wir bereiten Ihre Bestellung zur Abholung vor.",
     "deliveryInfoPickupNotify": "Wir benachrichtigen Sie, wenn sie bereit ist.",
-    "deliveryInfoPickupLocation": "Abholort"
+    "deliveryInfoPickupLocation": "Abholort",
+    "shippingInfoLink": "Details zu Versand und Zahlung"
   },
   "product": {
     "newBadge": "Neu",
@@ -1289,7 +1311,15 @@
     "sellerIco": "IČO",
     "sellerDic": "DIČ",
     "sellerVat": "IČ DPH",
-    "sellerAddress": "Sitz"
+    "sellerAddress": "Sitz",
+    "termsUnavailableTitle": "Allgemeine Geschäftsbedingungen",
+    "termsUnavailableBody": "Die AGB für diese Sprache sind noch nicht veröffentlicht. Bitte Sprache wechseln oder später erneut versuchen.",
+    "privacyUnavailableTitle": "Datenschutzerklärung",
+    "privacyUnavailableBody": "Die Datenschutzerklärung für diese Sprache ist noch nicht veröffentlicht. Bitte Sprache wechseln oder später erneut versuchen.",
+    "cookiesUnavailableTitle": "Cookie-Richtlinie",
+    "cookiesUnavailableBody": "Die Cookie-Richtlinie für diese Sprache ist noch nicht veröffentlicht. Bitte Sprache wechseln oder später erneut versuchen.",
+    "returnsUnavailableTitle": "Rückgabe und Widerrufsrecht",
+    "returnsUnavailableBody": "Die Rückgabe-/Widerrufsseite für diese Sprache ist noch nicht veröffentlicht. Bitte Sprache wechseln oder später erneut versuchen."
   },
   "cookieConsent": {
     "title": "Wir verwenden Cookies",
@@ -1416,67 +1446,78 @@
     "inclVat": "inkl. MwSt."
   },
   "shippingPage": {
-    "title": "Lieferung & Zahlung",
-    "deliveryTitle": "Lieferarten",
-    "costsTitle": "Lieferkosten",
-    "costsOrderCol": "Art",
-    "costsPriceCol": "Kosten",
-    "costsCarrierTariff": "Nach Tarifen des Transporteurs",
-    "costsFreePickup": "Keine zusätzlichen Lieferkosten",
-    "paymentTitle": "Zahlungsarten",
-    "packingTitle": "Verpackung der Pflanzen",
-    "packingIntro": "Wir verpacken sorgfältig, damit Pflanzen in bestmöglichem Zustand ankommen:",
-    "packingItems": [
-      "Wurzelballen fixiert gegen Beschädigung",
-      "Krone mit Netz oder Papier geschützt",
-      "Feuchtigkeitsspeichernde Materialien",
-      "Stabile Kartons mit Hinweis „Vorsicht — Pflanzen“"
-    ],
+    "seoTitle": "Versand und Zahlung | Green Angels",
+    "seoDescription": "Informationen zu Versand und Zahlung im Online-Shop Green Angels: Lieferländer, Versand- und Zahlungsarten. Die genauen Versandkosten werden im Checkout angezeigt.",
+    "title": "Versand und Zahlung",
+    "intro": "Wir liefern Pflanzen in die Länder, die im jeweils verwendeten Online-Shop verfügbar sind. Die aktuellen Versand- und Zahlungsmöglichkeiten werden abhängig vom Lieferland und vom Inhalt der Bestellung angezeigt.",
+    "introExactPrice": "Die genauen Versandkosten werden im Checkout berechnet und vor dem Absenden der Bestellung angezeigt.",
+    "countriesTitle": "Lieferländer",
+    "countriesIntro": "Die verfügbaren Lieferländer hängen davon ab, welchen Green Angels Online-Shop Sie verwenden.",
+    "deliveryTitle": "Versandarten",
+    "deliveryIntro": "Die verfügbaren Versandarten werden abhängig vom Lieferland und den für Ihre Bestellung aktuell verfügbaren Möglichkeiten angezeigt.",
+    "packingNote": "Wir bereiten die Pflanzen entsprechend ihrer Art, Größe und ihres aktuellen Zustands für den Transport vor und verpacken sie sorgfältig. Daher ist nicht jede Versandart für jede Bestellung verfügbar.",
+    "pickupTitle": "Persönliche Abholung in der Slowakei",
+    "pickupBody": "Sie können Ihre Bestellung persönlich an unserer Abholstelle in der Slowakei abholen. Die persönliche Abholung kann auch von Kunden gewählt werden, die aus einem anderen Land bestellen.",
+    "pickupAddressNote": "Die Adresse und die aktuell geltenden Bedingungen für die Abholung werden während des Bestellvorgangs angezeigt.",
     "pickupUnavailableTitle": "Abholadresse vorübergehend nicht verfügbar",
+    "pickupAddressFallback": "Adresse und Bedingungen finden Sie im Checkout und auf der Kontaktseite.",
     "addressLabel": "Adresse",
+    "costsFreePickup": "Abholung: keine Versandgebühr, wenn diese Option im Checkout gewählt wird.",
+    "costsTitle": "Versandkosten",
+    "costsBody1": "Die Versandkosten hängen vom Lieferland, der gewählten Versandart und dem Inhalt der Bestellung ab.",
+    "costsBody2": "Die genauen Versandkosten werden Ihnen immer im Checkout angezeigt, bevor Sie Ihre Bestellung absenden.",
+    "costsBody3": "Falls für eine bestimmte Versand- oder Zahlungsart zusätzliche Gebühren anfallen, werden diese vor der Bestätigung der Bestellung im Checkout angezeigt.",
+    "deliveryTimeTitle": "Lieferzeit",
+    "deliveryTimeBody": "Die voraussichtliche Lieferzeit beträgt in der Regel 2–8 Tage ab Aufgabe der Bestellung. Die tatsächliche Lieferzeit hängt vom Lieferland, der gewählten Versandart und der aktuellen Verfügbarkeit der bestellten Pflanzen ab.",
+    "dispatchDateTitle": "Versanddatum auswählen",
+    "dispatchDateBody1": "Wenn diese Option für Ihre Bestellung verfügbar ist, können Sie im Checkout das Datum auswählen, an dem Ihre Bestellung von unserer Baumschule versendet wird.",
+    "dispatchDateBody2": "Das gewählte Datum ist das Versanddatum und kein garantiertes Lieferdatum. Die Lieferzeit nach dem Versand hängt vom Versanddienstleister und vom Lieferland ab.",
+    "paymentTitle": "Zahlungsarten",
+    "paymentIntro": "Die verfügbaren Zahlungsarten werden abhängig vom Lieferland und der gewählten Versandart angezeigt.",
+    "codFeeFixed": "Gegebenenfalls anfallende Nachnahmegebühr: {amount}. Sie wird auch vor dem Absenden der Bestellung im Checkout angezeigt.",
+    "livePlantsTitle": "Pflanzen und Transport",
+    "livePlantsBody1": "Pflanzen sind lebende Produkte und benötigen für einen sicheren Transport eine geeignete Verpackung. Die Verpackung wird an Art, Größe und aktuellen Zustand der Pflanze angepasst.",
+    "livePlantsBody2": "Daher können sich die verfügbaren Versandmöglichkeiten je nach Bestellung unterscheiden. Im Checkout werden immer die für die jeweilige Bestellung aktuell verfügbaren Optionen angezeigt.",
+    "damageTitle": "Transportschäden",
+    "damageBody1": "Wir empfehlen, das Paket bei der Annahme zu überprüfen. Ist die Verpackung sichtbar beschädigt, empfehlen wir, den Schaden zu dokumentieren und nach Möglichkeit auch beim Versanddienstleister festhalten zu lassen.",
+    "damageBody2": "Wenn eine Pflanze oder ein anderer Inhalt der Sendung während des Transports beschädigt wurde, kontaktieren Sie uns bitte so bald wie möglich und senden Sie Fotos des Schadens und der Verpackung mit.",
+    "damageBody3": "Weitere Informationen zu Reklamationen und Rücksendungen finden Sie in unseren Allgemeinen Geschäftsbedingungen sowie auf der Seite Rückgabe und Widerruf.",
+    "helpTitle": "Benötigen Sie Informationen zu Ihrer Bestellung?",
+    "helpBody": "Wenn Sie Fragen zu Versand, Zahlung oder einer bereits aufgegebenen Bestellung haben, kontaktieren Sie uns bitte über die auf unserer Kontaktseite angegebenen Kontaktdaten.",
     "methods": {
       "nova-poshta": {
         "title": "Nova Poshta",
-        "description": "Filiale oder Adresslieferung in der Ukraine.",
-        "eta": "Üblicherweise 1–3 Tage",
-        "tracking": "Online-Sendungsverfolgung"
+        "description": "Filiale oder Adresslieferung — je nach Auswahl im Checkout, wenn diese Methode verfügbar ist.",
+        "tracking": "Online-Sendungsverfolgung, sofern vom Versanddienstleister bereitgestellt"
       },
       "packeta": {
         "title": "Packeta",
-        "description": "Abholpunkt / Z-BOX oder Kurier — je nach Auswahl im Checkout.",
-        "eta": "Dauer abhängig vom Zielland",
-        "tracking": "Online-Sendungsverfolgung"
+        "description": "Abholpunkt / Z-BOX oder Kurier — je nach Auswahl im Checkout, wenn diese Methode verfügbar ist.",
+        "tracking": "Online-Sendungsverfolgung, sofern vom Versanddienstleister bereitgestellt"
       },
       "gls": {
         "title": "GLS",
-        "description": "Kurierlieferung an Ihre Adresse.",
-        "eta": "Dauer abhängig vom Zielland",
-        "tracking": "Online-Sendungsverfolgung"
-      },
-      "pickup": {
-        "title": "Abholung",
-        "description": "Holen Sie die Bestellung persönlich in unserer Baumschule ab."
+        "description": "Kurierlieferung an Ihre Adresse — je nach Auswahl im Checkout, wenn diese Methode verfügbar ist.",
+        "tracking": "Online-Sendungsverfolgung, sofern vom Versanddienstleister bereitgestellt"
       }
     },
     "payments": {
       "card-online": {
-        "title": "Karte online",
-        "descriptionUa": "Visa, Mastercard und weitere Methoden über MonoPay.",
-        "descriptionSk": "Visa, Mastercard und weitere Methoden über Stripe, in der Shop-Währung (EUR / HUF)."
+        "title": "Online-Kartenzahlung",
+        "description": "Sie können Ihre Bestellung sicher online mit einer Zahlungskarte bezahlen. Die Verfügbarkeit der Kartenzahlung und die Zahlungswährung werden während des Bestellvorgangs angezeigt."
       },
       "bank-transfer": {
         "title": "Banküberweisung",
-        "descriptionUa": "Zahlung auf das Konto des Verkäufers (UAH).",
-        "descriptionSk": "Überweisung auf IBAN (EUR / HUF)."
-      },
-      "bank-transfer-legal": {
-        "title": "Überweisung (Unternehmen)",
-        "descriptionUa": "Für Unternehmen mit oder ohne MwSt.",
-        "descriptionSk": "Für Unternehmen / B2B mit Firmendaten."
+        "description": "Sie können Ihre Bestellung per Banküberweisung bezahlen. Die für die Überweisung erforderlichen Zahlungsdaten und Informationen erhalten Sie im Rahmen des Bestellvorgangs."
       },
       "dobierka": {
         "title": "Nachnahme",
-        "description": "Bar oder Karte bei Erhalt — wenn im Checkout aktiviert."
+        "description": "Die Zahlung per Nachnahme ist verfügbar, wenn diese Option für die jeweilige Bestellung und die gewählte Versandart angeboten wird.",
+        "feeNote": "Eine gegebenenfalls anfallende Nachnahmegebühr wird vor dem Absenden der Bestellung im Checkout angezeigt."
+      },
+      "pay-on-pickup": {
+        "title": "Zahlung bei Abholung",
+        "description": "Wenn bei persönlicher Abholung eine Zahlung vor Ort verfügbar ist, wird sie im Checkout unter den verfügbaren Zahlungsarten angezeigt."
       }
     }
   },
@@ -1698,5 +1739,64 @@
       "nonSkTitle": "Informative Übersetzung",
       "nonSkBody": "Das offizielle slowakische Muster gemäß Anlage 2 des Gesetzes 108/2024 Z. z. gilt für Verträge nach slowakischem Recht. Für andere Rechtsordnungen nutzen Sie das Online-Formular oben."
     }
+  },
+  "faq": {
+    "title": "Häufige Fragen",
+    "ctaTitle": "Keine Antwort gefunden?",
+    "ctaBody": "Kontaktieren Sie uns — wir helfen gerne",
+    "contactsUnavailable": "Kontakte vorübergehend nicht verfügbar"
+  },
+  "validation": {
+    "required": "Pflichtfeld",
+    "invalidEmail": "Ungültiges E-Mail-Format",
+    "invalidPhone": "Ungültiges Telefonformat",
+    "invalidPhoneUa": "Gültige ukrainische Nummer eingeben (+380)",
+    "invalidPhoneSk": "Gültige slowakische Nummer eingeben (+421)",
+    "invalidPhoneIntl": "Gültige internationale Nummer eingeben",
+    "latinCharactersRequired": "Lateinische Buchstaben verwenden (Diakritika erlaubt)",
+    "minLatinLetters": "Mindestens 2 Buchstaben erforderlich",
+    "requiredForeignPhone": "Erforderlich für internationale Nummer",
+    "requiredAddressDelivery": "Erforderlich für Adresslieferung",
+    "reviewFullNameRequired": "Bitte vollständigen Namen angeben.",
+    "reviewPhotosMax": "Maximal 3 Fotos möglich.",
+    "invalidIco": "IČO muss 6–8 Ziffern enthalten",
+    "invalidEdrpou": "EDRPOU muss 8 Ziffern enthalten",
+    "companyLegalNameMin": "Vollständigen Firmennamen angeben (min. 3 Zeichen)",
+    "cyrillicFirstName": "Vornamen auf Ukrainisch (kyrillisch) eingeben",
+    "cyrillicLastName": "Nachnamen auf Ukrainisch (kyrillisch) eingeben",
+    "cyrillicNameMin": "Mindestens 2 ukrainische Buchstaben; Apostroph erlaubt",
+    "invalidSkPostal": "Ungültiges PLZ-Format",
+    "minTwoChars": "Mindestens 2 Zeichen",
+    "reviewFullNameInvalid": "Name darf Buchstaben, Leerzeichen und Bindestriche enthalten (2–120 Zeichen).",
+    "reviewContactRequired": "E-Mail oder Telefonnummer angeben.",
+    "reviewTextMin": "Bewertungstext muss mindestens 10 Zeichen lang sein.",
+    "reviewTextMax": "Bewertungstext ist zu lang.",
+    "reviewTextNoHtml": "Text darf keine HTML-Tags enthalten.",
+    "reviewImageInvalid": "Ungültiges Bild.",
+    "reviewRatingRequired": "Bewertung von 1 bis 5 Sternen wählen.",
+    "passwordMin8": "Mindestens 8 Zeichen",
+    "passwordsMismatch": "Passwörter stimmen nicht überein",
+    "agreeTermsRequired": "Zustimmung zu den Bedingungen erforderlich",
+    "phoneUaStartPlus380": "Mit +380 beginnen",
+    "phoneUaNeed9After380": "Nach +380 noch 9 Ziffern eingeben",
+    "phoneUaNeed9After0": "Nach 0 noch 9 Ziffern eingeben (insgesamt 10)"
+  },
+  "apiErrors": {
+    "generic": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
+    "OTP_INVALID": "Ungültiger Code.",
+    "OTP_EXPIRED": "Code abgelaufen oder nicht gesendet.",
+    "OTP_REQUIRED_CONTACT": "Telefon oder E-Mail angeben.",
+    "AUTH_INVALID_CREDENTIALS": "Ungültige E-Mail oder Passwort.",
+    "CART_NOT_FOUND": "Warenkorb nicht gefunden.",
+    "CART_ITEMS_UNAVAILABLE": "Ein oder mehrere Artikel sind für den Warenkorb nicht verfügbar.",
+    "ORDER_NOT_FOUND": "Bestellung nicht gefunden.",
+    "ONLINE_CARD_UNAVAILABLE": "Online-Zahlung vorübergehend nicht verfügbar.",
+    "OTP_RATE_LIMITED": "Zu viele Anfragen. Bitte später erneut versuchen.",
+    "API_UNAVAILABLE": "Dienst vorübergehend nicht verfügbar. Bitte erneut versuchen.",
+    "CART_ERROR": "Warenkorb konnte nicht aktualisiert werden.",
+    "ORDER_CREATE_FAILED": "Bestellung konnte nicht aufgegeben werden.",
+    "OTP_SEND_FAILED": "Code konnte nicht gesendet werden. Bitte erneut versuchen.",
+    "OTP_SMS_DISABLED": "SMS-Anmeldung ist nicht verfügbar.",
+    "OTP_EMAIL_DISABLED": "E-Mail-Anmeldung ist nicht verfügbar."
   }
 }

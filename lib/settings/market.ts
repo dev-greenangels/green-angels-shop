@@ -605,14 +605,22 @@ export function phonePlaceholderForPolicy(policy: PhonePolicy): string {
   return '+380 XX XXX XX XX'
 }
 
-export function phoneErrorForPolicy(phone: string, policy: PhonePolicy): string | null {
-  if (!phone.trim()) return 'Обовʼязкове поле'
+export function phoneErrorCodeForPolicy(
+  phone: string,
+  policy: PhonePolicy,
+): import('@/lib/validation/field-error').FieldErrorCode | null {
+  if (!phone.trim()) return 'required'
   if (!isValidPhoneForPolicy(phone, policy)) {
-    if (policy === 'sk_e164') return 'Введіть коректний словацький номер (+421)'
-    if (policy === 'intl') return 'Введіть коректний міжнародний номер'
-    return 'Введіть коректний український номер (+380)'
+    if (policy === 'sk_e164') return 'invalidPhoneSk'
+    if (policy === 'intl') return 'invalidPhoneIntl'
+    return 'invalidPhoneUa'
   }
   return null
+}
+
+/** @deprecated Prefer phoneErrorCodeForPolicy + formatFieldError */
+export function phoneErrorForPolicy(phone: string, policy: PhonePolicy): string | null {
+  return phoneErrorCodeForPolicy(phone, policy)
 }
 
 function resolveAuthPhonePolicy(

@@ -12,7 +12,7 @@ export async function buildContactsMetadata(locale: string): Promise<Metadata> {
 
   try {
     const fetched = await fetchPublicSiteSettings()
-    const store = getStoreSettings(fetched)
+    const store = getStoreSettings(fetched, { locale })
     const company = resolvePublicCompanyName(store, brand)
     const title = t('seoTitle', { company })
     const description = t('seoDescription', { company })

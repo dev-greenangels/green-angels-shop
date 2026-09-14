@@ -67,6 +67,7 @@ import {
   useCartStore,
 } from '@/lib/cart-store'
 import { createOrders, checkoutSuccessSearch, checkoutCancelledSearch, CreateOrderError, ONLINE_CARD_UNAVAILABLE_CODE } from '@/lib/orders/create-order'
+import { mapCustomerApiError } from '@/lib/api/map-customer-error'
 import { clearCartAfterCheckout } from '@/lib/carts/clear-after-checkout'
 import {
   clearStripePendingPayments,
@@ -89,6 +90,7 @@ import {
   pickDefaultDeliveryMethod,
   pickDefaultPaymentMethod,
 } from '@/lib/settings/cart-checkout.normalize'
+import { isPaymentMethodCurrentlyAllowed } from '@/lib/checkout/payment-availability'
 import type { CartCheckoutSettings, MarketSettings } from '@/lib/settings/types'
 import { DEFAULT_CART_CHECKOUT_SETTINGS, DEFAULT_MARKET_SETTINGS } from '@/lib/settings/defaults'
 import { Link, useRouter } from '@/i18n/navigation'
@@ -178,6 +180,7 @@ export default function CheckoutPage() {
   const tCart = useTranslations('cart')
   const tMinOrder = useTranslations('cart.minOrder')
   const tp = useTranslations('promo')
+  const tApi = useTranslations('apiErrors')
   const formatMoney = useFormatPrice('shelf')
   const router = useRouter()
   const { user } = useSession()
@@ -802,11 +805,15 @@ export default function CheckoutPage() {
         ? current.deliveryMethod
         : pickDefaultDeliveryMethod(enabledDelivery)
 
+      const paymentVisibility = {
+        enabledPaymentMethods: enabledPayment,
+        hideLegalBankTransfer: marketSettings.region === 'sk',
+        allowPayOnPickup: cartCheckoutSettings.allowPayOnPickup === true,
+        deliveryMethod,
+      }
+
       const isPaymentAllowed = (method: CheckoutFormValues['paymentMethod']) =>
-        enabledPayment.includes(method) ||
-        (marketSettings.region === 'sk' &&
-          method === 'bank-transfer' &&
-          enabledPayment.includes('bank-transfer-legal'))
+        isPaymentMethodCurrentlyAllowed(method, paymentVisibility)
 
       let paymentMethod: CheckoutFormValues['paymentMethod'] = current.paymentMethod
       if (marketSettings.region === 'sk' && paymentMethod === 'bank-transfer-legal') {
@@ -865,6 +872,31 @@ export default function CheckoutPage() {
       }
     })
   }, [allowedDeliveryMethods, cartCheckoutSettings, marketSettings, countryOverlay?.countryCode])
+
+  // Reset pay-on-pickup (and any other gated method) when delivery method changes.
+  useEffect(() => {
+    setFormData((current) => {
+      const paymentVisibility = {
+        enabledPaymentMethods: cartCheckoutSettings.enabledPaymentMethods,
+        hideLegalBankTransfer: marketSettings.region === 'sk',
+        allowPayOnPickup: cartCheckoutSettings.allowPayOnPickup === true,
+        deliveryMethod: current.deliveryMethod,
+      }
+      if (isPaymentMethodCurrentlyAllowed(current.paymentMethod, paymentVisibility)) {
+        return current
+      }
+      let paymentMethod = pickDefaultPaymentMethod(cartCheckoutSettings.enabledPaymentMethods)
+      if (marketSettings.region === 'sk' && paymentMethod === 'bank-transfer-legal') {
+        paymentMethod = 'bank-transfer'
+      }
+      return { ...current, paymentMethod }
+    })
+  }, [
+    formData.deliveryMethod,
+    cartCheckoutSettings.allowPayOnPickup,
+    cartCheckoutSettings.enabledPaymentMethods,
+    marketSettings.region,
+  ])
 
   useEffect(() => {
     if (quoteLoading || !pricingQuote) return
@@ -1418,13 +1450,17 @@ export default function CheckoutPage() {
     } catch (error) {
       const onlineCardUnavailable =
         error instanceof CreateOrderError && error.code === ONLINE_CARD_UNAVAILABLE_CODE
-      setSubmitError(
-        onlineCardUnavailable
-          ? t('onlineCardUnavailable')
-          : error instanceof Error
-            ? error.message
-            : t('submitFailed'),
-      )
+      if (onlineCardUnavailable) {
+        setSubmitError(t('onlineCardUnavailable'))
+      } else if (error instanceof CreateOrderError && error.code) {
+        setSubmitError(mapCustomerApiError({ code: error.code }, tApi))
+      } else if (error instanceof Error && /[А-Яа-яЁёІіЇїЄє]/.test(error.message)) {
+        setSubmitError(tApi('generic'))
+      } else if (error instanceof Error) {
+        setSubmitError(error.message)
+      } else {
+        setSubmitError(t('submitFailed'))
+      }
       setIsLoading(false)
     }
   }
@@ -1801,6 +1837,7 @@ export default function CheckoutPage() {
                   <CheckoutPaymentStep
                     formData={formData}
                     enabledPaymentMethods={cartCheckoutSettings.enabledPaymentMethods}
+                    allowPayOnPickup={cartCheckoutSettings.allowPayOnPickup === true}
                     paymentTouched={paymentTouched}
                     onPatchForm={patchForm}
                     onBlurPaymentField={(field) =>

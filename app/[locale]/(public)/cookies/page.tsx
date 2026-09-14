@@ -4,37 +4,47 @@ import { Navigation } from '@/components/navigation'
 import { PublicPageBreadcrumbs } from '@/components/public-page-breadcrumbs'
 import { CookiePreferencesManager } from '@/components/legal/cookie-preferences-manager'
 import { LegalPageLinks } from '@/components/legal/legal-page-links'
-import { LegalPageSections, type LegalPageSection } from '@/components/legal/legal-page-sections'
 import { LegalRevisionBody } from '@/components/legal/legal-revision-body'
 import { LegalTemplateNotice } from '@/components/legal/legal-template-notice'
 import { staticPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
-import { LegalSellerDetails } from '@/components/legal/legal-seller-details'
 import { fetchCurrentLegalDocument, sellerFromBankDetails } from '@/lib/legal/documents'
 import { legalPageTitleClassName, legalProseClassName } from '@/lib/legal/storefront-typography'
 import { resolveCheckoutBankDetails } from '@/lib/settings/company-bank-details'
+import { getRequestCountrySiteCode } from '@/lib/country-sites/request-country'
 import {
   fetchPublicSiteSettings,
   getCartCheckoutSettings,
+  getMarketSettings,
   getStoreSettings,
 } from '@/lib/settings/fetch'
-import { getSupportEmail } from '@/lib/settings/store-helpers'
+import { resolveStoreForCountrySite } from '@/lib/settings/store-contact-country'
+import { resolvePublicSupportEmail } from '@/lib/settings/public-support-email'
 import { cn } from '@/lib/utils'
 
 export default async function CookiesPage() {
   const locale = await getLocale()
   const tNav = await getTranslations('nav')
-  const t = await getTranslations('cookiesPage')
   const tLegal = await getTranslations('legalPages')
-  const sections = t.raw('sections') as LegalPageSection[]
-  const siteSettings = await fetchPublicSiteSettings()
-  const store = getStoreSettings(siteSettings)
+  const [siteSettings, countryCode] = await Promise.all([
+    fetchPublicSiteSettings(),
+    getRequestCountrySiteCode(),
+  ])
+  const market = getMarketSettings(siteSettings)
+  const store = resolveStoreForCountrySite(
+    getStoreSettings(siteSettings, { locale }),
+    market,
+    countryCode,
+  )
   const fallbackSeller = sellerFromBankDetails(
     resolveCheckoutBankDetails(getCartCheckoutSettings(siteSettings), store),
   )
-  const supportEmail = getSupportEmail(store)
-  const document = await fetchCurrentLegalDocument('COOKIES', locale)
-  const title = document?.title ?? t('title')
+  const supportEmail = resolvePublicSupportEmail({
+    store,
+    market,
+    countrySiteCode: countryCode,
+  })
+  const document = await fetchCurrentLegalDocument('COOKIES', locale, countryCode)
 
   return (
     <>
@@ -43,13 +53,14 @@ export default async function CookiesPage() {
         <div className="bg-secondary/30 py-8 md:py-12">
           <div className={siteContentShellClassName}>
             <PublicPageBreadcrumbs className="mb-4" items={staticPageBreadcrumbs(tNav('cookies'))} />
-            <h1 className={legalPageTitleClassName}>{title}</h1>
+            <h1 className={legalPageTitleClassName}>
+              {document?.title ?? tLegal('cookiesUnavailableTitle')}
+            </h1>
           </div>
         </div>
 
         <div className={cn(siteContentShellClassName, 'py-12')}>
-          <div className="max-w-3xl mx-auto space-y-6">
-            {!document ? <LegalTemplateNotice /> : null}
+          <div className="mx-auto max-w-3xl space-y-6">
             <LegalPageLinks current="cookies" />
 
             <div className={legalProseClassName}>
@@ -63,11 +74,10 @@ export default async function CookiesPage() {
                   sellerIdentityKind="controller"
                 />
               ) : (
-                <>
-                  <p className="text-muted-foreground text-lg">{t('intro')}</p>
-                  <LegalSellerDetails seller={fallbackSeller} identityKind="controller" />
-                  <LegalPageSections sections={sections} supportEmail={supportEmail} />
-                </>
+                <div className="space-y-4">
+                  <LegalTemplateNotice />
+                  <p className="text-muted-foreground">{tLegal('cookiesUnavailableBody')}</p>
+                </div>
               )}
             </div>
 

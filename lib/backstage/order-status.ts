@@ -63,6 +63,8 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   'card-online': 'Оплата онлайн',
   'bank-transfer': 'Банківський переказ для фіз. осіб',
   'bank-transfer-legal': 'Банківський переказ для юр. осіб',
+  dobierka: 'Dobierka',
+  'pay-on-pickup': 'Оплата при отриманні',
 }
 
 export function normalizeOrderStatus(status: string): OrderStatus {

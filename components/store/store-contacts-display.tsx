@@ -12,7 +12,6 @@ import {
   isContactLineVisibleInFooter,
 } from '@/lib/settings/store-contact-lines'
 import {
-  formatScheduleEntries,
   getStoreContactBlocks,
   getStoreEmails,
   getStorePhones,
@@ -20,6 +19,12 @@ import {
   getVisibleStoreContactBlocks,
   phoneHref,
 } from '@/lib/settings/store-helpers'
+import {
+  presentContactBlockTitle,
+  presentScheduleEntries,
+  presentScheduleTitle,
+  type SchedulePresentationMessages,
+} from '@/lib/settings/schedule-presentation'
 import type { StoreContactBlock, StoreContactLine, StoreContactSettings, StoreFooterVisibility } from '@/lib/settings/types'
 import { cn } from '@/lib/utils'
 
@@ -45,6 +50,26 @@ type StoreContactsDisplayProps = {
   marketRegion?: 'ua' | 'sk'
   /** Заголовок блоку реквізитів */
   companySectionTitle?: string
+}
+
+async function loadScheduleMessages(): Promise<SchedulePresentationMessages> {
+  const t = await getTranslations('contactsPage')
+  return {
+    hours: t('hours'),
+    contactUs: t('contactUs'),
+    closed: t('closed'),
+    open: t('open'),
+    weekday: {
+      mon: t('weekdays.mon'),
+      tue: t('weekdays.tue'),
+      wed: t('weekdays.wed'),
+      thu: t('weekdays.thu'),
+      fri: t('weekdays.fri'),
+      sat: t('weekdays.sat'),
+      sun: t('weekdays.sun'),
+    },
+    weekdayRange: (from, to) => t('weekdayRange', { from, to }),
+  }
 }
 
 function ContactLineIcon({
@@ -76,21 +101,25 @@ function ContactBlockDisplay({
   iconClassName,
   textClassName,
   linkClassName,
+  presentation,
 }: {
   block: StoreContactBlock
   visibility?: Partial<StoreFooterVisibility>
   iconClassName?: string
   textClassName?: string
   linkClassName?: string
+  presentation: SchedulePresentationMessages
 }) {
   const lines = block.lines.filter((line) =>
     visibility ? isContactLineVisibleInFooter(line, visibility) : true,
   )
   if (!lines.length) return null
 
+  const title = presentContactBlockTitle(block.title, presentation)
+
   return (
     <div className={cn('space-y-1.5 text-sm', textClassName)}>
-      {block.title.trim() ? <p className="font-medium">{block.title}</p> : null}
+      {title ? <p className="font-medium">{title}</p> : null}
       {lines.map((line, index) => (
         <div key={`${line.type}-${line.value}-${index}`} className="flex items-center gap-2 pl-0.5">
           <ContactLineIcon
@@ -116,18 +145,24 @@ function ScheduleBlock({
   schedule,
   iconClassName,
   textClassName,
+  presentation,
+  hideTitle,
 }: {
   schedule: ReturnType<typeof getStoreSchedules>[number]
   iconClassName?: string
   textClassName?: string
+  presentation: SchedulePresentationMessages
+  hideTitle?: boolean
 }) {
+  const title = presentScheduleTitle(schedule.title, presentation)
+  const lines = presentScheduleEntries(schedule.entries, presentation)
   return (
     <div className="flex items-start gap-3">
       <Clock className={cn('mt-0.5 h-5 w-5 shrink-0', iconClassName)} />
       <div className={cn('text-sm', textClassName)}>
-        <p className="font-medium">{schedule.title}</p>
-        <div className="mt-1 space-y-0.5">
-          {formatScheduleEntries(schedule).map((line) => (
+        {!hideTitle ? <p className="font-medium">{title}</p> : null}
+        <div className={cn('space-y-0.5', !hideTitle && 'mt-1')}>
+          {lines.map((line) => (
             <p key={line}>{line}</p>
           ))}
         </div>
@@ -157,6 +192,7 @@ export async function StoreContactsDisplay({
   companySectionTitle,
 }: StoreContactsDisplayProps) {
   const t = await getTranslations('contactsPage')
+  const presentation = await loadScheduleMessages()
   const phones = getStorePhones(store)
   const emails = getStoreEmails(store)
   const footerVisibility = filterByFooterVisibility
@@ -178,9 +214,11 @@ export async function StoreContactsDisplay({
   const lineVisibility = filterByFooterVisibility ? footerVisibility! : undefined
   const showGroupedContacts = grouped && contactBlocks.length > 0
   const showSocial = showSocialLinks && hasVisibleSocialLinks(store.social)
-  const resolvedScheduleTitle = scheduleSectionTitle ?? t('hours')
+  const resolvedScheduleTitle = scheduleSectionTitle ?? presentation.hours
   const resolvedSocialTitle = socialSectionTitle ?? t('social')
   const resolvedCompanyTitle = companySectionTitle ?? t('companyDetails')
+  // Section heading already localizes “hours”; hide duplicate CMS title when single schedule.
+  const hidePerScheduleTitle = schedules.length === 1
 
   const companySection = resolvedShowCompany ? (
     <StoreCompanyDetailsDisplay
@@ -213,6 +251,8 @@ export async function StoreContactsDisplay({
               schedule={schedule}
               iconClassName={iconClassName}
               textClassName={textClassName}
+              presentation={presentation}
+              hideTitle={hidePerScheduleTitle}
             />
           ))}
         </div>
@@ -233,6 +273,7 @@ export async function StoreContactsDisplay({
                     iconClassName={iconClassName}
                     textClassName={textClassName}
                     linkClassName={linkClassName}
+                    presentation={presentation}
                   />
                 ))
               : null}
@@ -274,6 +315,7 @@ export async function StoreContactsDisplay({
               iconClassName={iconClassName}
               textClassName={textClassName}
               linkClassName={linkClassName}
+              presentation={presentation}
             />
           ))
         : null}

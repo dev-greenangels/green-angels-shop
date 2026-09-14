@@ -17,6 +17,7 @@ import {
 } from '@/lib/country-sites/currency'
 import { isCountrySiteCode, GA_COUNTRY_HEADER } from '@/lib/country-sites/types'
 import { fetchPublicSiteSettings, getCartCheckoutSettings, getCatalogPageSettings, getLocalizationSettings, getMarketSettings, getNavigationSettings, getStoreSettings, getWholesalePageSettings } from '@/lib/settings/fetch'
+import { isFaqNavHref, isStorefrontFaqEnabled } from '@/lib/faq/visibility'
 import { resolvePublicOrigin } from '@/lib/seo/public-origin'
 import { resolveSeoRequestContext } from '@/lib/seo/request-context'
 import { isIndexingAllowed, previewRobotsDirective } from '@/lib/seo/indexing-policy'
@@ -121,19 +122,26 @@ export default async function RootLayout({
         headers(),
       ]),
     )
-  const storeSettings = getStoreSettings(siteSettings)
+  const storeSettings = getStoreSettings(siteSettings, { locale })
   const catalogSettings = getCatalogPageSettings(siteSettings)
   const localizationSettings = getLocalizationSettings(siteSettings)
   const wholesalePage = getWholesalePageSettings(siteSettings)
   const navigationSettingsRaw = getNavigationSettings(siteSettings)
-  const navigationSettings = wholesalePage.pageEnabled
-    ? navigationSettingsRaw
-    : {
-        ...navigationSettingsRaw,
-        items: navigationSettingsRaw.items.map((item) =>
-          item.id === 'wholesale' ? { ...item, visible: false } : item,
-        ),
+  const faqEnabled = isStorefrontFaqEnabled(localizationSettings)
+  const navigationSettings = {
+    ...navigationSettingsRaw,
+    items: navigationSettingsRaw.items.map((item) => {
+      let next = item
+      if (!wholesalePage.pageEnabled && item.id === 'wholesale') {
+        next = { ...next, visible: false }
       }
+      // Same SSoT as footer/sitemap/route: hide custom or default /faq nav when FAQ is off.
+      if (!faqEnabled && isFaqNavHref(next.href)) {
+        next = { ...next, visible: false }
+      }
+      return next
+    }),
+  }
   const marketSettings = getMarketSettings(siteSettings)
   const cartCheckoutSettings = getCartCheckoutSettings(siteSettings)
   const isBackstage = isBackstageSurface(headerStore.get(GA_SURFACE_HEADER))

@@ -90,6 +90,7 @@ export const UNAVAILABLE_STORE_SETTINGS: StoreContactSettings = {
     icDph: '',
   },
   showCompanyOnContacts: false,
+  byLocale: {},
 }
 
 export const DEFAULT_STORE_SETTINGS: StoreContactSettings = {
@@ -115,6 +116,7 @@ export const DEFAULT_STORE_SETTINGS: StoreContactSettings = {
     icDph: '',
   },
   showCompanyOnContacts: false,
+  byLocale: {},
 }
 
 export const DEFAULT_HOME_SETTINGS: HomePageSettings = {
@@ -205,6 +207,7 @@ export const DEFAULT_HOME_SETTINGS: HomePageSettings = {
     limit: 8,
     sort: 'newest',
   },
+  byLocale: {},
 }
 
 export const DEFAULT_CATALOG_SETTINGS: CatalogPageSettings = {
@@ -343,4 +346,7 @@ export const DEFAULT_CART_CHECKOUT_SETTINGS: CartCheckoutSettings = {
   orderPdfDownloadEnabled: true,
   orderPdfEmailEnabled: true,
   orderPdfTitle: '',
+  allowPayOnPickup: false,
+  newOrderNotifyEmailEnabled: false,
+  newOrderNotifyEmail: '',
 }

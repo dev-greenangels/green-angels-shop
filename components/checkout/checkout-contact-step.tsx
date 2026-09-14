@@ -3,8 +3,9 @@
 import { memo, useCallback, useEffect, useState, type ReactNode, type RefObject } from 'react'
 import { flushSync } from 'react-dom'
 import { ArrowLeft, ArrowLeftRight, ChevronRight, Loader2, LogOut, Mail, Phone, User } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
+import { mapOtpAuthError } from '@/lib/api/map-otp-auth-error'
 
 import { AuthOAuthButtons } from '@/components/auth/auth-oauth-buttons'
 import { FieldHint, OrDivider, RequiredLabel } from '@/components/auth/auth-form-ui'
@@ -57,6 +58,7 @@ import {
   type CheckoutIdentificationState,
   type CheckoutMarketRegion,
 } from '@/lib/validation/checkout-form'
+import { useFormatFieldError } from '@/lib/validation/use-field-error-messages'
 import {
   isValidCyrillicName,
   isValidEmail,
@@ -95,6 +97,8 @@ function NameFields({
   onPatchForm: (patch: Partial<CheckoutFormValues>) => void
   marketRegion?: CheckoutMarketRegion
 }) {
+  const fe = useFormatFieldError()
+
   const tc = useTranslations('common')
   const sanitizeName = marketRegion === 'sk' ? sanitizeLatinName : sanitizeCyrillicName
   const errorOptions = { marketRegion }
@@ -117,7 +121,7 @@ function NameFields({
         <FieldHint
           id="firstName-error"
           show={Boolean(contactTouched.firstName)}
-          message={getCheckoutContactFieldError('firstName', formData, errorOptions)}
+          message={fe(getCheckoutContactFieldError('firstName', formData, errorOptions))}
         />
       </div>
       <div className="space-y-2">
@@ -136,7 +140,7 @@ function NameFields({
         <FieldHint
           id="lastName-error"
           show={Boolean(contactTouched.lastName)}
-          message={getCheckoutContactFieldError('lastName', formData, errorOptions)}
+          message={fe(getCheckoutContactFieldError('lastName', formData, errorOptions))}
         />
       </div>
     </div>
@@ -146,22 +150,19 @@ function NameFields({
 function getPhoneError(
   phone: string,
   phonePolicy: MarketSettings['authPhonePolicy'],
-  tc: (key: string) => string,
+  fe: (code: string | null | undefined) => string | null,
 ): string | null {
-  if (!phone.trim()) return tc('requiredField')
-  const err = phoneErrorForPolicy(phone, phonePolicy)
-  if (err && err !== 'Обовʼязкове поле') return err
-  if (err) return tc('requiredField')
-  return null
+  if (!phone.trim()) return fe('required')
+  return fe(phoneErrorForPolicy(phone, phonePolicy))
 }
 
 function getEmailFieldError(
   email: string,
-  tc: (key: string) => string,
+  fe: (code: string | null | undefined) => string | null,
   required: boolean,
 ): string | null {
-  if (!email.trim()) return required ? tc('requiredField') : null
-  if (!isValidEmail(email)) return tc('invalidEmail')
+  if (!email.trim()) return required ? fe('required') : null
+  if (!isValidEmail(email)) return fe('invalidEmail')
   return null
 }
 
@@ -206,9 +207,13 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
   onSkAuthModeChange?: (mode: SkCheckoutAuthMode) => void
   billingSlot?: ReactNode
 }) {
+  const fe = useFormatFieldError()
+
   const t = useTranslations('checkout')
   const tc = useTranslations('common')
   const ta = useTranslations('auth')
+  const tApi = useTranslations('apiErrors')
+  const locale = useLocale()
   const router = useRouter()
   const { user, setUser } = useSession()
 
@@ -266,8 +271,8 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
   const showAuthToggle = isTrueGuestMode && !user && !isAuthenticated && !sessionPending
   const channelLocked = Boolean(conflictAuthPath)
 
-  const phoneError = getPhoneError(formData.phone, marketSettings.authPhonePolicy, tc)
-  const emailError = getEmailFieldError(formData.email, tc, checkoutEmailRequired)
+  const phoneError = getPhoneError(formData.phone, marketSettings.authPhonePolicy, fe)
+  const emailError = getEmailFieldError(formData.email, fe, checkoutEmailRequired)
   const emailReadyForHint =
     emailEnabled && Boolean(formData.email.trim()) && isValidEmail(formData.email.trim())
   const phoneReadyForHint =
@@ -292,7 +297,7 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
 
   const showError = (field: CheckoutContactFieldKey) =>
     Boolean(
-      contactTouched[field] && getCheckoutContactFieldError(field, formData, contactErrorOptions),
+      contactTouched[field] && fe(getCheckoutContactFieldError(field, formData, contactErrorOptions)),
     )
 
   const resetAuthFlow = useCallback(() => {
@@ -485,21 +490,21 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
       setCode('')
       try {
         if (authChannel === 'phone') {
-          await sendCheckoutSmsCode(formData.phone)
+          await sendCheckoutSmsCode(formData.phone, locale)
           toast.success(tc('codeSentSms'))
         } else {
-          await sendCheckoutEmailCode(formData.email)
+          await sendCheckoutEmailCode(formData.email, locale)
           toast.success(tc('codeSentEmail'))
         }
         setStep('otp')
       } catch (e) {
         setStep('identifier')
-        toast.error(e instanceof Error ? e.message : tc('sendCodeFailed'))
+        toast.error(mapOtpAuthError(e, tApi, tc('sendCodeFailed')))
       } finally {
         setSubmitting(false)
       }
     },
-    [conflictAuthPath, emailError, formData.email, formData.phone, phoneError, t, tc],
+    [conflictAuthPath, emailError, formData.email, formData.phone, locale, phoneError, t, tApi, tc],
   )
 
   const startSoftInlineAuth = useCallback(
@@ -602,8 +607,8 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
           onBlurField('firstName')
           onBlurField('lastName')
           setCodeError(
-            getCheckoutContactFieldError('firstName', formData, contactErrorOptions) ||
-              getCheckoutContactFieldError('lastName', formData, contactErrorOptions) ||
+            fe(getCheckoutContactFieldError('firstName', formData, contactErrorOptions)) ||
+              fe(getCheckoutContactFieldError('lastName', formData, contactErrorOptions)) ||
               t('identityHint.namesRequired'),
           )
           return
@@ -622,7 +627,7 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
         setCodeError(t('identityHint.accountLocked'))
         return
       }
-      setCodeError(e instanceof Error ? e.message : tc('invalidCode'))
+      setCodeError(mapOtpAuthError(e, tApi, tc('invalidCode')))
     } finally {
       setSubmitting(false)
     }
@@ -632,8 +637,8 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
     onBlurField('firstName')
     onBlurField('lastName')
     if (
-      getCheckoutContactFieldError('firstName', formData, contactErrorOptions) ||
-      getCheckoutContactFieldError('lastName', formData, contactErrorOptions)
+      fe(getCheckoutContactFieldError('firstName', formData, contactErrorOptions)) ||
+      fe(getCheckoutContactFieldError('lastName', formData, contactErrorOptions))
     ) {
       return
     }
@@ -944,7 +949,7 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
               <FieldHint
                 id="checkout-auth-email-error"
                 show={Boolean(contactTouched.email)}
-                message={getCheckoutContactFieldError('email', formData, contactErrorOptions)}
+                message={fe(getCheckoutContactFieldError('email', formData, contactErrorOptions))}
               />
             </div>
           ) : null}
@@ -995,7 +1000,7 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
               <FieldHint
                 id="checkout-guest-email-error"
                 show={Boolean(contactTouched.email)}
-                message={getCheckoutContactFieldError('email', formData, contactErrorOptions)}
+                message={fe(getCheckoutContactFieldError('email', formData, contactErrorOptions))}
               />
             </div>
             <div className="space-y-2">

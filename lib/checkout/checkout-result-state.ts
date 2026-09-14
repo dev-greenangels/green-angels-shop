@@ -30,7 +30,7 @@ export function isBankTransferPaymentMethod(paymentMethod: string): boolean {
 }
 
 export function isCodPaymentMethod(paymentMethod: string): boolean {
-  return paymentMethod === 'dobierka'
+  return paymentMethod === 'dobierka' || paymentMethod === 'pay-on-pickup'
 }
 
 /**

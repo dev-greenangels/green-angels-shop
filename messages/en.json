@@ -633,7 +633,24 @@
       "bank": "Bank",
       "legalAddress": "Registered address",
       "taxStatus": "Tax status"
+    },
+    "contactUs": "Contact us",
+    "closed": "Closed",
+    "open": "Open",
+    "weekdayRange": "{from} – {to}",
+    "weekdays": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
     }
+  },
+  "aboutPage": {
+    "unavailableTitle": "About us",
+    "unavailableBody": "The About page is not published for this language yet. Please contact us or try another language."
   },
   "errors": {
     "serviceUnavailable": "Service temporarily unavailable. Refresh the page or try again later.",
@@ -909,6 +926,10 @@
       "dobierka": {
         "title": "Cash on Delivery (COD)",
         "description": "Pay the courier or at the pickup point on receipt"
+      },
+      "pay-on-pickup": {
+        "title": "Pay on pickup",
+        "description": "Pay by cash or card when collecting your order"
       }
     },
     "edrpou": "EDRPOU",
@@ -1124,7 +1145,8 @@
     "deliveryInfoPickupTitle": "Pickup information",
     "deliveryInfoPickupPrepare": "We will prepare your order for pickup.",
     "deliveryInfoPickupNotify": "We will let you know when it is ready.",
-    "deliveryInfoPickupLocation": "Pickup location"
+    "deliveryInfoPickupLocation": "Pickup location",
+    "shippingInfoLink": "Shipping and payment details"
   },
   "product": {
     "newBadge": "New",
@@ -1289,7 +1311,15 @@
     "sellerIco": "Company ID (IČO)",
     "sellerDic": "Tax ID (DIČ)",
     "sellerVat": "VAT ID (IČ DPH)",
-    "sellerAddress": "Registered office"
+    "sellerAddress": "Registered office",
+    "termsUnavailableTitle": "Terms and conditions",
+    "termsUnavailableBody": "The terms for this language are not published yet. Please switch language or try again later.",
+    "privacyUnavailableTitle": "Privacy Policy",
+    "privacyUnavailableBody": "The privacy policy for this language is not published yet. Please switch language or try again later.",
+    "cookiesUnavailableTitle": "Cookie Policy",
+    "cookiesUnavailableBody": "The cookie policy for this language is not published yet. Please switch language or try again later.",
+    "returnsUnavailableTitle": "Returns and Right of Withdrawal",
+    "returnsUnavailableBody": "The returns policy for this language is not published yet. Please switch language or try again later."
   },
   "cookieConsent": {
     "title": "We use cookies",
@@ -1416,67 +1446,78 @@
     "inclVat": "incl. VAT"
   },
   "shippingPage": {
-    "title": "Shipping & payment",
+    "seoTitle": "Shipping and payment | Green Angels",
+    "seoDescription": "Shipping and payment information for the Green Angels online store: delivery options, payment methods and where we deliver. Exact shipping cost is shown at checkout.",
+    "title": "Shipping and payment",
+    "intro": "We deliver plants to the countries available through the online store you are using. Current delivery and payment options are shown according to the delivery country and the contents of your order.",
+    "introExactPrice": "The exact shipping cost is calculated at checkout before you place your order.",
+    "countriesTitle": "Where we deliver",
+    "countriesIntro": "Available delivery countries depend on the online store you are using.",
     "deliveryTitle": "Delivery methods",
-    "costsTitle": "Delivery costs",
-    "costsOrderCol": "Method",
-    "costsPriceCol": "Cost",
-    "costsCarrierTariff": "Per carrier tariffs",
-    "costsFreePickup": "No extra delivery fee",
-    "paymentTitle": "Payment methods",
-    "packingTitle": "Plant packaging",
-    "packingIntro": "We pack carefully so plants arrive in the best condition:",
-    "packingItems": [
-      "Root ball secured to prevent damage",
-      "Crown protected with netting or paper",
-      "Moisture-retaining materials",
-      "Sturdy boxes marked “Fragile — plants”"
-    ],
+    "deliveryIntro": "Available delivery methods are shown according to the delivery country and the options currently available for your order.",
+    "packingNote": "We prepare and pack plants for transport according to their type, size and current condition. For this reason, not every delivery method may be available for every order.",
+    "pickupTitle": "Personal pickup in Slovakia",
+    "pickupBody": "You can collect your order personally from our pickup location in Slovakia. Personal pickup can also be selected by customers ordering from another country.",
+    "pickupAddressNote": "The address and current pickup conditions are shown during checkout.",
     "pickupUnavailableTitle": "Pickup address temporarily unavailable",
+    "pickupAddressFallback": "Address and conditions are shown at checkout and on the contacts page.",
     "addressLabel": "Address",
+    "costsFreePickup": "Pickup: no delivery fee when this option is selected at checkout.",
+    "costsTitle": "Shipping cost",
+    "costsBody1": "Shipping cost depends on the delivery country, selected delivery method and contents of the order.",
+    "costsBody2": "You will always see the exact shipping cost at checkout before placing your order.",
+    "costsBody3": "If additional charges apply to a particular delivery or payment method, they will be shown at checkout before the order is confirmed.",
+    "deliveryTimeTitle": "Delivery time",
+    "deliveryTimeBody": "The estimated delivery time is usually 2–8 days from the date the order is placed. The actual delivery time depends on the destination country, selected delivery method and current availability of the ordered plants.",
+    "dispatchDateTitle": "Selecting a dispatch date",
+    "dispatchDateBody1": "If this option is available for your order, you can select the date on which your order will be dispatched from our nursery during checkout.",
+    "dispatchDateBody2": "The selected date is the dispatch date, not a guaranteed delivery date. Delivery time after dispatch depends on the carrier and destination country.",
+    "paymentTitle": "Payment methods",
+    "paymentIntro": "Available payment methods are shown according to the delivery country and selected delivery method.",
+    "codFeeFixed": "Any cash-on-delivery fee: {amount}. It is also shown at checkout before you place the order.",
+    "livePlantsTitle": "Plants and transport",
+    "livePlantsBody1": "Plants are living products and safe transport requires appropriate packaging. We adapt the packaging to the type, size and current condition of each plant.",
+    "livePlantsBody2": "For this reason, available delivery options may differ between orders. Checkout always shows the options currently available for the particular order.",
+    "damageTitle": "Damaged delivery",
+    "damageBody1": "We recommend checking the parcel when you receive it. If the packaging is visibly damaged, we recommend documenting the damage and, where possible, recording it with the carrier.",
+    "damageBody2": "If a plant or other contents of the parcel were damaged during transport, please contact us as soon as possible and include photographs of the damage and packaging.",
+    "damageBody3": "Details about complaints and returns are available in our General Terms and Conditions and on the Returns and withdrawal page.",
+    "helpTitle": "Need information about your order?",
+    "helpBody": "If you have a question about delivery, payment or an existing order, please contact us using the details on our Contact page.",
     "methods": {
       "nova-poshta": {
         "title": "Nova Poshta",
-        "description": "Branch or address delivery across Ukraine.",
-        "eta": "Usually 1–3 days",
-        "tracking": "Online parcel tracking"
+        "description": "Branch or address delivery — as selected at checkout when this method is available.",
+        "tracking": "Online parcel tracking where provided by the carrier"
       },
       "packeta": {
         "title": "Packeta",
-        "description": "Pickup point / Z-BOX or courier — as selected at checkout.",
-        "eta": "Timing depends on destination country",
-        "tracking": "Online parcel tracking"
+        "description": "Pickup point / Z-BOX or courier — as selected at checkout when this method is available.",
+        "tracking": "Online parcel tracking where provided by the carrier"
       },
       "gls": {
         "title": "GLS",
-        "description": "Courier delivery to your address.",
-        "eta": "Timing depends on destination country",
-        "tracking": "Online parcel tracking"
-      },
-      "pickup": {
-        "title": "Pickup",
-        "description": "Collect your order in person at our nursery."
+        "description": "Courier delivery to your address — as selected at checkout when this method is available.",
+        "tracking": "Online parcel tracking where provided by the carrier"
       }
     },
     "payments": {
       "card-online": {
-        "title": "Card online",
-        "descriptionUa": "Visa, Mastercard and other methods via secure MonoPay.",
-        "descriptionSk": "Visa, Mastercard and other methods via Stripe, in the storefront currency (EUR / HUF)."
+        "title": "Online card payment",
+        "description": "You can securely pay for your order online by payment card. Card payment availability and the payment currency are shown during checkout."
       },
       "bank-transfer": {
         "title": "Bank transfer",
-        "descriptionUa": "Pay to the seller’s account details (UAH).",
-        "descriptionSk": "Bank transfer to IBAN (EUR / HUF)."
-      },
-      "bank-transfer-legal": {
-        "title": "Bank transfer (business)",
-        "descriptionUa": "For companies, with or without VAT.",
-        "descriptionSk": "For companies / B2B with company details."
+        "description": "You can pay for your order by bank transfer. The payment details and information required to make the transfer are provided as part of the order process."
       },
       "dobierka": {
         "title": "Cash on delivery",
-        "description": "Cash or card on delivery / at pickup — when enabled at checkout."
+        "description": "Cash on delivery is available when this option is supported for the particular order and selected delivery method.",
+        "feeNote": "Any cash-on-delivery fee will be shown at checkout before you place the order."
+      },
+      "pay-on-pickup": {
+        "title": "Payment on pickup",
+        "description": "If payment on collection is available for personal pickup, it will be shown among the payment options at checkout."
       }
     }
   },
@@ -1698,5 +1739,64 @@
       "nonSkTitle": "Informational translation",
       "nonSkBody": "The official Slovak model under Annex 2 of Act 108/2024 Z. z. applies to contracts governed by Slovak law. For other jurisdictions, use the online notice above."
     }
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "ctaTitle": "Did not find an answer?",
+    "ctaBody": "Contact us and we will be happy to help",
+    "contactsUnavailable": "Contacts temporarily unavailable"
+  },
+  "validation": {
+    "required": "Required field",
+    "invalidEmail": "Invalid email format",
+    "invalidPhone": "Invalid phone format",
+    "invalidPhoneUa": "Enter a valid Ukrainian number (+380)",
+    "invalidPhoneSk": "Enter a valid Slovak number (+421)",
+    "invalidPhoneIntl": "Enter a valid international number",
+    "latinCharactersRequired": "Use Latin letters (diacritics allowed)",
+    "minLatinLetters": "At least 2 letters required",
+    "requiredForeignPhone": "Required for an international number",
+    "requiredAddressDelivery": "Required for address delivery",
+    "reviewFullNameRequired": "Enter your full name.",
+    "reviewPhotosMax": "You can add up to 3 photos.",
+    "invalidIco": "IČO must contain 6–8 digits",
+    "invalidEdrpou": "EDRPOU must contain 8 digits",
+    "companyLegalNameMin": "Enter the full legal company name (min. 3 characters)",
+    "cyrillicFirstName": "Enter the first name in Ukrainian (Cyrillic)",
+    "cyrillicLastName": "Enter the last name in Ukrainian (Cyrillic)",
+    "cyrillicNameMin": "At least 2 Ukrainian letters; apostrophe allowed",
+    "invalidSkPostal": "Invalid postal code format",
+    "minTwoChars": "At least 2 characters",
+    "reviewFullNameInvalid": "Name may contain letters, spaces and hyphens (2–120 characters).",
+    "reviewContactRequired": "Enter an email or phone number.",
+    "reviewTextMin": "Review text must be at least 10 characters.",
+    "reviewTextMax": "Review text is too long.",
+    "reviewTextNoHtml": "Text cannot contain HTML tags.",
+    "reviewImageInvalid": "Invalid image.",
+    "reviewRatingRequired": "Choose a rating from 1 to 5 stars.",
+    "passwordMin8": "At least 8 characters",
+    "passwordsMismatch": "Passwords do not match",
+    "agreeTermsRequired": "You must agree to the terms",
+    "phoneUaStartPlus380": "Start with +380",
+    "phoneUaNeed9After380": "Enter 9 more digits after +380",
+    "phoneUaNeed9After0": "Enter 9 more digits after 0 (10 digits total)"
+  },
+  "apiErrors": {
+    "generic": "Something went wrong. Please try again.",
+    "OTP_INVALID": "Invalid code.",
+    "OTP_EXPIRED": "Code expired or was not sent.",
+    "OTP_REQUIRED_CONTACT": "Enter a phone number or email.",
+    "AUTH_INVALID_CREDENTIALS": "Invalid email or password.",
+    "CART_NOT_FOUND": "Cart not found.",
+    "CART_ITEMS_UNAVAILABLE": "One or more items are unavailable for the cart.",
+    "ORDER_NOT_FOUND": "Order not found.",
+    "ONLINE_CARD_UNAVAILABLE": "Online payment is temporarily unavailable.",
+    "OTP_RATE_LIMITED": "Too many requests. Please try again later.",
+    "API_UNAVAILABLE": "Service temporarily unavailable. Please try again.",
+    "CART_ERROR": "Could not update the cart.",
+    "ORDER_CREATE_FAILED": "Could not place the order.",
+    "OTP_SEND_FAILED": "Could not send the code. Please try again.",
+    "OTP_SMS_DISABLED": "SMS sign-in is unavailable.",
+    "OTP_EMAIL_DISABLED": "Email sign-in is unavailable."
   }
 }

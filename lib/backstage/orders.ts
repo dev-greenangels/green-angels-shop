@@ -38,6 +38,8 @@ export type BackstageOrderItem = {
   productSlug: string
   variantLabel: string | null
   sku: string | null
+  ean?: string | null
+  imageUrl?: string | null
 }
 
 export type BackstageOrderDetail = BackstageOrderListItem & {
@@ -45,14 +47,32 @@ export type BackstageOrderDetail = BackstageOrderListItem & {
   receiverLastName: string
   receiverPatronymic: string | null
   receiverPhone: string
+  receiverCompanyName?: string | null
   deliveryMethod: string
   deliveryCity: string | null
   deliveryBranch: string | null
+  deliveryBranchLabel?: string | null
   deliveryStreet: string | null
   deliveryHouseNumber: string | null
+  deliveryPostalCode?: string | null
+  deliveryCountryCode?: string | null
+  countrySiteCode?: string | null
+  locale?: string | null
   paymentMethod: string
   paymentStatus?: string | null
+  paymentProvider?: string | null
+  stripePaymentId?: string | null
+  monopayInvoiceId?: string | null
+  paidAt?: string | null
+  paymentExpiresAt?: string | null
+  productsSubtotal?: number | null
+  deliveryAmount?: number | null
+  packagingAmount?: number | null
+  taxAmount?: number | null
+  codFeeAmount?: number | null
+  pointsDiscountAmount?: number | null
   comment: string | null
+  preferredShipDate?: string | null
   trackingCarrier?: string | null
   npDocumentRef?: string | null
   trackingSyncedAt?: string | null
@@ -157,7 +177,12 @@ export async function fetchBackstageOrders(
 
 export type BackstageOrdersSummary = {
   totalOrders: number
+  activeOrders?: number
+  cancelledOrders?: number
   totalRevenue: number
+  ordersValue?: number
+  paidRevenue?: number
+  averageOrderValue?: number
   currency: string
 }
 
@@ -207,6 +232,15 @@ export async function patchBackstageOrderStatus(
 
 export async function syncBackstageOrderTracking(id: string): Promise<BackstageOrderDetail> {
   const res = await fetch(`/api/backstage/orders/${id}/sync-tracking`, {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function syncBackstageOrderErp(id: string): Promise<BackstageOrderDetail> {
+  const res = await fetch(`/api/backstage/orders/${id}/erp-sync`, {
     method: 'POST',
     credentials: 'include',
   })

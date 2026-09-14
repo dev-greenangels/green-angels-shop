@@ -20,6 +20,8 @@ import { normalizeStoreContactSettings } from '@/lib/settings/store-contact.norm
 import { normalizeNavigationSettings } from '@/lib/settings/navigation.normalize'
 import { normalizeMarketSettings } from '@/lib/settings/market'
 import { normalizeWholesalePageSettings } from '@/lib/settings/wholesale.normalize'
+import { resolveStoreContactForLocale } from '@/lib/settings/store-contact-cms'
+import { isSupportedLocale } from '@/lib/i18n/locales'
 import {
   defaultWholesalePageSettings,
   resolveWholesalePageSettings,
@@ -113,24 +115,29 @@ export async function fetchPublicSiteSettingsFromApiRoute(): Promise<FetchedPubl
 
 export function getStoreSettings(
   fetched: FetchedPublicSiteSettings | PublicSiteSettings,
-  options?: { storeUnavailable?: boolean },
+  options?: { storeUnavailable?: boolean; locale?: string },
 ): StoreContactSettings {
   const settings = 'settings' in fetched ? fetched.settings : fetched
   const storeUnavailable =
     options?.storeUnavailable ?? ('storeUnavailable' in fetched ? fetched.storeUnavailable : false)
+  const region = normalizeMarketSettings(settings.market ?? DEFAULT_MARKET_SETTINGS).region
 
-  if (storeUnavailable) {
-    return normalizeStoreContactSettings(UNAVAILABLE_STORE_WITH_FLAG)
+  const normalized = storeUnavailable
+    ? normalizeStoreContactSettings(UNAVAILABLE_STORE_WITH_FLAG, region)
+    : normalizeStoreContactSettings(settings.store ?? DEFAULT_STORE_SETTINGS, region)
+
+  if (options?.locale && isSupportedLocale(options.locale)) {
+    return resolveStoreContactForLocale(normalized, options.locale)
   }
-
-  return normalizeStoreContactSettings(settings.store ?? DEFAULT_STORE_SETTINGS)
+  return normalized
 }
 
 export function getHomeSettings(
   fetched: FetchedPublicSiteSettings | PublicSiteSettings,
 ): HomePageSettings {
   const settings = 'settings' in fetched ? fetched.settings : fetched
-  return normalizeHomeSettings(settings.home)
+  const region = normalizeMarketSettings(settings.market ?? DEFAULT_MARKET_SETTINGS).region
+  return normalizeHomeSettings(settings.home, region)
 }
 
 export function getCartCheckoutSettings(
@@ -203,11 +210,11 @@ export function getAboutPageSettings(
   return normalizeAboutPageSettings(settings.about, market.region)
 }
 
-/** Resolved flat CMS for a storefront URL locale. */
+/** Same-locale About CMS, or null when this locale has no published copy. */
 export function getResolvedAboutPageSettings(
   fetched: FetchedPublicSiteSettings | PublicSiteSettings,
   locale: string,
-): import('@/lib/settings/about').AboutPageCmsCopy {
+): import('@/lib/settings/about').AboutPageCmsCopy | null {
   const full = getAboutPageSettings(fetched)
   const market = getMarketSettings(fetched)
   return resolveAboutPageCopy(full, locale, market.region)

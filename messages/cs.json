@@ -18,8 +18,8 @@
     "loading": "Loading…",
     "redirecting": "Redirecting…",
     "language": "Language",
-    "pieceShort": "pcs",
-    "piece": "pcs",
+    "pieceShort": "ks",
+    "piece": "ks",
     "plants": "plants",
     "products": "products",
     "goToCatalog": "Browse catalog",
@@ -633,7 +633,24 @@
       "bank": "Banka",
       "legalAddress": "Sídlo",
       "taxStatus": "Daňový status"
+    },
+    "contactUs": "Kontaktujte nás",
+    "closed": "Zavřeno",
+    "open": "Otevřeno",
+    "weekdayRange": "{from} – {to}",
+    "weekdays": {
+      "mon": "Po",
+      "tue": "Út",
+      "wed": "St",
+      "thu": "Čt",
+      "fri": "Pá",
+      "sat": "So",
+      "sun": "Ne"
     }
+  },
+  "aboutPage": {
+    "unavailableTitle": "O nás",
+    "unavailableBody": "Stránka O nás pro tento jazyk zatím není zveřejněna. Kontaktujte nás nebo zkuste jiný jazyk."
   },
   "errors": {
     "serviceUnavailable": "Service temporarily unavailable. Refresh the page or try again later.",
@@ -909,6 +926,10 @@
       "dobierka": {
         "title": "Dobírka (platba při převzetí)",
         "description": "Platba kurýrovi nebo na výdejním místě při převzetí zásilky"
+      },
+      "pay-on-pickup": {
+        "title": "Platba při vyzvednutí",
+        "description": "Platba hotově nebo kartou při osobním odběru"
       }
     },
     "edrpou": "EDRPOU",
@@ -1124,7 +1145,8 @@
     "deliveryInfoPickupTitle": "Informace o osobním odběru",
     "deliveryInfoPickupPrepare": "Připravíme vaši objednávku k osobnímu odběru.",
     "deliveryInfoPickupNotify": "Dáme vám vědět, až bude připravená.",
-    "deliveryInfoPickupLocation": "Místo odběru"
+    "deliveryInfoPickupLocation": "Místo odběru",
+    "shippingInfoLink": "Podrobnosti o dopravě a platbě"
   },
   "product": {
     "newBadge": "New",
@@ -1289,7 +1311,15 @@
     "sellerIco": "IČO",
     "sellerDic": "DIČ",
     "sellerVat": "IČ DPH",
-    "sellerAddress": "Sídlo"
+    "sellerAddress": "Sídlo",
+    "termsUnavailableTitle": "Všeobecné obchodní podmínky",
+    "termsUnavailableBody": "Obchodní podmínky pro tento jazyk zatím nejsou zveřejněny. Přepněte jazyk nebo to zkuste později.",
+    "privacyUnavailableTitle": "Zásady ochrany osobních údajů",
+    "privacyUnavailableBody": "Zásady ochrany osobních údajů pro tento jazyk zatím nejsou zveřejněny. Přepněte jazyk nebo to zkuste později.",
+    "cookiesUnavailableTitle": "Zásady používání cookies",
+    "cookiesUnavailableBody": "Zásady cookies pro tento jazyk zatím nejsou zveřejněny. Přepněte jazyk nebo to zkuste později.",
+    "returnsUnavailableTitle": "Vrácení zboží a odstoupení od smlouvy",
+    "returnsUnavailableBody": "Dokument o vrácení zboží pro tento jazyk zatím není zveřejněn. Přepněte jazyk nebo to zkuste později."
   },
   "cookieConsent": {
     "title": "Používáme cookies",
@@ -1416,67 +1446,78 @@
     "inclVat": "incl. VAT"
   },
   "shippingPage": {
+    "seoTitle": "Doprava a platba | Green Angels",
+    "seoDescription": "Informace o dopravě a platbě v internetovém obchodě Green Angels: země doručení, způsoby dopravy a platby. Přesná cena dopravy se zobrazí v pokladně.",
     "title": "Doprava a platba",
+    "intro": "Rostliny doručujeme do zemí dostupných pro internetový obchod, který právě používáte. Aktuální možnosti dopravy a platby se zobrazují podle země doručení a obsahu objednávky.",
+    "introExactPrice": "Přesná cena dopravy se vypočítá v pokladně ještě před odesláním objednávky.",
+    "countriesTitle": "Kam doručujeme",
+    "countriesIntro": "Dostupné země doručení závisí na internetovém obchodě, který používáte.",
     "deliveryTitle": "Způsoby dopravy",
-    "costsTitle": "Cena dopravy",
-    "costsOrderCol": "Způsob",
-    "costsPriceCol": "Cena",
-    "costsCarrierTariff": "Podle tarifů dopravce",
-    "costsFreePickup": "Bez poplatku za dopravu",
-    "paymentTitle": "Způsoby platby",
-    "packingTitle": "Balení rostlin",
-    "packingIntro": "Dbáme na to, aby k vám rostliny dorazily v co nejlepším stavu:",
-    "packingItems": [
-      "Fixace kořenového balu proti poškození",
-      "Ochrana koruny sítí nebo papírem",
-      "Materiály udržující vlhkost",
-      "Pevné kartony s označením „Křehké — rostliny“"
-    ],
+    "deliveryIntro": "Dostupné způsoby dopravy se zobrazují podle země doručení a aktuálních možností pro vaši objednávku.",
+    "packingNote": "Rostliny připravujeme a balíme k přepravě s ohledem na jejich druh, velikost a aktuální stav. Ne každý způsob dopravy proto musí být dostupný pro každou objednávku.",
+    "pickupTitle": "Osobní odběr na Slovensku",
+    "pickupBody": "Objednávku si můžete osobně vyzvednout na našem výdejním místě na Slovensku. Osobní odběr si může zvolit také zákazník objednávající z jiné země.",
+    "pickupAddressNote": "Adresa a aktuální podmínky osobního odběru se zobrazí během objednávky.",
     "pickupUnavailableTitle": "Adresa osobního odběru je dočasně nedostupná",
+    "pickupAddressFallback": "Adresu a podmínky najdete v pokladně a na stránce kontaktů.",
     "addressLabel": "Adresa",
+    "costsFreePickup": "Osobní odběr: bez poplatku za dopravu, pokud je tato volba vybrána v pokladně.",
+    "costsTitle": "Cena dopravy",
+    "costsBody1": "Cena dopravy závisí na zemi doručení, zvoleném způsobu dopravy a obsahu objednávky.",
+    "costsBody2": "Přesnou cenu dopravy vždy uvidíte v pokladně před odesláním objednávky.",
+    "costsBody3": "Pokud jsou s konkrétním způsobem dopravy nebo platby spojeny další poplatky, zobrazí se v pokladně před potvrzením objednávky.",
+    "deliveryTimeTitle": "Doba doručení",
+    "deliveryTimeBody": "Předpokládaná doba doručení je obvykle 2–8 dní od vytvoření objednávky. Konkrétní termín závisí na zemi doručení, zvoleném způsobu dopravy a aktuální dostupnosti objednaných rostlin.",
+    "dispatchDateTitle": "Výběr data odeslání",
+    "dispatchDateBody1": "Pokud je tato možnost pro objednávku dostupná, můžete si v pokladně zvolit datum, kdy bude objednávka odeslána z naší školky.",
+    "dispatchDateBody2": "Zvolené datum je datem odeslání zásilky, nikoli garantovaným datem doručení. Doba doručení po odeslání závisí na dopravci a zemi doručení.",
+    "paymentTitle": "Způsoby platby",
+    "paymentIntro": "Dostupné způsoby platby se zobrazují podle země doručení a zvoleného způsobu dopravy.",
+    "codFeeFixed": "Případný poplatek za dobírku: {amount}. Zobrazí se také v pokladně před odesláním objednávky.",
+    "livePlantsTitle": "Rostliny a přeprava",
+    "livePlantsBody1": "Rostliny jsou živé zboží a jejich bezpečná přeprava vyžaduje vhodné balení. Způsob balení přizpůsobujeme druhu, velikosti a aktuálnímu stavu rostliny.",
+    "livePlantsBody2": "Z tohoto důvodu se dostupné možnosti dopravy mohou u jednotlivých objednávek lišit. V pokladně se vždy zobrazí možnosti, které jsou pro danou objednávku aktuálně dostupné.",
+    "damageTitle": "Poškození zásilky",
+    "damageBody1": "Při převzetí doporučujeme zásilku zkontrolovat. Pokud je obal viditelně poškozený, doporučujeme poškození zdokumentovat a pokud možno zaznamenat také u dopravce.",
+    "damageBody2": "Pokud byla rostlina nebo obsah zásilky během přepravy poškozen, kontaktujte nás co nejdříve a přiložte fotografie poškození a obalu.",
+    "damageBody3": "Podrobnosti o reklamacích a vrácení zboží najdete v našich Všeobecných obchodních podmínkách a na stránce Vrácení zboží a odstoupení od smlouvy.",
+    "helpTitle": "Potřebujete informace k objednávce?",
+    "helpBody": "Pokud máte dotaz k dopravě, platbě nebo již vytvořené objednávce, kontaktujte nás prostřednictvím údajů uvedených na stránce Kontakty.",
     "methods": {
       "nova-poshta": {
         "title": "Nova Poshta",
-        "description": "Doručení na pobočku nebo na adresu na Ukrajině.",
-        "eta": "Obvykle 1–3 dny",
-        "tracking": "Online sledování zásilky"
+        "description": "Doručení na pobočku nebo na adresu — podle volby v pokladně, pokud je tento způsob dostupný.",
+        "tracking": "Online sledování zásilky, pokud jej dopravce poskytuje"
       },
       "packeta": {
         "title": "Packeta",
-        "description": "Výdejní místo / Z-BOX nebo kurýr — podle volby v pokladně.",
-        "eta": "Termín závisí na zemi doručení",
-        "tracking": "Online sledování zásilky"
+        "description": "Výdejní místo / Z-BOX nebo kurýr — podle volby v pokladně, pokud je tento způsob dostupný.",
+        "tracking": "Online sledování zásilky, pokud jej dopravce poskytuje"
       },
       "gls": {
         "title": "GLS",
-        "description": "Kurýrní doprava na adresu.",
-        "eta": "Termín závisí na zemi doručení",
-        "tracking": "Online sledování zásilky"
-      },
-      "pickup": {
-        "title": "Osobní odběr",
-        "description": "Objednávku si můžete vyzvednout osobně v naší školce."
+        "description": "Kurýrní doprava na adresu — podle volby v pokladně, pokud je tento způsob dostupný.",
+        "tracking": "Online sledování zásilky, pokud jej dopravce poskytuje"
       }
     },
     "payments": {
       "card-online": {
-        "title": "Kartou online",
-        "descriptionUa": "Visa, Mastercard a další způsoby přes MonoPay.",
-        "descriptionSk": "Visa, Mastercard a další způsoby přes Stripe, v měně obchodu (EUR / HUF)."
+        "title": "Platba kartou online",
+        "description": "Objednávku můžete bezpečně zaplatit online platební kartou. Dostupnost platby kartou a měna platby se zobrazují během objednávky."
       },
       "bank-transfer": {
         "title": "Bankovní převod",
-        "descriptionUa": "Platba na účet prodejce (UAH).",
-        "descriptionSk": "Bankovní převod na IBAN (EUR / HUF)."
-      },
-      "bank-transfer-legal": {
-        "title": "Bankovní převod (firma)",
-        "descriptionUa": "Pro právnické osoby s DPH nebo bez.",
-        "descriptionSk": "Pro právnické osoby / B2B s firemními údaji."
+        "description": "Objednávku můžete zaplatit bankovním převodem. Platební údaje a informace potřebné k úhradě obdržíte v rámci objednávky."
       },
       "dobierka": {
         "title": "Dobírka",
-        "description": "Hotovost nebo karta při převzetí — pokud je způsob zapnutý v pokladně."
+        "description": "Platba na dobírku je dostupná, pokud je tato možnost povolena pro konkrétní objednávku a zvolený způsob dopravy.",
+        "feeNote": "Případný poplatek za dobírku se zobrazí v pokladně před odesláním objednávky."
+      },
+      "pay-on-pickup": {
+        "title": "Platba při osobním odběru",
+        "description": "Pokud je při osobním odběru dostupná platba při převzetí, zobrazí se mezi možnostmi platby v pokladně."
       }
     }
   },
@@ -1698,5 +1739,64 @@
       "nonSkTitle": "Informační překlad",
       "nonSkBody": "Oficiální slovenský vzor podle přílohy č. 2 zákona 108/2024 Z. z. se vztahuje na smlouvy ve slovenském právním rámci. Pro jiné jurisdikce použijte online oznámení výše."
     }
+  },
+  "faq": {
+    "title": "Časté otázky",
+    "ctaTitle": "Nenašli jste odpověď?",
+    "ctaBody": "Kontaktujte nás a rádi vám pomůžeme",
+    "contactsUnavailable": "Kontakty jsou dočasně nedostupné"
+  },
+  "validation": {
+    "required": "Povinné pole",
+    "invalidEmail": "Neplatný formát e-mailu",
+    "invalidPhone": "Neplatný formát telefonu",
+    "invalidPhoneUa": "Zadejte platné ukrajinské číslo (+380)",
+    "invalidPhoneSk": "Zadejte platné slovenské číslo (+421)",
+    "invalidPhoneIntl": "Zadejte platné mezinárodní číslo",
+    "latinCharactersRequired": "Použijte latinku (diakritika je povolena)",
+    "minLatinLetters": "Vyžadují se alespoň 2 písmena",
+    "requiredForeignPhone": "Povinné pro mezinárodní číslo",
+    "requiredAddressDelivery": "Povinné pro adresní doručení",
+    "reviewFullNameRequired": "Zadejte jméno a příjmení.",
+    "reviewPhotosMax": "Můžete přidat nejvýše 3 fotografie.",
+    "invalidIco": "IČO musí obsahovat 6–8 číslic",
+    "invalidEdrpou": "EDRPOU musí obsahovat 8 číslic",
+    "companyLegalNameMin": "Zadejte celý název právnické osoby (min. 3 znaky)",
+    "cyrillicFirstName": "Zadejte jméno v ukrajinštině (cyrilice)",
+    "cyrillicLastName": "Zadejte příjmení v ukrajinštině (cyrilice)",
+    "cyrillicNameMin": "Alespoň 2 ukrajinská písmena; apostrof je povolen",
+    "invalidSkPostal": "Neplatný formát PSČ",
+    "minTwoChars": "Minimálně 2 znaky",
+    "reviewFullNameInvalid": "Jméno může obsahovat písmena, mezery a pomlčky (2–120 znaků).",
+    "reviewContactRequired": "Zadejte e-mail nebo telefon.",
+    "reviewTextMin": "Text recenze musí mít alespoň 10 znaků.",
+    "reviewTextMax": "Text recenze je příliš dlouhý.",
+    "reviewTextNoHtml": "Text nemůže obsahovat HTML značky.",
+    "reviewImageInvalid": "Neplatný obrázek.",
+    "reviewRatingRequired": "Vyberte hodnocení od 1 do 5 hvězdiček.",
+    "passwordMin8": "Minimálně 8 znaků",
+    "passwordsMismatch": "Hesla se neshodují",
+    "agreeTermsRequired": "Je vyžadován souhlas s podmínkami",
+    "phoneUaStartPlus380": "Začněte s +380",
+    "phoneUaNeed9After380": "Po +380 zadejte ještě 9 číslic",
+    "phoneUaNeed9After0": "Po 0 zadejte ještě 9 číslic (celkem 10)"
+  },
+  "apiErrors": {
+    "generic": "Došlo k chybě. Zkuste to znovu.",
+    "OTP_INVALID": "Neplatný kód.",
+    "OTP_EXPIRED": "Kód vypršel nebo nebyl odeslán.",
+    "OTP_REQUIRED_CONTACT": "Zadejte telefon nebo e-mail.",
+    "AUTH_INVALID_CREDENTIALS": "Neplatný e-mail nebo heslo.",
+    "CART_NOT_FOUND": "Košík nebyl nalezen.",
+    "CART_ITEMS_UNAVAILABLE": "Jeden nebo více produktů není dostupných do košíku.",
+    "ORDER_NOT_FOUND": "Objednávka nebyla nalezena.",
+    "ONLINE_CARD_UNAVAILABLE": "Online platba je dočasně nedostupná.",
+    "OTP_RATE_LIMITED": "Příliš mnoho požadavků. Zkuste to později.",
+    "API_UNAVAILABLE": "Služba je dočasně nedostupná. Zkuste to znovu.",
+    "CART_ERROR": "Nepodařilo se aktualizovat košík.",
+    "ORDER_CREATE_FAILED": "Nepodařilo se vytvořit objednávku.",
+    "OTP_SEND_FAILED": "Kód se nepodařilo odeslat. Zkuste to znovu.",
+    "OTP_SMS_DISABLED": "Přihlášení přes SMS není dostupné.",
+    "OTP_EMAIL_DISABLED": "Přihlášení přes e-mail není dostupné."
   }
 }

@@ -3,39 +3,47 @@ import { getLocale, getTranslations } from 'next-intl/server'
 import { Navigation } from '@/components/navigation'
 import { PublicPageBreadcrumbs } from '@/components/public-page-breadcrumbs'
 import { LegalPageLinks } from '@/components/legal/legal-page-links'
-import { LegalPageSections, type LegalPageSection } from '@/components/legal/legal-page-sections'
 import { LegalRevisionBody } from '@/components/legal/legal-revision-body'
 import { LegalTemplateNotice } from '@/components/legal/legal-template-notice'
 import { staticPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
-import { LegalSellerDetails } from '@/components/legal/legal-seller-details'
 import { fetchCurrentLegalDocument, sellerFromBankDetails } from '@/lib/legal/documents'
 import { legalPageTitleClassName, legalProseClassName } from '@/lib/legal/storefront-typography'
 import { resolveCheckoutBankDetails } from '@/lib/settings/company-bank-details'
+import { getRequestCountrySiteCode } from '@/lib/country-sites/request-country'
 import {
   fetchPublicSiteSettings,
   getCartCheckoutSettings,
   getMarketSettings,
   getStoreSettings,
 } from '@/lib/settings/fetch'
-import { getSupportEmail } from '@/lib/settings/store-helpers'
+import { resolveStoreForCountrySite } from '@/lib/settings/store-contact-country'
+import { resolvePublicSupportEmail } from '@/lib/settings/public-support-email'
 import { cn } from '@/lib/utils'
 
 export default async function PrivacyPage() {
   const locale = await getLocale()
   const tNav = await getTranslations('nav')
-  const t = await getTranslations('privacyPage')
   const tLegal = await getTranslations('legalPages')
-  const sections = t.raw('sections') as LegalPageSection[]
-  const siteSettings = await fetchPublicSiteSettings()
+  const [siteSettings, countryCode] = await Promise.all([
+    fetchPublicSiteSettings(),
+    getRequestCountrySiteCode(),
+  ])
   const market = getMarketSettings(siteSettings)
-  const store = getStoreSettings(siteSettings)
+  const store = resolveStoreForCountrySite(
+    getStoreSettings(siteSettings, { locale }),
+    market,
+    countryCode,
+  )
   const fallbackSeller = sellerFromBankDetails(
     resolveCheckoutBankDetails(getCartCheckoutSettings(siteSettings), store),
   )
-  const supportEmail = getSupportEmail(store)
-  const document = await fetchCurrentLegalDocument('PRIVACY', locale)
-  const title = document?.title ?? t('title')
+  const supportEmail = resolvePublicSupportEmail({
+    store,
+    market,
+    countrySiteCode: countryCode,
+  })
+  const document = await fetchCurrentLegalDocument('PRIVACY', locale, countryCode)
 
   return (
     <>
@@ -44,13 +52,14 @@ export default async function PrivacyPage() {
         <div className="bg-secondary/30 py-8 md:py-12">
           <div className={siteContentShellClassName}>
             <PublicPageBreadcrumbs className="mb-4" items={staticPageBreadcrumbs(tNav('privacy'))} />
-            <h1 className={legalPageTitleClassName}>{title}</h1>
+            <h1 className={legalPageTitleClassName}>
+              {document?.title ?? tLegal('privacyUnavailableTitle')}
+            </h1>
           </div>
         </div>
 
         <div className={cn(siteContentShellClassName, 'py-12')}>
           <div className={cn(legalProseClassName, 'space-y-6')}>
-            {!document ? <LegalTemplateNotice /> : null}
             <LegalPageLinks current="privacy" />
 
             {document ? (
@@ -63,14 +72,10 @@ export default async function PrivacyPage() {
                 sellerIdentityKind="controller"
               />
             ) : (
-              <>
-                <p className="text-muted-foreground text-lg">
-                  {t('consentVersion', { version: market.privacyConsentVersion })}
-                </p>
-                <LegalSellerDetails seller={fallbackSeller} identityKind="controller" />
-                <p className="text-muted-foreground">{t('intro')}</p>
-                <LegalPageSections sections={sections} supportEmail={supportEmail} />
-              </>
+              <div className="space-y-4">
+                <LegalTemplateNotice />
+                <p className="text-muted-foreground">{tLegal('privacyUnavailableBody')}</p>
+              </div>
             )}
           </div>
         </div>

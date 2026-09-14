@@ -3,14 +3,15 @@
 import { Save } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-import { ContentLocaleBanner, ContentLocaleLabel } from '@/components/backstage/content-locale-banner'
+import { CmsLocaleFieldLabel } from '@/components/backstage/cms-locale-fields-dialog'
+import { ContentLocaleBanner } from '@/components/backstage/content-locale-banner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import type { AppLocale } from '@/lib/i18n/locales'
+import { SUPPORTED_LOCALES, type AppLocale } from '@/lib/i18n/locales'
 import {
   EMPTY_WHOLESALE_CMS,
   isBlankWholesaleCms,
@@ -67,6 +68,26 @@ export function WholesalePageSettingsForm({
         [contentLocale]: { ...copy, ...partial },
       },
     })
+  }
+
+  const fieldValues = (get: (c: WholesalePageCmsCopy) => string) => {
+    const out: Partial<Record<AppLocale, string>> = {}
+    for (const loc of SUPPORTED_LOCALES) {
+      out[loc] = get(settings.byLocale[loc] ?? EMPTY_WHOLESALE_CMS)
+    }
+    return out
+  }
+
+  const applyTranslations = (
+    set: (c: WholesalePageCmsCopy, value: string) => WholesalePageCmsCopy,
+    translations: Partial<Record<AppLocale, string>>,
+  ) => {
+    const byLocale: Partial<Record<AppLocale, WholesalePageCmsCopy>> = { ...settings.byLocale }
+    for (const loc of SUPPORTED_LOCALES) {
+      const base = byLocale[loc] ?? { ...EMPTY_WHOLESALE_CMS }
+      byLocale[loc] = set(base, translations[loc] ?? '')
+    }
+    onChange({ ...settings, byLocale })
   }
 
   return (
@@ -129,7 +150,15 @@ export function WholesalePageSettingsForm({
         </div>
 
         <div className="space-y-2">
-          <ContentLocaleLabel htmlFor="wholesale-title">Заголовок H1</ContentLocaleLabel>
+          <CmsLocaleFieldLabel
+            htmlFor="wholesale-title"
+            values={fieldValues((c) => c.title)}
+            onSaveTranslations={(translations) =>
+              applyTranslations((c, value) => ({ ...c, title: value }), translations)
+            }
+          >
+            Заголовок H1
+          </CmsLocaleFieldLabel>
           <Input
             id="wholesale-title"
             value={copy.title}
@@ -138,7 +167,16 @@ export function WholesalePageSettingsForm({
           />
         </div>
         <div className="space-y-2">
-          <ContentLocaleLabel htmlFor="wholesale-intro">Лід</ContentLocaleLabel>
+          <CmsLocaleFieldLabel
+            htmlFor="wholesale-intro"
+            values={fieldValues((c) => c.intro)}
+            multiline
+            onSaveTranslations={(translations) =>
+              applyTranslations((c, value) => ({ ...c, intro: value }), translations)
+            }
+          >
+            Лід
+          </CmsLocaleFieldLabel>
           <Textarea
             id="wholesale-intro"
             rows={3}
@@ -148,9 +186,19 @@ export function WholesalePageSettingsForm({
           />
         </div>
         <div className="space-y-2">
-          <ContentLocaleLabel htmlFor="wholesale-body">
+          <CmsLocaleFieldLabel
+            htmlFor="wholesale-body"
+            values={fieldValues((c) => paragraphsToText(c.paragraphs))}
+            multiline
+            onSaveTranslations={(translations) =>
+              applyTranslations(
+                (c, value) => ({ ...c, paragraphs: textToParagraphs(value) }),
+                translations,
+              )
+            }
+          >
             Текст (абзаци через порожній рядок)
-          </ContentLocaleLabel>
+          </CmsLocaleFieldLabel>
           <Textarea
             id="wholesale-body"
             rows={12}
@@ -161,7 +209,15 @@ export function WholesalePageSettingsForm({
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <ContentLocaleLabel htmlFor="wholesale-seo-title">SEO title</ContentLocaleLabel>
+            <CmsLocaleFieldLabel
+              htmlFor="wholesale-seo-title"
+              values={fieldValues((c) => c.seoTitle)}
+              onSaveTranslations={(translations) =>
+                applyTranslations((c, value) => ({ ...c, seoTitle: value }), translations)
+              }
+            >
+              SEO title
+            </CmsLocaleFieldLabel>
             <Input
               id="wholesale-seo-title"
               value={copy.seoTitle}
@@ -170,7 +226,15 @@ export function WholesalePageSettingsForm({
             />
           </div>
           <div className="space-y-2">
-            <ContentLocaleLabel htmlFor="wholesale-form-title">Заголовок форми</ContentLocaleLabel>
+            <CmsLocaleFieldLabel
+              htmlFor="wholesale-form-title"
+              values={fieldValues((c) => c.formTitle)}
+              onSaveTranslations={(translations) =>
+                applyTranslations((c, value) => ({ ...c, formTitle: value }), translations)
+              }
+            >
+              Заголовок форми
+            </CmsLocaleFieldLabel>
             <Input
               id="wholesale-form-title"
               value={copy.formTitle}
@@ -180,7 +244,16 @@ export function WholesalePageSettingsForm({
           </div>
         </div>
         <div className="space-y-2">
-          <ContentLocaleLabel htmlFor="wholesale-seo-desc">SEO description</ContentLocaleLabel>
+          <CmsLocaleFieldLabel
+            htmlFor="wholesale-seo-desc"
+            values={fieldValues((c) => c.seoDescription)}
+            multiline
+            onSaveTranslations={(translations) =>
+              applyTranslations((c, value) => ({ ...c, seoDescription: value }), translations)
+            }
+          >
+            SEO description
+          </CmsLocaleFieldLabel>
           <Textarea
             id="wholesale-seo-desc"
             rows={2}
@@ -190,7 +263,16 @@ export function WholesalePageSettingsForm({
           />
         </div>
         <div className="space-y-2">
-          <ContentLocaleLabel htmlFor="wholesale-form-intro">Підзаголовок форми</ContentLocaleLabel>
+          <CmsLocaleFieldLabel
+            htmlFor="wholesale-form-intro"
+            values={fieldValues((c) => c.formIntro)}
+            multiline
+            onSaveTranslations={(translations) =>
+              applyTranslations((c, value) => ({ ...c, formIntro: value }), translations)
+            }
+          >
+            Підзаголовок форми
+          </CmsLocaleFieldLabel>
           <Textarea
             id="wholesale-form-intro"
             rows={2}

@@ -19,6 +19,7 @@ import type { PacketaCartFit } from '@/components/checkout/packeta-pickup-point-
 import { Button } from '@/components/ui/button'
 import { InputWithClear } from '@/components/ui/input-with-clear'
 import { cn } from '@/lib/utils'
+import { Link } from '@/i18n/navigation'
 import {
   getCheckoutContactFieldError,
   customerNeedsCheckoutNameEntry,
@@ -31,6 +32,7 @@ import {
   type CheckoutRecipientFieldKey,
   type CheckoutShippingFieldKey,
 } from '@/lib/validation/checkout-form'
+import { useFormatFieldError } from '@/lib/validation/use-field-error-messages'
 import { extractShipmentSlice } from '@/lib/checkout/shipment-slice'
 import type { CheckoutDeliveryMethodSlug } from '@/lib/checkout/methods'
 import type { CountrySiteProfile } from '@/lib/settings/market'
@@ -88,6 +90,8 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
   packetaCartFit?: PacketaCartFit
   priceQuote?: CheckoutDeliveryPriceQuoteInput
 }) {
+  const fe = useFormatFieldError()
+
   const t = useTranslations('checkout')
   const tc = useTranslations('common')
   const contactErrorOptions = { marketRegion, deliveryPhonePolicy, authPhonePolicy: undefined }
@@ -96,7 +100,7 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
   const showContactError = (field: CheckoutContactFieldKey) =>
     Boolean(
       contactTouched[field] &&
-        getCheckoutContactFieldError(field, formData, contactErrorOptions),
+        fe(getCheckoutContactFieldError(field, formData, contactErrorOptions)),
     )
 
   const needsNameEntry = customerNeedsCheckoutNameEntry(formData, identification, {
@@ -125,6 +129,11 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
           <Truck className="h-5 w-5 text-primary" />
           {t('shippingTitle')}
         </h2>
+        <p className="text-sm text-muted-foreground">
+          <Link href="/shipping" className="underline-offset-4 hover:text-primary hover:underline">
+            {t('shippingInfoLink')}
+          </Link>
+        </p>
       </header>
 
       {showGoogleNameFields ? (
@@ -160,11 +169,11 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
                 <FieldHint
                   id="google-checkout-firstName-error"
                   show={Boolean(contactTouched.firstName)}
-                  message={getCheckoutContactFieldError(
+                  message={fe(getCheckoutContactFieldError(
                     'firstName',
                     formData,
                     contactErrorOptions,
-                  )}
+                  ))}
                 />
               </div>
               <div className="space-y-2">
@@ -190,11 +199,11 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
                 <FieldHint
                   id="google-checkout-lastName-error"
                   show={Boolean(contactTouched.lastName)}
-                  message={getCheckoutContactFieldError(
+                  message={fe(getCheckoutContactFieldError(
                     'lastName',
                     formData,
                     contactErrorOptions,
-                  )}
+                  ))}
                 />
               </div>
             </div>

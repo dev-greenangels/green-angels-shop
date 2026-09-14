@@ -26,6 +26,7 @@ import { useCatalogHref } from '@/components/providers/catalog-paths-provider'
 import { useSession } from '@/components/providers/session-provider'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { pushPurchaseEventsForOrders } from '@/lib/analytics/push-purchase'
 import { clearCartAfterCheckout } from '@/lib/carts/clear-after-checkout'
 import {
   checkoutResultChromeTone,
@@ -49,6 +50,7 @@ import {
   syncStripePayment,
   type PublicOrderConfirmation,
 } from '@/lib/orders/fetch-order-confirmation'
+import { resolveCountryFromHost } from '@/lib/country-sites/resolve-country-host'
 import { normalizeCartCheckoutSettings } from '@/lib/settings/cart-checkout.normalize'
 import {
   hasCompanyBankDetails,
@@ -62,6 +64,8 @@ import {
   getStoreSettings,
 } from '@/lib/settings/fetch'
 import { DEFAULT_MARKET_SETTINGS } from '@/lib/settings/market'
+import { resolvePublicSupportEmail } from '@/lib/settings/public-support-email'
+import { resolveStoreForCountrySite } from '@/lib/settings/store-contact-country'
 import { formatStoreAddress } from '@/lib/settings/store-helpers'
 import type { CartCheckoutSettings, MarketSettings, StoreContactSettings } from '@/lib/settings/types'
 import { Link, useRouter } from '@/i18n/navigation'
@@ -472,8 +476,19 @@ function SuccessContent() {
       ])
 
       setCartSettings(normalizeCartCheckoutSettings(getCartCheckoutSettings(settingsResult)))
-      setStoreSettings(getStoreSettings(settingsResult))
-      setMarketSettings(getMarketSettings(settingsResult))
+      const market = getMarketSettings(settingsResult)
+      const countryCode =
+        typeof window !== 'undefined'
+          ? resolveCountryFromHost(window.location.hostname)
+          : null
+      setMarketSettings(market)
+      setStoreSettings(
+        resolveStoreForCountrySite(
+          getStoreSettings(settingsResult, { locale }),
+          market,
+          countryCode,
+        ),
+      )
 
       const loaded = confirmations.filter(
         (item): item is PublicOrderConfirmation => Boolean(item),
@@ -524,7 +539,7 @@ function SuccessContent() {
     } finally {
       setLoading(false)
     }
-  }, [orderNumbers, confirmationTokens, syncToken])
+  }, [orderNumbers, confirmationTokens, syncToken, locale])
 
   useEffect(() => {
     void clearCartAfterCheckout()
@@ -534,6 +549,11 @@ function SuccessContent() {
   useEffect(() => {
     void reloadOrders()
   }, [reloadOrders])
+
+  useEffect(() => {
+    if (loading || loadFailed || !orders.length) return
+    pushPurchaseEventsForOrders(orders)
+  }, [loading, loadFailed, orders])
 
   const primary = orders[0]
   const resultState: CheckoutResultState | null = primary
@@ -565,8 +585,14 @@ function SuccessContent() {
 
   const deadlineLabel = formatPaymentDeadline(primary?.paymentExpiresAt, locale)
 
-  const supportEmail =
-    storeSettings.emails.find((row) => row.email.trim())?.email?.trim() || ''
+  const supportEmail = resolvePublicSupportEmail({
+    store: storeSettings,
+    market: marketSettings,
+    countrySiteCode:
+      typeof window !== 'undefined'
+        ? resolveCountryFromHost(window.location.hostname)
+        : null,
+  })
 
   const handleDownloadPdf = async () => {
     if (!orders.length) {

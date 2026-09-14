@@ -33,12 +33,42 @@ export default async function AboutPage({ params }: PageProps) {
   const { locale } = await params
   setRequestLocale(locale)
   const tNav = await getTranslations('nav')
+  const tAbout = await getTranslations('aboutPage')
   const fetched = await fetchPublicSiteSettings()
   const page = getResolvedAboutPageSettings(fetched, locale)
   const catalogRootSlug = await fetchCatalogRootSlug(locale)
   const catalogHref = resolveCatalogHref(catalogRootSlug)
 
   const foundersImageClass = 'aspect-[4/3] rounded-2xl shadow-md ring-1 ring-border/40'
+
+  if (!page) {
+    return (
+      <>
+        <Navigation />
+        <main className="flex-1 bg-transparent">
+          <div className="bg-secondary/30 py-8 md:py-12">
+            <div className={siteContentShellClassName}>
+              <PublicPageBreadcrumbs
+                className="mb-4"
+                items={staticPageBreadcrumbs(tNav('about'))}
+              />
+              <h1 className="font-serif text-3xl font-bold text-foreground md:text-5xl">
+                {tAbout('unavailableTitle')}
+              </h1>
+            </div>
+          </div>
+          <div className={cn(siteContentShellClassName, 'py-12')}>
+            <p className="max-w-2xl text-lg text-muted-foreground">{tAbout('unavailableBody')}</p>
+            <div className="mt-8">
+              <Button asChild>
+                <Link href="/contacts">{tNav('contacts')}</Link>
+              </Button>
+            </div>
+          </div>
+        </main>
+      </>
+    )
+  }
 
   return (
     <>
@@ -50,66 +80,116 @@ export default async function AboutPage({ params }: PageProps) {
               className="mb-4"
               items={staticPageBreadcrumbs(tNav('about'))}
             />
-            <h1 className="font-serif text-3xl font-bold text-foreground md:text-5xl">
-              {page.heroTitle}
-            </h1>
+            {page.hero.enabled && page.hero.title ? (
+              <h1 className="font-serif text-3xl font-bold text-foreground md:text-5xl">
+                {page.hero.title}
+              </h1>
+            ) : (
+              <h1 className="font-serif text-3xl font-bold text-foreground md:text-5xl">
+                {tNav('about')}
+              </h1>
+            )}
           </div>
         </div>
 
         <div className={cn(siteContentShellClassName, 'space-y-20 py-12 md:space-y-24 md:py-16')}>
-          <section className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
-            <AboutCmsHtml html={page.introHtml} />
-            <AboutImage
-              src={page.foundersImageUrl}
-              alt={page.foundersImageAlt || page.heroTitle}
-              className={foundersImageClass}
-              priority
+          {page.intro.enabled && (page.intro.body.trim() || page.intro.imageUrl.trim()) ? (
+            <section
+              className={
+                page.intro.imageUrl.trim()
+                  ? 'grid items-center gap-10 lg:grid-cols-2 lg:gap-14'
+                  : 'mx-auto max-w-5xl'
+              }
+            >
+              <AboutCmsHtml html={page.intro.body} />
+              {page.intro.imageUrl.trim() ? (
+                <AboutImage
+                  src={page.intro.imageUrl}
+                  alt={page.intro.imageAlt || page.hero.title}
+                  className={foundersImageClass}
+                  priority
+                />
+              ) : null}
+            </section>
+          ) : null}
+
+          {page.stats.enabled &&
+          (page.stats.items.length > 0 || page.stats.theses.length > 0) ? (
+            <AboutStatsSection
+              title={page.stats.title}
+              subtitle={page.stats.subtitle}
+              stats={page.stats.items}
+              theses={page.stats.theses}
             />
-          </section>
+          ) : null}
 
-          <AboutStatsSection
-            title={page.statsTitle}
-            subtitle={page.statsSubtitle}
-            stats={page.stats}
-            theses={page.theses}
-          />
-
-          <section className="mx-auto max-w-5xl">
-            {page.whyUsTitle ? (
-              <h2 className="mb-4 font-serif text-2xl font-semibold text-foreground md:text-3xl">
-                {page.whyUsTitle}
-              </h2>
-            ) : null}
-            <AboutCmsHtml html={page.whyUsHtml} />
-            {page.whyUsPoints.length > 0 ? (
-              <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                {page.whyUsPoints.map((item) => (
-                  <div key={item} className="flex items-start gap-2">
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                    <span className="text-sm text-foreground/90">{item}</span>
-                  </div>
-                ))}
+          {page.whyUs.enabled &&
+          (page.whyUs.title || page.whyUs.body || page.whyUs.benefits.length > 0) ? (
+            <section className="mx-auto max-w-5xl">
+              {page.whyUs.title ? (
+                <h2 className="mb-4 font-serif text-2xl font-semibold text-foreground md:text-3xl">
+                  {page.whyUs.title}
+                </h2>
+              ) : null}
+              <AboutCmsHtml html={page.whyUs.body} />
+              {page.whyUs.benefits.length > 0 ? (
+                <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                  {page.whyUs.benefits.map((item) => (
+                    <div key={item} className="flex items-start gap-2">
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                      <span className="text-sm text-foreground/90">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {page.cta.enabled ? (
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <Button asChild>
+                    <Link href={catalogHref}>
+                      {page.cta.primaryLabel || tNav('catalog')}
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link href="/contacts">
+                      {page.cta.secondaryLabel || tNav('contacts')}
+                    </Link>
+                  </Button>
+                </div>
+              ) : null}
+            </section>
+          ) : page.cta.enabled ? (
+            <section className="mx-auto max-w-5xl">
+              <div className="flex flex-wrap gap-3">
+                <Button asChild>
+                  <Link href={catalogHref}>{page.cta.primaryLabel || tNav('catalog')}</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/contacts">{page.cta.secondaryLabel || tNav('contacts')}</Link>
+                </Button>
               </div>
-            ) : null}
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild>
-                <Link href={catalogHref}>{page.catalogCtaLabel || tNav('catalog')}</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/contacts">{page.contactsCtaLabel || tNav('contacts')}</Link>
-              </Button>
-            </div>
-          </section>
+            </section>
+          ) : null}
 
-          {page.productLines.length > 0 ? (
+          {page.markets.enabled && (page.markets.title.trim() || page.markets.body.trim()) ? (
+            <section className="mx-auto max-w-5xl">
+              {page.markets.title ? (
+                <h2 className="mb-4 font-serif text-2xl font-semibold text-foreground md:text-3xl">
+                  {page.markets.title}
+                </h2>
+              ) : null}
+              <AboutCmsHtml html={page.markets.body} />
+            </section>
+          ) : null}
+
+          {page.production.enabled && page.production.cards.length > 0 ? (
             <section>
-              {page.productLinesTitle ? (
+              {page.production.title ? (
                 <h2 className="mb-8 text-center font-serif text-2xl font-semibold text-foreground md:text-3xl">
-                  {page.productLinesTitle}
+                  {page.production.title}
                 </h2>
               ) : null}
               <div className="grid gap-8">
-                {page.productLines.map((line, index) => (
+                {page.production.cards.map((line, index) => (
                   <Card
                     key={`${line.title}-${index}`}
                     className="overflow-hidden border-border/60 py-0 shadow-sm"
@@ -143,57 +223,63 @@ export default async function AboutPage({ params }: PageProps) {
             </section>
           ) : null}
 
-          {page.videoEmbedUrl ? (
+          {page.video.enabled && page.video.embedUrl ? (
             <section className="mx-auto max-w-5xl">
               <div className="mb-8 text-center">
-                {page.videoTitle ? (
+                {page.video.title ? (
                   <h2 className="font-serif text-2xl font-semibold text-foreground md:text-3xl">
-                    {page.videoTitle}
+                    {page.video.title}
                   </h2>
                 ) : null}
-                {page.videoSubtitle ? (
-                  <p className="mt-2 text-muted-foreground">{page.videoSubtitle}</p>
+                {page.video.subtitle ? (
+                  <p className="mt-2 text-muted-foreground">{page.video.subtitle}</p>
                 ) : null}
               </div>
-              <AboutVideoEmbed src={page.videoEmbedUrl} title={page.videoTitle || page.heroTitle} />
+              <AboutVideoEmbed
+                src={page.video.embedUrl}
+                title={page.video.title || page.hero.title}
+              />
             </section>
           ) : null}
 
-          <section className="overflow-hidden rounded-2xl border border-border/60 bg-secondary/20">
-            <div className="grid md:grid-cols-2">
-              <AboutImage
-                src={page.deliveryImageUrl}
-                alt={page.deliveryImageAlt || page.deliveryTitle}
-                className="min-h-[260px] rounded-none md:min-h-full"
-              />
-              <div className="flex flex-col justify-center gap-5 p-8 md:p-10">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                  <Truck className="h-7 w-7 text-primary" />
+          {page.delivery.enabled &&
+          (page.delivery.title || page.delivery.body || page.delivery.cities.length > 0) ? (
+            <section className="overflow-hidden rounded-2xl border border-border/60 bg-secondary/20">
+              <div className="grid md:grid-cols-2">
+                <AboutImage
+                  src={page.delivery.imageUrl}
+                  alt={page.delivery.imageAlt || page.delivery.title}
+                  className="min-h-[260px] rounded-none md:min-h-full"
+                />
+                <div className="flex flex-col justify-center gap-5 p-8 md:p-10">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                    <Truck className="h-7 w-7 text-primary" />
+                  </div>
+                  <div className="space-y-4">
+                    {page.delivery.title ? (
+                      <h2 className="font-serif text-2xl font-semibold text-foreground">
+                        {page.delivery.title}
+                      </h2>
+                    ) : null}
+                    <AboutCmsHtml
+                      html={page.delivery.body}
+                      className="space-y-4 text-base [&_p]:text-base"
+                    />
+                    {page.delivery.cities.length > 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        {page.delivery.cities.join(', ')}
+                      </p>
+                    ) : null}
+                  </div>
+                  <Button variant="outline" asChild className="w-fit">
+                    <Link href="/shipping">
+                      {page.delivery.ctaLabel || tNav('shipping')}
+                    </Link>
+                  </Button>
                 </div>
-                <div className="space-y-4">
-                  {page.deliveryTitle ? (
-                    <h2 className="font-serif text-2xl font-semibold text-foreground">
-                      {page.deliveryTitle}
-                    </h2>
-                  ) : null}
-                  <AboutCmsHtml
-                    html={page.deliveryHtml}
-                    className="space-y-4 text-base [&_p]:text-base"
-                  />
-                  {page.deliveryCities.length > 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      {page.deliveryCities.join(', ')}
-                    </p>
-                  ) : null}
-                </div>
-                <Button variant="outline" asChild className="w-fit">
-                  <Link href="/shipping">
-                    {page.deliveryCtaLabel || tNav('shipping')}
-                  </Link>
-                </Button>
               </div>
-            </div>
-          </section>
+            </section>
+          ) : null}
         </div>
       </main>
     </>

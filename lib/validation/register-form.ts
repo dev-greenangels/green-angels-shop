@@ -180,8 +180,8 @@ export function isValidUkrPhone(value: string): boolean {
   return false
 }
 
-export const RECIPIENT_UKR_PHONE_ERROR =
-  'Номер має починатися з +380 (ще 9 цифр) або з 0 (ще 9 цифр, разом 10)'
+/** Stable code: UA recipient phone must be +380… or 0…. */
+export const RECIPIENT_UKR_PHONE_ERROR = 'invalidPhoneUa'
 
 /** Телефон іншого отримувача: повний UA-номер і дозволений лише префікс +380 або 0. */
 export function isValidRecipientUkrPhone(value: string): boolean {
@@ -200,7 +200,7 @@ export function isValidRecipientUkrPhone(value: string): boolean {
 
 export function getRecipientUkrPhoneError(value: string): string | null {
   const trimmed = value.trim()
-  if (!trimmed) return 'Обовʼязкове поле'
+  if (!trimmed) return 'required'
 
   const compact = trimmed.replace(/\s/g, '')
 
@@ -211,10 +211,10 @@ export function getRecipientUkrPhoneError(value: string): string | null {
     }
     if (isValidRecipientUkrPhone(trimmed)) return null
     if (!digits.length || digits === '3' || digits === '38') {
-      return 'Почніть з +380'
+      return 'phoneUaStartPlus380'
     }
     if (digits.startsWith('380') && digits.length < 12) {
-      return 'Після +380 потрібно ще 9 цифр'
+      return 'phoneUaNeed9After380'
     }
     return RECIPIENT_UKR_PHONE_ERROR
   }
@@ -223,7 +223,7 @@ export function getRecipientUkrPhoneError(value: string): string | null {
     const digits = compact.replace(/\D/g, '')
     if (isValidRecipientUkrPhone(trimmed)) return null
     if (digits.length < 10) {
-      return 'Після 0 потрібно ще 9 цифр (10 цифр загалом)'
+      return 'phoneUaNeed9After0'
     }
     return RECIPIENT_UKR_PHONE_ERROR
   }
@@ -303,38 +303,30 @@ export function getRegisterFieldError(
 ): string | null {
   switch (field) {
     case 'firstName':
-      if (!values.firstName.trim()) return 'Обовʼязкове поле'
-      if (!isValidCyrillicName(values.firstName)) {
-        return 'Від 2 українських літер, апостроф дозволений'
-      }
+      if (!values.firstName.trim()) return 'required'
+      if (!isValidCyrillicName(values.firstName)) return 'cyrillicNameMin'
       return null
     case 'lastName':
-      if (!values.lastName.trim()) return 'Обовʼязкове поле'
-      if (!isValidCyrillicName(values.lastName)) {
-        return 'Від 2 українських літер, апостроф дозволений'
-      }
+      if (!values.lastName.trim()) return 'required'
+      if (!isValidCyrillicName(values.lastName)) return 'cyrillicNameMin'
       return null
     case 'email':
-      if (values.email.trim() && !isValidEmail(values.email)) {
-        return 'Невірний формат email'
-      }
+      if (values.email.trim() && !isValidEmail(values.email)) return 'invalidEmail'
       return null
     case 'phone':
-      if (!values.phone.trim()) return 'Обовʼязкове поле'
-      if (!isValidUkrPhone(values.phone)) {
-        return 'Формат: +380 XX XXX XX XX або 0XX XXX XX XX'
-      }
+      if (!values.phone.trim()) return 'required'
+      if (!isValidUkrPhone(values.phone)) return 'invalidPhoneUa'
       return null
     case 'password':
-      if (!values.password) return 'Обовʼязкове поле'
-      if (values.password.length < 8) return 'Мінімум 8 символів'
+      if (!values.password) return 'required'
+      if (values.password.length < 8) return 'passwordMin8'
       return null
     case 'confirmPassword':
-      if (!values.confirmPassword) return 'Обовʼязкове поле'
-      if (values.password !== values.confirmPassword) return 'Паролі не співпадають'
+      if (!values.confirmPassword) return 'required'
+      if (values.password !== values.confirmPassword) return 'passwordsMismatch'
       return null
     case 'agreeTerms':
-      if (!values.agreeTerms) return 'Потрібна згода з умовами'
+      if (!values.agreeTerms) return 'agreeTermsRequired'
       return null
     default:
       return null

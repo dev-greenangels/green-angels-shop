@@ -33,6 +33,7 @@ import {
   validateReviewRating,
   validateReviewText,
 } from '@/lib/validation/review-form'
+import { useFormatFieldError } from '@/lib/validation/use-field-error-messages'
 
 type ReviewSubmitDialogProps = {
   open: boolean
@@ -71,6 +72,7 @@ export function ReviewSubmitDialog({
 }: ReviewSubmitDialogProps) {
   const t = useTranslations('reviews')
   const tc = useTranslations('common')
+  const fe = useFormatFieldError()
   const [authorName, setAuthorName] = useState('')
   const [rating, setRating] = useState(0)
   const [text, setText] = useState('')
@@ -96,14 +98,16 @@ export function ReviewSubmitDialog({
 
   const errors = useMemo(
     () => ({
-      authorName: touched.authorName ? validateReviewFullName(authorName) : null,
-      text: touched.text ? validateReviewText(text) : null,
-      rating: touched.rating ? validateReviewRating(rating) : null,
-      images: touched.images ? validateReviewImages(imageUrls) : null,
+      authorName: touched.authorName ? fe(validateReviewFullName(authorName)) : null,
+      text: touched.text ? fe(validateReviewText(text)) : null,
+      rating: touched.rating ? fe(validateReviewRating(rating)) : null,
+      images: touched.images ? fe(validateReviewImages(imageUrls)) : null,
       guestContact:
-        isGuest && touched.guestContact ? validateReviewContact(guestEmail, guestPhone) : null,
+        isGuest && touched.guestContact
+          ? fe(validateReviewContact(guestEmail, guestPhone))
+          : null,
     }),
-    [authorName, guestEmail, guestPhone, imageUrls, isGuest, rating, text, touched],
+    [authorName, fe, guestEmail, guestPhone, imageUrls, isGuest, rating, text, touched],
   )
 
   const handleImageChange = async (file: File | null) => {

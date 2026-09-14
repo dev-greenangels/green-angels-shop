@@ -9,7 +9,8 @@ import {
   loadSitemapProductPaths,
 } from '@/lib/seo/sitemap-data'
 import { buildSitemapEntries, collectSitemapPathnames } from '@/lib/seo/sitemap-urls'
-import { fetchPublicSiteSettings, getWholesalePageSettings } from '@/lib/settings/fetch'
+import { fetchPublicSiteSettings, getLocalizationSettings, getWholesalePageSettings } from '@/lib/settings/fetch'
+import { isStorefrontFaqEnabled } from '@/lib/faq/visibility'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,12 +26,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ])
   const products = await loadSitemapProductPaths(categories.activeSlugs, locale)
   const wholesalePage = getWholesalePageSettings(siteSettings)
+  const localization = getLocalizationSettings(siteSettings)
 
   const pathnames = collectSitemapPathnames({
     categoryPaths: categories.paths,
     productPaths: products.paths,
     blogPaths: blog.paths,
     wholesalePageEnabled: wholesalePage.pageEnabled,
+    faqEnabled: isStorefrontFaqEnabled(localization),
   })
 
   const lastModifiedByPath = {

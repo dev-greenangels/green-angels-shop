@@ -20,34 +20,17 @@ import {
   type CheckoutFormValues,
   type CheckoutPaymentFieldKey,
 } from '@/lib/validation/checkout-form'
+import { useFormatFieldError } from '@/lib/validation/use-field-error-messages'
 import type { CheckoutPaymentMethodSlug } from '@/lib/checkout/methods'
+import { resolveVisiblePaymentMethods } from '@/lib/checkout/payment-availability'
 import { CheckoutVatIdField } from '@/components/checkout/checkout-vat-id-field'
 
-const PAYMENT_METHODS = ['card-online', 'bank-transfer', 'bank-transfer-legal', 'dobierka'] as const
-
 export type CheckoutBuyerType = 'individual' | 'company'
-
-function resolveVisiblePaymentMethods(
-  enabledPaymentMethods: CheckoutPaymentMethodSlug[] | undefined,
-  hideLegalBankTransfer: boolean,
-): CheckoutPaymentMethodSlug[] {
-  const base = PAYMENT_METHODS.filter((method) => {
-    if (hideLegalBankTransfer && method === 'bank-transfer-legal') return false
-    if (!enabledPaymentMethods?.length) return true
-    if (method === 'bank-transfer' && hideLegalBankTransfer) {
-      return (
-        enabledPaymentMethods.includes('bank-transfer') ||
-        enabledPaymentMethods.includes('bank-transfer-legal')
-      )
-    }
-    return enabledPaymentMethods.includes(method)
-  })
-  return base
-}
 
 export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
   formData,
   enabledPaymentMethods,
+  allowPayOnPickup = false,
   paymentTouched,
   onPatchForm,
   onBlurPaymentField,
@@ -66,6 +49,7 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
 }: {
   formData: CheckoutFormValues
   enabledPaymentMethods?: CheckoutPaymentMethodSlug[]
+  allowPayOnPickup?: boolean
   paymentTouched: Partial<Record<CheckoutPaymentFieldKey, boolean>>
   onPatchForm: (patch: Partial<CheckoutFormValues>) => void
   onBlurPaymentField: (field: CheckoutPaymentFieldKey) => void
@@ -85,10 +69,22 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
 }) {
   const t = useTranslations('checkout')
   const tc = useTranslations('common')
+  const fe = useFormatFieldError()
   const hideLegalBankTransfer = showBuyerType
   const visiblePaymentMethods = useMemo(
-    () => resolveVisiblePaymentMethods(enabledPaymentMethods, hideLegalBankTransfer),
-    [enabledPaymentMethods, hideLegalBankTransfer],
+    () =>
+      resolveVisiblePaymentMethods({
+        enabledPaymentMethods,
+        hideLegalBankTransfer,
+        allowPayOnPickup,
+        deliveryMethod: formData.deliveryMethod,
+      }),
+    [
+      enabledPaymentMethods,
+      hideLegalBankTransfer,
+      allowPayOnPickup,
+      formData.deliveryMethod,
+    ],
   )
 
   const requireCompanyFields = billingFieldsInContactStep
@@ -100,10 +96,10 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
   const showPaymentError = (field: CheckoutPaymentFieldKey) =>
     Boolean(
       paymentTouched[field] &&
-        getCheckoutPaymentFieldError(field, formData, {
+        fe(getCheckoutPaymentFieldError(field, formData, {
           requireCompanyFields,
           marketRegion: showVatIdField ? 'sk' : 'ua',
-        }),
+        })),
     )
 
   const handleBuyerTypeChange = (value: CheckoutBuyerType) => {
@@ -210,10 +206,10 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
               <FieldHint
                 id="company-edrpou-error"
                 show={Boolean(paymentTouched.companyEdrpou)}
-                message={getCheckoutPaymentFieldError('companyEdrpou', formData, {
+                message={fe(getCheckoutPaymentFieldError('companyEdrpou', formData, {
                   requireCompanyFields,
                   marketRegion: showVatIdField ? 'sk' : 'ua',
-                })}
+                }))}
               />
             </div>
             <div className="space-y-2">
@@ -234,10 +230,10 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
               <FieldHint
                 id="company-legal-name-error"
                 show={Boolean(paymentTouched.companyLegalName)}
-                message={getCheckoutPaymentFieldError('companyLegalName', formData, {
+                message={fe(getCheckoutPaymentFieldError('companyLegalName', formData, {
                   requireCompanyFields,
                   marketRegion: showVatIdField ? 'sk' : 'ua',
-                })}
+                }))}
               />
             </div>
             {showVatIdField ? (
@@ -273,10 +269,10 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
                   <FieldHint
                     id="company-street-error"
                     show={Boolean(paymentTouched.companyStreet)}
-                    message={getCheckoutPaymentFieldError('companyStreet', formData, {
+                    message={fe(getCheckoutPaymentFieldError('companyStreet', formData, {
                       requireCompanyFields,
                       marketRegion: 'sk',
-                    })}
+                    }))}
                   />
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -298,10 +294,10 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
                     <FieldHint
                       id="company-city-error"
                       show={Boolean(paymentTouched.companyCity)}
-                      message={getCheckoutPaymentFieldError('companyCity', formData, {
+                      message={fe(getCheckoutPaymentFieldError('companyCity', formData, {
                         requireCompanyFields,
                         marketRegion: 'sk',
-                      })}
+                      }))}
                     />
                   </div>
                   <div className="space-y-2">
@@ -322,10 +318,10 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
                     <FieldHint
                       id="company-psc-error"
                       show={Boolean(paymentTouched.companyPostalCode)}
-                      message={getCheckoutPaymentFieldError('companyPostalCode', formData, {
+                      message={fe(getCheckoutPaymentFieldError('companyPostalCode', formData, {
                         requireCompanyFields,
                         marketRegion: 'sk',
-                      })}
+                      }))}
                     />
                   </div>
                 </div>

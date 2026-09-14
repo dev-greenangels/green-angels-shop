@@ -70,6 +70,7 @@ import {
   type CheckoutRecipientFieldKey,
   type CheckoutShippingFieldKey,
 } from '@/lib/validation/checkout-form'
+import { useFormatFieldError } from '@/lib/validation/use-field-error-messages'
 import {
   defaultDeliveryPhonePolicy,
   phonePlaceholderForPolicy,
@@ -151,13 +152,17 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
   deliveryPhonePolicy?: PhonePolicy
   packetaCartFit?: PacketaCartFit
   /** @deprecated Prefer enabledDeliveryCountries from market domain allowlist */
-  enabledCountrySites?: Array<{ code: DeliveryCountryCode; enabled: boolean }>
+  enabledCountrySites?: Array<{
+    code: DeliveryCountryCode
+    enabled: boolean
+  }>
   enabledDeliveryCountries?: DeliveryCountryCode[]
   /** e.g. preferred ship date — rendered above «other recipient» */
   beforeRecipientSlot?: ReactNode
   /** When set, method buttons show a short delivery price (amount + currency). */
   priceQuote?: CheckoutDeliveryPriceQuoteInput
 }) {
+  const fe = useFormatFieldError()
   const t = useTranslations('checkout')
   const tc = useTranslations('common')
   const store = useStoreSettings()
@@ -282,13 +287,13 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
   const showShippingError = (field: CheckoutShippingFieldKey) =>
     Boolean(
       shippingTouched[field] &&
-        getCheckoutShippingFieldError(field, mergedForm, identification, fieldOptions),
+        fe(getCheckoutShippingFieldError(field, mergedForm, identification, fieldOptions)),
     )
 
   const showRecipientError = (field: CheckoutRecipientFieldKey) =>
     Boolean(
       recipientTouched[field] &&
-        getCheckoutRecipientFieldError(field, mergedForm, fieldOptions),
+        fe(getCheckoutRecipientFieldError(field, mergedForm, fieldOptions)),
     )
 
   const ordererSummary = getCheckoutOrdererSummary(orderer, marketRegion, deliveryPhonePolicy)
@@ -450,12 +455,12 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
           <FieldHint
             id={`${idPrefix}-delivery-country-error`}
             show={Boolean(shippingTouched.deliveryCountryCode)}
-            message={getCheckoutShippingFieldError(
+            message={fe(getCheckoutShippingFieldError(
               'deliveryCountryCode',
               mergedForm,
               identification,
               fieldOptions,
-            )}
+            ))}
           />
         </div>
       ) : null}
@@ -535,12 +540,12 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
                 <FieldHint
                   id={`${idPrefix}-courier-postal-error`}
                   show={Boolean(shippingTouched.postalCode)}
-                  message={getCheckoutShippingFieldError(
+                  message={fe(getCheckoutShippingFieldError(
                     'postalCode',
                     mergedForm,
                     identification,
                     fieldOptions,
-                  )}
+                  ))}
                 />
               </div>
             ) : null}
@@ -563,12 +568,12 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
               <FieldHint
                 id={`${idPrefix}-courier-city-error`}
                 show={Boolean(shippingTouched.city)}
-                message={getCheckoutShippingFieldError(
+                message={fe(getCheckoutShippingFieldError(
                   'city',
                   mergedForm,
                   identification,
                   fieldOptions,
-                )}
+                ))}
               />
             </div>
           </div>
@@ -592,12 +597,12 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
               <FieldHint
                 id={`${idPrefix}-courier-street-error`}
                 show={Boolean(shippingTouched.street)}
-                message={getCheckoutShippingFieldError(
+                message={fe(getCheckoutShippingFieldError(
                   'street',
                   mergedForm,
                   identification,
                   fieldOptions,
-                )}
+                ))}
               />
             </div>
             <div className="space-y-2">
@@ -617,12 +622,12 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
               <FieldHint
                 id={`${idPrefix}-courier-house-error`}
                 show={Boolean(shippingTouched.houseNumber)}
-                message={getCheckoutShippingFieldError(
+                message={fe(getCheckoutShippingFieldError(
                   'houseNumber',
                   mergedForm,
                   identification,
                   fieldOptions,
-                )}
+                ))}
               />
             </div>
           </div>
@@ -642,12 +647,12 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
               handleCityChange(option)
               onBlurField('city')
             }}
-            error={getCheckoutShippingFieldError(
+            error={fe(getCheckoutShippingFieldError(
               'city',
               mergedForm,
               identification,
               fieldOptions,
-            )}
+            ))}
             touched={Boolean(shippingTouched.city)}
           />
           <NpAsyncSearchCombobox
@@ -663,12 +668,12 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
               onPatchShipment({ postOffice: option.id, postOfficeLabel: option.label })
               onBlurField('postOffice')
             }}
-            error={getCheckoutShippingFieldError(
+            error={fe(getCheckoutShippingFieldError(
               'postOffice',
               mergedForm,
               identification,
               fieldOptions,
-            )}
+            ))}
             touched={Boolean(shippingTouched.postOffice)}
           />
         </div>
@@ -687,12 +692,12 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
               handleCityChange(option)
               onBlurField('city')
             }}
-            error={getCheckoutShippingFieldError(
+            error={fe(getCheckoutShippingFieldError(
               'city',
               mergedForm,
               identification,
               fieldOptions,
-            )}
+            ))}
             touched={Boolean(shippingTouched.city)}
           />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -708,12 +713,12 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
                 onPatchShipment({ street: option.id, streetLabel: option.label })
                 onBlurField('street')
               }}
-              error={getCheckoutShippingFieldError(
+              error={fe(getCheckoutShippingFieldError(
                 'street',
                 mergedForm,
                 identification,
                 fieldOptions,
-              )}
+              ))}
               touched={Boolean(shippingTouched.street)}
             />
             <div className="space-y-2">
@@ -734,12 +739,12 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
               <FieldHint
                 id={`${idPrefix}-houseNumber-error`}
                 show={Boolean(shippingTouched.houseNumber)}
-                message={getCheckoutShippingFieldError(
+                message={fe(getCheckoutShippingFieldError(
                   'houseNumber',
                   mergedForm,
                   identification,
                   fieldOptions,
-                )}
+                ))}
               />
             </div>
           </div>
@@ -764,12 +769,12 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
               <FieldHint
                 id={`${idPrefix}-patronymic-error`}
                 show={Boolean(shippingTouched.patronymic)}
-                message={getCheckoutShippingFieldError(
+                message={fe(getCheckoutShippingFieldError(
                   'patronymic',
                   mergedForm,
                   identification,
                   fieldOptions,
-                )}
+                ))}
               />
             </div>
           )}
@@ -818,12 +823,12 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
           <FieldHint
             id={`${idPrefix}-deliveryPhone-error`}
             show={Boolean(shippingTouched.deliveryPhone)}
-            message={getCheckoutShippingFieldError(
+            message={fe(getCheckoutShippingFieldError(
               'deliveryPhone',
               mergedForm,
               identification,
               fieldOptions,
-            )}
+            ))}
           />
         </div>
       )}
@@ -934,11 +939,11 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
                 <FieldHint
                   id={`${idPrefix}-recipientFirstName-error`}
                   show={Boolean(recipientTouched.recipientFirstName)}
-                  message={getCheckoutRecipientFieldError(
+                  message={fe(getCheckoutRecipientFieldError(
                     'recipientFirstName',
                     mergedForm,
                     fieldOptions,
-                  )}
+                  ))}
                 />
               </div>
               <div className="space-y-2">
@@ -964,11 +969,11 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
                 <FieldHint
                   id={`${idPrefix}-recipientLastName-error`}
                   show={Boolean(recipientTouched.recipientLastName)}
-                  message={getCheckoutRecipientFieldError(
+                  message={fe(getCheckoutRecipientFieldError(
                     'recipientLastName',
                     mergedForm,
                     fieldOptions,
-                  )}
+                  ))}
                 />
               </div>
               {showRecipientPatronymic ? (
@@ -999,11 +1004,11 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
                   <FieldHint
                     id={`${idPrefix}-recipientPatronymic-error`}
                     show={Boolean(recipientTouched.recipientPatronymic)}
-                    message={getCheckoutRecipientFieldError(
+                    message={fe(getCheckoutRecipientFieldError(
                       'recipientPatronymic',
                       mergedForm,
                       fieldOptions,
-                    )}
+                    ))}
                   />
                 </div>
               ) : null}
@@ -1059,11 +1064,11 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
                 <FieldHint
                   id={`${idPrefix}-recipientPhone-error`}
                   show={Boolean(recipientTouched.recipientPhone)}
-                  message={getCheckoutRecipientFieldError(
+                  message={fe(getCheckoutRecipientFieldError(
                     'recipientPhone',
                     mergedForm,
                     fieldOptions,
-                  )}
+                  ))}
                 />
               </div>
             </div>

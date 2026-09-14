@@ -3,9 +3,11 @@ import { getTranslations } from 'next-intl/server'
 
 import { pickHomeCmsText } from '@/lib/home/cms-or-translated'
 import { resolveHeroDisplayUrl } from '@/lib/home/hero-image'
+import { isSupportedLocale } from '@/lib/i18n/locales'
 import { buildIndexablePageMetadata } from '@/lib/seo/build-page-metadata'
 import { resolvePublicCompanyName } from '@/lib/settings/company-name'
 import { DEFAULT_HOME_SETTINGS } from '@/lib/settings/defaults'
+import { resolveHomePageForLocale } from '@/lib/settings/home-cms'
 import { fetchPublicSiteSettings, getHomeSettings, getStoreSettings } from '@/lib/settings/fetch'
 
 export async function buildHomeMetadata(locale: string): Promise<Metadata> {
@@ -16,8 +18,9 @@ export async function buildHomeMetadata(locale: string): Promise<Metadata> {
 
   try {
     const fetched = await fetchPublicSiteSettings()
-    const hero = getHomeSettings(fetched).hero
-    const siteName = resolvePublicCompanyName(getStoreSettings(fetched), brand)
+    const appLocale = isSupportedLocale(locale) ? locale : 'uk'
+    const hero = resolveHomePageForLocale(getHomeSettings(fetched), appLocale).hero
+    const siteName = resolvePublicCompanyName(getStoreSettings(fetched, { locale }), brand)
     const title = pickHomeCmsText(hero.title, DEFAULT_HOME_SETTINGS.hero.title, tHome('heroTitle'))
     const description = pickHomeCmsText(
       hero.subtitle,

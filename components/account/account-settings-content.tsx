@@ -1,8 +1,9 @@
 'use client'
 
+import { useFormatFieldError } from '@/lib/validation/use-field-error-messages'
 import { useCallback, useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
 import {
@@ -55,6 +56,9 @@ import { FieldHint } from '@/components/auth/auth-form-ui'
 type ContactFlow = 'idle' | 'enter' | 'code' | 'conflict'
 
 export function AccountSettingsContent() {
+  const fe = useFormatFieldError()
+  const locale = useLocale()
+
   const t = useTranslations('account')
   const tc = useTranslations('common')
   const [loading, setLoading] = useState(true)
@@ -192,7 +196,7 @@ export function AccountSettingsContent() {
 
   const submitPhoneStart = async () => {
     if (!market) return
-    const phoneErr = phoneErrorForPolicy(phoneInput, market.authPhonePolicy)
+    const phoneErr = fe(phoneErrorForPolicy(phoneInput, market.authPhonePolicy))
     if (phoneErr) {
       toast.error(phoneErr)
       return
@@ -347,7 +351,7 @@ export function AccountSettingsContent() {
                   size="sm"
                   variant="ghost"
                   disabled={emailBusy}
-                  onClick={() => void sendAuthEmailCode(emailInput.trim(), 'profile').then(() => toast.success(t('contactOtpSent'))).catch((e) => toast.error(e instanceof Error ? e.message : t('contactStartFailed')))}
+                  onClick={() => void sendAuthEmailCode(emailInput.trim(), 'profile', locale).then(() => toast.success(t('contactOtpSent'))).catch((e) => toast.error(e instanceof Error ? e.message : t('contactStartFailed')))}
                 >
                   {t('resendContactOtp')}
                 </Button>
@@ -445,7 +449,7 @@ export function AccountSettingsContent() {
                 )}
                 message={
                   market
-                    ? phoneErrorForPolicy(phoneInput, market.authPhonePolicy)
+                    ? fe(phoneErrorForPolicy(phoneInput, market.authPhonePolicy))
                     : null
                 }
               />

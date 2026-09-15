@@ -1,4 +1,5 @@
 import { getLocale, getTranslations } from 'next-intl/server'
+import type { Metadata } from 'next'
 
 import { Navigation } from '@/components/navigation'
 import { PublicPageBreadcrumbs } from '@/components/public-page-breadcrumbs'
@@ -8,6 +9,7 @@ import { LegalTemplateNotice } from '@/components/legal/legal-template-notice'
 import { staticPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import { fetchCurrentLegalDocument, sellerFromBankDetails } from '@/lib/legal/documents'
+import { buildPrivacyMetadata } from '@/lib/legal/metadata'
 import { legalPageTitleClassName, legalProseClassName } from '@/lib/legal/storefront-typography'
 import { resolveCheckoutBankDetails } from '@/lib/settings/company-bank-details'
 import { getRequestCountrySiteCode } from '@/lib/country-sites/request-country'
@@ -20,6 +22,15 @@ import {
 import { resolveStoreForCountrySite } from '@/lib/settings/store-contact-country'
 import { resolvePublicSupportEmail } from '@/lib/settings/public-support-email'
 import { cn } from '@/lib/utils'
+
+type PageProps = {
+  params: Promise<{ locale: string }>
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale } = await params
+  return buildPrivacyMetadata(locale)
+}
 
 export default async function PrivacyPage() {
   const locale = await getLocale()

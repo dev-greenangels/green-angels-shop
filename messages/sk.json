@@ -463,7 +463,13 @@
     "freshPhotosStorage": "Sklad",
     "freshPhotosPhotoFrom": "Foto od",
     "freshPhotosResetFilters": "Resetovať",
-    "freshPhotosBuyUnavailable": "Táto položka ešte nie je prepojená s katalógom cez EAN."
+    "freshPhotosBuyUnavailable": "Táto položka ešte nie je prepojená s katalógom cez EAN.",
+    "freshPhotosSeoTitle": "Čerstvé fotky rastlín",
+    "freshPhotosSeoDescription": "Aktuálne fotografie rastlín zo škôlky Green Angels — veľkosti na sklade a čerstvé snímky zo škôlky.",
+    "promotionsSeoTitle": "Akcie a špeciálne ponuky",
+    "promotionsSeoDescription": "Akciové rastliny a výhodné ponuky škôlky Green Angels. Sortiment pravidelne aktualizujeme.",
+    "newArrivalsSeoTitle": "Novinky zo škôlky",
+    "newArrivalsSeoDescription": "Nové prírastky a sezónne obľúbené rastliny v internetovom obchode Green Angels."
   },
   "cart": {
     "title": "Košík",
@@ -1319,7 +1325,15 @@
     "cookiesUnavailableTitle": "Politika súborov cookie",
     "cookiesUnavailableBody": "Politika cookies pre tento jazyk zatiaľ nie je zverejnená. Prepnite jazyk alebo skúste neskôr.",
     "returnsUnavailableTitle": "Vrátenie tovaru a odstúpenie od zmluvy",
-    "returnsUnavailableBody": "Dokument o vrátení tovaru pre tento jazyk zatiaľ nie je zverejnený. Prepnite jazyk alebo skúste neskôr."
+    "returnsUnavailableBody": "Dokument o vrátení tovaru pre tento jazyk zatiaľ nie je zverejnený. Prepnite jazyk alebo skúste neskôr.",
+    "termsSeoTitle": "Obchodné podmienky",
+    "termsSeoDescription": "Všeobecné obchodné podmienky internetového obchodu Green Angels.",
+    "privacySeoTitle": "Zásady ochrany súkromia",
+    "privacySeoDescription": "Ako Green Angels spracúva osobné údaje zákazníkov internetového obchodu.",
+    "cookiesSeoTitle": "Zásady používania cookies",
+    "cookiesSeoDescription": "Aké cookies používa web Green Angels a ako spravovať súhlas.",
+    "returnsSeoTitle": "Vrátenie tovaru a odstúpenie od zmluvy",
+    "returnsSeoDescription": "Informácie o vrátení tovaru a práve odstúpiť od zmluvy uzavretej na diaľku."
   },
   "cookieConsent": {
     "title": "Používame cookies",

@@ -41,11 +41,13 @@ export function resolveNavigationItemLabel(
 ): string {
   const custom =
     item.labels?.[locale] ??
-    item.labels?.uk ??
-    item.labels?.en ??
-    item.labels?.sk ??
-    item.labels?.hu ??
-    item.labels?.de
+    (locale === 'uk'
+      ? item.labels?.uk ?? item.labels?.en ?? item.labels?.sk
+      : item.labels?.en ??
+        item.labels?.sk ??
+        item.labels?.cs ??
+        item.labels?.hu ??
+        item.labels?.de)
   if (custom?.trim()) return custom.trim()
   if (item.labelKey) {
     try {

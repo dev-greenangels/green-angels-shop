@@ -463,7 +463,13 @@
     "freshPhotosStorage": "Lager",
     "freshPhotosPhotoFrom": "Foto vom",
     "freshPhotosResetFilters": "Zurücksetzen",
-    "freshPhotosBuyUnavailable": "Dieser Artikel ist noch nicht per EAN mit dem Katalog verknüpft."
+    "freshPhotosBuyUnavailable": "Dieser Artikel ist noch nicht per EAN mit dem Katalog verknüpft.",
+    "freshPhotosSeoTitle": "Aktuelle Pflanzenfotos",
+    "freshPhotosSeoDescription": "Aktuelle Fotos aus der Baumschule Green Angels — verfügbare Größen und frische Aufnahmen aus der Gärtnerei.",
+    "promotionsSeoTitle": "Aktionen und Sonderangebote",
+    "promotionsSeoDescription": "Aktionspflanzen und attraktive Angebote der Baumschule Green Angels. Das Sortiment wird regelmäßig aktualisiert.",
+    "newArrivalsSeoTitle": "Neuheiten aus der Baumschule",
+    "newArrivalsSeoDescription": "Neue Zugänge und saisonale Favoriten im Online-Shop von Green Angels."
   },
   "cart": {
     "title": "Warenkorb",
@@ -1319,7 +1325,15 @@
     "cookiesUnavailableTitle": "Cookie-Richtlinie",
     "cookiesUnavailableBody": "Die Cookie-Richtlinie für diese Sprache ist noch nicht veröffentlicht. Bitte Sprache wechseln oder später erneut versuchen.",
     "returnsUnavailableTitle": "Rückgabe und Widerrufsrecht",
-    "returnsUnavailableBody": "Die Rückgabe-/Widerrufsseite für diese Sprache ist noch nicht veröffentlicht. Bitte Sprache wechseln oder später erneut versuchen."
+    "returnsUnavailableBody": "Die Rückgabe-/Widerrufsseite für diese Sprache ist noch nicht veröffentlicht. Bitte Sprache wechseln oder später erneut versuchen.",
+    "termsSeoTitle": "Allgemeine Geschäftsbedingungen",
+    "termsSeoDescription": "Allgemeine Verkaufs- und Nutzungsbedingungen des Online-Shops Green Angels.",
+    "privacySeoTitle": "Datenschutzerklärung",
+    "privacySeoDescription": "Wie Green Angels personenbezogene Daten von Online-Shop-Kunden verarbeitet.",
+    "cookiesSeoTitle": "Cookie-Richtlinie",
+    "cookiesSeoDescription": "Welche Cookies die Website von Green Angels verwendet und wie Sie die Einwilligung verwalten.",
+    "returnsSeoTitle": "Rückgabe und Widerruf",
+    "returnsSeoDescription": "Informationen zur Warenrückgabe und zum Widerrufsrecht bei Fernabsatzverträgen."
   },
   "cookieConsent": {
     "title": "Wir verwenden Cookies",

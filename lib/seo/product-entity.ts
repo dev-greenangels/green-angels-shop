@@ -1,3 +1,4 @@
+import { stripHtmlToPlainText } from '@/lib/html/plain-text'
 import { canOrderVariant } from '@/lib/plant-variants'
 import type { Plant } from '@/lib/types'
 
@@ -27,7 +28,8 @@ export function toProductSeoEntity(input: {
 
   return {
     name: input.plant.name,
-    description: input.plant.shortDescription || input.plant.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+    description:
+      input.plant.shortDescription || stripHtmlToPlainText(input.plant.description),
     image: input.plant.images.find((url) => url && !url.includes('placeholder')) ?? input.plant.images[0] ?? null,
     url: input.url,
     locale: input.locale,

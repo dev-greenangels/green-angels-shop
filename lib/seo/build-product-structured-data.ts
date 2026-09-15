@@ -1,3 +1,4 @@
+import { stripHtmlToPlainText } from '@/lib/html/plain-text'
 import { getMinVariantPrice } from '@/lib/product-pricing'
 import type { Plant, ProductVariant } from '@/lib/types'
 
@@ -121,7 +122,7 @@ export function buildProductGroupJsonLd(input: {
   const description =
     input.description?.trim() ||
     input.plant.shortDescription?.trim() ||
-    input.plant.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+    stripHtmlToPlainText(input.plant.description)
   if (description) schema.description = description
 
   const image = productJsonLdImageValue(images)

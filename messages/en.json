@@ -463,7 +463,13 @@
     "freshPhotosStorage": "Storage",
     "freshPhotosPhotoFrom": "Photo from",
     "freshPhotosResetFilters": "Reset",
-    "freshPhotosBuyUnavailable": "This item is not linked to the catalog by EAN yet."
+    "freshPhotosBuyUnavailable": "This item is not linked to the catalog by EAN yet.",
+    "freshPhotosSeoTitle": "Fresh plant photos",
+    "freshPhotosSeoDescription": "Current nursery photos from Green Angels — sizes in stock and recent shots from the nursery.",
+    "promotionsSeoTitle": "Promotions and special offers",
+    "promotionsSeoDescription": "Promotional plants and special offers from the Green Angels nursery. Assortment updated regularly.",
+    "newArrivalsSeoTitle": "New arrivals",
+    "newArrivalsSeoDescription": "New arrivals and seasonal favourites in the Green Angels online shop."
   },
   "cart": {
     "title": "Cart",
@@ -1319,7 +1325,15 @@
     "cookiesUnavailableTitle": "Cookie Policy",
     "cookiesUnavailableBody": "The cookie policy for this language is not published yet. Please switch language or try again later.",
     "returnsUnavailableTitle": "Returns and Right of Withdrawal",
-    "returnsUnavailableBody": "The returns policy for this language is not published yet. Please switch language or try again later."
+    "returnsUnavailableBody": "The returns policy for this language is not published yet. Please switch language or try again later.",
+    "termsSeoTitle": "Terms of use",
+    "termsSeoDescription": "General terms of sale and use of the Green Angels online shop.",
+    "privacySeoTitle": "Privacy policy",
+    "privacySeoDescription": "How Green Angels processes personal data of online shop customers.",
+    "cookiesSeoTitle": "Cookie policy",
+    "cookiesSeoDescription": "Which cookies the Green Angels website uses and how to manage consent.",
+    "returnsSeoTitle": "Returns and withdrawal",
+    "returnsSeoDescription": "Information about returns and the right to withdraw from a distance contract."
   },
   "cookieConsent": {
     "title": "We use cookies",

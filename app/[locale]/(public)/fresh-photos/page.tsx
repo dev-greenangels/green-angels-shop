@@ -1,8 +1,15 @@
-import { FreshPhotosPageContent } from '@/components/catalog/fresh-photos-page-content'
+import type { Metadata } from 'next'
 
-export const metadata = {
-  title: 'Свіжі фото · Зелені Янголи',
-  description: 'Свіжі фото рослин з розсадника — актуальні знімки розмірів у наявності.',
+import { FreshPhotosPageContent } from '@/components/catalog/fresh-photos-page-content'
+import { buildFreshPhotosMetadata } from '@/lib/catalog/marketing-metadata'
+
+type PageProps = {
+  params: Promise<{ locale: string }>
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale } = await params
+  return buildFreshPhotosMetadata(locale)
 }
 
 export default function FreshPhotosPage() {

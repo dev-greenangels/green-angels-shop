@@ -11,6 +11,8 @@ export const SITEMAP_STATIC_PATHS = [
   '/shipping',
   '/terms',
   '/returns',
+  '/privacy',
+  '/cookies',
   '/reviews',
   '/plants',
   '/promotions',

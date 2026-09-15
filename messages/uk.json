@@ -462,7 +462,13 @@
     "freshPhotosStorage": "Склад",
     "freshPhotosPhotoFrom": "Фото від",
     "freshPhotosResetFilters": "Скинути",
-    "freshPhotosBuyUnavailable": "Цей товар ще не привʼязаний до каталогу за EAN."
+    "freshPhotosBuyUnavailable": "Цей товар ще не привʼязаний до каталогу за EAN.",
+    "freshPhotosSeoTitle": "Свіжі фото рослин",
+    "freshPhotosSeoDescription": "Актуальні фото рослин з розсадника Green Angels — розміри в наявності та свіжі знімки з розсадника.",
+    "promotionsSeoTitle": "Акції та спеціальні пропозиції",
+    "promotionsSeoDescription": "Акційні рослини та вигідні пропозиції розсадника Green Angels. Оновлюємо асортимент регулярно.",
+    "newArrivalsSeoTitle": "Новинки розсадника",
+    "newArrivalsSeoDescription": "Нові надходження та популярні рослини сезону в інтернет-магазині Green Angels."
   },
   "cart": {
     "title": "Кошик",
@@ -1318,7 +1324,15 @@
     "cookiesUnavailableTitle": "Політика використання cookies",
     "cookiesUnavailableBody": "Політика cookies для цієї мови ще не опублікована. Змініть мову або спробуйте пізніше.",
     "returnsUnavailableTitle": "Повернення товару та відмова від договору",
-    "returnsUnavailableBody": "Документ про повернення для цієї мови ще не опублікований. Змініть мову або спробуйте пізніше."
+    "returnsUnavailableBody": "Документ про повернення для цієї мови ще не опублікований. Змініть мову або спробуйте пізніше.",
+    "termsSeoTitle": "Умови використання",
+    "termsSeoDescription": "Загальні умови продажу та використання інтернет-магазину Green Angels.",
+    "privacySeoTitle": "Політика конфіденційності",
+    "privacySeoDescription": "Як Green Angels обробляє персональні дані клієнтів інтернет-магазину.",
+    "cookiesSeoTitle": "Політика Cookie",
+    "cookiesSeoDescription": "Які cookie використовує сайт Green Angels і як керувати згодою.",
+    "returnsSeoTitle": "Повернення та відмова від договору",
+    "returnsSeoDescription": "Інформація про повернення товару та право на відмову від дистанційного договору."
   },
   "cookieConsent": {
     "title": "Ми використовуємо cookie",

@@ -1,21 +1,9 @@
+import { stripHtmlToPlainText } from '@/lib/html/plain-text'
+
 import { merchantAbsoluteImageUrls, collectMerchantProductImages } from './images'
 import type { MerchantCatalogProduct } from './types'
 
-/** Strip HTML and collapse whitespace for Merchant description. */
-export function stripHtmlToPlainText(html: string | null | undefined): string {
-  return (html ?? '')
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim()
-}
+export { stripHtmlToPlainText }
 
 /** Non-empty trimmed SKU, or null. Never falls back to UUID. */
 export function merchantSku(variant: { sku?: string | null }): string | null {

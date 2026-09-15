@@ -60,7 +60,10 @@ export function FreshPhotoCard({
   const [cartDialogOpen, setCartDialogOpen] = useState(false)
 
   const numberLocale = intlLocaleForApp(locale)
-  const productName = photo.productName || photo.appProperties.plantName || photo.ean
+  const productName =
+    photo.productName ||
+    (locale === 'uk' ? photo.appProperties.plantName : null) ||
+    photo.ean
   const variantLabel = photo.variantLabel || photo.appProperties.plantSize || null
   const photoDate = formatCompactPhotoDate(getPhotoTakenAt(photo), numberLocale)
   const productLink = photoProductHref(photo)

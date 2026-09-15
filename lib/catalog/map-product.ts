@@ -2,6 +2,7 @@ import {
   formatAvailableFromDisplay,
   resolveDiscountUnitPrice,
 } from '@/lib/backstage/variant-pricing'
+import { stripHtmlToPlainText } from '@/lib/html/plain-text'
 import { resolveThumbUrl } from '@/lib/media/paths'
 import { toPublicMediaUrl } from '@/lib/media/public-url'
 import { getMinVariantPrice, getPlantMaxDiscountPercent } from '@/lib/product-pricing'
@@ -110,7 +111,7 @@ function resolveListImages(item: CatalogProductListItem): string[] {
 }
 
 function buildShortDescription(description: string | null | undefined) {
-  const text = description?.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() ?? ''
+  const text = stripHtmlToPlainText(description)
   if (!text) return ''
   return text.length > 140 ? `${text.slice(0, 137)}…` : text
 }

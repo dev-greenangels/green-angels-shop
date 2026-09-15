@@ -3,16 +3,17 @@ import { getTranslations } from 'next-intl/server'
 
 import { productHref } from '@/lib/catalog/paths'
 import { fetchCatalogProductBySlug } from '@/lib/catalog/products'
+import { stripHtmlToPlainText } from '@/lib/html/plain-text'
 import { toPublicMediaUrl } from '@/lib/media/public-url'
 import { buildIndexablePageMetadata } from '@/lib/seo/build-page-metadata'
 import type { Plant } from '@/lib/types'
 
 function plainDescription(plant: Plant): string | undefined {
-  const fromMeta = plant.metaDesc?.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  const fromMeta = stripHtmlToPlainText(plant.metaDesc)
   if (fromMeta) return fromMeta
   const fromShort = plant.shortDescription.trim()
   if (fromShort) return fromShort
-  const fromHtml = plant.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  const fromHtml = stripHtmlToPlainText(plant.description)
   return fromHtml || undefined
 }
 

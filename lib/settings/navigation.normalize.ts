@@ -21,6 +21,9 @@ function normalizeMenuItem(raw: unknown, index: number): NavigationMenuItem | nu
             uk: typeof item.labels.uk === 'string' ? item.labels.uk : undefined,
             en: typeof item.labels.en === 'string' ? item.labels.en : undefined,
             sk: typeof item.labels.sk === 'string' ? item.labels.sk : undefined,
+            cs: typeof item.labels.cs === 'string' ? item.labels.cs : undefined,
+            hu: typeof item.labels.hu === 'string' ? item.labels.hu : undefined,
+            de: typeof item.labels.de === 'string' ? item.labels.de : undefined,
           }
         : undefined,
     href,

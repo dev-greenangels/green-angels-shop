@@ -463,7 +463,13 @@
     "freshPhotosStorage": "Tárolás",
     "freshPhotosPhotoFrom": "Fotó dátuma",
     "freshPhotosResetFilters": "Visszaállítás",
-    "freshPhotosBuyUnavailable": "Ez a tétel még nincs EAN alapján összekapcsolva a katalógussal."
+    "freshPhotosBuyUnavailable": "Ez a tétel még nincs EAN alapján összekapcsolva a katalógussal.",
+    "freshPhotosSeoTitle": "Friss növényfotók",
+    "freshPhotosSeoDescription": "Aktuális növényfotók a Green Angels faiskolából — raktáron lévő méretek és friss felvételek.",
+    "promotionsSeoTitle": "Akciók és különleges ajánlatok",
+    "promotionsSeoDescription": "Akciós növények és kedvező ajánlatok a Green Angels faiskolából. A kínálatot rendszeresen frissítjük.",
+    "newArrivalsSeoTitle": "Újdonságok a faiskolából",
+    "newArrivalsSeoDescription": "Új beérkezések és szezonális kedvencek a Green Angels webáruházban."
   },
   "cart": {
     "title": "Kosár",
@@ -1319,7 +1325,15 @@
     "cookiesUnavailableTitle": "Cookie-szabályzat",
     "cookiesUnavailableBody": "A cookie-szabályzat ebben a nyelven még nincs közzétéve. Váltson nyelvet, vagy próbálja meg később.",
     "returnsUnavailableTitle": "Termékvisszaküldés és elállási jog",
-    "returnsUnavailableBody": "A visszaküldési tájékoztató ebben a nyelven még nincs közzétéve. Váltson nyelvet, vagy próbálja meg később."
+    "returnsUnavailableBody": "A visszaküldési tájékoztató ebben a nyelven még nincs közzétéve. Váltson nyelvet, vagy próbálja meg később.",
+    "termsSeoTitle": "Általános szerződési feltételek",
+    "termsSeoDescription": "A Green Angels webáruház általános értékesítési és használati feltételei.",
+    "privacySeoTitle": "Adatvédelmi irányelvek",
+    "privacySeoDescription": "Hogyan kezeli a Green Angels a webáruház vásárlóinak személyes adatait.",
+    "cookiesSeoTitle": "Cookie szabályzat",
+    "cookiesSeoDescription": "Milyen cookie-kat használ a Green Angels weboldal, és hogyan kezelheti a hozzájárulást.",
+    "returnsSeoTitle": "Visszaküldés és elállás",
+    "returnsSeoDescription": "Tájékoztatás a termék visszaküldéséről és a távollévők között kötött szerződéstől való elállás jogáról."
   },
   "cookieConsent": {
     "title": "Sütiket használunk",

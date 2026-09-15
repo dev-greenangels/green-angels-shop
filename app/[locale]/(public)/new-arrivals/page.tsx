@@ -1,8 +1,15 @@
-import { NewArrivalsPageContent } from '@/components/catalog/new-arrivals-page-content'
+import type { Metadata } from 'next'
 
-export const metadata = {
-  title: 'Новинки · Зелені Янголи',
-  description: 'Нові надходження та бестселери розсадника Зелені Янголи.',
+import { NewArrivalsPageContent } from '@/components/catalog/new-arrivals-page-content'
+import { buildNewArrivalsMetadata } from '@/lib/catalog/marketing-metadata'
+
+type PageProps = {
+  params: Promise<{ locale: string }>
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale } = await params
+  return buildNewArrivalsMetadata(locale)
 }
 
 export default function NewArrivalsPage() {

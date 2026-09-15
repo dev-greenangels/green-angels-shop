@@ -1,4 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
+import type { Metadata } from 'next'
 
 import { ContractWithdrawalModelForm } from '@/components/legal/contract-withdrawal-model-form'
 import { ContractWithdrawalPublicForm } from '@/components/legal/contract-withdrawal-public-form'
@@ -9,6 +10,7 @@ import { PublicPageBreadcrumbs } from '@/components/public-page-breadcrumbs'
 import { resolveWithdrawalReturnAddressText } from '@/lib/settings/withdrawal-return-address'
 import { staticPageBreadcrumbs } from '@/lib/catalog/breadcrumbs'
 import { fetchCurrentLegalDocument, sellerFromBankDetails } from '@/lib/legal/documents'
+import { buildReturnsMetadata } from '@/lib/legal/metadata'
 import {
   legalPageTitleClassName,
   legalProseClassName,
@@ -32,11 +34,18 @@ import { cn } from '@/lib/utils'
 const subsectionClassName =
   'space-y-3 border-t border-border/55 pt-7 first:border-t-0 first:pt-0'
 
+type PageProps = {
+  params: Promise<{ locale: string }>
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale } = await params
+  return buildReturnsMetadata(locale)
+}
+
 export default async function ReturnsPage({
   params,
-}: {
-  params: Promise<{ locale: string }>
-}) {
+}: PageProps) {
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations('returnsPage')

@@ -52,10 +52,6 @@ export async function generateMetadata(): Promise<Metadata> {
     getTranslations({ locale, namespace: 'metadata' }),
     resolveSeoRequestContext(locale),
   ])
-  const keywords = t('keywords')
-    .split(',')
-    .map((k) => k.trim())
-    .filter(Boolean)
   const origin = seoContext.origin
   const branding = getMarketBranding(seoContext.marketRegion)
   const title = t('title')
@@ -71,7 +67,6 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title,
     description,
-    keywords,
     applicationName: siteName,
     manifest: branding.manifest,
     icons: {

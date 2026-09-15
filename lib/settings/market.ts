@@ -2,6 +2,14 @@ import type { AppLocale } from '@/lib/i18n/locales'
 
 export type MarketRegion = 'ua' | 'sk'
 
+/**
+ * Deploy business timezone for deterministic storefront date display (SSR = client).
+ * SK/EU → Bratislava (CET/CEST); UA → Kyiv (EET/EEST). Never browser-local.
+ */
+export function businessTimeZoneForMarket(region: MarketRegion): string {
+  return region === 'sk' ? 'Europe/Bratislava' : 'Europe/Kyiv'
+}
+
 export type PhonePolicy = 'ua_e164' | 'sk_e164' | 'intl'
 
 export type GuestCheckoutMode = 'disabled' | 'soft' | 'true_guest'

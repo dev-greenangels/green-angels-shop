@@ -19,6 +19,7 @@ import { COUNTRY_LOCALES } from '@/lib/country-sites/edge-locales'
 import type { CountrySiteCode } from '@/lib/country-sites/types'
 import { GA_SURFACE_BACKSTAGE, GA_SURFACE_HEADER } from '@/lib/analytics/gtm'
 import { localePath, stripLocalePrefix } from '@/lib/locale-path'
+import { resolveRootFaviconRewritePath } from '@/lib/branding/root-favicon'
 import { resolveRedirectForPath } from '@/lib/redirects/middleware-cache'
 
 const handleI18nRouting = createIntlMiddleware(routing)
@@ -171,6 +172,14 @@ async function handleConfiguredRedirects(request: NextRequest, localizedPathname
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // Browsers request /favicon.ico even when metadata icons use /branding/{ua|sk}/…
+  if (pathname === '/favicon.ico') {
+    const url = request.nextUrl.clone()
+    url.pathname = resolveRootFaviconRewritePath(request.nextUrl.hostname)
+    url.search = ''
+    return NextResponse.rewrite(url)
+  }
+
   if (pathname.startsWith('/admin')) {
     const url = request.nextUrl.clone()
     url.pathname = pathname.replace(/^\/admin/, '/backstage') || '/backstage'
@@ -248,6 +257,7 @@ export async function proxy(request: NextRequest) {
  */
 export const config = {
   matcher: [
+    '/favicon.ico',
     '/((?!_next|_vercel|favicon.ico|.*\\..*).*)',
     '/((?!_next|_vercel).*)\\.html',
     '/((?!_next|_vercel).*)\\.php',

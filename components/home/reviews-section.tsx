@@ -2,6 +2,7 @@ import Image from 'next/image'
 import { Quote } from 'lucide-react'
 import { getLocale, getTranslations } from 'next-intl/server'
 
+import { StarRating } from '@/components/reviews/star-rating'
 import { HomeSectionCta } from '@/components/home/home-section-cta'
 import { HomeSectionHeader } from '@/components/home/home-section-header'
 import { Card, CardContent } from '@/components/ui/card'
@@ -10,20 +11,24 @@ import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import type { ReviewsPageResult } from '@/lib/reviews/types'
 import { formatReviewDate, getReviewImages } from '@/lib/reviews/utils'
 import { DEFAULT_HOME_SETTINGS } from '@/lib/settings/defaults'
+import type { MarketRegion } from '@/lib/settings/market'
 import type { HomePageSettings } from '@/lib/settings/types'
 import { cn } from '@/lib/utils'
 
 type ReviewsSectionProps = {
   settings: HomePageSettings['reviews']
   reviews: ReviewsPageResult
+  marketRegion: MarketRegion
 }
 
 function HomeReviewCard({
   review,
   locale,
+  marketRegion,
 }: {
   review: ReviewsPageResult['items'][number]
   locale: string
+  marketRegion: MarketRegion
 }) {
   const images = getReviewImages(review)
   const coverImage = images[0]
@@ -56,7 +61,7 @@ function HomeReviewCard({
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-foreground">{review.authorName}</p>
             <p className="text-xs text-muted-foreground">
-              {formatReviewDate(review.createdAt, locale)}
+              {formatReviewDate(review.createdAt, locale, marketRegion)}
             </p>
           </div>
         </div>
@@ -65,7 +70,7 @@ function HomeReviewCard({
   )
 }
 
-export async function ReviewsSection({ settings, reviews }: ReviewsSectionProps) {
+export async function ReviewsSection({ settings, reviews, marketRegion }: ReviewsSectionProps) {
   if (!settings.enabled) return null
 
   const [t, locale] = await Promise.all([getTranslations('home'), getLocale()])
@@ -102,7 +107,12 @@ export async function ReviewsSection({ settings, reviews }: ReviewsSectionProps)
         >
           <div className="flex w-max gap-3 px-[var(--site-shell-padding-x)] md:gap-4">
             {reviews.items.map((review) => (
-              <HomeReviewCard key={review.id} review={review} locale={locale} />
+              <HomeReviewCard
+                key={review.id}
+                review={review}
+                locale={locale}
+                marketRegion={marketRegion}
+              />
             ))}
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl'
 
+import { useMarketRegion } from '@/components/providers/market-region-provider'
 import type { ReviewStoreReply as ReviewStoreReplyType } from '@/lib/reviews/types'
 import { formatReviewDate, formatReviewDateTime } from '@/lib/reviews/utils'
 import { cn } from '@/lib/utils'
@@ -21,9 +22,10 @@ export function ReviewStoreReply({
 }: ReviewStoreReplyProps) {
   const t = useTranslations('reviews')
   const locale = useLocale()
+  const marketRegion = useMarketRegion()
   const dateLabel = showTime
-    ? formatReviewDateTime(reply.createdAt, locale)
-    : formatReviewDate(reply.createdAt, locale)
+    ? formatReviewDateTime(reply.createdAt, locale, marketRegion)
+    : formatReviewDate(reply.createdAt, locale, marketRegion)
 
   if (variant === 'embedded') {
     return (

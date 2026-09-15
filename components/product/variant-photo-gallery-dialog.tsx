@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import type { VariantPhoto } from '@/lib/variant-photos/types'
+import { formatFreshPhotoDate } from '@/lib/variant-photos/fresh-photo-card'
 import { toPublicMediaUrl } from '@/lib/media/public-url'
 import { cn } from '@/lib/utils'
 
@@ -26,15 +27,6 @@ const thumbStripNavButtonClassName = cn(
   'bg-black/55 p-1 text-white shadow-md backdrop-blur-sm',
   'transition hover:bg-black/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80',
 )
-
-function formatPhotoDate(value: string | null | undefined, locale: string) {
-  if (!value?.trim()) return null
-  try {
-    return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(value))
-  } catch {
-    return value
-  }
-}
 
 type VariantPhotoGalleryDialogProps = {
   open: boolean
@@ -71,7 +63,7 @@ export function VariantPhotoGalleryDialog({
   const photoCount = photos.length
   const hasMultiple = photoCount > 1
   const activePhoto = photos[activeIndex]
-  const photoDateLabel = formatPhotoDate(activePhoto?.photoDate, locale)
+  const photoDateLabel = formatFreshPhotoDate(activePhoto?.photoDate, locale)
 
   const goPrev = useCallback(() => {
     if (!hasMultiple) return

@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
+import { useMarketRegion } from '@/components/providers/market-region-provider'
 import { ReviewImageLightbox } from '@/components/reviews/review-image-lightbox'
 import { ReviewStoreReply } from '@/components/reviews/review-store-reply'
 import { StarRating } from '@/components/reviews/star-rating'
@@ -68,9 +69,10 @@ function ReviewCard({
 }) {
   const t = useTranslations('reviews')
   const locale = useLocale()
+  const marketRegion = useMarketRegion()
   const images = getReviewImages(review)
   const hasImages = images.length > 0
-  const dateLabel = formatReviewDate(review.createdAt, locale)
+  const dateLabel = formatReviewDate(review.createdAt, locale, marketRegion)
   const hasStoreReply = Boolean(review.storeReply)
   const hasProduct = Boolean(review.productSlug && review.productName)
   const showProduct = showProductLink && hasProduct

@@ -124,7 +124,13 @@ export default async function HomePage() {
     freshPlantPhotos: (
       <FreshPlantPhotosSection settings={home.freshPlantPhotos} photos={freshPhotosResult.items} />
     ),
-    reviews: <ReviewsSection settings={home.reviews} reviews={reviewsResult} />,
+    reviews: (
+      <ReviewsSection
+        settings={home.reviews}
+        reviews={reviewsResult}
+        marketRegion={market.region}
+      />
+    ),
     recentlyViewed: (
       <RecentlyViewedSection page="home" initialSettings={recentlyViewedSettings} />
     ),

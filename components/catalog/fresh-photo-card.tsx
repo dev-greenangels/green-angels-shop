@@ -10,7 +10,6 @@ import { ProductCardAddToCartDialog } from '@/components/product/product-card-ad
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
-import { intlLocaleForApp } from '@/lib/i18n/intl-locale'
 import { resolveThumbUrl } from '@/lib/media/paths'
 import { toPublicMediaUrl } from '@/lib/media/public-url'
 import { resolveFreshPhotoThumbUrl } from '@/lib/variant-photos/fresh-photo-urls'
@@ -21,25 +20,12 @@ import type { CatalogPhotoItem } from '@/lib/variant-photos/types'
 import {
   catalogPhotoToPlant,
   catalogPhotoToVariant,
+  formatFreshPhotoDateCompact,
   getPhotoTakenAt,
   photoProductHref,
 } from '@/lib/variant-photos/fresh-photo-card'
 
 const SIDEBAR_WIDTH = '7.25rem'
-
-function formatCompactPhotoDate(value: string | null | undefined, locale: string) {
-  if (!value?.trim()) return null
-  try {
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return value
-    return new Intl.DateTimeFormat(locale, {
-      day: 'numeric',
-      month: 'short',
-    }).format(date)
-  } catch {
-    return value
-  }
-}
 
 type FreshPhotoCardProps = {
   photo: CatalogPhotoItem
@@ -59,13 +45,12 @@ export function FreshPhotoCard({
   const tProduct = useTranslations('product')
   const [cartDialogOpen, setCartDialogOpen] = useState(false)
 
-  const numberLocale = intlLocaleForApp(locale)
   const productName =
     photo.productName ||
     (locale === 'uk' ? photo.appProperties.plantName : null) ||
     photo.ean
   const variantLabel = photo.variantLabel || photo.appProperties.plantSize || null
-  const photoDate = formatCompactPhotoDate(getPhotoTakenAt(photo), numberLocale)
+  const photoDate = formatFreshPhotoDateCompact(getPhotoTakenAt(photo), locale)
   const productLink = photoProductHref(photo)
   const variant = catalogPhotoToVariant(photo)
   const plant = catalogPhotoToPlant(photo)

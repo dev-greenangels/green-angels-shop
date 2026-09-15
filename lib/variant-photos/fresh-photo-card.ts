@@ -3,22 +3,42 @@ import {
   resolveDiscountUnitPrice,
 } from '@/lib/backstage/variant-pricing'
 import { productHref } from '@/lib/catalog/paths'
+import { intlLocaleForApp } from '@/lib/i18n/intl-locale'
 import type { Plant, PriceTier, ProductVariant } from '@/lib/types'
 import type { CatalogPhotoItem } from '@/lib/variant-photos/types'
 import { resolveFreshPhotoThumbUrl } from '@/lib/variant-photos/fresh-photo-urls'
 
 type QuantityPriceRow = NonNullable<CatalogPhotoItem['quantityPrices']>[number]
 
-function isQuantityPriceActive(row: QuantityPriceRow, now = new Date()) {
+/** End of the UTC calendar day for a timestamp (inclusive validity window). */
+function endOfUtcCalendarDayMs(date: Date): number {
+  return Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    23,
+    59,
+    59,
+    999,
+  )
+}
+
+/**
+ * Quantity-price window check. Uses UTC calendar days for `validTo` so SSR (UTC)
+ * and the browser cannot disagree on whether a tier is active at first paint.
+ */
+export function isFreshPhotoQuantityPriceActive(
+  row: QuantityPriceRow,
+  now = new Date(),
+): boolean {
   if (row.validFrom) {
     const from = new Date(row.validFrom)
-    if (!Number.isNaN(from.getTime()) && now < from) return false
+    if (!Number.isNaN(from.getTime()) && now.getTime() < from.getTime()) return false
   }
   if (row.validTo) {
     const to = new Date(row.validTo)
-    if (!Number.isNaN(to.getTime())) {
-      to.setHours(23, 59, 59, 999)
-      if (now > to) return false
+    if (!Number.isNaN(to.getTime()) && now.getTime() > endOfUtcCalendarDayMs(to)) {
+      return false
     }
   }
   return true
@@ -26,7 +46,7 @@ function isQuantityPriceActive(row: QuantityPriceRow, now = new Date()) {
 
 function mapPhotoPriceTiers(basePrice: number, quantityPrices: QuantityPriceRow[]): PriceTier[] {
   return quantityPrices
-    .filter((row) => isQuantityPriceActive(row))
+    .filter((row) => isFreshPhotoQuantityPriceActive(row))
     .sort((a, b) => a.minQuantity - b.minQuantity)
     .map((row) => ({
       minQuantity: row.minQuantity,
@@ -43,15 +63,37 @@ export function getPhotoTakenAt(photo: Pick<CatalogPhotoItem, 'appProperties' | 
   return photo.appProperties.date?.trim() || photo.createdAt || null
 }
 
-export function formatFreshPhotoDate(value: string | null | undefined, locale: string) {
+/**
+ * Fresh Photos calendar date — interpret the stored instant in UTC so SSR
+ * (Vercel) and the browser hydrate to the same label regardless of TZ.
+ */
+export function formatFreshPhotoDate(
+  value: string | null | undefined,
+  locale: string,
+  options?: { includeYear?: boolean },
+): string | null {
   if (!value?.trim()) return null
   try {
-    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' }).format(
-      new Date(value),
-    )
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+    const includeYear = options?.includeYear !== false
+    return new Intl.DateTimeFormat(intlLocaleForApp(locale), {
+      day: 'numeric',
+      month: 'short',
+      ...(includeYear ? { year: 'numeric' } : {}),
+      timeZone: 'UTC',
+    }).format(date)
   } catch {
     return value
   }
+}
+
+/** Compact overlay date (homepage card) — UTC calendar day, no year. */
+export function formatFreshPhotoDateCompact(
+  value: string | null | undefined,
+  locale: string,
+): string | null {
+  return formatFreshPhotoDate(value, locale, { includeYear: false })
 }
 
 export function photoProductHref(photo: CatalogPhotoItem): string | null {

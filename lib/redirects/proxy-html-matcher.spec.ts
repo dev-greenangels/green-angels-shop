@@ -26,10 +26,14 @@ describe('shouldRunShopProxy — Presta .html/.php vs assets', () => {
     assert.equal(shouldRunShopProxy('/uk/catalog'), true)
   })
 
+  it('runs for root favicon so proxy can rewrite to market branding', () => {
+    assert.equal(shouldRunShopProxy('/favicon.ico'), true)
+  })
+
   it('skips static assets, Next internals, robots, and sitemap', () => {
     assert.equal(shouldRunShopProxy('/robots.txt'), false)
     assert.equal(shouldRunShopProxy('/sitemap.xml'), false)
-    assert.equal(shouldRunShopProxy('/favicon.ico'), false)
+    assert.equal(shouldRunShopProxy('/branding/sk/favicon.ico'), false)
     assert.equal(shouldRunShopProxy('/_next/static/chunk.js'), false)
     assert.equal(shouldRunShopProxy('/image.webp'), false)
     assert.equal(shouldRunShopProxy('/image.jpg'), false)

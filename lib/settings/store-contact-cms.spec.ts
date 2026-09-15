@@ -90,4 +90,64 @@ describe('store-contact-cms byLocale', () => {
     assert.ok(synced.hu)
     assert.equal(synced.hu!.contactBlocks.length, 1)
   })
+
+  it('preserves per-locale schedule closed/hours values across structure sync', () => {
+    const byLocale = {
+      sk: {
+        addressLine1: 'Bratislava',
+        addressLine2: '',
+        contactBlocks: [],
+        schedules: [
+          {
+            title: 'Otváracie hodiny',
+            entries: [
+              { label: 'Po–Pia', value: '9:00–17:00' },
+              { label: 'So–Ne', value: 'Zatvorené' },
+            ],
+            note: '',
+          },
+        ],
+      },
+      hu: {
+        addressLine1: 'Pozsony',
+        addressLine2: '',
+        contactBlocks: [],
+        schedules: [
+          {
+            title: 'Nyitvatartás',
+            entries: [
+              { label: 'H–P', value: '9:00–17:00' },
+              { label: 'Szo–V', value: 'Zárva' },
+            ],
+            note: '',
+          },
+        ],
+      },
+      de: {
+        addressLine1: 'Pressburg',
+        addressLine2: '',
+        contactBlocks: [],
+        schedules: [
+          {
+            title: 'Öffnungszeiten',
+            entries: [
+              { label: 'Mo–Fr', value: '9:00–17:00' },
+              { label: 'Sa–So', value: 'Geschlossen' },
+            ],
+            note: '',
+          },
+        ],
+      },
+    }
+
+    const source = byLocale.sk
+    const synced = syncStoreCmsStructureAcrossLocales(byLocale, 'sk', source)
+
+    assert.equal(synced.sk!.schedules[0]!.entries[1]!.value, 'Zatvorené')
+    assert.equal(synced.hu!.schedules[0]!.entries[1]!.value, 'Zárva')
+    assert.equal(synced.de!.schedules[0]!.entries[1]!.value, 'Geschlossen')
+    assert.equal(synced.hu!.schedules[0]!.entries[1]!.label, 'Szo–V')
+    assert.equal(synced.de!.schedules[0]!.entries[1]!.label, 'Sa–So')
+    // Phones/emails stay shared from source when structure sync runs on contact lines
+  })
 })

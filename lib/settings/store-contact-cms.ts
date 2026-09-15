@@ -182,7 +182,9 @@ export function getStoreContactCmsForEdit(
 
 /**
  * Keep contact block / schedule structure aligned across locales.
- * Values (phones, times) follow the source locale; titles/labels keep per-locale text when present.
+ * Contact line values (phones, emails) stay shared from the source locale.
+ * Schedule entry values (hours / «closed») keep per-locale text when present —
+ * same rules as titles and day labels.
  */
 export function syncStoreCmsStructureAcrossLocales(
   byLocale: Partial<Record<AppLocale, StoreContactCmsCopy>>,
@@ -236,7 +238,7 @@ function mergeStoreCmsStructure(
           const prevEntry = prev?.entries[j]
           return {
             label: prevEntry?.label?.trim() ? prevEntry.label : srcEntry.label,
-            value: srcEntry.value,
+            value: prevEntry?.value?.trim() ? prevEntry.value : srcEntry.value,
           }
         }),
       }

@@ -23,6 +23,7 @@ import {
   formatFreshPhotoDateCompact,
   getPhotoTakenAt,
   photoProductHref,
+  resolveFreshPhotoDisplayName,
 } from '@/lib/variant-photos/fresh-photo-card'
 
 const SIDEBAR_WIDTH = '7.25rem'
@@ -43,17 +44,18 @@ export function FreshPhotoCard({
 }: FreshPhotoCardProps) {
   const t = useTranslations('catalog')
   const tProduct = useTranslations('product')
+  const tCommon = useTranslations('common')
   const [cartDialogOpen, setCartDialogOpen] = useState(false)
 
-  const productName =
-    photo.productName ||
-    (locale === 'uk' ? photo.appProperties.plantName : null) ||
-    photo.ean
+  const productName = resolveFreshPhotoDisplayName(photo, locale, tCommon('productFallback'))
   const variantLabel = photo.variantLabel || photo.appProperties.plantSize || null
   const photoDate = formatFreshPhotoDateCompact(getPhotoTakenAt(photo), locale)
   const productLink = photoProductHref(photo)
   const variant = catalogPhotoToVariant(photo)
-  const plant = catalogPhotoToPlant(photo)
+  const plant = catalogPhotoToPlant(photo, {
+    locale,
+    fallbackName: tCommon('productFallback'),
+  })
   const displayPrice =
     variant && variant.basePrice > 0 ? getMinVariantPrice(variant) : photo.price
   const discountPercent =

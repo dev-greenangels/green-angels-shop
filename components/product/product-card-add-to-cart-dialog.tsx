@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 import { showAddedToCartToast } from '@/lib/cart-toast'
 
@@ -35,6 +35,7 @@ export function ProductCardAddToCartDialog({
   open,
   onOpenChange,
 }: ProductCardAddToCartDialogProps) {
+  const locale = useLocale()
   const t = useTranslations('product')
   const tc = useTranslations('cart')
   const cartItems = useCartItems()
@@ -54,7 +55,11 @@ export function ProductCardAddToCartDialog({
     setLoading(true)
     setLoadFailed(false)
 
-    fetch(`/api/catalog/products/${encodeURIComponent(plant.slug)}`, { cache: 'no-store' })
+    const query = new URLSearchParams({ locale })
+    fetch(
+      `/api/catalog/products/${encodeURIComponent(plant.slug)}?${query.toString()}`,
+      { cache: 'no-store' },
+    )
       .then(async (response) => {
         if (!response.ok) throw new Error('not-found')
         return response.json() as Promise<CatalogProductDetail>
@@ -76,7 +81,7 @@ export function ProductCardAddToCartDialog({
     return () => {
       cancelled = true
     }
-  }, [open, plant])
+  }, [open, plant, locale, t])
 
   const displayPlant = resolvedPlant
   const variants = displayPlant ? getVisiblePlantVariants(displayPlant) : []

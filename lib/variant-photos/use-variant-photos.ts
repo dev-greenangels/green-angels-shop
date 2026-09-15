@@ -48,7 +48,7 @@ async function fetchPhotosByEan(ean: string): Promise<VariantPhoto[]> {
   })
   if (!res.ok) return []
   const data = (await res.json()) as CatalogPhotoItem[]
-  return Array.isArray(data) ? data.map(mapCatalogPhotoToVariantPhoto) : []
+  return Array.isArray(data) ? data.map((photo) => mapCatalogPhotoToVariantPhoto(photo)) : []
 }
 
 async function fetchPhotosBySku(sku: string): Promise<VariantPhoto[]> {
@@ -60,7 +60,7 @@ async function fetchPhotosBySku(sku: string): Promise<VariantPhoto[]> {
   })
   if (!res.ok) return []
   const data = (await res.json()) as CatalogPhotoItem[]
-  return Array.isArray(data) ? data.map(mapCatalogPhotoToVariantPhoto) : []
+  return Array.isArray(data) ? data.map((photo) => mapCatalogPhotoToVariantPhoto(photo)) : []
 }
 
 function mergePhotos(eanPhotos: VariantPhoto[], skuPhotos: VariantPhoto[]): VariantPhoto[] {
@@ -214,7 +214,7 @@ export async function fetchPhotosByEans(eans: string[]): Promise<Record<string, 
   const result: Record<string, VariantPhoto[]> = {}
   for (const ean of unique) {
     const items = Array.isArray(data[ean])
-      ? sortVariantPhotosNewestFirst(data[ean].map(mapCatalogPhotoToVariantPhoto))
+      ? sortVariantPhotosNewestFirst(data[ean].map((photo) => mapCatalogPhotoToVariantPhoto(photo)))
       : []
     setCached(cacheKey(ean, ''), items)
     result[ean] = items

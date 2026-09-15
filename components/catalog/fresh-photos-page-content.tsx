@@ -1,39 +1,24 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import Image from 'next/image'
-import { Minus, Plus, Search, ShoppingCart, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Search, X } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
-import { toast } from '@/lib/toast'
-import { showAddedToCartToast } from '@/lib/cart-toast'
 
 import { Navigation } from '@/components/navigation'
 import { ClientPublicPageBreadcrumbs } from '@/components/client-public-page-breadcrumbs'
 import { useCatalogHref } from '@/components/providers/catalog-paths-provider'
 import { CatalogPaginationControls } from '@/components/catalog/catalog-pagination-controls'
 import { FreshPhotoCard, FreshPhotoCardSkeleton } from '@/components/catalog/fresh-photo-card'
-import { FormattedPrice } from '@/components/commerce/formatted-price'
-import { PriceWithExVatUnder } from '@/components/commerce/shelf-price-block'
-import { DiscountedUnitPrice } from '@/components/pricing/discounted-price'
-import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
-import { Badge } from '@/components/ui/badge'
+import { FreshPhotoLightbox } from '@/components/catalog/fresh-photo-lightbox'
 import { Button } from '@/components/ui/button'
 import { InputWithClear } from '@/components/ui/input-with-clear'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { usePathname, useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
-import { formatAvailableFromDisplay } from '@/lib/backstage/variant-pricing'
 import {
   resolveCatalogLandingContent,
   type CategoryTreeNode,
 } from '@/lib/catalog/categories'
-import { getCartLineQuantity, getMaxAddableQuantity } from '@/lib/cart-limits'
-import { useCartActions, useCartItems } from '@/lib/cart-store'
 import { formatNumberForLocale } from '@/lib/i18n/intl-locale'
 import {
   siteContentShellClassName,
@@ -41,37 +26,10 @@ import {
   siteStickyToolbarInnerClassName,
   siteStickyToolbarOuterClassName,
 } from '@/lib/layout/site-shell'
-import { getVariantDisplayStock } from '@/lib/plant-variants'
-import {
-  getBulkPriceTiers,
-  getMinVariantPrice,
-  getSingleUnitSaleTier,
-  getUnitPriceForQuantity,
-} from '@/lib/product-pricing'
 import type { CatalogPhotoItem, CatalogPhotosPage } from '@/lib/variant-photos/types'
-import { resolveFreshPhotoMainUrl } from '@/lib/variant-photos/fresh-photo-urls'
-import {
-  catalogPhotoToPlant,
-  catalogPhotoToVariant,
-  formatFreshPhotoDate,
-  getPhotoTakenAt,
-} from '@/lib/variant-photos/fresh-photo-card'
-import type { Plant, ProductVariant } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-type EnrichedPhoto = CatalogPhotoItem & {
-  productId: string | null
-  productSlug: string | null
-  categorySlug: string | null
-  productName: string | null
-  productImageUrl: string | null
-  variantId: string | null
-  price: number | null
-  stock: number | null
-  availableFrom: string | null
-  variantLabel: string | null
-  quantityPrices: NonNullable<CatalogPhotoItem['quantityPrices']>
-}
+type EnrichedPhoto = CatalogPhotoItem
 
 type EnrichedPhotosPage = {
   items: EnrichedPhoto[]
@@ -84,43 +42,6 @@ type EnrichedPhotosPage = {
 const FRESH_PHOTOS_GRID_CLASS = cn(
   'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
 )
-
-function formatPhotoDate(value: string | null | undefined, locale: string) {
-  return formatFreshPhotoDate(value, locale) ?? '—'
-}
-
-function getPhotoDiscountPercent(variant: ProductVariant | null): number | null {
-  if (!variant || variant.basePrice <= 0) return null
-  const minPrice = getMinVariantPrice(variant)
-  if (minPrice >= variant.basePrice - 0.001) return null
-  const percent = Math.round((1 - minPrice / variant.basePrice) * 100)
-  return percent > 0 ? percent : null
-}
-
-function PhotoDiscountChips({ variant }: { variant: ProductVariant }) {
-  const cartT = useTranslations('cart')
-  const bulkTiers = getBulkPriceTiers(variant)
-  if (!bulkTiers.length) return null
-
-  return (
-    <div className="flex flex-wrap gap-1">
-      {bulkTiers.map((tier) => (
-        <span
-          key={tier.minQuantity}
-          className="inline-flex max-w-full items-baseline gap-x-1 rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[11px] leading-tight"
-        >
-          <span className="text-muted-foreground">
-            {cartT('fromQty', { count: tier.minQuantity })}
-          </span>
-          <FormattedPrice
-            amount={tier.pricePerUnit}
-            className="font-medium tabular-nums text-red-500 dark:text-red-400"
-          />
-        </span>
-      ))}
-    </div>
-  )
-}
 
 function FreshPhotosGridSkeleton() {
   return (
@@ -147,39 +68,7 @@ function FreshPhotosChipsSkeleton() {
 }
 
 function toEnrichedPhoto(photo: CatalogPhotoItem): EnrichedPhoto {
-  return {
-    ...photo,
-    productId: photo.productId ?? null,
-    productSlug: photo.productSlug ?? null,
-    categorySlug: photo.categorySlug ?? null,
-    productName: photo.productName ?? null,
-    productImageUrl: photo.productImageUrl ?? null,
-    variantId: photo.variantId ?? null,
-    price: photo.price ?? null,
-    stock: photo.stock ?? null,
-    availableFrom: photo.availableFrom ?? null,
-    variantLabel: photo.variantLabel ?? null,
-    quantityPrices: photo.quantityPrices ?? [],
-  }
-}
-
-function photoToVariant(photo: EnrichedPhoto): ProductVariant | null {
-  return catalogPhotoToVariant(photo)
-}
-
-function photoToPlant(photo: EnrichedPhoto): Plant | null {
-  return catalogPhotoToPlant(photo)
-}
-
-function PhotoTitleLine({ photo }: { photo: EnrichedPhoto }) {
-  const name = photo.productName || photo.appProperties.plantName || '—'
-  const size = photo.variantLabel || photo.appProperties.plantSize || '—'
-  return (
-    <p className="text-xs font-medium leading-snug text-foreground">
-      {name}
-      <span className="font-normal text-muted-foreground"> · {size}</span>
-    </p>
-  )
+  return photo
 }
 
 export function FreshPhotosPageContent() {
@@ -188,22 +77,19 @@ export function FreshPhotosPageContent() {
   const tNav = useTranslations('nav')
   const catalogHref = useCatalogHref()
   const tc = useTranslations('common')
-  const tProduct = useTranslations('product')
-  const cartT = useTranslations('cart')
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const cartItems = useCartItems()
-  const { addItem } = useCartActions()
 
   const page = Math.max(1, Number(searchParams.get('page') || '1') || 1)
   const searchFromUrl = searchParams.get('q')?.trim() || ''
   const categoryFromUrl = searchParams.get('category')?.trim() || ''
   const [searchInput, setSearchInput] = useState(searchFromUrl)
+  const [searchFocused, setSearchFocused] = useState(false)
+  const blurHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [data, setData] = useState<EnrichedPhotosPage | null>(null)
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<EnrichedPhoto | null>(null)
-  const [qty, setQty] = useState(1)
   const [categoryTree, setCategoryTree] = useState<CategoryTreeNode[]>([])
   const [categoriesLoading, setCategoriesLoading] = useState(true)
 
@@ -212,9 +98,17 @@ export function FreshPhotosPageContent() {
     [categoryTree],
   )
 
+  const showCategoryChips = searchFocused || Boolean(categoryFromUrl)
+
   useEffect(() => {
     setSearchInput(searchFromUrl)
   }, [searchFromUrl])
+
+  useEffect(() => {
+    return () => {
+      if (blurHideTimerRef.current) clearTimeout(blurHideTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -301,45 +195,7 @@ export function FreshPhotosPageContent() {
 
   const openPhoto = useCallback((photo: EnrichedPhoto) => {
     setSelected(photo)
-    setQty(1)
   }, [])
-
-  const plant = useMemo(() => (selected ? photoToPlant(selected) : null), [selected])
-  const variant = useMemo(() => (selected ? photoToVariant(selected) : null), [selected])
-  const selectedShipmentDate = selected?.availableFrom
-    ? formatAvailableFromDisplay(selected.availableFrom)
-    : null
-  const discountPercent = getPhotoDiscountPercent(variant)
-  const inCart = useMemo(() => {
-    if (!plant || !variant) return 0
-    return getCartLineQuantity(cartItems, plant.id, variant.id)
-  }, [cartItems, plant, variant])
-  const maxAddable = useMemo(() => {
-    if (!plant || !variant) return 0
-    return getMaxAddableQuantity(variant, cartItems, plant.id)
-  }, [cartItems, plant, variant])
-  const singleUnitSale = variant ? getSingleUnitSaleTier(variant) : null
-  const salePrice = singleUnitSale?.pricePerUnit ?? variant?.basePrice ?? 0
-
-  const handleBuy = () => {
-    if (!plant || !variant) {
-      toast.error(t('freshPhotosBuyUnavailable'))
-      return
-    }
-    const addQty = Math.min(qty, Math.max(0, maxAddable))
-    if (addQty <= 0) {
-      toast.error(cartT('inStockOnly', { count: variant.stock }))
-      return
-    }
-    const result = addItem(plant, addQty, {
-      variant,
-      unitPrice: getUnitPriceForQuantity(variant, inCart + addQty),
-    })
-    if (result.added > 0) {
-      showAddedToCartToast(cartT('addedToCart', { count: result.added }), plant.name, variant.label)
-      setQty(1)
-    }
-  }
 
   const hasActiveFilters = Boolean(searchFromUrl || categoryFromUrl)
 
@@ -387,6 +243,19 @@ export function FreshPhotosPageContent() {
                 <InputWithClear
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
+                  onFocus={() => {
+                    if (blurHideTimerRef.current) {
+                      clearTimeout(blurHideTimerRef.current)
+                      blurHideTimerRef.current = null
+                    }
+                    setSearchFocused(true)
+                  }}
+                  onBlur={() => {
+                    blurHideTimerRef.current = setTimeout(() => {
+                      setSearchFocused(false)
+                      blurHideTimerRef.current = null
+                    }, 180)
+                  }}
                   onClear={() => {
                     setSearchInput('')
                     pushQuery({ q: '' })
@@ -402,60 +271,80 @@ export function FreshPhotosPageContent() {
                 </Button>
               </form>
 
-              {categoriesLoading ? (
-                <FreshPhotosChipsSkeleton />
-              ) : filterCategories.length > 0 ? (
-                <div className="flex w-full min-w-0 items-center gap-1.5 lg:flex-1">
-                  <div
-                    className={cn(
-                      'flex min-w-0 flex-1 items-center overflow-hidden',
-                      '-mx-[var(--site-shell-padding-x)] pl-[var(--site-shell-padding-x)] lg:mx-0 lg:pl-0',
-                    )}
-                  >
+              {showCategoryChips ? (
+                categoriesLoading ? (
+                  <FreshPhotosChipsSkeleton />
+                ) : filterCategories.length > 0 ? (
+                  <div className="flex w-full min-w-0 items-center gap-1.5 lg:flex-1">
                     <div
                       className={cn(
-                        'flex w-0 min-w-0 flex-1 items-center gap-1.5 overflow-x-auto overscroll-x-contain pb-0.5',
-                        '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+                        'flex min-w-0 flex-1 items-center overflow-hidden',
+                        '-mx-[var(--site-shell-padding-x)] pl-[var(--site-shell-padding-x)] lg:mx-0 lg:pl-0',
                       )}
                     >
-                      {filterCategories.map((category) => {
-                        const active = categoryFromUrl === category.slug
-                        return (
-                          <Button
-                            key={category.id}
-                            type="button"
-                            size="sm"
-                            variant={active ? 'default' : 'outline'}
-                            className="h-7 shrink-0 rounded-full px-2.5 text-xs"
-                            onClick={() =>
-                              pushQuery({
-                                category: active ? '' : category.slug,
-                              })
-                            }
-                          >
-                            {category.name}
-                          </Button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                  {hasActiveFilters ? (
-                    <div className={cn(siteStickyToolbarControlsClusterClassName, 'pl-1.5')}>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="secondary"
-                        className="h-7 w-7 shrink-0 rounded-full border border-border/70 bg-background shadow-sm hover:bg-muted"
-                        onClick={() => {
-                          setSearchInput('')
-                          pushQuery({ q: '', category: '' })
-                        }}
-                        aria-label={t('freshPhotosResetFilters')}
+                      <div
+                        className={cn(
+                          'flex w-0 min-w-0 flex-1 items-center gap-1.5 overflow-x-auto overscroll-x-contain pb-0.5',
+                          '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+                        )}
                       >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
+                        {filterCategories.map((category) => {
+                          const active = categoryFromUrl === category.slug
+                          return (
+                            <Button
+                              key={category.id}
+                              type="button"
+                              size="sm"
+                              variant={active ? 'default' : 'outline'}
+                              className="h-7 shrink-0 rounded-full px-2.5 text-xs"
+                              onMouseDown={(event) => event.preventDefault()}
+                              onClick={() =>
+                                pushQuery({
+                                  category: active ? '' : category.slug,
+                                })
+                              }
+                            >
+                              {category.name}
+                            </Button>
+                          )
+                        })}
+                      </div>
                     </div>
-                  ) : null}
+                    {hasActiveFilters ? (
+                      <div className={cn(siteStickyToolbarControlsClusterClassName, 'pl-1.5')}>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="secondary"
+                          className="h-7 w-7 shrink-0 rounded-full border border-border/70 bg-background shadow-sm hover:bg-muted"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => {
+                            setSearchInput('')
+                            pushQuery({ q: '', category: '' })
+                          }}
+                          aria-label={t('freshPhotosResetFilters')}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null
+              ) : hasActiveFilters ? (
+                <div className={cn(siteStickyToolbarControlsClusterClassName, 'self-end lg:self-auto')}>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="secondary"
+                    className="h-7 w-7 shrink-0 rounded-full border border-border/70 bg-background shadow-sm hover:bg-muted"
+                    onClick={() => {
+                      setSearchInput('')
+                      pushQuery({ q: '', category: '' })
+                    }}
+                    aria-label={t('freshPhotosResetFilters')}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               ) : null}
             </div>
@@ -492,149 +381,7 @@ export function FreshPhotosPageContent() {
         </div>
       </main>
 
-      <Dialog
-        open={Boolean(selected)}
-        onOpenChange={(open) => {
-          if (!open) setSelected(null)
-        }}
-      >
-        <DialogContent
-          showCloseButton={false}
-          className="max-w-[min(100vw-1rem,28rem)] overflow-visible border-0 bg-transparent p-0 shadow-none sm:max-w-md"
-        >
-          {selected ? (
-            <div className="relative">
-              <button
-                type="button"
-                className="absolute right-0 top-0 z-[75] inline-flex h-7 w-7 -translate-y-[calc(100%+0.35rem)] items-center justify-center rounded-full bg-black/85 text-white shadow-md transition hover:bg-black sm:h-8 sm:w-8 md:translate-x-[calc(100%+0.5rem)] md:translate-y-0"
-                onClick={() => setSelected(null)}
-                aria-label={tc('close')}
-              >
-                <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </button>
-
-              <div className="overflow-hidden rounded-xl bg-background shadow-xl">
-                <DialogTitle className="sr-only">
-                  {selected.productName || selected.appProperties.plantName || selected.ean}
-                </DialogTitle>
-
-                <div className="relative bg-muted">
-                  <div className="flex min-h-[320px] items-center justify-center px-3 py-4 sm:min-h-[480px]">
-                    <Image
-                      src={resolveFreshPhotoMainUrl(selected)}
-                      alt={selected.productName || selected.appProperties.plantName || selected.ean}
-                      width={720}
-                      height={960}
-                      unoptimized
-                      className="max-h-[72vh] w-auto max-w-full object-contain"
-                      sizes="(max-width: 768px) 90vw, 28rem"
-                    />
-                  </div>
-                  {discountPercent ? (
-                    <Badge
-                      variant="destructive"
-                      className="absolute left-2 top-2 px-1.5 py-0 text-[10px] shadow-sm sm:left-3 sm:top-3"
-                    >
-                      −{discountPercent}%
-                    </Badge>
-                  ) : null}
-                </div>
-
-                <div className="shrink-0 space-y-2 border-t border-border/60 p-3 sm:p-3.5">
-                  <PhotoTitleLine photo={selected} />
-
-                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
-                    <p className="text-muted-foreground">
-                      {t('freshPhotosPhotoFrom')}{' '}
-                      <span className="text-foreground">
-                        {formatPhotoDate(getPhotoTakenAt(selected), locale)}
-                      </span>
-                      <span className="mx-1.5 text-border">·</span>
-                      <span className="tabular-nums text-foreground">
-                        {variant ? getVariantDisplayStock(variant) : selected.stock ?? 0}{' '}
-                        {tc('pieceShort')}
-                      </span>
-                    </p>
-                    {selectedShipmentDate ? (
-                      <ShipmentDateBadge
-                        date={selectedShipmentDate}
-                        className="max-w-[11rem] shrink-0 text-[10px] sm:max-w-none sm:text-xs"
-                      />
-                    ) : null}
-                  </div>
-
-                  {variant && variant.basePrice > 0 ? (
-                    <div className="space-y-1.5">
-                      <PriceWithExVatUnder storedAmount={salePrice}>
-                        <DiscountedUnitPrice
-                          originalPrice={variant.basePrice}
-                          salePrice={salePrice}
-                          perUnit="sale-only"
-                          stacked={false}
-                          originalClassName="text-[11px] text-muted-foreground"
-                          saleClassName="text-sm font-semibold tabular-nums"
-                        />
-                      </PriceWithExVatUnder>
-                      <PhotoDiscountChips variant={variant} />
-                    </div>
-                  ) : null}
-
-                  {inCart > 0 ? (
-                    <p className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary sm:text-xs">
-                      <span>{cartT('inCartCount', { count: inCart })}</span>
-                      <ShoppingCart className="h-3.5 w-3.5" aria-hidden />
-                      {maxAddable > 0 ? (
-                        <span className="font-normal text-muted-foreground">
-                          {tProduct('moreCanAdd', { count: maxAddable })}
-                        </span>
-                      ) : null}
-                    </p>
-                  ) : null}
-
-                  <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                    <div
-                      className={cn(
-                        'inline-flex h-8 items-center rounded-md border',
-                        inCart > 0 && 'border-primary ring-2 ring-primary/20',
-                      )}
-                    >
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setQty((q) => Math.max(1, q - 1))}
-                      >
-                        <Minus className="h-3.5 w-3.5" />
-                      </Button>
-                      <span className="min-w-8 text-center text-sm tabular-nums">{qty}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setQty((q) => q + 1)}
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="h-8"
-                      onClick={handleBuy}
-                      disabled={!variant || maxAddable <= 0}
-                    >
-                      <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
-                      {tProduct('addToCart')}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+      <FreshPhotoLightbox photo={selected} onClose={() => setSelected(null)} />
     </>
   )
 }

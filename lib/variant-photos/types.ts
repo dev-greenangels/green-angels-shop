@@ -57,10 +57,16 @@ export type CatalogPhotosPage = {
   totalPages: number
 }
 
-export function mapCatalogPhotoToVariantPhoto(photo: CatalogPhotoItem): VariantPhoto {
-  const plantNameFromPhoto = photo.productName || photo.appProperties.plantName || ''
+export function mapCatalogPhotoToVariantPhoto(
+  photo: CatalogPhotoItem,
+  options?: { locale?: string },
+): VariantPhoto {
+  const locale = options?.locale ?? 'uk'
+  const plantName =
+    photo.productName?.trim() ||
+    (locale === 'uk' ? photo.appProperties.plantName?.trim() : '') ||
+    ''
   const plantSize = photo.appProperties.plantSize || photo.variantLabel || ''
-  const plantName = plantNameFromPhoto
   return {
     id: photo.id,
     url: resolveFreshPhotoMainUrl(photo),

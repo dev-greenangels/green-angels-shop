@@ -118,12 +118,35 @@ export function catalogPhotoToVariant(photo: CatalogPhotoItem): ProductVariant |
   }
 }
 
-export function catalogPhotoToPlant(photo: CatalogPhotoItem): Plant | null {
+/**
+ * Storefront display name: catalog translation for the active locale first.
+ * UA nursery `plantName` metadata is only a fallback on `uk`.
+ */
+export function resolveFreshPhotoDisplayName(
+  photo: Pick<CatalogPhotoItem, 'productName' | 'ean' | 'appProperties'>,
+  locale: string,
+  fallback = '—',
+): string {
+  const productName = photo.productName?.trim()
+  if (productName) return productName
+  if (locale === 'uk') {
+    const plantName = photo.appProperties.plantName?.trim()
+    if (plantName) return plantName
+  }
+  const ean = photo.ean?.trim()
+  if (ean) return ean
+  return fallback
+}
+
+export function catalogPhotoToPlant(
+  photo: CatalogPhotoItem,
+  options: { locale: string; fallbackName?: string },
+): Plant | null {
   if (!photo.productId || !photo.productSlug) return null
   const variant = catalogPhotoToVariant(photo)
   return {
     id: photo.productId,
-    name: photo.productName || photo.appProperties.plantName || 'Товар',
+    name: resolveFreshPhotoDisplayName(photo, options.locale, options.fallbackName ?? photo.ean),
     latinName: '',
     slug: photo.productSlug,
     category: photo.categorySlug || '',

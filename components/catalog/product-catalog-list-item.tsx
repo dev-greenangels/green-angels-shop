@@ -15,10 +15,12 @@ import { VariantSizeLabel } from '@/components/product/variant-size-label'
 import { NotifyAvailabilityButton } from '@/components/product/notify-availability-button'
 import { NotifyWhenAvailableModal } from '@/components/product/notify-when-available-modal'
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
+import { useDefaultCurrency } from '@/components/providers/commerce-provider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Link } from '@/i18n/navigation'
+import { pushAddToCartEvent } from '@/lib/analytics/push-add-to-cart'
 import { getCartLineQuantity, getMaxAddableQuantity } from '@/lib/cart-limits'
 import { useCartActions, useCartItems } from '@/lib/cart-store'
 import { productHrefFromPlant } from '@/lib/catalog/paths'
@@ -241,6 +243,7 @@ function CatalogListProductImage({
 
 function useVariantBuyHandler(plant: Plant) {
   const cartT = useTranslations('cart')
+  const currency = useDefaultCurrency()
   const cartItems = useCartItems()
   const { addItem, updateQuantity } = useCartActions()
 
@@ -256,6 +259,14 @@ function useVariantBuyHandler(plant: Plant) {
     }
 
     if (addedCount > 0) {
+      pushAddToCartEvent({
+        currency: currency.code,
+        unitPrice,
+        quantity: addedCount,
+        itemId: variant.id,
+        itemName: plant.name,
+        itemVariant: variant.label,
+      })
       showAddedToCartToast(cartT('addedToCart', { count: addedCount }), plant.name, variant.label)
     }
   }

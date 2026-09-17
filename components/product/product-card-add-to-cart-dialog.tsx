@@ -8,6 +8,7 @@ import { showAddedToCartToast } from '@/lib/cart-toast'
 
 import { getCartLineQuantity } from '@/lib/cart-limits'
 import { useCartActions, useCartItems } from '@/lib/cart-store'
+import { pushAddToCartEvent } from '@/lib/analytics/push-add-to-cart'
 import { mapDetailToPlant } from '@/lib/catalog/map-product'
 import type { CatalogProductDetail } from '@/lib/catalog/types'
 import {
@@ -17,9 +18,11 @@ import {
 import type { Plant, ProductVariant } from '@/lib/types'
 import { MinOrderPolicyBanner } from '@/components/cart/min-order-policy-banner'
 import { ProductVariantsTable } from '@/components/product/product-variants-table'
+import { useDefaultCurrency } from '@/components/providers/commerce-provider'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -30,6 +33,10 @@ type ProductCardAddToCartDialogProps = {
   onOpenChange: (open: boolean) => void
 }
 
+function plantHasVisibleVariants(value: Plant | null | undefined): value is Plant {
+  return Boolean(value && getVisiblePlantVariants(value).length > 0)
+}
+
 export function ProductCardAddToCartDialog({
   plant,
   open,
@@ -38,21 +45,34 @@ export function ProductCardAddToCartDialog({
   const locale = useLocale()
   const t = useTranslations('product')
   const tc = useTranslations('cart')
+  const currency = useDefaultCurrency()
   const cartItems = useCartItems()
   const { addItem, updateQuantity } = useCartActions()
   const [resolvedPlant, setResolvedPlant] = useState<Plant | null>(null)
   const [loading, setLoading] = useState(false)
   const [loadFailed, setLoadFailed] = useState(false)
 
+  // Drop stale detail when the card plant changes (carousel remount / different product).
+  useEffect(() => {
+    if (resolvedPlant && resolvedPlant.id !== plant.id) {
+      setResolvedPlant(null)
+    }
+  }, [plant.id, resolvedPlant])
+
   useEffect(() => {
     if (!open) {
-      setResolvedPlant(null)
       setLoadFailed(false)
+      setLoading(false)
       return
     }
 
     let cancelled = false
-    setLoading(true)
+    const cachedForPlant = resolvedPlant?.id === plant.id ? resolvedPlant : null
+    const canShowImmediately =
+      plantHasVisibleVariants(cachedForPlant) || plantHasVisibleVariants(plant)
+
+    // Avoid spinner → tall table height jump (dialog is vertically centered).
+    setLoading(!canShowImmediately)
     setLoadFailed(false)
 
     const query = new URLSearchParams({ locale })
@@ -70,9 +90,12 @@ export function ProductCardAddToCartDialog({
       })
       .catch(() => {
         if (cancelled) return
-        setResolvedPlant(null)
-        setLoadFailed(true)
-        toast.error(t('variantsLoadFailed'))
+        if (!canShowImmediately) {
+          setResolvedPlant(null)
+          setLoadFailed(true)
+          toast.error(t('variantsLoadFailed'))
+        }
+        // If list plant already has variants, keep showing them after a soft fetch failure.
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -81,9 +104,19 @@ export function ProductCardAddToCartDialog({
     return () => {
       cancelled = true
     }
-  }, [open, plant, locale, t])
+    // Intentionally depend on plant.id/slug, not whole plant object / resolvedPlant.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open refetch; cache read at effect start
+  }, [open, plant.id, plant.slug, locale, t])
 
-  const displayPlant = resolvedPlant
+  const displayPlant =
+    resolvedPlant?.id === plant.id && plantHasVisibleVariants(resolvedPlant)
+      ? resolvedPlant
+      : plantHasVisibleVariants(plant)
+        ? plant
+        : resolvedPlant?.id === plant.id
+          ? resolvedPlant
+          : null
+
   const variants = displayPlant ? getVisiblePlantVariants(displayPlant) : []
   const fullyUnavailable = isPlantFullyUnavailable(variants)
 
@@ -101,6 +134,14 @@ export function ProductCardAddToCartDialog({
     }
 
     if (addedCount > 0) {
+      pushAddToCartEvent({
+        currency: currency.code,
+        unitPrice,
+        quantity: addedCount,
+        itemId: variant.id,
+        itemName: displayPlant.name,
+        itemVariant: variant.label,
+      })
       showAddedToCartToast(
         tc('addedToCart', { count: addedCount }),
         displayPlant.name,
@@ -118,6 +159,9 @@ export function ProductCardAddToCartDialog({
           <DialogTitle className="font-serif text-lg leading-snug sm:text-xl">
             {titlePlant.name}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {t('addToCartDialogDescription')}
+          </DialogDescription>
           {titlePlant.latinName ? (
             <p className="text-sm italic text-muted-foreground">{titlePlant.latinName}</p>
           ) : null}

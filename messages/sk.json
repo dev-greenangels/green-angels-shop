@@ -1210,6 +1210,7 @@
     "variantsLoadFailed": "Nepodarilo sa načítať veľkosti produktu.",
     "variantsLoadError": "Nepodarilo sa načítať veľkosti. Skúste znova alebo otvorte stránku produktu.",
     "loadingVariants": "Načítavajú sa veľkosti…",
+    "addToCartDialogDescription": "Vyberte veľkosť a množstvo a pridajte rastlinu do košíka.",
     "galleryTitle": "Fotogaléria",
     "galleryPhoto": "Foto: {title}",
     "closeGallery": "Zavrieť galériu",

@@ -1210,6 +1210,7 @@
     "variantsLoadFailed": "Could not load product sizes.",
     "variantsLoadError": "Could not load sizes. Try again or open the product page.",
     "loadingVariants": "Loading sizes…",
+    "addToCartDialogDescription": "Choose a size and quantity to add this plant to your cart.",
     "galleryTitle": "Photo gallery",
     "galleryPhoto": "Photo: {title}",
     "closeGallery": "Close gallery",

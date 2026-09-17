@@ -1210,6 +1210,7 @@
     "variantsLoadFailed": "Nem sikerült betölteni a méreteket.",
     "variantsLoadError": "Nem sikerült betölteni a méreteket. Próbálja újra, vagy nyissa meg a termékoldalt.",
     "loadingVariants": "Méretek betöltése…",
+    "addToCartDialogDescription": "Válasszon méretet és mennyiséget, majd adja a növényt a kosárhoz.",
     "galleryTitle": "Fotógaléria",
     "galleryPhoto": "Fotó: {title}",
     "closeGallery": "Galéria bezárása",

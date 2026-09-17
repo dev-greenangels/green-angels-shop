@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl'
 
 import { MinOrderPolicyBanner } from '@/components/cart/min-order-policy-banner'
 import { ProductVariantsTable } from '@/components/product/product-variants-table'
+import { useDefaultCurrency } from '@/components/providers/commerce-provider'
+import { pushAddToCartEvent } from '@/lib/analytics/push-add-to-cart'
 import { resolveInitialVariantId } from '@/lib/catalog/variant-query'
 import { showAddedToCartToast } from '@/lib/cart-toast'
 import { getCartLineQuantity } from '@/lib/cart-limits'
@@ -23,6 +25,7 @@ export function ProductPagePurchaseClient({
   initialVariantSku = null,
 }: ProductPagePurchaseClientProps) {
   const tc = useTranslations('cart')
+  const currency = useDefaultCurrency()
   const cartItems = useCartItems()
   const { addItem, updateQuantity } = useCartActions()
 
@@ -52,6 +55,14 @@ export function ProductPagePurchaseClient({
     }
 
     if (addedCount > 0) {
+      pushAddToCartEvent({
+        currency: currency.code,
+        unitPrice,
+        quantity: addedCount,
+        itemId: variant.id,
+        itemName: plant.name,
+        itemVariant: variant.label,
+      })
       showAddedToCartToast(tc('addedToCart', { count: addedCount }), plant.name, variant.label)
     }
   }

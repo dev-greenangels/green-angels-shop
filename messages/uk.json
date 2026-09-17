@@ -1209,6 +1209,7 @@
     "variantsLoadFailed": "Не вдалося завантажити розміри товару.",
     "variantsLoadError": "Не вдалося завантажити розміри. Спробуйте ще раз або відкрийте сторінку товару.",
     "loadingVariants": "Завантаження розмірів…",
+    "addToCartDialogDescription": "Оберіть розмір і кількість, щоб додати рослину в кошик.",
     "galleryTitle": "Галерея фото",
     "galleryPhoto": "Фото: {title}",
     "closeGallery": "Закрити галерею",

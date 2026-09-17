@@ -11,13 +11,16 @@ import { FormattedPrice } from '@/components/commerce/formatted-price'
 import { PriceWithExVatUnder } from '@/components/commerce/shelf-price-block'
 import { DiscountedUnitPrice } from '@/components/pricing/discounted-price'
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
+import { useDefaultCurrency } from '@/components/providers/commerce-provider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { pushAddToCartEvent } from '@/lib/analytics/push-add-to-cart'
 import { formatAvailableFromDisplay } from '@/lib/backstage/variant-pricing'
 import { getCartLineQuantity, getMaxAddableQuantity } from '@/lib/cart-limits'
 import { useCartActions, useCartItems } from '@/lib/cart-store'
@@ -84,6 +87,7 @@ export function FreshPhotoLightbox({ photo, onClose }: FreshPhotoLightboxProps) 
   const tc = useTranslations('common')
   const tProduct = useTranslations('product')
   const cartT = useTranslations('cart')
+  const currency = useDefaultCurrency()
   const cartItems = useCartItems()
   const { addItem } = useCartActions()
   const [qty, setQty] = useState(1)
@@ -133,11 +137,20 @@ export function FreshPhotoLightbox({ photo, onClose }: FreshPhotoLightboxProps) 
       toast.error(cartT('inStockOnly', { count: variant.stock }))
       return
     }
+    const unitPrice = getUnitPriceForQuantity(variant, inCart + addQty)
     const result = addItem(plant, addQty, {
       variant,
-      unitPrice: getUnitPriceForQuantity(variant, inCart + addQty),
+      unitPrice,
     })
     if (result.added > 0) {
+      pushAddToCartEvent({
+        currency: currency.code,
+        unitPrice,
+        quantity: result.added,
+        itemId: variant.id,
+        itemName: plant.name,
+        itemVariant: variant.label,
+      })
       showAddedToCartToast(cartT('addedToCart', { count: result.added }), plant.name, variant.label)
       setQty(1)
     }
@@ -165,6 +178,9 @@ export function FreshPhotoLightbox({ photo, onClose }: FreshPhotoLightboxProps) 
           <div className="relative max-h-[inherit] overflow-y-auto overscroll-contain">
             <div className="overflow-hidden rounded-xl bg-background shadow-xl">
               <DialogTitle className="sr-only">{displayName}</DialogTitle>
+              <DialogDescription className="sr-only">
+                {tProduct('addToCartDialogDescription')}
+              </DialogDescription>
 
               <div className="relative bg-muted">
                 <button

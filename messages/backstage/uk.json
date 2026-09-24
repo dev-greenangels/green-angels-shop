@@ -706,14 +706,14 @@
       "bulkEditProducts": "Масове редагування товарів",
       "bulkMatrixBack": "Назад до характеристик",
       "bulkMatrixTitle": "Масове редагування характеристик",
-      "bulkMatrixDesc": "Усі характеристики для кожного товару в одній таблиці. За замовчуванням показуються лише товари з наявністю.",
+      "bulkMatrixDesc": "Таблиця характеристик. За замовчуванням — лише в наявності.",
       "bulkMatrixSearch": "Пошук за назвою, категорією…",
       "bulkMatrixLoadedCount": "Завантажено {loaded} з {total}",
       "bulkMatrixDirtyCount": "Змінено: {count}",
       "bulkMatrixOnlyIncomplete": "Лише незаповнені",
       "bulkMatrixShowAll": "Показати всі",
-      "bulkMatrixIncompleteLoadedCount": "Незаповнені: {shown} (з {incomplete} у завантажених {loaded} / {total})",
-      "bulkMatrixNoIncompleteInLoaded": "Серед завантажених немає товарів із незаповненими характеристиками. Прокрутіть нижче, щоб підвантажити ще."
+      "bulkMatrixIncompleteLoadedCount": "Незаповнені: {shown}/{loaded} · усього {total}",
+      "bulkMatrixNoIncompleteInLoaded": "Немає незаповнених у завантажених. Прокрутіть нижче."
     },
     "reviews": {
       "title": "Відгуки",

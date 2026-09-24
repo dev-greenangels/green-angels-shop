@@ -706,14 +706,14 @@
       "bulkEditProducts": "Hromadná úprava produktov",
       "bulkMatrixBack": "Späť na charakteristiky",
       "bulkMatrixTitle": "Hromadná úprava charakteristík",
-      "bulkMatrixDesc": "Všetky charakteristiky pre každý produkt v jednej tabuľke. Predvolene sa zobrazujú len produkty na sklade.",
+      "bulkMatrixDesc": "Tabuľka charakteristík. Predvolene — len na sklade.",
       "bulkMatrixSearch": "Hľadať podľa názvu, kategórie…",
       "bulkMatrixLoadedCount": "Načítaných {loaded} z {total}",
       "bulkMatrixDirtyCount": "Zmenené: {count}",
       "bulkMatrixOnlyIncomplete": "Len nevyplnené",
       "bulkMatrixShowAll": "Zobraziť všetky",
-      "bulkMatrixIncompleteLoadedCount": "Nevyplnené: {shown} (z {incomplete} v načítaných {loaded} / {total})",
-      "bulkMatrixNoIncompleteInLoaded": "Medzi načítanými nie sú produkty s nevyplnenými charakteristikami. Posuňte nižšie pre ďalšie."
+      "bulkMatrixIncompleteLoadedCount": "Nevyplnené: {shown}/{loaded} · spolu {total}",
+      "bulkMatrixNoIncompleteInLoaded": "Žiadne nevyplnené v načítaných. Posuňte nižšie."
     },
     "reviews": {
       "title": "Recenzie",

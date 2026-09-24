@@ -448,90 +448,94 @@ export function CharacteristicsBulkEditor({
 
   return (
     <div className="flex h-[calc(100svh-4.5rem)] flex-col overflow-hidden">
-      <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-border/60 px-1 py-3">
-        <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {tPages('bulkMatrixBack')}
-        </Button>
-
-        <div className="min-w-0 flex-1">
-          <h1 className="font-serif text-2xl font-bold text-foreground">{tPages('bulkMatrixTitle')}</h1>
-          <p className="text-sm text-muted-foreground">{tPages('bulkMatrixDesc')}</p>
-        </div>
-
-        <div className="w-full sm:w-56">
-          <InputWithClear
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            onClear={() => {
-              setSearchInput('')
-              setSearch('')
-            }}
-            placeholder={tPages('bulkMatrixSearch')}
-            leadingIcon={<Search className="h-4 w-4" />}
-          />
-        </div>
-
-        <Select
-          value={stockFilter}
-          onValueChange={(value) => setStockFilter(value as typeof stockFilter)}
-        >
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder={tProducts('stockFilter')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{tProducts('anyStock')}</SelectItem>
-            <SelectItem value="in_stock">{tProducts('inStock')}</SelectItem>
-            <SelectItem value="out_of_stock">{tProducts('outOfStock')}</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Button
-          type="button"
-          variant={onlyIncomplete ? 'default' : 'outline'}
-          size="sm"
-          className="shrink-0"
-          onClick={() => setOnlyIncomplete((prev) => !prev)}
-          aria-pressed={onlyIncomplete}
-        >
-          <Filter className="mr-2 h-4 w-4" />
-          {onlyIncomplete
-            ? tPages('bulkMatrixShowAll')
-            : tPages('bulkMatrixOnlyIncomplete')}
-          {!onlyIncomplete && incompleteLoadedCount > 0 ? (
-            <span className="ml-1.5 tabular-nums opacity-80">({incompleteLoadedCount})</span>
-          ) : null}
-        </Button>
-
+      <div className="shrink-0 space-y-3 border-b border-border/60 px-1 py-3">
         <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">
-            {onlyIncomplete
-              ? tPages('bulkMatrixIncompleteLoadedCount', {
-                  shown: visibleItems.length,
-                  incomplete: incompleteLoadedCount,
-                  loaded: items.length,
-                  total,
-                })
-              : tPages('bulkMatrixLoadedCount', { loaded: items.length, total })}
-          </span>
-          {dirtyKeys.size > 0 ? (
-            <span className="text-sm text-primary">
-              {tPages('bulkMatrixDirtyCount', { count: dirtyKeys.size })}
-            </span>
-          ) : null}
-          <Button type="button" disabled={saving || dirtyKeys.size === 0} onClick={() => void handleSave()}>
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {tActions('saving')}
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                {tActions('saveChanges')}
-              </>
-            )}
+          <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={onClose}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {tPages('bulkMatrixBack')}
           </Button>
+          <div className="min-w-0">
+            <h1 className="font-serif text-xl font-bold leading-tight text-foreground sm:text-2xl">
+              {tPages('bulkMatrixTitle')}
+            </h1>
+            <p className="text-sm text-muted-foreground">{tPages('bulkMatrixDesc')}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="min-w-[12rem] flex-1 sm:max-w-xs">
+            <InputWithClear
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              onClear={() => {
+                setSearchInput('')
+                setSearch('')
+              }}
+              placeholder={tPages('bulkMatrixSearch')}
+              leadingIcon={<Search className="h-4 w-4" />}
+            />
+          </div>
+
+          <Select
+            value={stockFilter}
+            onValueChange={(value) => setStockFilter(value as typeof stockFilter)}
+          >
+            <SelectTrigger className="w-[160px] sm:w-[180px]">
+              <SelectValue placeholder={tProducts('stockFilter')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{tProducts('anyStock')}</SelectItem>
+              <SelectItem value="in_stock">{tProducts('inStock')}</SelectItem>
+              <SelectItem value="out_of_stock">{tProducts('outOfStock')}</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button
+            type="button"
+            variant={onlyIncomplete ? 'default' : 'outline'}
+            size="sm"
+            className="shrink-0"
+            onClick={() => setOnlyIncomplete((prev) => !prev)}
+            aria-pressed={onlyIncomplete}
+          >
+            <Filter className="mr-2 h-4 w-4" />
+            {onlyIncomplete
+              ? tPages('bulkMatrixShowAll')
+              : tPages('bulkMatrixOnlyIncomplete')}
+            {!onlyIncomplete && incompleteLoadedCount > 0 ? (
+              <span className="ml-1.5 tabular-nums opacity-80">({incompleteLoadedCount})</span>
+            ) : null}
+          </Button>
+
+          <div className="ml-auto flex flex-wrap items-center gap-2 sm:gap-3">
+            <span className="whitespace-nowrap text-sm text-muted-foreground">
+              {onlyIncomplete
+                ? tPages('bulkMatrixIncompleteLoadedCount', {
+                    shown: visibleItems.length,
+                    loaded: items.length,
+                    total,
+                  })
+                : tPages('bulkMatrixLoadedCount', { loaded: items.length, total })}
+            </span>
+            {dirtyKeys.size > 0 ? (
+              <span className="whitespace-nowrap text-sm text-primary">
+                {tPages('bulkMatrixDirtyCount', { count: dirtyKeys.size })}
+              </span>
+            ) : null}
+            <Button type="button" disabled={saving || dirtyKeys.size === 0} onClick={() => void handleSave()}>
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {tActions('saving')}
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  {tActions('saveChanges')}
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 

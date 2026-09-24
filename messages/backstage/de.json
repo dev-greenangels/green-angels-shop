@@ -568,14 +568,14 @@
       "bulkEditProducts": "Bulk edit products",
       "bulkMatrixBack": "Back to characteristics",
       "bulkMatrixTitle": "Bulk characteristic editing",
-      "bulkMatrixDesc": "All characteristics for each product in one table. By default only in-stock products are shown.",
+      "bulkMatrixDesc": "Characteristics table. Defaults to in-stock only.",
       "bulkMatrixSearch": "Search by name, category…",
       "bulkMatrixLoadedCount": "Loaded {loaded} of {total}",
       "bulkMatrixDirtyCount": "Changed: {count}",
       "bulkMatrixOnlyIncomplete": "Incomplete only",
       "bulkMatrixShowAll": "Show all",
-      "bulkMatrixIncompleteLoadedCount": "Incomplete: {shown} (of {incomplete} in loaded {loaded} / {total})",
-      "bulkMatrixNoIncompleteInLoaded": "No incomplete products in the loaded rows. Scroll down to load more."
+      "bulkMatrixIncompleteLoadedCount": "Incomplete: {shown}/{loaded} · total {total}",
+      "bulkMatrixNoIncompleteInLoaded": "No incomplete products in loaded rows. Scroll for more."
     },
     "reviews": {
       "title": "Reviews",

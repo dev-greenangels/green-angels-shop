@@ -11,6 +11,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { toast } from '@/lib/toast'
+import { useTranslations } from 'next-intl'
 
 import { CancelOrderDialog } from '@/components/backstage/cancel-order-dialog'
 import { OrderStatusBadge, OrderStatusSelect } from '@/components/backstage/order-status-select'
@@ -96,6 +97,7 @@ function Copyable({ value }: { value: string }) {
 
 export function OrderDetailContent({ orderId }: { orderId: string }) {
   const { locale } = useBackstageUiLocale()
+  const tPacketa = useTranslations('packetaOrderSnapshot')
   const store = useStoreSettings()
   const pickupAddress = formatStoreAddress(store)
 
@@ -577,6 +579,34 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
               {order.deliveryBranchLabel ? (
                 <p className="text-muted-foreground">{order.deliveryBranchLabel}</p>
               ) : null}
+              {order.deliveryMethod?.startsWith('packeta') ? (
+                <div className="space-y-1 border-t border-border/60 pt-3 text-muted-foreground">
+                  <p>
+                    {tPacketa('serviceKey')}:{' '}
+                    <span className="font-mono text-foreground">
+                      {order.packetaServiceKey?.trim() || tPacketa('legacyUnset')}
+                    </span>
+                  </p>
+                  {order.packetaCarrierId ? (
+                    <p>
+                      {tPacketa('carrierId')}:{' '}
+                      <span className="font-mono text-foreground">{order.packetaCarrierId}</span>
+                    </p>
+                  ) : null}
+                  {order.packetaPickupPointKind ? (
+                    <p>
+                      {tPacketa('pickupKind')}:{' '}
+                      {order.packetaPickupPointKind === 'branch'
+                        ? tPacketa('pickupKindBranch')
+                        : order.packetaPickupPointKind === 'box'
+                          ? tPacketa('pickupKindBox')
+                          : order.packetaPickupPointKind === 'carrier'
+                            ? tPacketa('pickupKindCarrier')
+                            : order.packetaPickupPointKind}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               {order.deliveryAmount != null ? (
                 <p>Вартість: {money(order.deliveryAmount)}</p>
               ) : null}
@@ -590,17 +620,29 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                   {order.receiverCompanyName ? <p>{order.receiverCompanyName}</p> : null}
                 </div>
               ) : null}
-              {(order.companyStreet || order.companyCity || order.companyPostalCode) &&
-              (order.companyStreet !== order.deliveryStreet ||
-                order.companyCity !== order.deliveryCity) ? (
+              {(order.billingStreet ||
+                order.billingCity ||
+                order.billingPostalCode ||
+                ((order.companyStreet || order.companyCity || order.companyPostalCode) &&
+                  (order.companyStreet !== order.deliveryStreet ||
+                    order.companyCity !== order.deliveryCity))) ? (
                 <div className="border-t pt-3">
                   <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Billing
                   </p>
                   <p>
-                    {[order.companyStreet, order.companyCity, order.companyPostalCode]
-                      .filter(Boolean)
-                      .join(', ')}
+                    {order.billingStreet || order.billingCity || order.billingPostalCode
+                      ? [
+                          [order.billingStreet, order.billingHouseNumber].filter(Boolean).join(' '),
+                          order.billingCity,
+                          order.billingPostalCode,
+                          order.billingCountryCode,
+                        ]
+                          .filter(Boolean)
+                          .join(', ')
+                      : [order.companyStreet, order.companyCity, order.companyPostalCode]
+                          .filter(Boolean)
+                          .join(', ')}
                   </p>
                 </div>
               ) : null}

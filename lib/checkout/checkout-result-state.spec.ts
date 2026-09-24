@@ -182,7 +182,7 @@ describe('resolvePaymentPurposeForMarket', () => {
       ['ZY-00000001'],
       'sk',
     )
-    assert.equal(purpose, 'VS ZY-00000001')
+    assert.equal(purpose, 'Platba za objednávku ZY-00000001')
     assert.equal(/[а-яіїєґ]/i.test(purpose), false)
   })
 

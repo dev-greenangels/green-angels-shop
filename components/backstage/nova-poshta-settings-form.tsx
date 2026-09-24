@@ -227,6 +227,16 @@ export function NovaPoshtaSettingsForm() {
 
   return (
     <div className="space-y-6">
+      <Card className="border-dashed">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Carrier boundary (підготовка)</CardTitle>
+          <CardDescription>
+            UA: Нова Пошта. Пізніше сервіси (відділення / поштомат / курʼєр) зможуть задати actual /
+            volumetric / chargeable weight, divisor, max dimensions, тарифи та COD — без зміни ядра
+            checkout. Зараз поведінка UA не змінюється; тарифи не вигадані.
+          </CardDescription>
+        </CardHeader>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle>API Нової Пошти</CardTitle>

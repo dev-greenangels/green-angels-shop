@@ -68,6 +68,9 @@ type UsePricingQuoteInput = {
   buyerType?: 'individual' | 'company'
   vatCountryCode?: string
   viesValid?: boolean
+  pickupPointId?: string
+  pickupPointKind?: 'branch' | 'box' | 'carrier'
+  packetaCarrierId?: number
   enabled?: boolean
   debounceMs?: number
 }
@@ -87,6 +90,9 @@ export function usePricingQuote({
   buyerType,
   vatCountryCode,
   viesValid,
+  pickupPointId,
+  pickupPointKind,
+  packetaCarrierId,
   enabled = true,
   debounceMs = 300,
 }: UsePricingQuoteInput) {
@@ -129,6 +135,12 @@ export function usePricingQuote({
             buyerType,
             vatCountryCode,
             viesValid,
+            pickupPointId: pickupPointId || undefined,
+            pickupPointKind: pickupPointKind || undefined,
+            packetaCarrierId:
+              packetaCarrierId != null && packetaCarrierId > 0
+                ? packetaCarrierId
+                : undefined,
           })
           if (requestIdRef.current !== requestId) return
           setQuoteForPromoCodes(requestedPromoCodes)
@@ -159,6 +171,9 @@ export function usePricingQuote({
     enabled,
     items,
     itemsKey,
+    packetaCarrierId,
+    pickupPointId,
+    pickupPointKind,
     promoCode,
     promoCodes,
     splitOrderPartIndex,

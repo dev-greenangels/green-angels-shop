@@ -12,7 +12,12 @@ import { useLocale, useTranslations } from 'next-intl'
 
 import { checkoutPanelClassName } from '@/components/checkout/checkout-utils'
 import { Button } from '@/components/ui/button'
-import { type StripePendingPayment } from '@/lib/checkout/stripe-pending'
+import {
+  hasStripeBillingAddressPrefill,
+  stripeCheckoutContactFromPrefill,
+  stripePaymentElementFieldsForPrefill,
+  type StripePendingPayment,
+} from '@/lib/checkout/stripe-pending'
 import { formatMoneyAmount } from '@/lib/commerce/format'
 import { cn } from '@/lib/utils'
 
@@ -81,14 +86,32 @@ function StripePaymentFormInner({
     onSessionInvalid?.()
   }, [checkoutState, onSessionInvalid])
 
+  useEffect(() => {
+    if (!checkout || !hasStripeBillingAddressPrefill(payment.billingPrefill)) return
+    void checkout
+      .updateBillingAddress(stripeCheckoutContactFromPrefill(payment.billingPrefill))
+      .catch((err) => {
+        logStripeCheckoutError('updateBillingAddress failed', err)
+      })
+  }, [checkout, payment.billingPrefill])
+
+  const paymentElementFields = useMemo(
+    () => stripePaymentElementFieldsForPrefill(payment.billingPrefill),
+    [payment.billingPrefill],
+  )
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!checkout || submitting || !checkout.canConfirm) return
     setSubmitting(true)
     setError(null)
     try {
+      const billingAddress = hasStripeBillingAddressPrefill(payment.billingPrefill)
+        ? stripeCheckoutContactFromPrefill(payment.billingPrefill)
+        : undefined
       const result = await checkout.confirm({
         redirect: 'if_required',
+        ...(billingAddress ? { billingAddress } : {}),
       })
       if (result.type === 'error') {
         logStripeCheckoutError('confirm returned error', result.error)
@@ -125,7 +148,11 @@ function StripePaymentFormInner({
         </p>
       ) : null}
 
-      {ready ? <PaymentElement /> : null}
+      {ready ? (
+        <PaymentElement
+          options={paymentElementFields ? { fields: paymentElementFields } : undefined}
+        />
+      ) : null}
 
       {error ? (
         <p className="text-sm text-destructive" role="alert">
@@ -183,8 +210,15 @@ export function StripePaymentForm({
       elementsOptions: {
         appearance: STRIPE_APPEARANCE,
       },
+      ...(hasStripeBillingAddressPrefill(payment.billingPrefill)
+        ? {
+            defaultValues: {
+              billingAddress: stripeCheckoutContactFromPrefill(payment.billingPrefill),
+            },
+          }
+        : {}),
     }),
-    [payment.clientSecret],
+    [payment.clientSecret, payment.billingPrefill],
   )
 
   const body = (

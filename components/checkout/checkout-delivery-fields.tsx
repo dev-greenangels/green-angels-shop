@@ -259,6 +259,8 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
           deliveryCountryCode: next,
           postOffice: '',
           postOfficeLabel: '',
+          packetaPickupKind: '',
+          packetaCarrierId: null,
         })
       }
     }
@@ -309,6 +311,8 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
       cityLabel: option.label,
       postOffice: '',
       postOfficeLabel: '',
+      packetaPickupKind: '',
+      packetaCarrierId: null,
       street: '',
       streetLabel: '',
     })
@@ -336,6 +340,8 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
                     deliveryCountryCode: isSk ? 'sk' : shipment.deliveryCountryCode,
                     postOffice: '',
                     postOfficeLabel: '',
+                    packetaPickupKind: '',
+                    packetaCarrierId: null,
                   })
                   return
                 }
@@ -414,6 +420,8 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
                     deliveryCountryCode: value as DeliveryCountryCode,
                     postOffice: '',
                     postOfficeLabel: '',
+                    packetaPickupKind: '',
+                    packetaCarrierId: null,
                   })
                   onBlurField('deliveryCountryCode')
                 }}
@@ -505,6 +513,10 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
                 city: meta?.city || nextLabel?.split(',').pop()?.trim() || shipment.city,
                 cityLabel: meta?.city || nextLabel || shipment.cityLabel,
                 postalCode: meta?.zip || shipment.postalCode,
+                street: meta?.street || '',
+                streetLabel: meta?.street || '',
+                packetaPickupKind: meta?.kind ?? '',
+                packetaCarrierId: meta?.packetaCarrierId ?? null,
               })
             }
           />

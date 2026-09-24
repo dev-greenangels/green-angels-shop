@@ -46,6 +46,8 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
   vatCountryCode = 'SK',
   onVatCountryCodeChange,
   onViesResult,
+  dobierkaFeeAmount = 0,
+  formatDobierkaFee,
 }: {
   formData: CheckoutFormValues
   enabledPaymentMethods?: CheckoutPaymentMethodSlug[]
@@ -66,6 +68,9 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
   vatCountryCode?: string
   onVatCountryCodeChange?: (code: string) => void
   onViesResult?: (result: { valid: boolean | null } | null) => void
+  /** Authoritative COD fee from live pricing quote (0 when not Dobierka / no fee). */
+  dobierkaFeeAmount?: number
+  formatDobierkaFee?: (amount: number) => string
 }) {
   const t = useTranslations('checkout')
   const tc = useTranslations('common')
@@ -363,9 +368,18 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
                   className="size-5 border-2 border-border/90 bg-background shadow-sm data-[state=checked]:border-primary"
                 />
                 <div className="flex-1">
-                  <p className="font-medium text-foreground">
-                    {t(`paymentMethods.${method}.title`)}
-                  </p>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="font-medium text-foreground">
+                      {t(`paymentMethods.${method}.title`)}
+                    </p>
+                    {method === 'dobierka' &&
+                    dobierkaFeeAmount > 0 &&
+                    formatDobierkaFee ? (
+                      <span className="shrink-0 tabular-nums text-sm font-medium text-foreground">
+                        +{formatDobierkaFee(dobierkaFeeAmount)}
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     {t(`paymentMethods.${method}.description`)}
                   </p>

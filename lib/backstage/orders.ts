@@ -52,6 +52,12 @@ export type BackstageOrderDetail = BackstageOrderListItem & {
   deliveryCity: string | null
   deliveryBranch: string | null
   deliveryBranchLabel?: string | null
+  /** Packeta internal serviceKey snapshot at order create. */
+  packetaServiceKey?: string | null
+  /** Opaque Packeta carrier id snapshot. */
+  packetaCarrierId?: string | null
+  /** branch | box | carrier */
+  packetaPickupPointKind?: string | null
   deliveryStreet: string | null
   deliveryHouseNumber: string | null
   deliveryPostalCode?: string | null
@@ -106,6 +112,11 @@ export type BackstageOrderDetail = BackstageOrderListItem & {
   companyStreet?: string | null
   companyCity?: string | null
   companyPostalCode?: string | null
+  billingStreet?: string | null
+  billingHouseNumber?: string | null
+  billingCity?: string | null
+  billingPostalCode?: string | null
+  billingCountryCode?: string | null
   viesCheck?: {
     valid: boolean | null
     vatCountryCode: string

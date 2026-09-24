@@ -589,22 +589,70 @@ export function isOtpChannelEnabled(
   return market.otpEmailLogin
 }
 
-/** Client-side phone check aligned with Nest `validatePhoneForPolicy`. */
-export function isValidPhoneForPolicy(phone: string, policy: PhonePolicy): boolean {
+/** UA national / E.164 → +380… (only for `ua_e164`). */
+export function normalizePhoneUaE164(phone: string): string | null {
   const digits = phone.replace(/\D/g, '')
-  if (policy === 'sk_e164') {
-    if (/^421\d{9}$/.test(digits)) return true
-    if (/^0\d{9}$/.test(digits)) return true
-    if (/^\d{9}$/.test(digits)) return true
-    return false
-  }
-  if (policy === 'intl') {
-    return digits.length >= 7 && digits.length <= 15
-  }
-  // ua_e164
-  if (/^380\d{9}$/.test(digits)) return true
-  if (/^0\d{9}$/.test(digits)) return true
-  return false
+  if (digits.startsWith('380') && digits.length === 12) return `+${digits}`
+  if (digits.startsWith('0') && digits.length === 10) return `+38${digits}`
+  if (digits.length === 9) return `+380${digits}`
+  if (digits.startsWith('380') && digits.length > 12) return `+${digits.slice(0, 12)}`
+  return null
+}
+
+/** SK national / E.164 → +421… (only for `sk_e164`). */
+export function normalizePhoneSkE164(phone: string): string | null {
+  const digits = phone.replace(/\D/g, '')
+  if (digits.startsWith('421') && digits.length === 12) return `+${digits}`
+  if (digits.startsWith('0') && digits.length === 10) return `+421${digits.slice(1)}`
+  if (digits.length === 9) return `+421${digits}`
+  if (digits.startsWith('421') && digits.length > 12) return `+${digits.slice(0, 12)}`
+  return null
+}
+
+/**
+ * International E.164. Does **not** invent +380/+421 for bare national numbers.
+ * Prefer `+` with country code (SK/CZ/HU/AT/…).
+ */
+export function normalizePhoneIntlE164(phone: string): string | null {
+  const trimmed = phone.trim()
+  const digits = trimmed.replace(/\D/g, '')
+  if (digits.length < 7 || digits.length > 15) return null
+  // Ambiguous EU national (leading 0) without country — do not guess UA.
+  if (!trimmed.startsWith('+') && digits.startsWith('0')) return null
+  return `+${digits}`
+}
+
+/**
+ * Aligns with Nest `validatePhoneForPolicy`.
+ * Optional `regionFallback`: when policy is `intl` and input is national (0… / 9 digits),
+ * apply that deploy's country code so SK checkout `09…` → +421, not +380.
+ */
+export function normalizePhoneForPolicy(
+  phone: string,
+  policy: PhonePolicy,
+  regionFallback?: MarketRegion,
+): string | null {
+  const trimmed = phone.trim()
+  if (!trimmed) return null
+
+  if (policy === 'ua_e164') return normalizePhoneUaE164(trimmed)
+  if (policy === 'sk_e164') return normalizePhoneSkE164(trimmed)
+
+  const intl = normalizePhoneIntlE164(trimmed)
+  if (intl) return intl
+
+  if (regionFallback === 'sk') return normalizePhoneSkE164(trimmed)
+  if (regionFallback === 'ua') return normalizePhoneUaE164(trimmed)
+  return null
+}
+
+/** Client-side phone check aligned with Nest `validatePhoneForPolicy`. */
+export function isValidPhoneForPolicy(
+  phone: string,
+  policy: PhonePolicy,
+  regionFallback?: MarketRegion,
+): boolean {
+  return normalizePhoneForPolicy(phone, policy, regionFallback) != null
 }
 
 export function phonePlaceholderForPolicy(policy: PhonePolicy): string {
@@ -616,9 +664,10 @@ export function phonePlaceholderForPolicy(policy: PhonePolicy): string {
 export function phoneErrorCodeForPolicy(
   phone: string,
   policy: PhonePolicy,
+  regionFallback?: MarketRegion,
 ): import('@/lib/validation/field-error').FieldErrorCode | null {
   if (!phone.trim()) return 'required'
-  if (!isValidPhoneForPolicy(phone, policy)) {
+  if (!isValidPhoneForPolicy(phone, policy, regionFallback)) {
     if (policy === 'sk_e164') return 'invalidPhoneSk'
     if (policy === 'intl') return 'invalidPhoneIntl'
     return 'invalidPhoneUa'
@@ -627,8 +676,12 @@ export function phoneErrorCodeForPolicy(
 }
 
 /** @deprecated Prefer phoneErrorCodeForPolicy + formatFieldError */
-export function phoneErrorForPolicy(phone: string, policy: PhonePolicy): string | null {
-  return phoneErrorCodeForPolicy(phone, policy)
+export function phoneErrorForPolicy(
+  phone: string,
+  policy: PhonePolicy,
+  regionFallback?: MarketRegion,
+): string | null {
+  return phoneErrorCodeForPolicy(phone, policy, regionFallback)
 }
 
 function resolveAuthPhonePolicy(

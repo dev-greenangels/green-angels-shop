@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl'
 
 import { FieldHint, RequiredLabel } from '@/components/auth/auth-form-ui'
+import { CheckoutInvoiceAddressFields } from '@/components/checkout/checkout-invoice-address-fields'
 import { checkoutInputClassName } from '@/components/checkout/checkout-utils'
 import { CheckoutVatIdField } from '@/components/checkout/checkout-vat-id-field'
 import type { CheckoutBuyerType } from '@/components/checkout/checkout-payment-step'
@@ -13,6 +14,7 @@ import { cn } from '@/lib/utils'
 import {
   getCheckoutPaymentFieldError,
   sanitizeEdrpouInput,
+  type CheckoutBillingFieldKey,
   type CheckoutFormValues,
   type CheckoutPaymentFieldKey,
 } from '@/lib/validation/checkout-form'
@@ -31,6 +33,9 @@ export function CheckoutSkBillingFields({
   onVatCountryCodeChange,
   onViesResult,
   viesValid,
+  enabledCountries,
+  billingTouched,
+  onBlurBillingField,
 }: {
   formData: CheckoutFormValues
   paymentTouched: Partial<Record<CheckoutPaymentFieldKey, boolean>>
@@ -44,6 +49,9 @@ export function CheckoutSkBillingFields({
   onVatCountryCodeChange?: (code: string) => void
   onViesResult?: (result: { valid: boolean | null } | null) => void
   viesValid?: boolean | null
+  enabledCountries?: string[]
+  billingTouched: Partial<Record<CheckoutBillingFieldKey, boolean>>
+  onBlurBillingField: (field: CheckoutBillingFieldKey) => void
 }) {
   const fe = useFormatFieldError()
   const t = useTranslations('checkout')
@@ -268,7 +276,18 @@ export function CheckoutSkBillingFields({
             <p className="text-sm font-medium text-primary">{t('vatZeroDphApplied')}</p>
           ) : null}
         </div>
-      ) : null}
+      ) : (
+        <CheckoutInvoiceAddressFields
+          embedded
+          formData={formData}
+          marketRegion="sk"
+          buyerType={buyerType}
+          enabledCountries={enabledCountries}
+          billingTouched={billingTouched}
+          onBlurBillingField={onBlurBillingField}
+          onPatchForm={onPatchForm}
+        />
+      )}
     </div>
   )
 }

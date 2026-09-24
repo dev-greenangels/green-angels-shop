@@ -14,6 +14,7 @@ import { CartCheckoutSettingsForm } from '@/components/backstage/cart-checkout-s
 import { CatalogSettingsForm } from '@/components/backstage/catalog-settings-form'
 import { NovaPoshtaSettingsForm } from '@/components/backstage/nova-poshta-settings-form'
 import { PacketaSettingsForm } from '@/components/backstage/packeta-settings-form'
+import { GlsSettingsForm } from '@/components/backstage/gls-settings-form'
 import { FlexiSettingsForm } from '@/components/backstage/flexi-settings-form'
 import { RecentlyViewedSettingsForm } from '@/components/backstage/recently-viewed-settings-form'
 import { MarketSettingsForm } from '@/components/backstage/market-settings-form'
@@ -39,6 +40,7 @@ import {
 } from '@/lib/backstage/settings'
 import { fetchCurrencies } from '@/lib/backstage/reference-data'
 import type { CurrencyInfo } from '@/lib/commerce/types'
+import { buildCartOwnedCheckoutPatch } from '@/lib/backstage/cart-checkout-ownership'
 import {
   DEFAULT_CART_CHECKOUT_SETTINGS,
   DEFAULT_CATALOG_SETTINGS,
@@ -252,7 +254,11 @@ export default function SettingsPage() {
     if (!cart) return
     setSavingCart(true)
     try {
-      const updated = await updateBackstageCartCheckoutSettings(cart)
+      // Cart-owned fields only — never re-send Packeta/GLS carrierConfigs, rates, or surcharges
+      // (stale Cart tab must not overwrite a newer Packeta/GLS save).
+      const updated = await updateBackstageCartCheckoutSettings(
+        buildCartOwnedCheckoutPatch(cart),
+      )
       setCart(updated)
       setBaselineCart(stableJson(updated))
       toast.success('Налаштування кошика збережено.')
@@ -404,6 +410,8 @@ export default function SettingsPage() {
     )
   }
 
+  const marketRegion = market?.region ?? 'ua'
+
   return (
     <AdminLayout>
       <div className="mx-auto max-w-4xl space-y-6">
@@ -415,14 +423,21 @@ export default function SettingsPage() {
         </div>
 
         <Tabs defaultValue="store">
-          <TabsList>
+          <TabsList className="flex h-auto flex-wrap gap-1">
             <TabsTrigger value="store">Магазин</TabsTrigger>
             <TabsTrigger value="catalog">Каталог</TabsTrigger>
             <TabsTrigger value="recently-viewed">Останні переглянуті</TabsTrigger>
             <TabsTrigger value="cart">Кошик</TabsTrigger>
             <TabsTrigger value="market">Ринок</TabsTrigger>
-            <TabsTrigger value="nova-poshta">Нова Пошта</TabsTrigger>
-            <TabsTrigger value="packeta">Packeta</TabsTrigger>
+            {marketRegion === 'ua' ? (
+              <TabsTrigger value="nova-poshta">Нова Пошта</TabsTrigger>
+            ) : null}
+            {marketRegion === 'sk' ? (
+              <>
+                <TabsTrigger value="packeta">Packeta</TabsTrigger>
+                <TabsTrigger value="gls">GLS</TabsTrigger>
+              </>
+            ) : null}
             <TabsTrigger value="flexi">ABRA Flexi</TabsTrigger>
             <TabsTrigger value="presta-import">Імпорт Presta</TabsTrigger>
             <TabsTrigger value="withdrawal">{tSettings('withdrawal.tab')}</TabsTrigger>
@@ -496,13 +511,22 @@ export default function SettingsPage() {
             ) : null}
           </TabsContent>
 
-          <TabsContent value="nova-poshta" className="mt-6 space-y-6">
-            <NovaPoshtaSettingsForm />
-          </TabsContent>
+          {marketRegion === 'ua' ? (
+            <TabsContent value="nova-poshta" className="mt-6 space-y-6">
+              <NovaPoshtaSettingsForm />
+            </TabsContent>
+          ) : null}
 
-          <TabsContent value="packeta" className="mt-6 space-y-6">
-            <PacketaSettingsForm />
-          </TabsContent>
+          {marketRegion === 'sk' ? (
+            <>
+              <TabsContent value="packeta" className="mt-6 space-y-6">
+                <PacketaSettingsForm />
+              </TabsContent>
+              <TabsContent value="gls" className="mt-6 space-y-6">
+                <GlsSettingsForm />
+              </TabsContent>
+            </>
+          ) : null}
 
           <TabsContent value="flexi" className="mt-6 space-y-6">
             <FlexiSettingsForm />

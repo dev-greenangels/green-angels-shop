@@ -19,6 +19,7 @@ import {
 import { CheckoutPaymentStep, type CheckoutBuyerType } from '@/components/checkout/checkout-payment-step'
 import { CheckoutCardPaymentPanel } from '@/components/checkout/checkout-card-payment-panel'
 import { CheckoutShipDateField } from '@/components/checkout/checkout-ship-date-field'
+import { CheckoutShippingLeadNotice } from '@/components/checkout/checkout-shipping-lead-notice'
 import { CheckoutShippingStep } from '@/components/checkout/checkout-shipping-step'
 import { CheckoutSkBillingFields } from '@/components/checkout/checkout-sk-billing-fields'
 import type { SkCheckoutAuthMode } from '@/components/checkout/checkout-sk-auth-mode-toggle'
@@ -28,6 +29,11 @@ import { useCountrySiteOverlay } from '@/components/providers/country-site-provi
 import { useSession } from '@/components/providers/session-provider'
 import { useFormatPrice } from '@/lib/commerce/use-format-price'
 import { RecentlyViewedSection } from '@/components/product/recently-viewed-section'
+import {
+  resolveShippingLeadNoticeText,
+  shouldShowShippingLeadNotice,
+  type ShippingLeadNoticeSettings,
+} from '@/lib/dispatch-calendar'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
 import {
   allowedDeliveryCountriesForHost,
@@ -74,6 +80,7 @@ import {
   loadStripePendingPayments,
   saveStripePendingPayments,
   stripePaymentsFromCreatedOrders,
+  stripeBillingPrefillFromPayload,
   type StripePendingPayment,
 } from '@/lib/checkout/stripe-pending'
 import { syncStripePayment, cancelUnpaidOrder, retryOrderPayment, fetchOrderConfirmation } from '@/lib/orders/fetch-order-confirmation'
@@ -97,9 +104,11 @@ import { Link, useRouter } from '@/i18n/navigation'
 import { useCatalogHref } from '@/components/providers/catalog-paths-provider'
 import { cn } from '@/lib/utils'
 import {
+  isBillingAddressValid,
   isContactStepValid,
   isPaymentStepValid,
   isShippingStepValid,
+  type CheckoutBillingFieldKey,
   type CheckoutContactFieldKey,
   type CheckoutFormValues,
   type CheckoutIdentificationState,
@@ -155,10 +164,18 @@ const initialFormData: CheckoutFormValues = {
   cityLabel: '',
   postOffice: '',
   postOfficeLabel: '',
+  packetaPickupKind: '',
+  packetaCarrierId: null,
   street: '',
   streetLabel: '',
   houseNumber: '',
   postalCode: '',
+  billingSameAsShipping: false,
+  billingStreet: '',
+  billingHouseNumber: '',
+  billingCity: '',
+  billingPostalCode: '',
+  billingCountryCode: '',
   paymentMethod: 'card-online',
   companyEdrpou: '',
   companyLegalName: '',
@@ -244,6 +261,14 @@ export default function CheckoutPage() {
     useState<CartCheckoutSettings>(DEFAULT_CART_CHECKOUT_SETTINGS)
   const [marketSettings, setMarketSettings] = useState<MarketSettings>(DEFAULT_MARKET_SETTINGS)
   const [dispatchCalendarEnabled, setDispatchCalendarEnabled] = useState(false)
+  const [shippingLeadNotice, setShippingLeadNotice] =
+    useState<ShippingLeadNoticeSettings | null>(null)
+  const shippingLeadNoticeText = useMemo(() => {
+    if (!shouldShowShippingLeadNotice(shippingLeadNotice, dispatchCalendarEnabled)) {
+      return ''
+    }
+    return resolveShippingLeadNoticeText(shippingLeadNotice, locale)
+  }, [shippingLeadNotice, dispatchCalendarEnabled, locale])
   const needsShipmentSplitChoice = useMemo(
     () =>
       cartCheckoutSettings.allowShipmentSplit !== false &&
@@ -310,6 +335,18 @@ export default function CheckoutPage() {
       isSkMarket && buyerType === 'company' && viesValid != null
         ? viesValid
         : undefined,
+    pickupPointId:
+      formData.deliveryMethod === 'packeta-box' && formData.postOffice
+        ? formData.postOffice
+        : undefined,
+    pickupPointKind:
+      formData.deliveryMethod === 'packeta-box' && formData.packetaPickupKind
+        ? formData.packetaPickupKind
+        : undefined,
+    packetaCarrierId:
+      formData.deliveryMethod === 'packeta-box' && formData.packetaCarrierId
+        ? formData.packetaCarrierId
+        : undefined,
     enabled: mounted && catalogReady && quoteItemsKey.length > 0,
   })
   const allowedDeliveryMethods = useMemo(() => {
@@ -328,6 +365,7 @@ export default function CheckoutPage() {
       hasMeasuredItem: envelope?.hasMeasuredItem === true,
     }
   }, [pricingQuote?.cartSizeEnvelope, pricingQuote?.cartWeightKg])
+
   const splitQuotesEnabled =
     mounted &&
     catalogReady &&
@@ -353,6 +391,22 @@ export default function CheckoutPage() {
       isSkMarket && buyerType === 'company' && viesValid != null
         ? viesValid
         : undefined,
+    pickupPointId:
+      immediateDeliveryMethod === 'packeta-box'
+        ? formData.splitShipments?.immediate.postOffice || formData.postOffice || undefined
+        : undefined,
+    pickupPointKind:
+      immediateDeliveryMethod === 'packeta-box'
+        ? formData.splitShipments?.immediate.packetaPickupKind ||
+          formData.packetaPickupKind ||
+          undefined
+        : undefined,
+    packetaCarrierId:
+      immediateDeliveryMethod === 'packeta-box'
+        ? formData.splitShipments?.immediate.packetaCarrierId ||
+          formData.packetaCarrierId ||
+          undefined
+        : undefined,
     enabled: splitQuotesEnabled && immediateItemsKey.length > 0,
   })
   const { quote: datedSplitQuote, loading: datedSplitQuoteLoading } = usePricingQuote({
@@ -370,6 +424,22 @@ export default function CheckoutPage() {
     viesValid:
       isSkMarket && buyerType === 'company' && viesValid != null
         ? viesValid
+        : undefined,
+    pickupPointId:
+      datedDeliveryMethod === 'packeta-box'
+        ? formData.splitShipments?.dated.postOffice || formData.postOffice || undefined
+        : undefined,
+    pickupPointKind:
+      datedDeliveryMethod === 'packeta-box'
+        ? formData.splitShipments?.dated.packetaPickupKind ||
+          formData.packetaPickupKind ||
+          undefined
+        : undefined,
+    packetaCarrierId:
+      datedDeliveryMethod === 'packeta-box'
+        ? formData.splitShipments?.dated.packetaCarrierId ||
+          formData.packetaCarrierId ||
+          undefined
         : undefined,
     enabled: splitQuotesEnabled && datedItemsKey.length > 0,
   })
@@ -544,6 +614,9 @@ export default function CheckoutPage() {
   }>({ immediate: {}, dated: {} })
   const [paymentTouched, setPaymentTouched] = useState<
     Partial<Record<CheckoutPaymentFieldKey, boolean>>
+  >({})
+  const [billingTouched, setBillingTouched] = useState<
+    Partial<Record<CheckoutBillingFieldKey, boolean>>
   >({})
   const [preferredShipDateTouched, setPreferredShipDateTouched] = useState(false)
   const [preferredShipDateImmediateTouched, setPreferredShipDateImmediateTouched] =
@@ -782,6 +855,16 @@ export default function CheckoutPage() {
           setCartCheckoutSettings(getCartCheckoutSettings(result))
           setMarketSettings(getMarketSettings(result))
           setDispatchCalendarEnabled(Boolean(result.settings.dispatchCalendar?.enabled))
+          const notice = result.settings.dispatchCalendar?.shippingLeadNotice
+          setShippingLeadNotice(
+            notice
+              ? {
+                  enabled: notice.enabled === true,
+                  showMode: notice.showMode ?? 'when_calendar_off',
+                  texts: notice.texts ?? {},
+                }
+              : null,
+          )
         }
       }),
     ])
@@ -1105,8 +1188,20 @@ export default function CheckoutPage() {
         checkoutEmailRequired: marketSettings.checkoutEmailRequired,
         authPhonePolicy: marketSettings.authPhonePolicy,
         deliveryPhonePolicy: marketSettings.deliveryPhonePolicy,
+      }) &&
+      isBillingAddressValid(formData, {
+        marketRegion: isSkMarket ? 'sk' : 'ua',
+        buyerType: isSkMarket ? buyerType : undefined,
       }),
-    [formData, identification, isSkMarket, allowGuestCheckout, skGuestCheckout, marketSettings],
+    [
+      formData,
+      identification,
+      isSkMarket,
+      allowGuestCheckout,
+      skGuestCheckout,
+      marketSettings,
+      buyerType,
+    ],
   )
   const canProceedToPayment = useMemo(
     () =>
@@ -1116,6 +1211,10 @@ export default function CheckoutPage() {
         deliveryPhonePolicy: marketSettings.deliveryPhonePolicy,
         authPhonePolicy: marketSettings.authPhonePolicy,
         requirePreferredShipDate: dispatchCalendarEnabled,
+      }) &&
+      isBillingAddressValid(formData, {
+        marketRegion: isSkMarket ? 'sk' : 'ua',
+        buyerType: isSkMarket ? buyerType : undefined,
       }),
     [
       formData,
@@ -1125,6 +1224,7 @@ export default function CheckoutPage() {
       isSkMarket,
       marketSettings,
       dispatchCalendarEnabled,
+      buyerType,
     ],
   )
   const canCompletePayment = useMemo(
@@ -1243,6 +1343,13 @@ export default function CheckoutPage() {
       companyCity: true,
       companyPostalCode: true,
     })
+    setBillingTouched({
+      billingStreet: true,
+      billingHouseNumber: true,
+      billingCity: true,
+      billingPostalCode: true,
+      billingCountryCode: true,
+    })
     setPreferredShipDateTouched(true)
   }, [
     formData.isOtherRecipient,
@@ -1299,6 +1406,7 @@ export default function CheckoutPage() {
       const { immediate, dated } = partitionCartByShipmentDate(checkoutableItems)
       const orderPhoneMarket = {
         marketRegion: (isSkMarket ? 'sk' : 'ua') as 'sk' | 'ua',
+        authPhonePolicy: marketSettings.authPhonePolicy,
         deliveryPhonePolicy: marketSettings.deliveryPhonePolicy,
       }
 
@@ -1322,9 +1430,7 @@ export default function CheckoutPage() {
           throw new Error(t('submitFailed'))
         }
 
-        const orders = await createOrders(
-          [
-          buildOrderPayload(
+        const immediatePayload = buildOrderPayload(
             {
               ...formWithPromos,
               promoCodes: immediateSplitQuote?.promoCodes ?? effectivePromoCodes,
@@ -1351,8 +1457,8 @@ export default function CheckoutPage() {
               locale,
               ...orderPhoneMarket,
             },
-          ),
-          buildOrderPayload(
+          )
+        const datedPayload = buildOrderPayload(
             {
               ...formWithPromos,
               promoCodes: datedSplitQuote?.promoCodes ?? effectivePromoCodes,
@@ -1381,12 +1487,17 @@ export default function CheckoutPage() {
               locale,
               ...orderPhoneMarket,
             },
-          ),
-          ],
+          )
+
+        const orders = await createOrders(
+          [immediatePayload, datedPayload],
           { idempotencyKeys: splitIdempotencyKeys },
         )
 
-        const stripePayments = stripePaymentsFromCreatedOrders(orders)
+        const stripePayments = stripePaymentsFromCreatedOrders(
+          orders,
+          stripeBillingPrefillFromPayload(immediatePayload),
+        )
         if (stripePayments.length) {
           await clearCartAfterCheckout()
           beginStripeCheckout(stripePayments)
@@ -1433,7 +1544,10 @@ export default function CheckoutPage() {
       const [order] = await createOrders([payload], {
         idempotencyKeys: [submitIdempotencyKey],
       })
-      const stripePayments = stripePaymentsFromCreatedOrders([order])
+      const stripePayments = stripePaymentsFromCreatedOrders(
+        [order],
+        stripeBillingPrefillFromPayload(payload),
+      )
       if (stripePayments.length) {
         await clearCartAfterCheckout()
         beginStripeCheckout(stripePayments)
@@ -1595,6 +1709,11 @@ export default function CheckoutPage() {
                           onVatCountryCodeChange={setVatCountryCode}
                           onViesResult={(result) => setViesValid(result?.valid ?? null)}
                           viesValid={viesValid}
+                          enabledCountries={enabledDeliveryCountries}
+                          billingTouched={billingTouched}
+                          onBlurBillingField={(field) =>
+                            setBillingTouched((p) => ({ ...p, [field]: true }))
+                          }
                         />
                       ) : null
                     }
@@ -1650,7 +1769,11 @@ export default function CheckoutPage() {
                     deliveryPhoneInputRef={deliveryPhoneInputRef}
                     showStepNav={false}
                     beforeRecipientSlot={
-                      needsShipmentSplitChoice && shipmentSplitMode === 'split' ? (
+                      <div className="space-y-4">
+                        {shippingLeadNoticeText && formData.deliveryMethod !== 'pickup' ? (
+                          <CheckoutShippingLeadNotice text={shippingLeadNoticeText} />
+                        ) : null}
+                        {needsShipmentSplitChoice && shipmentSplitMode === 'split' ? (
                         <div className="space-y-4">
                           <CheckoutShipDateField
                             id="preferred-ship-date-immediate"
@@ -1724,7 +1847,8 @@ export default function CheckoutPage() {
                           value={formData.preferredShipDate}
                           onChange={(preferredShipDate) => patchForm({ preferredShipDate })}
                         />
-                      )
+                      )}
+                      </div>
                     }
                     shipmentSplitActive={
                       needsShipmentSplitChoice && shipmentSplitMode === 'split'
@@ -1855,6 +1979,12 @@ export default function CheckoutPage() {
                     vatCountryCode={vatCountryCode}
                     onVatCountryCodeChange={setVatCountryCode}
                     onViesResult={(result) => setViesValid(result?.valid ?? null)}
+                    dobierkaFeeAmount={
+                      formData.paymentMethod === 'dobierka'
+                        ? pricingQuote?.checkout?.codFeeAmount ?? 0
+                        : 0
+                    }
+                    formatDobierkaFee={formatMoney}
                   />
                 </section>
               </form>

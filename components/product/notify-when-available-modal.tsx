@@ -122,10 +122,15 @@ export function NotifyWhenAvailableModal({
             required: tc('requiredField'),
             invalid: tc('invalidEmail'),
           })
-        : validateNotifyPhone(contact, phonePolicy, {
-            required: tc('requiredField'),
-            invalid: t('notifyPhoneInvalid'),
-          })
+        : validateNotifyPhone(
+            contact,
+            phonePolicy,
+            {
+              required: tc('requiredField'),
+              invalid: t('notifyPhoneInvalid'),
+            },
+            marketRegion,
+          )
     if (contactError) {
       setError(contactError)
       return

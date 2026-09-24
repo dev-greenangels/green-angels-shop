@@ -19,6 +19,7 @@ export type PublicOrderConfirmation = {
   deliveryAmount: number | null
   packagingAmount: number | null
   taxAmount: number | null
+  codFeeAmount?: number | null
   customerFirstName: string
   customerLastName: string
   customerPatronymic: string | null
@@ -31,6 +32,7 @@ export type PublicOrderConfirmation = {
   deliveryMethod: string
   deliveryCity: string | null
   deliveryBranch: string | null
+  deliveryBranchLabel?: string | null
   deliveryStreet: string | null
   deliveryHouseNumber: string | null
   paymentMethod: string
@@ -53,6 +55,11 @@ export type PublicOrderConfirmation = {
   companyStreet?: string | null
   companyCity?: string | null
   companyPostalCode?: string | null
+  billingStreet?: string | null
+  billingHouseNumber?: string | null
+  billingCity?: string | null
+  billingPostalCode?: string | null
+  billingCountryCode?: string | null
   deliveryPostalCode?: string | null
   deliveryCountryCode?: string | null
   items: PublicOrderConfirmationItem[]

@@ -2,9 +2,10 @@ import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 
-function Input({ className, type, ref, ...props }: React.ComponentProps<'input'>) {
+function Input({ className, type, ref, onWheel, ...props }: React.ComponentProps<'input'>) {
   return (
     <input
+      {...props}
       ref={ref}
       type={type}
       data-slot="input"
@@ -18,7 +19,13 @@ function Input({ className, type, ref, ...props }: React.ComponentProps<'input'>
         type === 'number' && 'tabular-nums font-medium',
         className,
       )}
-      {...props}
+      onWheel={(event) => {
+        // Prevent scroll-wheel from changing focused number inputs while allowing page scroll.
+        if (type === 'number') {
+          event.currentTarget.blur()
+        }
+        onWheel?.(event)
+      }}
     />
   )
 }

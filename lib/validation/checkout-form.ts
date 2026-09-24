@@ -10,6 +10,7 @@ import {
   isValidUkrPhone,
 } from '@/lib/validation/register-form'
 import {
+  defaultAuthPhonePolicy,
   defaultDeliveryPhonePolicy,
   isValidPhoneForPolicy,
   phoneErrorForPolicy,
@@ -38,6 +39,7 @@ const DELIVERY_METHODS_WITHOUT_ADDRESS_FIELDS: CheckoutDeliveryMethod[] = [
 ]
 
 const COURIER_METHODS: CheckoutDeliveryMethod[] = ['packeta-courier', 'gls-courier']
+export { COURIER_METHODS }
 
 export type CheckoutFormValues = {
   firstName: string
@@ -60,11 +62,22 @@ export type CheckoutFormValues = {
   cityLabel: string
   postOffice: string
   postOfficeLabel: string
+  /** packeta-box: feed kind for quote identity (server re-validates). */
+  packetaPickupKind: '' | 'branch' | 'box' | 'carrier'
+  /** packeta-box: partner carrier id when kind=carrier (server re-validates). */
+  packetaCarrierId: number | null
   street: string
   streetLabel: string
   houseNumber: string
   /** Courier postal code (PSČ) */
   postalCode: string
+  /** SK/EU: when true (courier), billing snapshot copies shipping at submit */
+  billingSameAsShipping: boolean
+  billingStreet: string
+  billingHouseNumber: string
+  billingCity: string
+  billingPostalCode: string
+  billingCountryCode: string
   paymentMethod: CheckoutPaymentMethod
   companyEdrpou: string
   companyLegalName: string
@@ -115,6 +128,13 @@ export type CheckoutPaymentFieldKey =
   | 'companyCity'
   | 'companyPostalCode'
 
+export type CheckoutBillingFieldKey =
+  | 'billingStreet'
+  | 'billingHouseNumber'
+  | 'billingCity'
+  | 'billingPostalCode'
+  | 'billingCountryCode'
+
 export type CheckoutMarketRegion = 'ua' | 'sk'
 
 export type CheckoutValidationOptions = {
@@ -140,19 +160,27 @@ function resolveDeliveryPhonePolicy(options?: CheckoutValidationOptions): PhoneP
 
 function resolveAuthPhonePolicy(options?: CheckoutValidationOptions): PhonePolicy {
   if (options?.authPhonePolicy) return options.authPhonePolicy
-  return 'intl'
+  return defaultAuthPhonePolicy(options?.marketRegion ?? 'ua')
 }
 
-function deliveryPhoneError(phone: string, policy: PhonePolicy): string | null {
+function deliveryPhoneError(
+  phone: string,
+  policy: PhonePolicy,
+  region?: CheckoutMarketRegion,
+): string | null {
   if (policy === 'ua_e164') return getRecipientUkrPhoneError(phone)
-  const err = phoneErrorForPolicy(phone, policy)
+  const err = phoneErrorForPolicy(phone, policy, region)
   if (!phone.trim()) return 'required'
   return err
 }
 
-function isValidDeliveryPhone(phone: string, policy: PhonePolicy): boolean {
+function isValidDeliveryPhone(
+  phone: string,
+  policy: PhonePolicy,
+  region?: CheckoutMarketRegion,
+): boolean {
   if (policy === 'ua_e164') return isValidRecipientUkrPhone(phone)
-  return isValidPhoneForPolicy(phone, policy)
+  return isValidPhoneForPolicy(phone, policy, region)
 }
 
 const EDRPOU_LENGTH = 8
@@ -239,7 +267,7 @@ function isRecipientSectionValid(
     }
   }
 
-  if (!isValidDeliveryPhone(values.recipientPhone, deliveryPhonePolicy)) return false
+  if (!isValidDeliveryPhone(values.recipientPhone, deliveryPhonePolicy, region)) return false
 
   return true
 }
@@ -275,7 +303,7 @@ function ordererDeliveryPhoneRequired(
 ): boolean {
   if (!isUaDeliveryPhoneLockActive(region, deliveryPhonePolicy)) return false
   if (values.isOtherRecipient) return false
-  return !isValidDeliveryPhone(values.phone, deliveryPhonePolicy)
+  return !isValidDeliveryPhone(values.phone, deliveryPhonePolicy, region)
 }
 
 export function showOrdererDeliveryPhoneField(
@@ -482,7 +510,7 @@ function isSingleShipmentDeliveryValid(
 
   if (
     ordererDeliveryPhoneRequired(merged, identification, region, deliveryPhonePolicy) &&
-    !isValidDeliveryPhone(merged.deliveryPhone, deliveryPhonePolicy)
+    !isValidDeliveryPhone(merged.deliveryPhone, deliveryPhonePolicy, region)
   ) {
     return false
   }
@@ -551,6 +579,58 @@ export function isPaymentStepValid(
     }
   }
   return true
+}
+
+/** SK/EU market-level: billing address always required (independent of deliveryMethod). */
+export function isBillingAddressValid(
+  values: CheckoutFormValues,
+  options?: { marketRegion?: CheckoutMarketRegion; buyerType?: 'individual' | 'company' },
+): boolean {
+  if (options?.marketRegion !== 'sk') return true
+
+  if (options.buyerType === 'company') {
+    return Boolean(
+      values.companyStreet.trim() &&
+        values.companyCity.trim() &&
+        values.companyPostalCode.trim(),
+    )
+  }
+
+  return Boolean(
+    values.billingStreet.trim() &&
+      values.billingHouseNumber.trim() &&
+      values.billingCity.trim() &&
+      values.billingPostalCode.trim() &&
+      (values.billingCountryCode.trim() || values.deliveryCountryCode.trim()),
+  )
+}
+
+export function getCheckoutBillingFieldError(
+  field: CheckoutBillingFieldKey,
+  values: CheckoutFormValues,
+  options?: { marketRegion?: CheckoutMarketRegion; buyerType?: 'individual' | 'company' },
+): string | null {
+  if (options?.marketRegion !== 'sk') return null
+  if (options.buyerType === 'company') return null
+
+  switch (field) {
+    case 'billingStreet':
+      return values.billingStreet.trim() ? null : 'required'
+    case 'billingHouseNumber':
+      return values.billingHouseNumber.trim() ? null : 'required'
+    case 'billingCity':
+      return values.billingCity.trim() ? null : 'required'
+    case 'billingPostalCode':
+      if (!values.billingPostalCode.trim()) return 'required'
+      if (!isValidSkPostalCode(values.billingPostalCode)) return 'invalidSkPostal'
+      return null
+    case 'billingCountryCode':
+      return values.billingCountryCode.trim() || values.deliveryCountryCode.trim()
+        ? null
+        : 'required'
+    default:
+      return null
+  }
 }
 
 export function getCheckoutPaymentFieldError(
@@ -639,7 +719,7 @@ export function getCheckoutContactFieldError(
       return null
     case 'phone': {
       const authPolicy = resolveAuthPhonePolicy(options)
-      const err = phoneErrorForPolicy(values.phone, authPolicy)
+      const err = phoneErrorForPolicy(values.phone, authPolicy, region)
       if (!values.phone.trim()) return 'required'
       return err && err !== 'required' ? err : null
     }
@@ -706,7 +786,11 @@ export function getCheckoutRecipientFieldError(
       }
       return null
     case 'recipientPhone':
-      return deliveryPhoneError(values.recipientPhone, resolveDeliveryPhonePolicy(options))
+      return deliveryPhoneError(
+        values.recipientPhone,
+        resolveDeliveryPhonePolicy(options),
+        region,
+      )
     case 'recipientCompanyName':
       return null
     default:
@@ -738,7 +822,7 @@ export function getCheckoutShippingFieldError(
     if (!ordererDeliveryPhoneRequired(values, identification, region, deliveryPhonePolicy)) {
       return null
     }
-    return deliveryPhoneError(values.deliveryPhone, deliveryPhonePolicy)
+    return deliveryPhoneError(values.deliveryPhone, deliveryPhonePolicy, region)
   }
 
   if (field === 'patronymic') {

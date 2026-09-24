@@ -930,8 +930,8 @@
         "description": "Cég nevében történő fizetés IČO / cégazonosító adatokkal"
       },
       "dobierka": {
-        "title": "Utánvét (COD)",
-        "description": "Fizetés a futárnak vagy az átvételi ponton átvételkor"
+        "title": "Utánvét",
+        "description": "Fizetés a csomag átvételekor."
       },
       "pay-on-pickup": {
         "title": "Fizetés átvételkor",
@@ -1152,7 +1152,14 @@
     "deliveryInfoPickupPrepare": "Előkészítjük a rendelését személyes átvételre.",
     "deliveryInfoPickupNotify": "Értesítjük, ha készen áll.",
     "deliveryInfoPickupLocation": "Átvételi hely",
-    "shippingInfoLink": "Szállítási és fizetési részletek"
+    "shippingInfoLink": "Szállítási és fizetési részletek",
+    "codFee": "Utánvéti díj",
+    "shippingLeadNoticeLabel": "Feladási időtartam",
+    "invoiceAddressTitle": "Számlázási cím",
+    "invoiceAddressHint": "Cím a számlához és könyveléshez.",
+    "billingSameAsShipping": "A számlázási cím megegyezik a szállítási címmel",
+    "billingCountry": "Ország",
+    "billingHouseNumber": "Házszám"
   },
   "product": {
     "newBadge": "Új",
@@ -1812,6 +1819,8 @@
     "ORDER_CREATE_FAILED": "Nem sikerült leadni a rendelést.",
     "OTP_SEND_FAILED": "Nem sikerült elküldeni a kódot. Próbálja újra.",
     "OTP_SMS_DISABLED": "Az SMS-bejelentkezés nem érhető el.",
-    "OTP_EMAIL_DISABLED": "Az e-mailes bejelentkezés nem érhető el."
+    "OTP_EMAIL_DISABLED": "Az e-mailes bejelentkezés nem érhető el.",
+    "STOCK_UNAVAILABLE": "Sajnáljuk, a termék a kívánt mennyiségben már nem elérhető.",
+    "ORDER_PROCESSING_FAILED": "A rendelést nem sikerült feldolgozni. Próbálja újra, vagy válasszon másik fizetési módot."
   }
 }

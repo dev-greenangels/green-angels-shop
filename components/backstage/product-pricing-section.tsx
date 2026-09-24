@@ -404,49 +404,60 @@ function VariantAccordionItem({
                 placeholder={th('optional')}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor={`variant-weight-${variant.clientId}`}>Вага, кг</Label>
-              <Input
-                id={`variant-weight-${variant.clientId}`}
-                type="number"
-                min="0"
-                step="0.01"
-                value={variant.weight}
-                onChange={(e) => onChange({ weight: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor={`variant-length-${variant.clientId}`}>Довжина, см</Label>
-              <Input
-                id={`variant-length-${variant.clientId}`}
-                type="number"
-                min="0"
-                step="0.1"
-                value={variant.lengthCm}
-                onChange={(e) => onChange({ lengthCm: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor={`variant-width-${variant.clientId}`}>Ширина, см</Label>
-              <Input
-                id={`variant-width-${variant.clientId}`}
-                type="number"
-                min="0"
-                step="0.1"
-                value={variant.widthCm}
-                onChange={(e) => onChange({ widthCm: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor={`variant-height-${variant.clientId}`}>Висота, см</Label>
-              <Input
-                id={`variant-height-${variant.clientId}`}
-                type="number"
-                min="0"
-                step="0.1"
-                value={variant.heightCm}
-                onChange={(e) => onChange({ heightCm: e.target.value })}
-              />
+            <div className="space-y-3 sm:col-span-2 rounded-lg border border-border/70 p-3">
+              <div>
+                <p className="text-sm font-medium">Дані для доставки (Shipping data)</p>
+                <p className="text-xs text-muted-foreground">
+                  Габарити — транспортні (обмеження перевізника, обʼємна вага, транспортний обʼєм
+                  L×W×H/1000 л). Не плутати з обʼємом горщика. L/W/H не обовʼязкові.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-2">
+                  <Label htmlFor={`variant-weight-${variant.clientId}`}>Фактична вага, кг</Label>
+                  <Input
+                    id={`variant-weight-${variant.clientId}`}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={variant.weight}
+                    onChange={(e) => onChange({ weight: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`variant-length-${variant.clientId}`}>Довжина, см</Label>
+                  <Input
+                    id={`variant-length-${variant.clientId}`}
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={variant.lengthCm}
+                    onChange={(e) => onChange({ lengthCm: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`variant-width-${variant.clientId}`}>Ширина, см</Label>
+                  <Input
+                    id={`variant-width-${variant.clientId}`}
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={variant.widthCm}
+                    onChange={(e) => onChange({ widthCm: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`variant-height-${variant.clientId}`}>Висота, см</Label>
+                  <Input
+                    id={`variant-height-${variant.clientId}`}
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={variant.heightCm}
+                    onChange={(e) => onChange({ heightCm: e.target.value })}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -618,49 +629,59 @@ export function ProductPricingSection({
               onChange={(salesUnitId) => patchSimpleVariant({ salesUnitId })}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="simple-weight">Вага, кг</Label>
-            <Input
-              id="simple-weight"
-              type="number"
-              min="0"
-              step="0.01"
-              value={simpleVariant.weight}
-              onChange={(e) => patchSimpleVariant({ weight: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="simple-length">Довжина, см</Label>
-            <Input
-              id="simple-length"
-              type="number"
-              min="0"
-              step="0.1"
-              value={simpleVariant.lengthCm}
-              onChange={(e) => patchSimpleVariant({ lengthCm: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="simple-width">Ширина, см</Label>
-            <Input
-              id="simple-width"
-              type="number"
-              min="0"
-              step="0.1"
-              value={simpleVariant.widthCm}
-              onChange={(e) => patchSimpleVariant({ widthCm: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="simple-height">Висота, см</Label>
-            <Input
-              id="simple-height"
-              type="number"
-              min="0"
-              step="0.1"
-              value={simpleVariant.heightCm}
-              onChange={(e) => patchSimpleVariant({ heightCm: e.target.value })}
-            />
+          <div className="space-y-3 sm:col-span-2 rounded-lg border border-border/70 p-3">
+            <div>
+              <p className="text-sm font-medium">Дані для доставки (Shipping data)</p>
+              <p className="text-xs text-muted-foreground">
+                Транспортні габарити (не обʼєм горщика). L/W/H не обовʼязкові.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-2">
+                <Label htmlFor="simple-weight">Фактична вага, кг</Label>
+                <Input
+                  id="simple-weight"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={simpleVariant.weight}
+                  onChange={(e) => patchSimpleVariant({ weight: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="simple-length">Довжина, см</Label>
+                <Input
+                  id="simple-length"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={simpleVariant.lengthCm}
+                  onChange={(e) => patchSimpleVariant({ lengthCm: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="simple-width">Ширина, см</Label>
+                <Input
+                  id="simple-width"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={simpleVariant.widthCm}
+                  onChange={(e) => patchSimpleVariant({ widthCm: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="simple-height">Висота, см</Label>
+                <Input
+                  id="simple-height"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={simpleVariant.heightCm}
+                  onChange={(e) => patchSimpleVariant({ heightCm: e.target.value })}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="sm:col-span-2">

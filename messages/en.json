@@ -930,8 +930,8 @@
         "description": "Payment on behalf of a company with company ID details"
       },
       "dobierka": {
-        "title": "Cash on Delivery (COD)",
-        "description": "Pay the courier or at the pickup point on receipt"
+        "title": "Cash on delivery",
+        "description": "You pay when you receive the shipment."
       },
       "pay-on-pickup": {
         "title": "Pay on pickup",
@@ -1152,7 +1152,14 @@
     "deliveryInfoPickupPrepare": "We will prepare your order for pickup.",
     "deliveryInfoPickupNotify": "We will let you know when it is ready.",
     "deliveryInfoPickupLocation": "Pickup location",
-    "shippingInfoLink": "Shipping and payment details"
+    "shippingInfoLink": "Shipping and payment details",
+    "codFee": "COD fee",
+    "shippingLeadNoticeLabel": "Dispatch timeframe",
+    "invoiceAddressTitle": "Billing address",
+    "invoiceAddressHint": "Address for the invoice and accounting.",
+    "billingSameAsShipping": "Billing address is the same as the delivery address",
+    "billingCountry": "Country",
+    "billingHouseNumber": "House number"
   },
   "product": {
     "newBadge": "New",
@@ -1812,6 +1819,8 @@
     "ORDER_CREATE_FAILED": "Could not place the order.",
     "OTP_SEND_FAILED": "Could not send the code. Please try again.",
     "OTP_SMS_DISABLED": "SMS sign-in is unavailable.",
-    "OTP_EMAIL_DISABLED": "Email sign-in is unavailable."
+    "OTP_EMAIL_DISABLED": "Email sign-in is unavailable.",
+    "STOCK_UNAVAILABLE": "Sorry, the product is no longer available in the required quantity.",
+    "ORDER_PROCESSING_FAILED": "Could not process the order. Please try again or choose another payment method."
   }
 }

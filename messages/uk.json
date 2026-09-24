@@ -929,8 +929,8 @@
         "description": "Оплата від імені компанії з реквізитами ЄДРПОУ"
       },
       "dobierka": {
-        "title": "Оплата при отриманні",
-        "description": "Оплата курʼєру або на видачному місці при отриманні замовлення"
+        "title": "Післяплата (dobierka)",
+        "description": "Сплатите при отриманні посилки."
       },
       "pay-on-pickup": {
         "title": "Оплата при отриманні",
@@ -1151,7 +1151,14 @@
     "deliveryInfoPickupPrepare": "Підготуємо замовлення до самовивозу.",
     "deliveryInfoPickupNotify": "Повідомимо, коли воно буде готове.",
     "deliveryInfoPickupLocation": "Адреса самовивозу",
-    "shippingInfoLink": "Подробиці про доставку та оплату"
+    "shippingInfoLink": "Подробиці про доставку та оплату",
+    "codFee": "Комісія за післяплату",
+    "shippingLeadNoticeLabel": "Термін відправки",
+    "invoiceAddressTitle": "Фактураційна адреса",
+    "invoiceAddressHint": "Адреса для рахунку та обліку.",
+    "billingSameAsShipping": "Фактураційна адреса збігається з адресою доставки",
+    "billingCountry": "Країна",
+    "billingHouseNumber": "Номер будинку"
   },
   "product": {
     "newBadge": "Новинка",
@@ -1811,6 +1818,8 @@
     "ORDER_CREATE_FAILED": "Не вдалося оформити замовлення.",
     "OTP_SEND_FAILED": "Не вдалося надіслати код. Спробуйте ще раз.",
     "OTP_SMS_DISABLED": "SMS-вхід недоступний.",
-    "OTP_EMAIL_DISABLED": "Вхід через email недоступний."
+    "OTP_EMAIL_DISABLED": "Вхід через email недоступний.",
+    "STOCK_UNAVAILABLE": "На жаль, товар уже недоступний у потрібній кількості.",
+    "ORDER_PROCESSING_FAILED": "Не вдалося оформити замовлення. Спробуйте ще раз або оберіть інший спосіб оплати."
   }
 }

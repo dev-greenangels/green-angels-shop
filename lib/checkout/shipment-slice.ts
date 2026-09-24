@@ -8,6 +8,8 @@ export type CheckoutShipmentSlice = Pick<
   | 'cityLabel'
   | 'postOffice'
   | 'postOfficeLabel'
+  | 'packetaPickupKind'
+  | 'packetaCarrierId'
   | 'street'
   | 'streetLabel'
   | 'houseNumber'
@@ -37,6 +39,8 @@ export function createEmptyShipmentSlice(
     cityLabel: defaults?.cityLabel ?? '',
     postOffice: defaults?.postOffice ?? '',
     postOfficeLabel: defaults?.postOfficeLabel ?? '',
+    packetaPickupKind: defaults?.packetaPickupKind ?? '',
+    packetaCarrierId: defaults?.packetaCarrierId ?? null,
     street: defaults?.street ?? '',
     streetLabel: defaults?.streetLabel ?? '',
     houseNumber: defaults?.houseNumber ?? '',
@@ -60,6 +64,8 @@ export function extractShipmentSlice(form: CheckoutFormValues): CheckoutShipment
     cityLabel: form.cityLabel,
     postOffice: form.postOffice,
     postOfficeLabel: form.postOfficeLabel,
+    packetaPickupKind: form.packetaPickupKind,
+    packetaCarrierId: form.packetaCarrierId,
     street: form.street,
     streetLabel: form.streetLabel,
     houseNumber: form.houseNumber,

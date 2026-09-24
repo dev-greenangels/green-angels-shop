@@ -151,9 +151,10 @@ function getPhoneError(
   phone: string,
   phonePolicy: MarketSettings['authPhonePolicy'],
   fe: (code: string | null | undefined) => string | null,
+  region?: MarketSettings['region'],
 ): string | null {
   if (!phone.trim()) return fe('required')
-  return fe(phoneErrorForPolicy(phone, phonePolicy))
+  return fe(phoneErrorForPolicy(phone, phonePolicy, region))
 }
 
 function getEmailFieldError(
@@ -271,14 +272,23 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
   const showAuthToggle = isTrueGuestMode && !user && !isAuthenticated && !sessionPending
   const channelLocked = Boolean(conflictAuthPath)
 
-  const phoneError = getPhoneError(formData.phone, marketSettings.authPhonePolicy, fe)
+  const phoneError = getPhoneError(
+    formData.phone,
+    marketSettings.authPhonePolicy,
+    fe,
+    marketSettings.region,
+  )
   const emailError = getEmailFieldError(formData.email, fe, checkoutEmailRequired)
   const emailReadyForHint =
     emailEnabled && Boolean(formData.email.trim()) && isValidEmail(formData.email.trim())
   const phoneReadyForHint =
     smsEnabled &&
     Boolean(formData.phone.trim()) &&
-    isValidPhoneForPolicy(formData.phone.trim(), marketSettings.authPhonePolicy)
+    isValidPhoneForPolicy(
+      formData.phone.trim(),
+      marketSettings.authPhonePolicy,
+      marketSettings.region,
+    )
   const contactsReadyForHint =
     isSoftGuestMode &&
     showGuestForm &&
@@ -288,7 +298,11 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
     (emailReadyForHint || phoneReadyForHint)
   const canSendIdentifierCode =
     channel === 'phone'
-      ? isValidPhoneForPolicy(formData.phone.trim(), marketSettings.authPhonePolicy)
+      ? isValidPhoneForPolicy(
+          formData.phone.trim(),
+          marketSettings.authPhonePolicy,
+          marketSettings.region,
+        )
       : Boolean(formData.email.trim()) && isValidEmail(formData.email.trim())
   const canSaveProfile =
     marketRegion === 'sk'
@@ -1057,6 +1071,7 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
               phoneReady={isValidPhoneForPolicy(
                 formData.phone.trim(),
                 marketSettings.authPhonePolicy,
+                marketSettings.region,
               )}
               inlineAuthChannel={activeAuthChannel}
               inlineAuth={

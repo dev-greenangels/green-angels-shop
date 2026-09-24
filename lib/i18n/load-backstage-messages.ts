@@ -1,3 +1,4 @@
+import backstageCs from '@/messages/backstage/cs.json'
 import backstageDe from '@/messages/backstage/de.json'
 import backstageEn from '@/messages/backstage/en.json'
 import backstageHu from '@/messages/backstage/hu.json'
@@ -19,8 +20,11 @@ const BASE_MESSAGES: Record<AppLocale, Record<string, unknown>> = {
   sk: backstageSk as Record<string, unknown>,
   hu: backstageHu as Record<string, unknown>,
   de: backstageDe as Record<string, unknown>,
-  // Backstage UI has no dedicated cs yet — fall back to English chrome.
-  cs: backstageEn as Record<string, unknown>,
+  // CS chrome still falls back to English except Packeta-specific namespaces.
+  cs: deepMergeMessages(backstageEn as Record<string, unknown>, {
+    packetaCod: (backstageCs as Record<string, unknown>).packetaCod,
+    packetaSurcharge: (backstageCs as Record<string, unknown>).packetaSurcharge,
+  }),
 }
 
 const STOREFRONT_MESSAGES: Record<AppLocale, Record<string, unknown>> = {

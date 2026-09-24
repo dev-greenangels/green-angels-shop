@@ -317,6 +317,7 @@ export const DEFAULT_CART_CHECKOUT_SETTINGS: CartCheckoutSettings = {
   standardParcelMaxWeightKg: 15,
   defaultMissingWeightKg: 1,
   packagingAmountsAreNet: true,
+  carrierTariffAmountsAreNet: true,
   codFeeAmountsAreNet: true,
   cartWeight: {
     enabled: false,

@@ -2,7 +2,12 @@ import { getCheckoutRecipientPhoneRaw } from '@/components/checkout/checkout-uti
 import type { CheckoutShipmentSlice } from '@/lib/checkout/shipment-slice'
 import { applyShipmentSliceToForm } from '@/lib/checkout/shipment-slice'
 import { buildPricingQuoteLineItems } from '@/lib/pricing/quote-line-items'
-import { defaultDeliveryPhonePolicy, type PhonePolicy } from '@/lib/settings/market'
+import {
+  defaultAuthPhonePolicy,
+  defaultDeliveryPhonePolicy,
+  normalizePhoneForPolicy,
+  type PhonePolicy,
+} from '@/lib/settings/market'
 import type { CartItem } from '@/lib/types'
 import {
   type CheckoutFormValues,
@@ -40,6 +45,11 @@ export type CreateOrderPayload = {
   companyStreet?: string
   companyCity?: string
   companyPostalCode?: string
+  billingStreet?: string
+  billingHouseNumber?: string
+  billingCity?: string
+  billingPostalCode?: string
+  billingCountryCode?: string
   preferredShipDate?: string
   countryCode?: 'sk' | 'hu' | 'at'
   buyerType?: 'individual' | 'company'
@@ -59,12 +69,17 @@ export type CreateOrderPayload = {
   marketingRevisionId?: string
 }
 
-function normalizePhoneForApi(phone: string): string {
-  const digits = phone.replace(/\D/g, '')
-  if (digits.startsWith('380') && digits.length >= 12) return `+${digits.slice(0, 12)}`
-  if (digits.startsWith('0') && digits.length === 10) return `+38${digits}`
-  if (digits.length === 9) return `+380${digits}`
-  return phone.trim()
+/**
+ * Normalize for Nest/Abra. UA `+380` only when policy is `ua_e164` (or UA intl fallback).
+ * SK/EU: never rewrite national `09…` / `9…` into +380.
+ */
+export function normalizePhoneForApi(
+  phone: string,
+  policy: PhonePolicy,
+  region?: CheckoutMarketRegion,
+): string {
+  const normalized = normalizePhoneForPolicy(phone, policy, region)
+  return normalized ?? phone.trim()
 }
 
 function getReceiverNames(form: CheckoutFormValues) {
@@ -102,30 +117,34 @@ export function buildOrderPayload(
     returnBaseUrl?: string
     locale?: string
     marketRegion?: CheckoutMarketRegion
+    authPhonePolicy?: PhonePolicy
     deliveryPhonePolicy?: PhonePolicy
     /** Override form.preferredShipDate (e.g. immediate half of a split checkout). */
     preferredShipDate?: string
   },
 ): CreateOrderPayload {
+  const region = options?.marketRegion ?? 'ua'
+  const authPhonePolicy =
+    options?.authPhonePolicy ?? defaultAuthPhonePolicy(region)
+  const deliveryPhonePolicy =
+    options?.deliveryPhonePolicy ?? defaultDeliveryPhonePolicy(region)
+
   const deliveryForm = options?.shipmentSlice
     ? applyShipmentSliceToForm(form, options.shipmentSlice)
     : form
   const receiver = getReceiverNames(deliveryForm)
-  const uaDeliveryLock = isUaDeliveryPhoneLockActive(
-    options?.marketRegion ?? 'ua',
-    options?.deliveryPhonePolicy ?? defaultDeliveryPhonePolicy(options?.marketRegion ?? 'ua'),
-  )
+  const uaDeliveryLock = isUaDeliveryPhoneLockActive(region, deliveryPhonePolicy)
   const customerPhoneRaw =
     isValidUkrPhone(form.phone.trim()) || !uaDeliveryLock
       ? form.phone.trim()
       : !deliveryForm.isOtherRecipient && deliveryForm.deliveryPhone.trim()
         ? deliveryForm.deliveryPhone.trim()
         : form.phone.trim()
-  const customerPhone = normalizePhoneForApi(customerPhoneRaw)
+  const customerPhone = normalizePhoneForApi(customerPhoneRaw, authPhonePolicy, region)
   const recipientPhoneRaw = getCheckoutRecipientPhoneRaw(
     deliveryForm,
-    options?.marketRegion,
-    options?.deliveryPhonePolicy,
+    region,
+    deliveryPhonePolicy,
   )
 
   const payload: CreateOrderPayload = {
@@ -135,7 +154,7 @@ export function buildOrderPayload(
     customerPhone,
     receiverFirstName: receiver.firstName,
     receiverLastName: receiver.lastName,
-    receiverPhone: normalizePhoneForApi(recipientPhoneRaw),
+    receiverPhone: normalizePhoneForApi(recipientPhoneRaw, deliveryPhonePolicy, region),
     deliveryMethod: deliveryForm.deliveryMethod,
     paymentMethod: form.paymentMethod,
   }
@@ -169,6 +188,9 @@ export function buildOrderPayload(
     payload.deliveryCity = deliveryForm.cityLabel.trim() || deliveryForm.city.trim()
     const psc = deliveryForm.postalCode.trim()
     if (psc) payload.deliveryPostalCode = psc
+    // Historical point street snapshot (not billing)
+    const pointStreet = deliveryForm.streetLabel.trim() || deliveryForm.street.trim()
+    if (pointStreet) payload.deliveryStreet = pointStreet
   }
 
   if (
@@ -218,6 +240,33 @@ export function buildOrderPayload(
     if (city) payload.companyCity = city
     const psc = form.companyPostalCode.trim()
     if (psc) payload.companyPostalCode = psc
+  }
+
+  // SK/EU immutable billing snapshot (always for sk; never Packeta point)
+  if (options?.marketRegion === 'sk') {
+    if (options.buyerType === 'company') {
+      payload.billingStreet = form.companyStreet.trim() || undefined
+      payload.billingCity = form.companyCity.trim() || undefined
+      payload.billingPostalCode = form.companyPostalCode.trim() || undefined
+      payload.billingCountryCode = (
+        form.billingCountryCode.trim() ||
+        form.deliveryCountryCode.trim() ||
+        options.countryCode ||
+        'sk'
+      ).toLowerCase()
+    } else {
+      // Individual: billing is collected on contact step (never Packeta point / shipping copy).
+      payload.billingStreet = form.billingStreet.trim() || undefined
+      payload.billingHouseNumber = form.billingHouseNumber.trim() || undefined
+      payload.billingCity = form.billingCity.trim() || undefined
+      payload.billingPostalCode = form.billingPostalCode.trim() || undefined
+      payload.billingCountryCode = (
+        form.billingCountryCode.trim() ||
+        deliveryForm.deliveryCountryCode.trim() ||
+        options.countryCode ||
+        'sk'
+      ).toLowerCase()
+    }
   }
 
   const shipDate = (options?.preferredShipDate ?? form.preferredShipDate).trim()

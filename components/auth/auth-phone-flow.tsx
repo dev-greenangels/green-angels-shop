@@ -234,7 +234,7 @@ export function AuthPhoneFlow({
     }
   }, [marketReady, smsEnabled, emailEnabled, channel, market.region, step])
 
-  const phoneError = fe(phoneErrorForPolicy(phone, market.authPhonePolicy))
+  const phoneError = fe(phoneErrorForPolicy(phone, market.authPhonePolicy, market.region))
   const emailError = fe(getEmailError(email))
   const identifier =
     channel === 'phone' ? phone.trim() : email.trim().toLowerCase()

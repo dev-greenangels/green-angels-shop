@@ -206,7 +206,129 @@ export type OnlineCardProvider = 'monopay' | 'stripe'
 
 export type OnlineCardErpExportMode = 'immediate' | 'on_paid'
 
-export type PackagingMode = 'flat' | 'boxes'
+/** flat — packagingAmount; boxes — box strategy; pallet — pallet occupancy only. */
+export type PackagingMode = 'flat' | 'boxes' | 'pallet'
+
+export type CarrierWeightStrategyKind = 'ACTUAL_WEIGHT' | 'VOLUMETRIC_OR_ACTUAL'
+
+export type CarrierServicePhysicalLimits = {
+  maxParcelWeightKg?: number
+  maxLongestSideCm?: number
+  maxSideSumCm?: number
+  maxGirthCm?: number
+  maxLengthCm?: number
+  maxWidthCm?: number
+  maxHeightCm?: number
+  supportsBoxes?: boolean
+  supportsPallets?: boolean
+  weightStrategy?: CarrierWeightStrategyKind
+  volumetricDivisor?: number
+}
+
+export type PacketaCodAmountTier = {
+  fromAmount: number
+  toAmount: number | null
+  fee: number
+}
+
+/** @deprecated Prefer PacketaCodAmountTier */
+export type PacketaCodFeeTier = PacketaCodAmountTier
+
+export type PacketaCustomerCodFeeBase =
+  | 'cod_collected'
+  | 'products_subtotal'
+  | 'grand_total_before_cod'
+
+/** @deprecated Prefer PacketaCustomerCodFeeBase */
+export type PacketaCodFeeBase = PacketaCustomerCodFeeBase
+
+export type PacketaCodCarrierCostSettings = {
+  enabled: boolean
+  basis: 'COD_AMOUNT'
+  amountsAreNet: boolean
+  tiers: PacketaCodAmountTier[]
+}
+
+export type PacketaCardOnCodSettings = {
+  enabled: boolean
+  percent: number
+  basis: 'COD_AMOUNT_INCLUDING_VAT'
+  chargedTo: 'SENDER'
+  affectsCustomerTotal: false
+}
+
+export type PacketaCustomerCodPriceMode = 'none' | 'fixed' | 'tiers'
+
+export type PacketaCustomerCodPriceSettings = {
+  mode: PacketaCustomerCodPriceMode
+  maxAmount: number | null
+  feeBase: PacketaCustomerCodFeeBase
+  feeAmountsAreNet: boolean
+  fixedAmount: number
+  tiers: PacketaCodAmountTier[]
+}
+
+export type PacketaCodSettings = {
+  carrierCost: PacketaCodCarrierCostSettings
+  cardOnCod: PacketaCardOnCodSettings
+  customerPrice: PacketaCustomerCodPriceSettings
+  byService?: Record<string, PacketaServiceCodCarrierSettings>
+}
+
+export type PacketaServiceCodCarrierSettings = {
+  supportsCod: boolean
+  maxAmount: number | null
+  carrierCost: PacketaCodCarrierCostSettings
+}
+
+export type CarrierConfig = {
+  tariffAmountsAreNet?: boolean
+  services?: Partial<Record<string, CarrierServicePhysicalLimits>>
+  cod?: PacketaCodSettings
+  /** Packeta-only: internal service identity catalog + maps. */
+  serviceIdentity?: PacketaServiceIdentitySettings
+}
+
+export type PacketaServiceKey = string
+
+export type PacketaServiceDefinition = {
+  serviceKey: PacketaServiceKey
+  label: string
+  customerMethod: 'packeta-box' | 'packeta-courier'
+  countryCode: string
+  packetaCarrierId?: number
+  enabled: boolean
+}
+
+export type PacketaServiceIdentitySettings = {
+  catalog: PacketaServiceDefinition[]
+  courierDefaultServiceByCountry: Record<string, PacketaServiceKey>
+  boxDefaultServiceByCountry: Record<
+    string,
+    Partial<Record<'branch' | 'box', PacketaServiceKey>>
+  >
+  boxKindDefaultServiceKey: Partial<Record<'branch' | 'box', PacketaServiceKey>>
+}
+
+export type CarrierConfigs = {
+  packeta?: CarrierConfig
+  gls?: CarrierConfig
+  novaPoshta?: CarrierConfig
+}
+
+export type PackagingPalletSettings = {
+  enabled: boolean
+  unitPrice: number
+  /** VariantAttributeValue.slug on CONTAINER attr — never translated labels. */
+  capacityByContainerSlug: Record<string, number>
+  autoPricingEnabled: boolean
+}
+
+export type PackagingStrategySettings = {
+  /** Mirrors packagingMode: flat | box(←boxes) | pallet */
+  mode: 'flat' | 'box' | 'pallet'
+  pallet: PackagingPalletSettings
+}
 
 export type CheckoutNextStepItem = {
   title: string
@@ -253,12 +375,26 @@ export type CartCheckoutSettings = {
       tollPerStartedKgNet: number
       tollMode: 'separate' | 'included' | 'none'
       maxParcelWeightKg: number
+      insurance?: {
+        enabled: boolean
+        maxDeclaredValue: number | null
+        tiers: Array<{ upTo: number; fee: number }>
+      }
+      nonDepot?: {
+        amount: number
+        automaticCalculation: false
+      }
     }
   >
   standardParcelMaxWeightKg?: number
   /** Shipping-only fallback kg per unit when variant weight missing (default 1). */
   defaultMissingWeightKg?: number
   packagingAmountsAreNet?: boolean
+  /** Default true when missing — Packeta contractual tariffs are NET. */
+  carrierTariffAmountsAreNet?: boolean
+  /** Prefer carrierConfigs.packeta|gls.tariffAmountsAreNet; global kept for one release. */
+  carrierConfigs?: CarrierConfigs
+  packagingStrategy?: PackagingStrategySettings
   codFeeAmountsAreNet?: boolean
   cartWeight: {
     enabled: boolean
@@ -358,7 +494,14 @@ export type PublicSiteSettings = {
   market: import('./market').MarketSettings
   wholesale?: import('./wholesale').WholesalePageSettings
   about?: import('./about').AboutPageSettings
-  dispatchCalendar?: { enabled: boolean }
+  dispatchCalendar?: {
+    enabled: boolean
+    shippingLeadNotice?: {
+      enabled: boolean
+      showMode: 'when_calendar_off' | 'always' | 'with_calendar'
+      texts: Record<string, string>
+    }
+  }
   /** лише в backstage GET /settings */
   prestaImport?: import('./presta-import').PrestaImportSettings
   /** лише в backstage GET /settings */

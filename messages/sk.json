@@ -924,8 +924,8 @@
         "description": "Platba na účet spoločnosti s IČO"
       },
       "dobierka": {
-        "title": "Dobierka (platba pri prevzatí)",
-        "description": "Platba kuriérovi alebo na výdajnom mieste pri prevzatí zásielky"
+        "title": "Dobierka",
+        "description": "Zaplatíte pri prevzatí zásielky."
       },
       "pay-on-pickup": {
         "title": "Platba pri prevzatí",
@@ -1152,7 +1152,14 @@
     "deliveryInfoPickupPrepare": "Pripravíme vašu objednávku na osobný odber.",
     "deliveryInfoPickupNotify": "Dáme vám vedieť, keď bude pripravená.",
     "deliveryInfoPickupLocation": "Miesto odberu",
-    "shippingInfoLink": "Podrobnosti o doprave a platbe"
+    "shippingInfoLink": "Podrobnosti o doprave a platbe",
+    "codFee": "Dobierka",
+    "shippingLeadNoticeLabel": "Termín odoslania",
+    "invoiceAddressTitle": "Fakturačná adresa",
+    "invoiceAddressHint": "Adresa pre faktúru a účtovníctvo.",
+    "billingSameAsShipping": "Fakturačná adresa je rovnaká ako dodacia",
+    "billingCountry": "Krajina",
+    "billingHouseNumber": "Číslo domu"
   },
   "product": {
     "newBadge": "Novinka",
@@ -1813,6 +1820,8 @@
     "ORDER_CREATE_FAILED": "Nepodarilo sa vytvoriť objednávku.",
     "OTP_SEND_FAILED": "Kód sa nepodarilo odoslať. Skúste znova.",
     "OTP_SMS_DISABLED": "Prihlásenie cez SMS nie je dostupné.",
-    "OTP_EMAIL_DISABLED": "Prihlásenie cez e-mail nie je dostupné."
+    "OTP_EMAIL_DISABLED": "Prihlásenie cez e-mail nie je dostupné.",
+    "STOCK_UNAVAILABLE": "Ľutujeme, tovar už nie je dostupný v požadovanom množstve.",
+    "ORDER_PROCESSING_FAILED": "Objednávku sa nepodarilo spracovať. Skúste to znova alebo zvoľte iný spôsob platby."
   }
 }

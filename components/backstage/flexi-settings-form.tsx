@@ -81,6 +81,7 @@ const EMPTY: FlexiPublicSettings = {
   issuedInvoiceTypeCode: 'FAKTURA',
   shippingCenikKod: 'SHIPPING',
   boxesCenikKod: 'BOXES',
+  palletCenikKod: '',
   codFeeCenikKod: 'COD',
   deliveryMethodCodes: { ...DEFAULT_DELIVERY_METHOD_CODES },
   defaultCategoryId: '',
@@ -92,6 +93,7 @@ const EMPTY: FlexiPublicSettings = {
   webhookUrl: '',
   hasWebhookSecKey: false,
   webhookAccepting: true,
+  allowCheckoutOnStockShort: false,
   webhookRemoteId: '',
   webhookRegistrationStatus: 'NOT_REGISTERED',
   hasUsername: false,
@@ -136,6 +138,7 @@ function editableFlexiSnapshot(
 ) {
   return JSON.stringify({
     enabled: settings.enabled,
+    allowCheckoutOnStockShort: settings.allowCheckoutOnStockShort === true,
     baseUrl: settings.baseUrl,
     companyId: settings.companyId,
     defaultStockCode: settings.defaultStockCode,
@@ -145,6 +148,7 @@ function editableFlexiSnapshot(
     issuedInvoiceTypeCode: settings.issuedInvoiceTypeCode,
     shippingCenikKod: settings.shippingCenikKod,
     boxesCenikKod: settings.boxesCenikKod,
+    palletCenikKod: settings.palletCenikKod,
     codFeeCenikKod: settings.codFeeCenikKod,
     deliveryMethodCodes: settings.deliveryMethodCodes,
     defaultCategoryId: settings.defaultCategoryId,
@@ -212,6 +216,7 @@ export function FlexiSettingsForm() {
     try {
       const next = await updateFlexiSettings({
         enabled: settings.enabled,
+        allowCheckoutOnStockShort: settings.allowCheckoutOnStockShort === true,
         baseUrl: settings.baseUrl,
         companyId: settings.companyId,
         defaultStockCode: settings.defaultStockCode,
@@ -221,6 +226,7 @@ export function FlexiSettingsForm() {
         issuedInvoiceTypeCode: settings.issuedInvoiceTypeCode,
         shippingCenikKod: settings.shippingCenikKod,
         boxesCenikKod: settings.boxesCenikKod,
+        palletCenikKod: settings.palletCenikKod,
         codFeeCenikKod: settings.codFeeCenikKod,
         deliveryMethodCodes: settings.deliveryMethodCodes,
         defaultCategoryId: settings.defaultCategoryId,
@@ -302,6 +308,23 @@ export function FlexiSettingsForm() {
             <Switch
               checked={settings.enabled}
               onCheckedChange={(enabled) => setSettings((s) => ({ ...s, enabled }))}
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-amber-500/40 bg-amber-50/50 p-3 dark:bg-amber-950/20">
+            <div>
+              <p className="font-medium">Дозволити checkout при нестачі в Flexi</p>
+              <p className="text-sm text-muted-foreground">
+                Якщо увімкнено: сайт не блокує замовлення, коли Flexi показує 0 / менше ніж у кошику.
+                Замовлення зберігається за залишком сайту і все одно йде в Abra. Успіх → SYNCED; відхилення
+                Abra → FAILED (замовлення не видаляється). Тимчасово, поки в Abra дозволені мінуси.
+              </p>
+            </div>
+            <Switch
+              checked={settings.allowCheckoutOnStockShort === true}
+              onCheckedChange={(allowCheckoutOnStockShort) =>
+                setSettings((s) => ({ ...s, allowCheckoutOnStockShort }))
+              }
             />
           </div>
 
@@ -418,6 +441,18 @@ export function FlexiSettingsForm() {
                 onChange={(e) => setSettings((s) => ({ ...s, boxesCenikKod: e.target.value }))}
                 placeholder="BOXES"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="flexi-pallet-cenik">Cenik палет (palletCenikKod)</Label>
+              <Input
+                id="flexi-pallet-cenik"
+                value={settings.palletCenikKod ?? ''}
+                onChange={(e) => setSettings((s) => ({ ...s, palletCenikKod: e.target.value }))}
+                placeholder=""
+              />
+              <p className="text-xs text-muted-foreground">
+                empty = pallet line not exported until ABRA ceník exists
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="flexi-cod-cenik">Cenik dobierka (порожньо = не слати)</Label>

@@ -930,8 +930,8 @@
         "description": "Zahlung im Namen eines Unternehmens mit Firmenkennungen (z. B. IČO)"
       },
       "dobierka": {
-        "title": "Nachnahme (COD)",
-        "description": "Beim Kurier oder an der Abholstelle bei Erhalt bezahlen"
+        "title": "Nachnahme",
+        "description": "Sie zahlen bei Erhalt der Sendung."
       },
       "pay-on-pickup": {
         "title": "Zahlung bei Abholung",
@@ -1152,7 +1152,14 @@
     "deliveryInfoPickupPrepare": "Wir bereiten Ihre Bestellung zur Abholung vor.",
     "deliveryInfoPickupNotify": "Wir benachrichtigen Sie, wenn sie bereit ist.",
     "deliveryInfoPickupLocation": "Abholort",
-    "shippingInfoLink": "Details zu Versand und Zahlung"
+    "shippingInfoLink": "Details zu Versand und Zahlung",
+    "codFee": "Nachnahmegebühr",
+    "shippingLeadNoticeLabel": "Versandzeitraum",
+    "invoiceAddressTitle": "Rechnungsadresse",
+    "invoiceAddressHint": "Adresse für Rechnung und Buchhaltung.",
+    "billingSameAsShipping": "Rechnungsadresse ist gleich der Lieferadresse",
+    "billingCountry": "Land",
+    "billingHouseNumber": "Hausnummer"
   },
   "product": {
     "newBadge": "Neu",
@@ -1812,6 +1819,8 @@
     "ORDER_CREATE_FAILED": "Bestellung konnte nicht aufgegeben werden.",
     "OTP_SEND_FAILED": "Code konnte nicht gesendet werden. Bitte erneut versuchen.",
     "OTP_SMS_DISABLED": "SMS-Anmeldung ist nicht verfügbar.",
-    "OTP_EMAIL_DISABLED": "E-Mail-Anmeldung ist nicht verfügbar."
+    "OTP_EMAIL_DISABLED": "E-Mail-Anmeldung ist nicht verfügbar.",
+    "STOCK_UNAVAILABLE": "Leider ist der Artikel nicht mehr in der gewünschten Menge verfügbar.",
+    "ORDER_PROCESSING_FAILED": "Die Bestellung konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut oder wählen Sie eine andere Zahlungsart."
   }
 }

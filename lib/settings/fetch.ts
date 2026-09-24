@@ -82,7 +82,7 @@ function unavailableSettingsFallback(): FetchedPublicSiteSettings {
       market: DEFAULT_MARKET_SETTINGS,
       wholesale: defaultWholesalePageSettings(DEFAULT_MARKET_SETTINGS.region),
       about: defaultAboutPageSettings(DEFAULT_MARKET_SETTINGS.region),
-      dispatchCalendar: { enabled: false },
+      dispatchCalendar: { enabled: false, shippingLeadNotice: { enabled: false, showMode: 'when_calendar_off', texts: {} } },
     },
     storeUnavailable: true,
   }

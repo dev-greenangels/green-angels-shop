@@ -19,11 +19,11 @@ export async function POST(request: Request) {
   const phone = typeof body.phone === 'string' ? body.phone.trim() : ''
   const market = getMarketSettings(await fetchPublicSiteSettings())
 
-  if (!phone || !isValidPhoneForPolicy(phone, market.authPhonePolicy)) {
+  if (!phone || !isValidPhoneForPolicy(phone, market.authPhonePolicy, market.region)) {
     return NextResponse.json(
       {
         error:
-          phoneErrorForPolicy(phone, market.authPhonePolicy) ??
+          phoneErrorForPolicy(phone, market.authPhonePolicy, market.region) ??
           'Вкажіть коректний номер телефону.',
       },
       { status: 400 },

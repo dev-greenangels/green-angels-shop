@@ -118,6 +118,10 @@ export async function fetchPricingQuote(input: {
   buyerType?: 'individual' | 'company'
   vatCountryCode?: string
   viesValid?: boolean
+  /** packeta-box: selected pickup point id for server service identity */
+  pickupPointId?: string
+  pickupPointKind?: 'branch' | 'box' | 'carrier'
+  packetaCarrierId?: number
 }): Promise<PricingQuote> {
   const res = await fetch('/api/pricing/quote', {
     method: 'POST',

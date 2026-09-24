@@ -131,32 +131,36 @@ export function sanitizeCheckoutPhoneInput(value: string): string {
   return startsWithPlus ? `+${digits}` : digits
 }
 
+/** UA-only pretty format (+380 …). Never rewrite SK/EU country codes. */
 export function formatPhoneDisplay(value: string): string {
   if (!value) return ''
 
-  if (value.startsWith('+')) {
-    const allDigits = value.slice(1)
-    if (allDigits.length <= PLUS_COUNTRY_PREFIX.length) {
-      return `+${allDigits}`
-    }
-
-    const local = allDigits.slice(PLUS_COUNTRY_PREFIX.length)
-    if (!local.length) return '+380'
-
-    if (local.length <= 2) return `+380 ${local}`
-    if (local.length <= 5) return `+380 ${local.slice(0, 2)} ${local.slice(2)}`
-    if (local.length <= 7) {
-      return `+380 ${local.slice(0, 2)} ${local.slice(2, 5)} ${local.slice(5)}`
-    }
-    return `+380 ${local.slice(0, 2)} ${local.slice(2, 5)} ${local.slice(5, 7)} ${local.slice(7)}`
+  const digits = value.replace(/\D/g, '')
+  // Only format as UA when country code is explicitly 380 (not bare 0… — ambiguous EU).
+  if (!digits.startsWith('380')) {
+    return formatIntlPhoneDisplay(value)
   }
 
-  const d = value.replace(/\D/g, '').slice(0, 10)
-  if (!d.length) return ''
-  if (d.length <= 3) return d
-  if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`
-  if (d.length <= 8) return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`
-  return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6, 8)} ${d.slice(8)}`
+  const local = digits.slice(3)
+  if (!local.length) return '+380'
+
+  if (local.length <= 2) return `+380 ${local}`
+  if (local.length <= 5) return `+380 ${local.slice(0, 2)} ${local.slice(2)}`
+  if (local.length <= 7) {
+    return `+380 ${local.slice(0, 2)} ${local.slice(2, 5)} ${local.slice(5)}`
+  }
+  return `+380 ${local.slice(0, 2)} ${local.slice(2, 5)} ${local.slice(5, 7)} ${local.slice(7)}`
+}
+
+/** Light spacing for non-UA E.164 — does not invent +380. */
+export function formatIntlPhoneDisplay(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+  if (trimmed.startsWith('+')) {
+    const digits = trimmed.slice(1).replace(/\D/g, '')
+    return digits ? `+${digits}` : '+'
+  }
+  return trimmed.replace(/\D/g, '') || trimmed
 }
 
 /** Лише для підсумку замовлення — не змінює цифри, лише пробіли для читабельності. */
@@ -170,7 +174,7 @@ export function formatCheckoutPhoneDisplay(value: string): string {
     }
     return formatPhoneDisplay(value)
   }
-  return value
+  return formatIntlPhoneDisplay(value)
 }
 
 export function isValidUkrPhone(value: string): boolean {

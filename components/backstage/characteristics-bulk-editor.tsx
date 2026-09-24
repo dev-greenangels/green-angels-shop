@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
-import { ArrowLeft, Loader2, Save, Search } from 'lucide-react'
+import { ArrowLeft, Filter, Loader2, Save, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
@@ -48,6 +48,12 @@ function valueToKey(value: CharacteristicCellValue): string {
   if (value.numberValue != null) return String(value.numberValue)
   return ''
 }
+
+function isCellEmpty(value: CharacteristicCellValue): boolean {
+  return valueToKey(value) === ''
+}
+
+const emptyCellClassName = 'border-red-400/45 bg-red-500/[0.08] text-foreground'
 
 function buildCellUpdate(
   productId: string,
@@ -102,14 +108,21 @@ function CharacteristicCellEditor({
   definition,
   value,
   dirty,
+  empty,
   onChange,
 }: {
   definition: CharacteristicDefinition
   value: CharacteristicCellValue
   dirty: boolean
+  empty: boolean
   onChange: (value: CharacteristicCellValue) => void
 }) {
   const tHints = useTranslations('hints')
+  const fillStateClass = empty
+    ? emptyCellClassName
+    : dirty
+      ? 'border-primary bg-primary/5'
+      : undefined
 
   if (definition.valueType === 'MULTI_SELECT' || definition.valueType === 'COLOR') {
     const selectedIds = value?.optionIds ?? []
@@ -122,7 +135,7 @@ function CharacteristicCellEditor({
             size="sm"
             className={cn(
               'h-8 w-full max-w-[180px] justify-start truncate text-xs font-normal',
-              dirty && 'border-primary bg-primary/5',
+              fillStateClass,
             )}
           >
             {multiSelectLabel(definition, value, tHints('notSpecified'))}
@@ -169,7 +182,7 @@ function CharacteristicCellEditor({
         onValueChange={(next) => onChange(next === '__none__' ? null : { optionId: next })}
       >
         <SelectTrigger
-          className={cn('h-8 w-full max-w-[180px] text-xs', dirty && 'border-primary bg-primary/5')}
+          className={cn('h-8 w-full max-w-[180px] text-xs', fillStateClass)}
         >
           <SelectValue placeholder={tHints('notSpecified')} />
         </SelectTrigger>
@@ -198,7 +211,7 @@ function CharacteristicCellEditor({
     return (
       <Input
         type="number"
-        className={cn('h-8 w-full max-w-[120px] text-xs', dirty && 'border-primary bg-primary/5')}
+        className={cn('h-8 w-full max-w-[120px] text-xs', fillStateClass)}
         value={value?.numberValue ?? ''}
         onChange={(event) => {
           const raw = event.target.value
@@ -215,7 +228,7 @@ function CharacteristicCellEditor({
 
   return (
     <Input
-      className={cn('h-8 w-full min-w-[120px] text-xs', dirty && 'border-primary bg-primary/5')}
+      className={cn('h-8 w-full min-w-[120px] text-xs', fillStateClass)}
       value={value?.textValue ?? ''}
       onChange={(event) => {
         const textValue = event.target.value
@@ -243,6 +256,7 @@ export function CharacteristicsBulkEditor({
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [stockFilter, setStockFilter] = useState<'all' | 'in_stock' | 'out_of_stock'>('in_stock')
+  const [onlyIncomplete, setOnlyIncomplete] = useState(false)
   const [items, setItems] = useState<BulkMatrixProductRow[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
@@ -352,11 +366,30 @@ export function CharacteristicsBulkEditor({
     return keys
   }, [baseline, draftValues])
 
-  const getCellValue = (row: BulkMatrixProductRow, characteristicId: string) => {
-    const key = cellKey(row.productId, characteristicId)
-    if (draftValues.has(key)) return draftValues.get(key) ?? null
-    return row.values[characteristicId] ?? null
-  }
+  const getCellValue = useCallback(
+    (row: BulkMatrixProductRow, characteristicId: string) => {
+      const key = cellKey(row.productId, characteristicId)
+      if (draftValues.has(key)) return draftValues.get(key) ?? null
+      return row.values[characteristicId] ?? null
+    },
+    [draftValues],
+  )
+
+  const rowHasIncomplete = useCallback(
+    (row: BulkMatrixProductRow) =>
+      characteristics.some((definition) => isCellEmpty(getCellValue(row, definition.id))),
+    [characteristics, getCellValue],
+  )
+
+  const visibleItems = useMemo(() => {
+    if (!onlyIncomplete) return items
+    return items.filter((row) => rowHasIncomplete(row))
+  }, [items, onlyIncomplete, rowHasIncomplete])
+
+  const incompleteLoadedCount = useMemo(
+    () => items.reduce((count, row) => count + (rowHasIncomplete(row) ? 1 : 0), 0),
+    [items, rowHasIncomplete],
+  )
 
   const patchCell = (
     productId: string,
@@ -453,9 +486,33 @@ export function CharacteristicsBulkEditor({
           </SelectContent>
         </Select>
 
+        <Button
+          type="button"
+          variant={onlyIncomplete ? 'default' : 'outline'}
+          size="sm"
+          className="shrink-0"
+          onClick={() => setOnlyIncomplete((prev) => !prev)}
+          aria-pressed={onlyIncomplete}
+        >
+          <Filter className="mr-2 h-4 w-4" />
+          {onlyIncomplete
+            ? tPages('bulkMatrixShowAll')
+            : tPages('bulkMatrixOnlyIncomplete')}
+          {!onlyIncomplete && incompleteLoadedCount > 0 ? (
+            <span className="ml-1.5 tabular-nums opacity-80">({incompleteLoadedCount})</span>
+          ) : null}
+        </Button>
+
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">
-            {tPages('bulkMatrixLoadedCount', { loaded: items.length, total })}
+            {onlyIncomplete
+              ? tPages('bulkMatrixIncompleteLoadedCount', {
+                  shown: visibleItems.length,
+                  incomplete: incompleteLoadedCount,
+                  loaded: items.length,
+                  total,
+                })
+              : tPages('bulkMatrixLoadedCount', { loaded: items.length, total })}
           </span>
           {dirtyKeys.size > 0 ? (
             <span className="text-sm text-primary">
@@ -502,7 +559,7 @@ export function CharacteristicsBulkEditor({
               </tr>
             </thead>
             <tbody>
-              {items.map((row) => {
+              {visibleItems.map((row) => {
                 const inStock = row.stock > 0
                 return (
                 <tr
@@ -554,12 +611,14 @@ export function CharacteristicsBulkEditor({
                     const key = cellKey(row.productId, definition.id)
                     const value = getCellValue(row, definition.id)
                     const dirty = dirtyKeys.has(key)
+                    const empty = isCellEmpty(value)
                     return (
                       <td key={definition.id} className="px-3 py-2 align-top">
                         <CharacteristicCellEditor
                           definition={definition}
                           value={value}
                           dirty={dirty}
+                          empty={empty}
                           onChange={(next) => patchCell(row.productId, definition.id, next)}
                         />
                       </td>
@@ -567,13 +626,15 @@ export function CharacteristicsBulkEditor({
                   })}
                 </tr>
               )})}
-              {items.length === 0 ? (
+              {visibleItems.length === 0 ? (
                 <tr>
                   <td
                     colSpan={characteristics.length + 1}
                     className="px-3 py-16 text-center text-muted-foreground"
                   >
-                    {tCommon('nothingFound')}
+                    {onlyIncomplete && items.length > 0
+                      ? tPages('bulkMatrixNoIncompleteInLoaded')
+                      : tCommon('nothingFound')}
                   </td>
                 </tr>
               ) : null}

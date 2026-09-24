@@ -36,6 +36,50 @@ async function parseError(res: Response): Promise<string> {
   return 'Не вдалося виконати запит Packeta.'
 }
 
+export type PacketaBdsStatus = 'confirmed' | 'possible' | 'no' | 'unknown'
+
+export type PacketaCarrier = {
+  id: number
+  name: string
+  country: string
+  currency: string | null
+  available: boolean | null
+  apiAllowed: boolean | null
+  pickupPoints: boolean | null
+  maxWeightKg: number | null
+  disallowsCod: boolean | null
+  codAllowed: boolean | null
+  requiresSize: boolean | null
+  requiresEmail: boolean | null
+  requiresPhone: boolean | null
+  separateHouseNumber: boolean | null
+  customsDeclarations: boolean | null
+  labelRouting: string | null
+  labelName: string | null
+  bdsStatus: PacketaBdsStatus
+}
+
+export type PacketaCarriersFeedResult = {
+  configured: boolean
+  fetchedAt: string | null
+  fromCache: boolean
+  carriers: PacketaCarrier[]
+  byCountry: Record<string, PacketaCarrier[]>
+  error: string | null
+}
+
+export async function fetchPacketaCarriers(options?: {
+  refresh?: boolean
+}): Promise<PacketaCarriersFeedResult> {
+  const qs = options?.refresh ? '?refresh=1' : ''
+  const res = await fetch(`/api/backstage/packeta/carriers${qs}`, {
+    cache: 'no-store',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return (await res.json()) as PacketaCarriersFeedResult
+}
+
 export async function fetchPacketaSettings(): Promise<PacketaAdminSettings> {
   const res = await fetch('/api/backstage/packeta/settings', {
     cache: 'no-store',

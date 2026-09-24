@@ -10,6 +10,14 @@ export type StripePendingPayment = {
   totalAmount: number
   currency: string
   paymentExpiresAt?: string | null
+  /** Payment-side billing prefill for Stripe Checkout Elements (not invoice SoT). */
+  billingPrefill?: {
+    name: string
+    line1: string
+    city: string
+    postal_code: string
+    country: string
+  } | null
   items?: Array<{
     productName: string
     variantLabel?: string | null
@@ -37,7 +45,105 @@ function isPendingPayment(value: unknown): value is StripePendingPayment {
   )
 }
 
-export function stripePaymentsFromCreatedOrders(orders: CreatedOrder[]): StripePendingPayment[] {
+export function stripeBillingPrefillFromPayload(
+  payload: {
+    customerFirstName?: string
+    customerLastName?: string
+    companyLegalName?: string
+    buyerType?: string
+    billingStreet?: string
+    billingHouseNumber?: string
+    billingCity?: string
+    billingPostalCode?: string
+    billingCountryCode?: string
+  },
+): StripePendingPayment['billingPrefill'] {
+  const line1 = [payload.billingStreet?.trim(), payload.billingHouseNumber?.trim()]
+    .filter(Boolean)
+    .join(' ')
+    .trim()
+  const country = (payload.billingCountryCode ?? '').trim().toUpperCase()
+  if (!line1 || !country) return null
+  // B2C: contact full name. B2B: company legal name is billing identity.
+  const name =
+    payload.buyerType === 'company' && payload.companyLegalName?.trim()
+      ? payload.companyLegalName.trim()
+      : [payload.customerFirstName?.trim(), payload.customerLastName?.trim()]
+          .filter(Boolean)
+          .join(' ')
+          .trim()
+  return {
+    name,
+    line1,
+    city: (payload.billingCity ?? '').trim(),
+    postal_code: (payload.billingPostalCode ?? '').trim(),
+    country,
+  }
+}
+
+/** True when we can programmatically supply Stripe billing address (country + line1). */
+export function hasStripeBillingAddressPrefill(
+  prefill: StripePendingPayment['billingPrefill'] | null | undefined,
+): prefill is NonNullable<StripePendingPayment['billingPrefill']> {
+  return Boolean(prefill?.country.trim() && prefill.line1.trim())
+}
+
+/**
+ * Maps our checkout billing prefill → Stripe Checkout Contact shape
+ * (defaultValues / updateBillingAddress / confirm).
+ */
+export function stripeCheckoutContactFromPrefill(
+  prefill: NonNullable<StripePendingPayment['billingPrefill']>,
+): {
+  name?: string
+  address: {
+    country: string
+    line1: string
+    city?: string
+    postal_code?: string
+  }
+} {
+  const name = prefill.name.trim()
+  return {
+    ...(name ? { name } : {}),
+    address: {
+      country: prefill.country.trim().toUpperCase(),
+      line1: prefill.line1.trim(),
+      city: prefill.city.trim() || undefined,
+      postal_code: prefill.postal_code.trim() || undefined,
+    },
+  }
+}
+
+/**
+ * When we pass billing name/address via updateBillingAddress + confirm(),
+ * Payment Element must not collect those fields again (Stripe IntegrationError).
+ * Email/phone stay auto — we do not pass them on confirm billingAddress.
+ */
+export function stripePaymentElementFieldsForPrefill(
+  prefill: StripePendingPayment['billingPrefill'] | null | undefined,
+):
+  | {
+      billingDetails: {
+        name?: 'never'
+        address?: 'never'
+      }
+    }
+  | undefined {
+  if (!hasStripeBillingAddressPrefill(prefill)) return undefined
+  const hasName = Boolean(prefill.name.trim())
+  return {
+    billingDetails: {
+      ...(hasName ? { name: 'never' as const } : {}),
+      address: 'never',
+    },
+  }
+}
+
+export function stripePaymentsFromCreatedOrders(
+  orders: CreatedOrder[],
+  billingPrefill?: StripePendingPayment['billingPrefill'],
+): StripePendingPayment[] {
   return orders.flatMap((order) => {
     const clientSecret = order.clientSecret?.trim() ?? ''
     const publishableKey = order.publishableKey?.trim() ?? ''
@@ -51,6 +157,7 @@ export function stripePaymentsFromCreatedOrders(orders: CreatedOrder[]): StripeP
         totalAmount: order.totalAmount,
         currency: order.currency,
         paymentExpiresAt: order.paymentExpiresAt ?? null,
+        billingPrefill: billingPrefill ?? null,
         items: (order.items ?? []).map((item) => ({
           productName: item.productName,
           variantLabel: item.variantLabel ?? null,

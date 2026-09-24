@@ -28,6 +28,7 @@ type PickupPoint = {
   city: string
   zip: string
   kind?: 'branch' | 'box' | 'carrier'
+  packetaCarrierId?: number
 }
 
 type CityOption = {
@@ -207,7 +208,13 @@ export function PacketaPickupPointField({
   onChange?: (
     pickupPointId: string,
     label?: string,
-    meta?: { zip?: string; city?: string; street?: string },
+    meta?: {
+      zip?: string
+      city?: string
+      street?: string
+      kind?: 'branch' | 'box' | 'carrier'
+      packetaCarrierId?: number
+    },
   ) => void
   country?: string
   cartFit?: PacketaCartFit
@@ -366,6 +373,8 @@ export function PacketaPickupPointField({
       zip: p.zip,
       city: p.city,
       street: p.street,
+      kind: p.kind,
+      packetaCarrierId: p.packetaCarrierId,
     })
     setPointQuery('')
     setPointOpen(false)

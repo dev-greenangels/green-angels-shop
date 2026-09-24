@@ -196,7 +196,7 @@ export function AccountSettingsContent() {
 
   const submitPhoneStart = async () => {
     if (!market) return
-    const phoneErr = fe(phoneErrorForPolicy(phoneInput, market.authPhonePolicy))
+    const phoneErr = fe(phoneErrorForPolicy(phoneInput, market.authPhonePolicy, market.region))
     if (phoneErr) {
       toast.error(phoneErr)
       return
@@ -436,7 +436,7 @@ export function AccountSettingsContent() {
                 className={cn(
                   market &&
                     phoneInput.trim() &&
-                    !isValidPhoneForPolicy(phoneInput, market.authPhonePolicy) &&
+                    !isValidPhoneForPolicy(phoneInput, market.authPhonePolicy, market.region) &&
                     'border-destructive/80',
                 )}
               />
@@ -445,11 +445,11 @@ export function AccountSettingsContent() {
                 show={Boolean(
                   market &&
                     phoneInput.trim() &&
-                    !isValidPhoneForPolicy(phoneInput, market.authPhonePolicy),
+                    !isValidPhoneForPolicy(phoneInput, market.authPhonePolicy, market.region),
                 )}
                 message={
                   market
-                    ? fe(phoneErrorForPolicy(phoneInput, market.authPhonePolicy))
+                    ? fe(phoneErrorForPolicy(phoneInput, market.authPhonePolicy, market.region))
                     : null
                 }
               />
@@ -460,7 +460,7 @@ export function AccountSettingsContent() {
                   disabled={
                     phoneBusy ||
                     !market ||
-                    !isValidPhoneForPolicy(phoneInput, market.authPhonePolicy)
+                    !isValidPhoneForPolicy(phoneInput, market.authPhonePolicy, market.region)
                   }
                   onClick={() => void submitPhoneStart()}
                 >

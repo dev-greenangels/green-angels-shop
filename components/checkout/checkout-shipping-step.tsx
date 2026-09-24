@@ -63,6 +63,7 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
   beforeRecipientSlot,
   packetaCartFit,
   priceQuote,
+  afterDeliverySlot,
 }: {
   formData: CheckoutFormValues
   enabledDeliveryMethods?: CheckoutDeliveryMethodSlug[]
@@ -89,6 +90,7 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
   beforeRecipientSlot?: ReactNode
   packetaCartFit?: PacketaCartFit
   priceQuote?: CheckoutDeliveryPriceQuoteInput
+  afterDeliverySlot?: ReactNode
 }) {
   const fe = useFormatFieldError()
 
@@ -236,6 +238,8 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
             priceQuote={priceQuote}
           />
         ) : null}
+
+        {afterDeliverySlot}
       </div>
 
       {showStepNav ? (

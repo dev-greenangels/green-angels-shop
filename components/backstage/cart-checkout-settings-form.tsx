@@ -6,6 +6,7 @@ import { CheckCircle2, Save, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { PriceBasisBadge } from '@/components/ui/number-input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -22,8 +23,12 @@ import {
   fetchPaymentProvidersStatus,
   type PaymentProvidersStatus,
 } from '@/lib/backstage/payments'
-import { DEFAULT_CHECKOUT_BANK_DETAILS } from '@/lib/settings/defaults'
-import type { CartCheckoutSettings, OnlineCardProvider } from '@/lib/settings/types'
+import { DEFAULT_CHECKOUT_BANK_DETAILS, DEFAULT_CART_CHECKOUT_SETTINGS } from '@/lib/settings/defaults'
+import type {
+  CartCheckoutSettings,
+  OnlineCardProvider,
+  PackagingStrategySettings,
+} from '@/lib/settings/types'
 import {
   CHECKOUT_DELIVERY_METHODS,
   TOGGLEABLE_PAYMENT_METHODS,
@@ -32,12 +37,6 @@ import {
   type CheckoutDeliveryMethodSlug,
   type CheckoutPaymentMethodSlug,
 } from '@/lib/checkout/methods'
-
-const DEFAULT_CART_SIZE_LIMITS: CartCheckoutSettings['cartSize']['limits'] = [
-  { method: 'packeta-box', maxLongestSideCm: 120, maxSideSumCm: 150, maxGirthCm: 0 },
-  { method: 'packeta-courier', maxLongestSideCm: 120, maxSideSumCm: 150, maxGirthCm: 0 },
-  { method: 'gls-courier', maxLongestSideCm: 200, maxSideSumCm: 0, maxGirthCm: 300 },
-]
 
 const ONLINE_CARD_PROVIDER_LABELS: Record<OnlineCardProvider, string> = {
   monopay: 'MonoPay (Plata by Mono)',
@@ -67,6 +66,8 @@ export function CartCheckoutSettingsForm({
   const [providersStatus, setProvidersStatus] = useState<PaymentProvidersStatus | null>(null)
   const [testingNotify, setTestingNotify] = useState(false)
   const [testNotifyMessage, setTestNotifyMessage] = useState<string | null>(null)
+  const [palletCapDraftSlug, setPalletCapDraftSlug] = useState('')
+  const [palletCapDraftValue, setPalletCapDraftValue] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -83,6 +84,56 @@ export function CartCheckoutSettingsForm({
   }, [])
 
   const patch = (partial: Partial<CartCheckoutSettings>) => onChange({ ...cart, ...partial })
+
+  const packagingStrategy: PackagingStrategySettings = cart.packagingStrategy ?? {
+    mode:
+      cart.packagingMode === 'pallet'
+        ? 'pallet'
+        : cart.packagingMode === 'boxes'
+          ? 'box'
+          : 'flat',
+    pallet: {
+      enabled: cart.packagingMode === 'pallet',
+      unitPrice: cart.palletSurcharge ?? 0,
+      capacityByContainerSlug: {},
+      autoPricingEnabled: false,
+    },
+  }
+  const palletCapacities = packagingStrategy.pallet.capacityByContainerSlug ?? {}
+  const palletCapacityEntries = Object.entries(palletCapacities)
+  const hasPalletCapacities = palletCapacityEntries.some(([, n]) => n > 0)
+
+  const patchPackagingMode = (packagingMode: CartCheckoutSettings['packagingMode']) => {
+    const mode =
+      packagingMode === 'pallet' ? 'pallet' : packagingMode === 'boxes' ? 'box' : 'flat'
+    patch({
+      packagingMode,
+      packagingStrategy: {
+        ...packagingStrategy,
+        mode,
+        pallet: {
+          ...packagingStrategy.pallet,
+          enabled: packagingMode === 'pallet' || packagingStrategy.pallet.enabled,
+        },
+      },
+    })
+  }
+
+  const patchPallet = (partial: Partial<PackagingStrategySettings['pallet']>) => {
+    const nextPallet = { ...packagingStrategy.pallet, ...partial }
+    if (partial.autoPricingEnabled === true && !hasPalletCapacities) {
+      nextPallet.autoPricingEnabled = false
+    }
+    patch({
+      packagingStrategy: {
+        ...packagingStrategy,
+        mode: 'pallet',
+        pallet: nextPallet,
+      },
+      packagingMode: 'pallet',
+      palletSurcharge: nextPallet.unitPrice,
+    })
+  }
 
   const sendTestNotify = async () => {
     setTestingNotify(true)
@@ -227,90 +278,363 @@ export function CartCheckoutSettingsForm({
               />
             </div>
           ) : null}
-          <div className="space-y-2">
-            <Label>Режим пакування</Label>
-            <Select
-              value={cart.packagingMode ?? 'flat'}
-              onValueChange={(value) =>
-                patch({ packagingMode: value as CartCheckoutSettings['packagingMode'] })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="flat">Фіксована сума</SelectItem>
-                <SelectItem value="boxes">Коробки / палети (вага й об’єм)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {(cart.packagingMode ?? 'flat') === 'flat' ? (
-            <div className="space-y-2">
-              <Label>Пакування — NET (без ПДВ), валюта деплою</Label>
-              <Input
-                type="number"
-                min={0}
-                step={0.01}
-                value={cart.packagingAmount}
-                onChange={(e) => patch({ packagingAmount: Number(e.target.value) || 0 })}
-              />
+          <div className="space-y-4 sm:col-span-2 rounded-lg border border-border/70 p-4">
+            <div>
+              <p className="text-sm font-medium">Пакування</p>
+              <p className="text-xs text-muted-foreground">
+                Пакувальна коробка — матеріал магазину (не посилка перевізника і не палета).
+                Ціни пакування не конвертуються при зміні NET/GROSS — змінюється лише інтерпретація.
+              </p>
             </div>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <Label>Макс. кг на коробку (0 = ігнорувати)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.1}
-                  value={cart.boxMaxWeightKg ?? 0}
-                  onChange={(e) => patch({ boxMaxWeightKg: Number(e.target.value) || 0 })}
-                />
+
+            <div className="space-y-2">
+              <Label>Ціни пакування вводяться як</Label>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="packaging-price-basis"
+                    checked={cart.packagingAmountsAreNet === true}
+                    onChange={() => patch({ packagingAmountsAreNet: true })}
+                  />
+                  NET — без ПДВ
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="packaging-price-basis"
+                    checked={cart.packagingAmountsAreNet !== true}
+                    onChange={() => patch({ packagingAmountsAreNet: false })}
+                  />
+                  GROSS — з ПДВ
+                </label>
               </div>
+              <p className="text-xs text-muted-foreground">
+                {cart.packagingAmountsAreNet === true
+                  ? 'NET: ПДВ рахується за податковим режимом замовлення (SK / OSS / reverse charge).'
+                  : 'GROSS: сума вже з ПДВ; повторно не додається.'}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Режим пакування</Label>
+              <Select
+                value={cart.packagingMode ?? 'flat'}
+                onValueChange={(value) =>
+                  patchPackagingMode(value as CartCheckoutSettings['packagingMode'])
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="flat">Фіксована сума</SelectItem>
+                  <SelectItem value="boxes">BOX — коробки</SelectItem>
+                  <SelectItem value="pallet">PALLET — палети</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {(cart.packagingMode ?? 'flat') === 'flat' ? (
               <div className="space-y-2">
-                <Label>Макс. літрів на коробку (0 = ігнорувати)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.1}
-                  value={cart.boxMaxVolumeL ?? 0}
-                  onChange={(e) => patch({ boxMaxVolumeL: Number(e.target.value) || 0 })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Ціна однієї коробки — NET (без ПДВ)</Label>
+                <div className="flex items-center gap-2">
+                  <Label>Фіксована сума пакування</Label>
+                  <PriceBasisBadge areNet={cart.packagingAmountsAreNet === true} />
+                </div>
                 <Input
                   type="number"
                   min={0}
                   step={0.01}
-                  value={cart.boxUnitPrice ?? 0}
-                  onChange={(e) => patch({ boxUnitPrice: Number(e.target.value) || 0 })}
+                  value={cart.packagingAmount}
+                  onChange={(e) => patch({ packagingAmount: Number(e.target.value) || 0 })}
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Коробок на палету (0 = без палет)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step={1}
-                  value={cart.boxesPerPallet ?? 0}
-                  onChange={(e) =>
-                    patch({ boxesPerPallet: Math.max(0, Math.floor(Number(e.target.value) || 0)) })
-                  }
-                />
+            ) : (cart.packagingMode ?? 'flat') === 'pallet' ? (
+              <div className="space-y-5">
+                <div className="space-y-3 rounded-md border border-dashed p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    PALLET — палети (без коробок)
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Occupancy = Σ(qty / capacity[slug]), ceil → кількість палет. AUTO-ціна на
+                    checkout лише коли увімкнено autoPricingEnabled і є capacities.
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label>Ціна однієї палети</Label>
+                      <PriceBasisBadge areNet={cart.packagingAmountsAreNet === true} />
+                    </div>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={packagingStrategy.pallet.unitPrice ?? 0}
+                      onChange={(e) =>
+                        patchPallet({ unitPrice: Number(e.target.value) || 0 })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Місткість за slug контейнера</Label>
+                    <p className="text-xs text-muted-foreground">
+                      VariantAttributeValue.slug атрибута CONTAINER — не перекладені назви. Без
+                      вигаданих дефолтів. Вкажіть slug і capacity, натисніть «Додати».
+                    </p>
+                    <div className="grid gap-2 sm:grid-cols-[1fr_120px_auto]">
+                      <Input
+                        placeholder="slug"
+                        value={palletCapDraftSlug}
+                        onChange={(e) => setPalletCapDraftSlug(e.target.value)}
+                      />
+                      <Input
+                        type="number"
+                        min={0}
+                        step={1}
+                        placeholder="capacity"
+                        value={palletCapDraftValue}
+                        onChange={(e) => setPalletCapDraftValue(e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const slug = palletCapDraftSlug.trim()
+                          const capacity = Math.max(0, Number(palletCapDraftValue) || 0)
+                          if (!slug) return
+                          patchPallet({
+                            capacityByContainerSlug: { ...palletCapacities, [slug]: capacity },
+                          })
+                          setPalletCapDraftSlug('')
+                          setPalletCapDraftValue('')
+                        }}
+                      >
+                        Додати
+                      </Button>
+                    </div>
+                    {palletCapacityEntries.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">Рядків ще немає.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {palletCapacityEntries.map(([slug, capacity]) => (
+                          <div
+                            key={slug}
+                            className="grid gap-2 sm:grid-cols-[1fr_120px_auto]"
+                          >
+                            <Input value={slug} readOnly className="bg-muted/40" />
+                            <Input
+                              type="number"
+                              min={0}
+                              step={1}
+                              value={capacity}
+                              onChange={(e) => {
+                                const next = {
+                                  ...palletCapacities,
+                                  [slug]: Math.max(0, Number(e.target.value) || 0),
+                                }
+                                patchPallet({
+                                  capacityByContainerSlug: next,
+                                  autoPricingEnabled:
+                                    Object.values(next).some((n) => n > 0) &&
+                                    packagingStrategy.pallet.autoPricingEnabled,
+                                })
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const next = { ...palletCapacities }
+                                delete next[slug]
+                                patchPallet({
+                                  capacityByContainerSlug: next,
+                                  autoPricingEnabled:
+                                    Object.values(next).some((n) => n > 0) &&
+                                    packagingStrategy.pallet.autoPricingEnabled,
+                                })
+                              }}
+                            >
+                              Видалити
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <Label>AUTO-ціноутворення палет на checkout</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Увімкніть лише після capacities. Інакше палетна лінія = 0.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={packagingStrategy.pallet.autoPricingEnabled === true}
+                      disabled={!hasPalletCapacities}
+                      onCheckedChange={(autoPricingEnabled) =>
+                        patchPallet({ autoPricingEnabled })
+                      }
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Доплата за повну палету</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={cart.palletSurcharge ?? 0}
-                  onChange={(e) => patch({ palletSurcharge: Number(e.target.value) || 0 })}
-                />
+            ) : (
+              <div className="space-y-5">
+                <div className="space-y-3 rounded-md border border-dashed p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    BOX — коробки (packaging box)
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label>Ціна однієї коробки</Label>
+                      <PriceBasisBadge areNet={cart.packagingAmountsAreNet === true} />
+                    </div>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={cart.boxUnitPrice ?? 0}
+                      onChange={(e) => patch({ boxUnitPrice: Number(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <Label>Рахувати коробки за вагою товарів</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Незалежно від спліту посилок перевізника (maxParcelWeightKg).
+                      </p>
+                    </div>
+                    <Switch
+                      checked={(cart.boxMaxWeightKg ?? 0) > 0}
+                      onCheckedChange={(on) =>
+                        patch({
+                          boxMaxWeightKg: on
+                            ? (cart.boxMaxWeightKg ?? 0) > 0
+                              ? cart.boxMaxWeightKg!
+                              : 15
+                            : 0,
+                        })
+                      }
+                    />
+                  </div>
+                  {(cart.boxMaxWeightKg ?? 0) > 0 ? (
+                    <div className="space-y-2">
+                      <Label>Maximum product weight per packaging box (kg)</Label>
+                      <Input
+                        type="number"
+                        min={0.1}
+                        step={0.1}
+                        value={cart.boxMaxWeightKg ?? 0}
+                        onChange={(e) =>
+                          patch({ boxMaxWeightKg: Number(e.target.value) || 0 })
+                        }
+                      />
+                    </div>
+                  ) : null}
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <Label>Рахувати коробки за транспортним обʼємом</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Транспортний обʼєм = L×W×H / 1000 (літри з габаритів варіанта). Це не
+                        обʼєм горщика (volumeLiters). Зазвичай вимкнено, доки в каталозі немає
+                        L/W/H.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={(cart.boxMaxVolumeL ?? 0) > 0}
+                      onCheckedChange={(on) =>
+                        patch({
+                          boxMaxVolumeL: on
+                            ? (cart.boxMaxVolumeL ?? 0) > 0
+                              ? cart.boxMaxVolumeL!
+                              : 50
+                            : 0,
+                        })
+                      }
+                    />
+                  </div>
+                  {(cart.boxMaxVolumeL ?? 0) > 0 ? (
+                    <div className="space-y-2">
+                      <Label>Макс. транспортний обʼєм на коробку (л)</Label>
+                      <Input
+                        type="number"
+                        min={0.1}
+                        step={0.1}
+                        value={cart.boxMaxVolumeL ?? 0}
+                        onChange={(e) =>
+                          patch({ boxMaxVolumeL: Number(e.target.value) || 0 })
+                        }
+                      />
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="space-y-3 rounded-md border border-dashed p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Legacy: палети від коробок
+                  </p>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <Label>Увімкнути доплату за палети (legacy)</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Legacy: palletCount = floor(boxCount / boxesPerPallet). Для незалежних
+                        палет оберіть режим PALLET.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={(cart.boxesPerPallet ?? 0) > 0}
+                      onCheckedChange={(on) =>
+                        patch({
+                          boxesPerPallet: on
+                            ? (cart.boxesPerPallet ?? 0) > 0
+                              ? cart.boxesPerPallet!
+                              : 1
+                            : 0,
+                        })
+                      }
+                    />
+                  </div>
+                  {(cart.boxesPerPallet ?? 0) > 0 ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label>Коробок на палету</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={cart.boxesPerPallet ?? 0}
+                          onChange={(e) =>
+                            patch({
+                              boxesPerPallet: Math.max(
+                                0,
+                                Math.floor(Number(e.target.value) || 0),
+                              ),
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label>Ціна / доплата за палету</Label>
+                          <PriceBasisBadge areNet={cart.packagingAmountsAreNet === true} />
+                        </div>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          value={cart.palletSurcharge ?? 0}
+                          onChange={(e) =>
+                            patch({ palletSurcharge: Number(e.target.value) || 0 })
+                          }
+                        />
+                      </div>
+                    </>
+                  ) : null}
+                </div>
               </div>
-            </>
-          )}
+            )}
+          </div>
           {marketRegion === 'ua' ? (
             <div className="space-y-2">
               <Label>Ставка ПДВ (%)</Label>
@@ -356,25 +680,13 @@ export function CartCheckoutSettingsForm({
               <p className="text-xs text-muted-foreground">
                 {marketRegion === 'sk'
                   ? 'Для SK завжди увімкнено на сервері — перемикач лише показує стан.'
-                  : 'Для UA можна увімкнути вручну.'}
+                  : 'Legacy UA — можна увімкнути вручну.'}
               </p>
             </div>
             <Switch
               checked={marketRegion === 'sk' ? true : Boolean(cart.taxAppliesToFees)}
               disabled={marketRegion === 'sk'}
               onCheckedChange={(taxAppliesToFees) => patch({ taxAppliesToFees })}
-            />
-          </div>
-          <div className="flex items-center justify-between gap-4 sm:col-span-2">
-            <div>
-              <Label>Пакування введено як NET</Label>
-              <p className="text-xs text-muted-foreground">
-                Legacy без прапорця = GROSS (не подвоювати ПДВ). Нові суми пакування — NET.
-              </p>
-            </div>
-            <Switch
-              checked={cart.packagingAmountsAreNet === true}
-              onCheckedChange={(packagingAmountsAreNet) => patch({ packagingAmountsAreNet })}
             />
           </div>
           <div className="flex items-center justify-between gap-4 sm:col-span-2">
@@ -386,48 +698,18 @@ export function CartCheckoutSettingsForm({
               onCheckedChange={(deliveryFreeForPickup) => patch({ deliveryFreeForPickup })}
             />
           </div>
-          <div className="space-y-2">
-            <Label>Комісія dobierka (післяплата) — NET, якщо увімкнено прапорець нижче</Label>
-            <Input
-              type="number"
-              min={0}
-              step={0.01}
-              value={cart.codFeeAmount ?? 0}
-              onChange={(e) => patch({ codFeeAmount: Number(e.target.value) || 0 })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Режим комісії dobierka</Label>
-            <Select
-              value={cart.codFeeMode ?? 'fixed'}
-              onValueChange={(value) =>
-                patch({ codFeeMode: value as CartCheckoutSettings['codFeeMode'] })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="fixed">Фіксована сума</SelectItem>
-                <SelectItem value="percent">Відсоток від товарів</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center justify-between gap-4 sm:col-span-2">
-            <div>
-              <Label>Dobierka введена як NET (той самий VAT шлях, що доставка)</Label>
-              <p className="text-xs text-muted-foreground">
-                Legacy без прапорця — COD не входить у витяг ПДВ (історично). Увімкніть для SK, щоб
-                checkout і ABRA sDph збігались.
-              </p>
-            </div>
-            <Switch
-              checked={cart.codFeeAmountsAreNet === true}
-              onCheckedChange={(codFeeAmountsAreNet) => patch({ codFeeAmountsAreNet })}
-            />
+          <div className="space-y-2 sm:col-span-2 rounded-lg border border-amber-500/30 bg-amber-50/50 p-3 dark:bg-amber-950/20">
+            <p className="text-sm font-medium">Cash on delivery (COD)</p>
+            <p className="text-xs text-muted-foreground">
+              Customer COD pricing and carrier COD costs are configured per carrier (Packeta → COD
+              A/B/C; other carriers in their tabs). Legacy global{' '}
+              <code className="text-xs">codFeeAmount</code> /{' '}
+              <code className="text-xs">codFeeMode</code> remain stored as compatibility fallback
+              only — not editable here.
+            </p>
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label>Вага кошика для доставки</Label>
+            <Label>Weight calculation (GLOBAL)</Label>
             <div className="flex flex-col gap-3 rounded-md border p-3">
               <div className="flex items-center justify-between gap-4">
                 <Label htmlFor="cart-weight-enabled">Увімкнути розрахунок ваги</Label>
@@ -515,117 +797,50 @@ export function CartCheckoutSettingsForm({
                   }
                 />
                 <p className="text-xs text-muted-foreground">
-                  Якщо увімкнені обидва режими — береться max(факт, об&apos;ємна) × кількість. Типово 5000.
+                  Якщо увімкнені обидва режими — береться max(факт, об&apos;ємна) × кількість.
+                  Типово 5000. Global cart weight engine — used before carrier selection.
+                </p>
+              </div>
+              <div className="space-y-2 border-t border-border/60 pt-3">
+                <Label htmlFor="cart-default-missing-weight">
+                  Default weight when product has no weight (kg)
+                </Label>
+                <Input
+                  id="cart-default-missing-weight"
+                  type="number"
+                  min={0.01}
+                  step={0.01}
+                  value={cart.defaultMissingWeightKg ?? 1}
+                  onChange={(e) => {
+                    const n = Number(e.target.value)
+                    patch({
+                      defaultMissingWeightKg:
+                        n > 0 ? n : DEFAULT_CART_CHECKOUT_SETTINGS.defaultMissingWeightKg,
+                    })
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Global product/cart-weight fallback (same persisted path). Used when calculating
+                  shipment weight before a carrier is chosen. Does not change catalog variant
+                  weight. Not a Packeta setting.
                 </p>
               </div>
             </div>
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label>Макс. габарити доставки (см)</Label>
-            <div className="flex flex-col gap-3 rounded-md border p-3">
-              <div className="flex items-center justify-between gap-4">
-                <Label htmlFor="cart-size-enabled">
-                  Увімкнути фільтр за макс. довжиною / сумою сторін / girth
-                </Label>
-                <Switch
-                  id="cart-size-enabled"
-                  checked={cart.cartSize?.enabled ?? false}
-                  onCheckedChange={(checked) =>
-                    patch({
-                      cartSize: {
-                        enabled: checked,
-                        limits: (cart.cartSize?.limits?.length
-                          ? cart.cartSize.limits
-                          : DEFAULT_CART_SIZE_LIMITS
-                        ).map((row) => ({ ...row })),
-                      },
-                    })
-                  }
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Packeta nadrozměrná: найдовша ≤120, сума сторін ≤150. GLS SK: довжина ≤200, girth
-                (L+2W+2H) ≤300. 0 = не перевіряти поле. Без L/W/H у варіантах методи не ріжуться.
+            <Label>Carrier transport (not edited here)</Label>
+            <div className="space-y-2 rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+              <p>
+                Packeta transport limits, tariffs, fuel/toll, insurance, and COD → Settings →
+                Packeta.
               </p>
-              {(cart.cartSize?.limits ?? []).map((row, index) => (
-                <div
-                  key={`${row.method}-${index}`}
-                  className="grid gap-2 rounded-md border border-dashed p-2 sm:grid-cols-4"
-                >
-                  <div className="space-y-1 sm:col-span-4">
-                    <Label className="text-xs text-muted-foreground">{row.method}</Label>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Макс. довжина</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      step={1}
-                      disabled={!cart.cartSize?.enabled}
-                      value={row.maxLongestSideCm}
-                      onChange={(e) => {
-                        const next = [...(cart.cartSize?.limits ?? [])]
-                        next[index] = {
-                          ...row,
-                          maxLongestSideCm: Math.max(0, Number(e.target.value) || 0),
-                        }
-                        patch({
-                          cartSize: {
-                            enabled: cart.cartSize?.enabled ?? false,
-                            limits: next,
-                          },
-                        })
-                      }}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Макс. сума сторін</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      step={1}
-                      disabled={!cart.cartSize?.enabled}
-                      value={row.maxSideSumCm}
-                      onChange={(e) => {
-                        const next = [...(cart.cartSize?.limits ?? [])]
-                        next[index] = {
-                          ...row,
-                          maxSideSumCm: Math.max(0, Number(e.target.value) || 0),
-                        }
-                        patch({
-                          cartSize: {
-                            enabled: cart.cartSize?.enabled ?? false,
-                            limits: next,
-                          },
-                        })
-                      }}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Макс. girth</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      step={1}
-                      disabled={!cart.cartSize?.enabled}
-                      value={row.maxGirthCm}
-                      onChange={(e) => {
-                        const next = [...(cart.cartSize?.limits ?? [])]
-                        next[index] = {
-                          ...row,
-                          maxGirthCm: Math.max(0, Number(e.target.value) || 0),
-                        }
-                        patch({
-                          cartSize: {
-                            enabled: cart.cartSize?.enabled ?? false,
-                            limits: next,
-                          },
-                        })
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
+              <p>
+                GLS transport limits and tariffs → Settings → GLS.
+              </p>
+              <p>
+                <code className="text-xs">cartSize.limits</code> is a server projection from
+                carrierConfigs.*.services — not an editable Cart field.
+              </p>
             </div>
           </div>
           <div className="space-y-2 sm:col-span-2">
@@ -880,7 +1095,10 @@ export function CartCheckoutSettingsForm({
           </div>
           {cart.belowMinOrderBehavior === 'add_packaging_fee' ? (
             <div className="space-y-2">
-              <Label>Додаткова сума пакування при низькому замовленні</Label>
+              <div className="flex items-center gap-2">
+                <Label>Додаткова сума пакування при низькому замовленні</Label>
+                <PriceBasisBadge areNet={cart.packagingAmountsAreNet === true} />
+              </div>
               <Input
                 type="number"
                 min={0}
@@ -937,7 +1155,10 @@ export function CartCheckoutSettingsForm({
           </div>
           {cart.wholesalerBelowMinOrderBehavior === 'add_packaging_fee' ? (
             <div className="space-y-2">
-              <Label>Додаткова сума пакування (гурт)</Label>
+              <div className="flex items-center gap-2">
+                <Label>Додаткова сума пакування (гурт)</Label>
+                <PriceBasisBadge areNet={cart.packagingAmountsAreNet === true} />
+              </div>
               <Input
                 type="number"
                 min={0}

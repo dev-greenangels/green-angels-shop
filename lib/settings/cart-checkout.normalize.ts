@@ -44,7 +44,7 @@ function isOnlineCardErpExportMode(
 }
 
 function isPackagingMode(value: unknown): value is CartCheckoutSettings['packagingMode'] {
-  return value === 'flat' || value === 'boxes'
+  return value === 'flat' || value === 'boxes' || value === 'pallet'
 }
 
 function isCodFeeMode(value: unknown): value is CartCheckoutSettings['codFeeMode'] {
@@ -232,6 +232,22 @@ export function normalizeCartCheckoutSettings(
     })(),
     packagingAmountsAreNet:
       'packagingAmountsAreNet' in source ? Boolean(source.packagingAmountsAreNet) : false,
+    carrierTariffAmountsAreNet:
+      'carrierTariffAmountsAreNet' in source
+        ? Boolean(source.carrierTariffAmountsAreNet)
+        : true,
+    carrierConfigs:
+      source.carrierConfigs &&
+      typeof source.carrierConfigs === 'object' &&
+      !Array.isArray(source.carrierConfigs)
+        ? (source.carrierConfigs as CartCheckoutSettings['carrierConfigs'])
+        : undefined,
+    packagingStrategy:
+      source.packagingStrategy &&
+      typeof source.packagingStrategy === 'object' &&
+      !Array.isArray(source.packagingStrategy)
+        ? (source.packagingStrategy as CartCheckoutSettings['packagingStrategy'])
+        : undefined,
     codFeeAmountsAreNet:
       'codFeeAmountsAreNet' in source ? Boolean(source.codFeeAmountsAreNet) : false,
     cartWeight: (() => {

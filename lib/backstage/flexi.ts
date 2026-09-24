@@ -68,6 +68,8 @@ export type FlexiPublicSettings = {
   issuedInvoiceTypeCode: string
   shippingCenikKod: string
   boxesCenikKod: string
+  /** Empty = pallet line not exported until ABRA ceník exists. */
+  palletCenikKod: string
   codFeeCenikKod: string
   /** Website deliveryMethod slug → Flexi forma-dopravy abbreviation. */
   deliveryMethodCodes: Record<string, string>
@@ -80,6 +82,8 @@ export type FlexiPublicSettings = {
   webhookUrl: string
   hasWebhookSecKey: boolean
   webhookAccepting: boolean
+  /** Soft-allow checkout when Flexi reports insufficient stock. */
+  allowCheckoutOnStockShort: boolean
   webhookRemoteId: string
   webhookRegistrationStatus: FlexiWebhookRegistrationStatus
   webhookLastRegisterAt?: string
@@ -118,6 +122,7 @@ export type FlexiSettingsPatch = Partial<{
   issuedInvoiceTypeCode: string
   shippingCenikKod: string
   boxesCenikKod: string
+  palletCenikKod: string
   codFeeCenikKod: string
   deliveryMethodCodes: Record<string, string>
   defaultCategoryId: string
@@ -128,6 +133,7 @@ export type FlexiSettingsPatch = Partial<{
   sizeAttributeId: string
   webhookSecKey: string
   webhookUrl: string
+  allowCheckoutOnStockShort: boolean
   documentSend: {
     b2b: FlexiDocumentSendMode
     b2c: FlexiDocumentSendMode

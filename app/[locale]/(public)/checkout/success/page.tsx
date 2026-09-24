@@ -20,6 +20,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
 import { BrandLogo } from '@/components/brand-logo'
+import { CheckoutShippingLeadNotice } from '@/components/checkout/checkout-shipping-lead-notice'
 import { ClientPublicPageBreadcrumbs } from '@/components/client-public-page-breadcrumbs'
 import { shopPublicBaseUrl } from '@/components/checkout/checkout-utils'
 import { useCatalogHref } from '@/components/providers/catalog-paths-provider'
@@ -27,6 +28,11 @@ import { useSession } from '@/components/providers/session-provider'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { pushPurchaseEventsForOrders } from '@/lib/analytics/push-purchase'
+import {
+  resolveShippingLeadNoticeText,
+  shouldShowShippingLeadNotice,
+  type ShippingLeadNoticeSettings,
+} from '@/lib/dispatch-calendar'
 import { clearCartAfterCheckout } from '@/lib/carts/clear-after-checkout'
 import {
   checkoutResultChromeTone,
@@ -83,8 +89,18 @@ type SuccessTranslator = ReturnType<typeof useTranslations<'checkout'>>
 
 function formatDeliveryAddress(order: PublicOrderConfirmation, t: SuccessTranslator): string {
   if (order.deliveryMethod === 'pickup') return t('pickup')
+  if (order.deliveryMethod === 'packeta-box') {
+    return (
+      order.deliveryBranchLabel?.trim() ||
+      [order.deliveryCity, order.deliveryBranch].filter(Boolean).join(', ') ||
+      '—'
+    )
+  }
   if (order.deliveryMethod === 'nova-poshta-branch') {
-    return [order.deliveryCity, order.deliveryBranch].filter(Boolean).join(', ')
+    return (
+      order.deliveryBranchLabel?.trim() ||
+      [order.deliveryCity, order.deliveryBranch].filter(Boolean).join(', ')
+    )
   }
   if (order.deliveryMethod === 'nova-poshta-address') {
     return [
@@ -223,6 +239,12 @@ function OrderCard({
             </div>
           )
         })()}
+        {(order.codFeeAmount ?? 0) > 0 ? (
+          <div className="flex justify-between gap-3">
+            <span className="text-muted-foreground">{t('codFee')}</span>
+            <span className="tabular-nums">{formatMoney(order.codFeeAmount!)}</span>
+          </div>
+        ) : null}
         <div className="flex justify-between gap-3 font-semibold">
           <span>{t('total')}</span>
           <span className="tabular-nums text-primary">{formatMoney(order.totalAmount)}</span>
@@ -457,6 +479,9 @@ function SuccessContent() {
     UNAVAILABLE_STORE_SETTINGS,
   )
   const [marketSettings, setMarketSettings] = useState<MarketSettings>(DEFAULT_MARKET_SETTINGS)
+  const [shippingLeadNotice, setShippingLeadNotice] =
+    useState<ShippingLeadNoticeSettings | null>(null)
+  const [dispatchCalendarEnabled, setDispatchCalendarEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadFailed, setLoadFailed] = useState(false)
   const [pdfLoading, setPdfLoading] = useState(false)
@@ -482,6 +507,17 @@ function SuccessContent() {
           ? resolveCountryFromHost(window.location.hostname)
           : null
       setMarketSettings(market)
+      setDispatchCalendarEnabled(Boolean(settingsResult.settings.dispatchCalendar?.enabled))
+      const notice = settingsResult.settings.dispatchCalendar?.shippingLeadNotice
+      setShippingLeadNotice(
+        notice
+          ? {
+              enabled: notice.enabled === true,
+              showMode: notice.showMode ?? 'when_calendar_off',
+              texts: notice.texts ?? {},
+            }
+          : null,
+      )
       setStoreSettings(
         resolveStoreForCountrySite(
           getStoreSettings(settingsResult, { locale }),
@@ -574,10 +610,16 @@ function SuccessContent() {
     cartSettings.paymentPurposeTemplate,
     orders.map((order) => order.orderNumber),
     marketSettings.region,
+    locale,
   )
 
   const nextSteps =
     resultState && orders.length ? resolvePaymentNextSteps(orders, resultState, t) : []
+  const shippingLeadNoticeText =
+    !isPickup &&
+    shouldShowShippingLeadNotice(shippingLeadNotice, dispatchCalendarEnabled)
+      ? resolveShippingLeadNoticeText(shippingLeadNotice, locale)
+      : ''
   const { title, subtitle } =
     resultState && !loading
       ? resolveTitleSubtitle(resultState, primary, t)
@@ -779,6 +821,12 @@ function SuccessContent() {
                   </p>
                 </div>
               ) : null}
+            </div>
+          ) : null}
+
+          {showVerifiedDetails && shippingLeadNoticeText ? (
+            <div className="mb-6">
+              <CheckoutShippingLeadNotice text={shippingLeadNoticeText} />
             </div>
           ) : null}
 

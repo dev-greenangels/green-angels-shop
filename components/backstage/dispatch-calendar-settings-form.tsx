@@ -12,8 +12,11 @@ import { Switch } from '@/components/ui/switch'
 import {
   fetchDispatchCalendarAdmin,
   updateDispatchCalendarAdmin,
+  DEFAULT_SHIPPING_LEAD_NOTICE_TEXTS,
+  SHIPPING_LEAD_NOTICE_LOCALES,
   type DispatchCalendarSettings,
   type DispatchDaySlot,
+  type ShippingLeadNoticeShowMode,
 } from '@/lib/dispatch-calendar'
 
 const WEEKDAYS: Array<{ value: number; label: string }> = [
@@ -26,6 +29,15 @@ const WEEKDAYS: Array<{ value: number; label: string }> = [
   { value: 0, label: 'Нд' },
 ]
 
+const LOCALE_LABELS: Record<(typeof SHIPPING_LEAD_NOTICE_LOCALES)[number], string> = {
+  uk: 'UK',
+  en: 'EN',
+  sk: 'SK',
+  cs: 'CS',
+  hu: 'HU',
+  de: 'DE',
+}
+
 const EMPTY: DispatchCalendarSettings = {
   enabled: false,
   blockedWeekdays: [0, 6],
@@ -34,6 +46,11 @@ const EMPTY: DispatchCalendarSettings = {
   minLeadDays: 0,
   dailyCapacity: 100,
   externalReservedByDate: {},
+  shippingLeadNotice: {
+    enabled: false,
+    showMode: 'when_calendar_off',
+    texts: { ...DEFAULT_SHIPPING_LEAD_NOTICE_TEXTS },
+  },
 }
 
 function settingsSnapshot(s: DispatchCalendarSettings): string {
@@ -45,6 +62,7 @@ function settingsSnapshot(s: DispatchCalendarSettings): string {
     minLeadDays: s.minLeadDays,
     dailyCapacity: s.dailyCapacity,
     externalReservedByDate: s.externalReservedByDate,
+    shippingLeadNotice: s.shippingLeadNotice,
   })
 }
 
@@ -103,7 +121,18 @@ export function DispatchCalendarSettingsForm() {
     setLoading(true)
     try {
       const data = await fetchDispatchCalendarAdmin()
-      const next = { ...EMPTY, ...data.settings }
+      const next: DispatchCalendarSettings = {
+        ...EMPTY,
+        ...data.settings,
+        shippingLeadNotice: {
+          ...EMPTY.shippingLeadNotice,
+          ...(data.settings.shippingLeadNotice ?? {}),
+          texts: {
+            ...EMPTY.shippingLeadNotice.texts,
+            ...(data.settings.shippingLeadNotice?.texts ?? {}),
+          },
+        },
+      }
       setSettings(next)
       setBaseline(settingsSnapshot(next))
       setReport(data.report)
@@ -190,6 +219,77 @@ export function DispatchCalendarSettingsForm() {
           checked={settings.enabled}
           onCheckedChange={(enabled) => patchSettings((s) => ({ ...s, enabled }))}
         />
+      </div>
+
+      <div className="space-y-4 rounded-lg border p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="font-medium">Інфо про термін відправки (checkout / success)</p>
+            <p className="text-sm text-muted-foreground">
+              Текст показується клієнту. CMS по локалях (не next-intl). Оберіть, коли показувати
+              відносно календаря дат.
+            </p>
+          </div>
+          <Switch
+            checked={settings.shippingLeadNotice.enabled}
+            onCheckedChange={(enabled) =>
+              patchSettings((s) => ({
+                ...s,
+                shippingLeadNotice: { ...s.shippingLeadNotice, enabled },
+              }))
+            }
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="shipping-lead-show-mode">Коли показувати</Label>
+          <select
+            id="shipping-lead-show-mode"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            value={settings.shippingLeadNotice.showMode}
+            onChange={(e) =>
+              patchSettings((s) => ({
+                ...s,
+                shippingLeadNotice: {
+                  ...s.shippingLeadNotice,
+                  showMode: e.target.value as ShippingLeadNoticeShowMode,
+                },
+              }))
+            }
+          >
+            <option value="when_calendar_off">Лише коли календар дат вимкнений</option>
+            <option value="always">Завжди (разом з календарем або без)</option>
+            <option value="with_calendar">Лише коли календар дат увімкнений</option>
+          </select>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {SHIPPING_LEAD_NOTICE_LOCALES.map((locale) => (
+            <div key={locale} className="space-y-1.5">
+              <Label htmlFor={`shipping-lead-${locale}`}>
+                Текст ({LOCALE_LABELS[locale]})
+              </Label>
+              <textarea
+                id={`shipping-lead-${locale}`}
+                rows={2}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={settings.shippingLeadNotice.texts[locale] ?? ''}
+                onChange={(e) =>
+                  patchSettings((s) => ({
+                    ...s,
+                    shippingLeadNotice: {
+                      ...s.shippingLeadNotice,
+                      texts: {
+                        ...s.shippingLeadNotice.texts,
+                        [locale]: e.target.value,
+                      },
+                    },
+                  }))
+                }
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="space-y-3">

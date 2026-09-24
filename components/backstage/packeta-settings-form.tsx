@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
 import { FormSaveBar } from '@/components/backstage/form-save-bar'
+import { PacketaCarriersDiagnosticSection } from '@/components/backstage/packeta-carriers-diagnostic'
 import {
   PacketaShippingSettingsSection,
   buildPacketaCarrierRateTablesPatch,
@@ -20,6 +21,9 @@ import {
   updatePacketaSettings,
   type PacketaAdminSettings,
 } from '@/lib/backstage/packeta'
+import {
+  buildPacketaOwnedCheckoutPatch,
+} from '@/lib/backstage/cart-checkout-ownership'
 import {
   fetchBackstageSettings,
   updateBackstageCartCheckoutSettings,
@@ -42,10 +46,11 @@ const EMPTY: PacketaAdminSettings = {
   apiPasswordConfigured: false,
 }
 
+/** Dirty-check slice for Packeta-owned cart fields only (not packaging / cartWeight). */
 function packetaCartSlice(cart: CartCheckoutSettings) {
   return {
-    defaultMissingWeightKg: cart.defaultMissingWeightKg,
     standardParcelMaxWeightKg: cart.standardParcelMaxWeightKg,
+    carrierConfigs: { packeta: cart.carrierConfigs?.packeta ?? {} },
     carrierRateTables: cart.carrierRateTables ?? {},
     carrierSurcharges: cart.carrierSurcharges ?? {},
   }
@@ -211,12 +216,13 @@ export function PacketaSettingsForm() {
 
       const [apiNext, cartNext] = await Promise.all([
         updatePacketaSettings(apiPayload),
-        updateBackstageCartCheckoutSettings({
-          defaultMissingWeightKg: cart.defaultMissingWeightKg,
-          standardParcelMaxWeightKg: cart.standardParcelMaxWeightKg,
-          carrierRateTables: buildPacketaCarrierRateTablesPatch(cart.carrierRateTables),
-          carrierSurcharges: buildPacketaCarrierSurchargesPatch(cart.carrierSurcharges),
-        }),
+        updateBackstageCartCheckoutSettings(
+          buildPacketaOwnedCheckoutPatch(
+            cart,
+            buildPacketaCarrierRateTablesPatch(cart.carrierRateTables),
+            buildPacketaCarrierSurchargesPatch(cart.carrierSurcharges),
+          ),
+        ),
       ])
       applyLoadedApi(apiNext)
       applyLoadedCart(cartNext)
@@ -333,10 +339,13 @@ export function PacketaSettingsForm() {
 
           <div className="space-y-3 rounded-lg border border-border/70 p-3">
             <div>
-              <p className="text-sm font-medium">Габарити для фільтра пунктів</p>
+              <p className="text-sm font-medium">
+                Pickup-point search filters (not parcel tariff limits)
+              </p>
               <p className="text-xs text-muted-foreground">
-                На checkout ховаються пункти, у які кошик не вміщується (за найдовшою стороною та
-                сумою L+W+H). Z-BOX за замовчуванням — шафа L (60 / 138 см).
+                Filters which Z-BOX / výdejní místa appear in checkout search when the cart does
+                not fit (longest side and L+W+H). Separate from shipment/parcel physical limits
+                under Packeta shipping settings below. Default Z-BOX cabinet L is 60 / 138 cm.
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -392,6 +401,8 @@ export function PacketaSettingsForm() {
           </div>
         </CardContent>
       </Card>
+
+      <PacketaCarriersDiagnosticSection />
 
       <PacketaShippingSettingsSection cart={cart} onChange={patchCart} />
 

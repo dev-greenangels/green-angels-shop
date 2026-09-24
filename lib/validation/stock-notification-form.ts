@@ -59,6 +59,7 @@ export function validateNotifyPhone(
   phone: string,
   policy: PhonePolicy,
   messages?: { required?: string; invalid?: string },
+  regionFallback?: MarketRegion,
 ): string | null {
   if (policy === 'ua_e164') {
     const err = getRecipientUkrPhoneError(phone)
@@ -66,7 +67,7 @@ export function validateNotifyPhone(
     if (err.includes('Обов') && messages?.required) return messages.required
     return messages?.invalid ?? err
   }
-  const err = phoneErrorForPolicy(phone, policy)
+  const err = phoneErrorForPolicy(phone, policy, regionFallback)
   if (!err) return null
   if (err.includes('Обов') && messages?.required) return messages.required
   return messages?.invalid ?? err

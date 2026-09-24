@@ -109,7 +109,8 @@ export function validateWholesaleInquiryForm(
 
   if (!isValidPersonName(values.fullName)) errors.fullName = t.fullName
   if (values.companyName.trim().length < 2) errors.companyName = t.companyName
-  if (!isValidPhoneForPolicy(values.phone, options.phonePolicy)) errors.phone = t.phone
+  if (!isValidPhoneForPolicy(values.phone, options.phonePolicy, options.region))
+    errors.phone = t.phone
   if (!values.email.trim() || !isValidEmail(values.email)) errors.email = t.email
   if (values.city.trim().length < 2) errors.city = t.city
   if (values.website.trim() && !isValidWebsite(values.website)) errors.website = t.website

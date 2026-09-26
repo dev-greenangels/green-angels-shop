@@ -173,6 +173,11 @@ export default function CartsPage() {
                         >
                           <span className="min-w-0 truncate text-foreground">
                             {item.productName}
+                            {item.latinName?.trim() ? (
+                              <span className="mt-0.5 block truncate text-xs italic text-muted-foreground">
+                                {item.latinName.trim()}
+                              </span>
+                            ) : null}
                             {item.variantLabel ? ` · ${item.variantLabel}` : ''}
                           </span>
                           <span className="shrink-0">{item.quantity} шт.</span>

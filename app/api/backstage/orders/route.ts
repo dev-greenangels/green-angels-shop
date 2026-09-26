@@ -11,10 +11,12 @@ export async function GET(request: Request) {
   const params = new URLSearchParams()
   const search = searchParams.get('search')
   const status = searchParams.get('status')
+  const excludeCancelled = searchParams.get('excludeCancelled')
   const page = searchParams.get('page')
   const pageSize = searchParams.get('pageSize')
   if (search) params.set('search', search)
   if (status) params.set('status', status)
+  if (excludeCancelled) params.set('excludeCancelled', excludeCancelled)
   if (page) params.set('page', page)
   if (pageSize) params.set('pageSize', pageSize)
 

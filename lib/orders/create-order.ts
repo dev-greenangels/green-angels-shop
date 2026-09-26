@@ -19,6 +19,7 @@ export type CreatedOrder = {
   paymentExpiresAt?: string | null
   items?: Array<{
     productName: string
+    latinName?: string | null
     variantLabel?: string | null
     quantity: number
     lineTotal?: number

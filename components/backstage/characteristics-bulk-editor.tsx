@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import { ArrowLeft, Filter, Loader2, Save, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -35,6 +35,8 @@ import {
 import { cn } from '@/lib/utils'
 
 const PAGE_SIZE = 50
+/** Debounce TEXT/NUMBER commits so typing does not rebuild the matrix every keystroke. */
+const TEXT_COMMIT_MS = 200
 
 function cellKey(productId: string, characteristicId: string) {
   return `${productId}:${characteristicId}`
@@ -104,19 +106,116 @@ function multiSelectLabel(
   return labels.length ? labels.join(', ') : emptyLabel
 }
 
-function CharacteristicCellEditor({
-  definition,
-  value,
-  dirty,
-  empty,
-  onChange,
-}: {
+type CellEditorProps = {
   definition: CharacteristicDefinition
   value: CharacteristicCellValue
   dirty: boolean
   empty: boolean
   onChange: (value: CharacteristicCellValue) => void
-}) {
+}
+
+/** TEXT/NUMBER: local draft until debounce/blur — parent matrix stays quiet while typing. */
+const ScalarCellEditor = memo(function ScalarCellEditor({
+  definition,
+  value,
+  dirty,
+  empty,
+  onChange,
+}: CellEditorProps) {
+  const isNumber = definition.valueType === 'NUMBER'
+  const committed = isNumber
+    ? value?.numberValue != null
+      ? String(value.numberValue)
+      : ''
+    : value?.textValue ?? ''
+
+  const [local, setLocal] = useState(committed)
+  const focusedRef = useRef(false)
+  const timerRef = useRef<number | null>(null)
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+
+  useEffect(() => {
+    if (!focusedRef.current) setLocal(committed)
+  }, [committed])
+
+  useEffect(
+    () => () => {
+      if (timerRef.current != null) window.clearTimeout(timerRef.current)
+    },
+    [],
+  )
+
+  const commit = useCallback(
+    (raw: string) => {
+      if (isNumber) {
+        const trimmed = raw.trim()
+        if (!trimmed) {
+          onChangeRef.current(null)
+          return
+        }
+        const numberValue = Number(trimmed)
+        onChangeRef.current(Number.isNaN(numberValue) ? null : { numberValue })
+        return
+      }
+      const textValue = raw
+      onChangeRef.current(textValue.trim() ? { textValue } : null)
+    },
+    [isNumber],
+  )
+
+  const scheduleCommit = useCallback(
+    (raw: string) => {
+      if (timerRef.current != null) window.clearTimeout(timerRef.current)
+      timerRef.current = window.setTimeout(() => {
+        timerRef.current = null
+        commit(raw)
+      }, TEXT_COMMIT_MS)
+    },
+    [commit],
+  )
+
+  const fillStateClass = empty
+    ? emptyCellClassName
+    : dirty
+      ? 'border-primary bg-primary/5'
+      : undefined
+
+  return (
+    <Input
+      type={isNumber ? 'number' : 'text'}
+      className={cn(
+        isNumber ? 'h-8 w-full max-w-[120px] text-xs' : 'h-8 w-full min-w-[120px] text-xs',
+        fillStateClass,
+      )}
+      value={local}
+      onFocus={() => {
+        focusedRef.current = true
+      }}
+      onBlur={() => {
+        focusedRef.current = false
+        if (timerRef.current != null) {
+          window.clearTimeout(timerRef.current)
+          timerRef.current = null
+        }
+        commit(local)
+      }}
+      onChange={(event) => {
+        const next = event.target.value
+        setLocal(next)
+        scheduleCommit(next)
+      }}
+    />
+  )
+})
+
+const SelectCellEditor = memo(function SelectCellEditor({
+  definition,
+  value,
+  dirty,
+  empty,
+  onChange,
+}: CellEditorProps) {
   const tHints = useTranslations('hints')
   const fillStateClass = empty
     ? emptyCellClassName
@@ -124,119 +223,223 @@ function CharacteristicCellEditor({
       ? 'border-primary bg-primary/5'
       : undefined
 
-  if (definition.valueType === 'MULTI_SELECT' || definition.valueType === 'COLOR') {
-    const selectedIds = value?.optionIds ?? []
-    return (
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className={cn(
-              'h-8 w-full max-w-[180px] justify-start truncate text-xs font-normal',
-              fillStateClass,
-            )}
-          >
-            {multiSelectLabel(definition, value, tHints('notSpecified'))}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-56 p-3" align="start">
-          <div className="space-y-2">
-            {definition.options.map((option) => {
-              const checked = selectedIds.includes(option.id)
-              return (
-                <label key={option.id} className="flex cursor-pointer items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={(next) => {
-                      const optionIds = next
-                        ? [...selectedIds, option.id]
-                        : selectedIds.filter((id) => id !== option.id)
-                      onChange(optionIds.length ? { optionIds } : null)
-                    }}
-                  />
-                  <span className="inline-flex items-center gap-2">
-                    {option.colorHex ? (
-                      <span
-                        className="inline-block h-3 w-3 shrink-0 rounded-full border border-border"
-                        style={{ backgroundColor: option.colorHex }}
-                        aria-hidden
-                      />
-                    ) : null}
-                    {option.label}
-                  </span>
-                </label>
-              )
-            })}
-          </div>
-        </PopoverContent>
-      </Popover>
-    )
-  }
+  return (
+    <Select
+      value={value?.optionId ?? '__none__'}
+      onValueChange={(next) => onChange(next === '__none__' ? null : { optionId: next })}
+    >
+      <SelectTrigger className={cn('h-8 w-full max-w-[180px] text-xs', fillStateClass)}>
+        <SelectValue placeholder={tHints('notSpecified')} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__none__">{tHints('notSpecified')}</SelectItem>
+        {definition.options.map((option) => (
+          <SelectItem key={option.id} value={option.id}>
+            <span className="inline-flex items-center gap-2">
+              {option.colorHex ? (
+                <span
+                  className="inline-block h-3 w-3 shrink-0 rounded-full border border-border"
+                  style={{ backgroundColor: option.colorHex }}
+                  aria-hidden
+                />
+              ) : null}
+              {option.label}
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+})
 
-  if (definition.valueType === 'SELECT') {
-    return (
-      <Select
-        value={value?.optionId ?? '__none__'}
-        onValueChange={(next) => onChange(next === '__none__' ? null : { optionId: next })}
-      >
-        <SelectTrigger
-          className={cn('h-8 w-full max-w-[180px] text-xs', fillStateClass)}
-        >
-          <SelectValue placeholder={tHints('notSpecified')} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="__none__">{tHints('notSpecified')}</SelectItem>
-          {definition.options.map((option) => (
-            <SelectItem key={option.id} value={option.id}>
-              <span className="inline-flex items-center gap-2">
-                {option.colorHex ? (
-                  <span
-                    className="inline-block h-3 w-3 shrink-0 rounded-full border border-border"
-                    style={{ backgroundColor: option.colorHex }}
-                    aria-hidden
-                  />
-                ) : null}
-                {option.label}
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    )
-  }
-
-  if (definition.valueType === 'NUMBER') {
-    return (
-      <Input
-        type="number"
-        className={cn('h-8 w-full max-w-[120px] text-xs', fillStateClass)}
-        value={value?.numberValue ?? ''}
-        onChange={(event) => {
-          const raw = event.target.value
-          if (!raw.trim()) {
-            onChange(null)
-            return
-          }
-          const numberValue = Number(raw)
-          onChange(Number.isNaN(numberValue) ? null : { numberValue })
-        }}
-      />
-    )
-  }
+const MultiSelectCellEditor = memo(function MultiSelectCellEditor({
+  definition,
+  value,
+  dirty,
+  empty,
+  onChange,
+}: CellEditorProps) {
+  const tHints = useTranslations('hints')
+  const selectedIds = value?.optionIds ?? []
+  const fillStateClass = empty
+    ? emptyCellClassName
+    : dirty
+      ? 'border-primary bg-primary/5'
+      : undefined
 
   return (
-    <Input
-      className={cn('h-8 w-full min-w-[120px] text-xs', fillStateClass)}
-      value={value?.textValue ?? ''}
-      onChange={(event) => {
-        const textValue = event.target.value
-        onChange(textValue.trim() ? { textValue } : null)
-      }}
-    />
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className={cn(
+            'h-8 w-full max-w-[180px] justify-start truncate text-xs font-normal',
+            fillStateClass,
+          )}
+        >
+          {multiSelectLabel(definition, value, tHints('notSpecified'))}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-3" align="start">
+        <div className="space-y-2">
+          {definition.options.map((option) => {
+            const checked = selectedIds.includes(option.id)
+            return (
+              <label key={option.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={(next) => {
+                    const optionIds = next
+                      ? [...selectedIds, option.id]
+                      : selectedIds.filter((id) => id !== option.id)
+                    onChange(optionIds.length ? { optionIds } : null)
+                  }}
+                />
+                <span className="inline-flex items-center gap-2">
+                  {option.colorHex ? (
+                    <span
+                      className="inline-block h-3 w-3 shrink-0 rounded-full border border-border"
+                      style={{ backgroundColor: option.colorHex }}
+                      aria-hidden
+                    />
+                  ) : null}
+                  {option.label}
+                </span>
+              </label>
+            )
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
   )
+})
+
+const CharacteristicCellEditor = memo(function CharacteristicCellEditor(props: CellEditorProps) {
+  const { definition } = props
+  if (definition.valueType === 'MULTI_SELECT' || definition.valueType === 'COLOR') {
+    return <MultiSelectCellEditor {...props} />
+  }
+  if (definition.valueType === 'SELECT') {
+    return <SelectCellEditor {...props} />
+  }
+  return <ScalarCellEditor {...props} />
+})
+
+type MatrixRowProps = {
+  row: BulkMatrixProductRow
+  characteristics: CharacteristicDefinition[]
+  draftValues: Map<string, CharacteristicCellValue>
+  dirtyKeys: Set<string>
+  stockUnitsLabel: (count: number) => string
+  stockNoneLabel: string
+  onCellChange: (
+    productId: string,
+    characteristicId: string,
+    value: CharacteristicCellValue,
+  ) => void
 }
+
+function matrixRowPropsEqual(prev: MatrixRowProps, next: MatrixRowProps): boolean {
+  if (prev.row !== next.row) return false
+  if (prev.characteristics !== next.characteristics) return false
+  if (prev.onCellChange !== next.onCellChange) return false
+  if (prev.stockUnitsLabel !== next.stockUnitsLabel) return false
+  if (prev.stockNoneLabel !== next.stockNoneLabel) return false
+
+  for (const definition of next.characteristics) {
+    const key = cellKey(next.row.productId, definition.id)
+    const prevValue = prev.draftValues.has(key)
+      ? (prev.draftValues.get(key) ?? null)
+      : (prev.row.values[definition.id] ?? null)
+    const nextValue = next.draftValues.has(key)
+      ? (next.draftValues.get(key) ?? null)
+      : (next.row.values[definition.id] ?? null)
+    if (valueToKey(prevValue) !== valueToKey(nextValue)) return false
+    if (prev.dirtyKeys.has(key) !== next.dirtyKeys.has(key)) return false
+  }
+  return true
+}
+
+const MatrixProductRow = memo(function MatrixProductRow({
+  row,
+  characteristics,
+  draftValues,
+  dirtyKeys,
+  stockUnitsLabel,
+  stockNoneLabel,
+  onCellChange,
+}: MatrixRowProps) {
+  const inStock = row.stock > 0
+
+  return (
+    <tr
+      className={cn(
+        'border-b border-border/60',
+        inStock ? 'hover:bg-muted/20' : 'bg-muted/30 text-muted-foreground hover:bg-muted/40',
+      )}
+    >
+      <td
+        className={cn(
+          'sticky left-0 z-20 border-r px-3 py-2',
+          inStock ? 'bg-background' : 'bg-muted',
+        )}
+      >
+        <div className="flex min-w-[220px] items-start gap-2">
+          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded border bg-muted">
+            {row.imageUrl ? (
+              <Image
+                src={resolveBackstageThumbnailSrc(row.imageUrl)}
+                alt=""
+                fill
+                className="object-cover"
+                unoptimized
+                sizes="40px"
+              />
+            ) : null}
+          </div>
+          <div className="flex min-w-0 flex-col gap-1">
+            <span className={cn('font-medium', inStock ? 'text-foreground' : undefined)}>
+              {row.productName}
+            </span>
+            <span
+              className={cn(
+                'w-fit rounded-full px-2 py-0.5 text-xs font-medium',
+                inStock
+                  ? row.stock < 20
+                    ? 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400'
+                    : 'bg-primary/10 text-primary'
+                  : 'bg-muted text-muted-foreground',
+              )}
+            >
+              {inStock ? stockUnitsLabel(row.stock) : stockNoneLabel}
+            </span>
+          </div>
+        </div>
+      </td>
+      {characteristics.map((definition) => {
+        const key = cellKey(row.productId, definition.id)
+        const value = draftValues.has(key)
+          ? (draftValues.get(key) ?? null)
+          : (row.values[definition.id] ?? null)
+        const dirty = dirtyKeys.has(key)
+        const empty = isCellEmpty(value)
+        return (
+          <td key={definition.id} className="px-3 py-2 align-top">
+            <CharacteristicCellEditor
+              definition={definition}
+              value={value}
+              dirty={dirty}
+              empty={empty}
+              onChange={(next) => onCellChange(row.productId, definition.id, next)}
+            />
+          </td>
+        )
+      })}
+    </tr>
+  )
+}, matrixRowPropsEqual)
 
 export function CharacteristicsBulkEditor({
   characteristics,
@@ -266,10 +469,13 @@ export function CharacteristicsBulkEditor({
   const [saving, setSaving] = useState(false)
   const [baseline, setBaseline] = useState<Map<string, string>>(new Map())
   const [draftValues, setDraftValues] = useState<Map<string, CharacteristicCellValue>>(new Map())
+  const [dirtyKeys, setDirtyKeys] = useState<Set<string>>(() => new Set())
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const loadingMoreRef = useRef(false)
+  const baselineRef = useRef(baseline)
+  baselineRef.current = baseline
 
   useEffect(() => {
     const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300)
@@ -316,13 +522,17 @@ export function CharacteristicsBulkEditor({
           for (const row of data.items) {
             for (const definition of characteristics) {
               const key = cellKey(row.productId, definition.id)
-              if (!next.has(key)) {
+              if (replace || !next.has(key)) {
                 next.set(key, row.values[definition.id] ?? null)
               }
             }
           }
           return next
         })
+
+        if (replace) {
+          setDirtyKeys(new Set())
+        }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : tt('loadFailed'))
       } finally {
@@ -356,29 +566,37 @@ export function CharacteristicsBulkEditor({
     return () => observer.disconnect()
   }, [hasMore, loading, loadingMore, loadPage, page])
 
-  const dirtyKeys = useMemo(() => {
-    const keys = new Set<string>()
-    for (const [key, value] of draftValues) {
-      if (valueToKey(value) !== (baseline.get(key) ?? '')) {
-        keys.add(key)
-      }
-    }
-    return keys
-  }, [baseline, draftValues])
-
-  const getCellValue = useCallback(
-    (row: BulkMatrixProductRow, characteristicId: string) => {
-      const key = cellKey(row.productId, characteristicId)
-      if (draftValues.has(key)) return draftValues.get(key) ?? null
-      return row.values[characteristicId] ?? null
+  const patchCell = useCallback(
+    (productId: string, characteristicId: string, value: CharacteristicCellValue) => {
+      const key = cellKey(productId, characteristicId)
+      setDraftValues((prev) => {
+        const next = new Map(prev)
+        next.set(key, value)
+        return next
+      })
+      setDirtyKeys((prev) => {
+        const isDirty = valueToKey(value) !== (baselineRef.current.get(key) ?? '')
+        const had = prev.has(key)
+        if (isDirty === had) return prev
+        const next = new Set(prev)
+        if (isDirty) next.add(key)
+        else next.delete(key)
+        return next
+      })
     },
-    [draftValues],
+    [],
   )
 
   const rowHasIncomplete = useCallback(
     (row: BulkMatrixProductRow) =>
-      characteristics.some((definition) => isCellEmpty(getCellValue(row, definition.id))),
-    [characteristics, getCellValue],
+      characteristics.some((definition) => {
+        const key = cellKey(row.productId, definition.id)
+        const value = draftValues.has(key)
+          ? (draftValues.get(key) ?? null)
+          : (row.values[definition.id] ?? null)
+        return isCellEmpty(value)
+      }),
+    [characteristics, draftValues],
   )
 
   const visibleItems = useMemo(() => {
@@ -386,23 +604,17 @@ export function CharacteristicsBulkEditor({
     return items.filter((row) => rowHasIncomplete(row))
   }, [items, onlyIncomplete, rowHasIncomplete])
 
-  const incompleteLoadedCount = useMemo(
-    () => items.reduce((count, row) => count + (rowHasIncomplete(row) ? 1 : 0), 0),
-    [items, rowHasIncomplete],
-  )
+  const incompleteLoadedCount = useMemo(() => {
+    if (onlyIncomplete) return visibleItems.length
+    // Avoid scanning all cells on every keystroke when the filter is off —
+    // only needed for the badge on the filter button.
+    return items.reduce((count, row) => count + (rowHasIncomplete(row) ? 1 : 0), 0)
+  }, [items, onlyIncomplete, rowHasIncomplete, visibleItems.length])
 
-  const patchCell = (
-    productId: string,
-    characteristicId: string,
-    value: CharacteristicCellValue,
-  ) => {
-    const key = cellKey(productId, characteristicId)
-    setDraftValues((prev) => {
-      const next = new Map(prev)
-      next.set(key, value)
-      return next
-    })
-  }
+  const stockUnitsLabel = useCallback(
+    (count: number) => tProducts('stockUnits', { count }),
+    [tProducts],
+  )
 
   const handleSave = async () => {
     if (!dirtyKeys.size) return
@@ -425,6 +637,7 @@ export function CharacteristicsBulkEditor({
         nextBaseline.set(key, valueToKey(draftValues.get(key) ?? null))
       }
       setBaseline(nextBaseline)
+      setDirtyKeys(new Set())
 
       setItems((prev) =>
         prev.map((row) => {
@@ -563,73 +776,18 @@ export function CharacteristicsBulkEditor({
               </tr>
             </thead>
             <tbody>
-              {visibleItems.map((row) => {
-                const inStock = row.stock > 0
-                return (
-                <tr
+              {visibleItems.map((row) => (
+                <MatrixProductRow
                   key={row.productId}
-                  className={cn(
-                    'border-b border-border/60',
-                    inStock ? 'hover:bg-muted/20' : 'bg-muted/30 text-muted-foreground hover:bg-muted/40',
-                  )}
-                >
-                  <td
-                    className={cn(
-                      'sticky left-0 z-20 border-r px-3 py-2',
-                      inStock ? 'bg-background' : 'bg-muted',
-                    )}
-                  >
-                    <div className="flex min-w-[220px] items-start gap-2">
-                      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded border bg-muted">
-                        {row.imageUrl ? (
-                          <Image
-                            src={resolveBackstageThumbnailSrc(row.imageUrl)}
-                            alt=""
-                            fill
-                            className="object-cover"
-                            unoptimized
-                            sizes="40px"
-                          />
-                        ) : null}
-                      </div>
-                      <div className="flex min-w-0 flex-col gap-1">
-                        <span className={cn('font-medium', inStock ? 'text-foreground' : undefined)}>
-                          {row.productName}
-                        </span>
-                        <span
-                          className={cn(
-                            'w-fit rounded-full px-2 py-0.5 text-xs font-medium',
-                            inStock
-                              ? row.stock < 20
-                                ? 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400'
-                                : 'bg-primary/10 text-primary'
-                              : 'bg-muted text-muted-foreground',
-                          )}
-                        >
-                          {inStock ? tProducts('stockUnits', { count: row.stock }) : tProducts('stockNone')}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-                  {characteristics.map((definition) => {
-                    const key = cellKey(row.productId, definition.id)
-                    const value = getCellValue(row, definition.id)
-                    const dirty = dirtyKeys.has(key)
-                    const empty = isCellEmpty(value)
-                    return (
-                      <td key={definition.id} className="px-3 py-2 align-top">
-                        <CharacteristicCellEditor
-                          definition={definition}
-                          value={value}
-                          dirty={dirty}
-                          empty={empty}
-                          onChange={(next) => patchCell(row.productId, definition.id, next)}
-                        />
-                      </td>
-                    )
-                  })}
-                </tr>
-              )})}
+                  row={row}
+                  characteristics={characteristics}
+                  draftValues={draftValues}
+                  dirtyKeys={dirtyKeys}
+                  stockUnitsLabel={stockUnitsLabel}
+                  stockNoneLabel={tProducts('stockNone')}
+                  onCellChange={patchCell}
+                />
+              ))}
               {visibleItems.length === 0 ? (
                 <tr>
                   <td

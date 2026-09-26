@@ -26,6 +26,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { resolveBackstageThumbnailSrc } from '@/lib/category-image'
+import { ProductLatinName } from '@/components/product/product-latin-name'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -375,7 +377,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                         // External catalog CDN URLs — plain img avoids next/image host config.
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={item.imageUrl}
+                          src={resolveBackstageThumbnailSrc(item.imageUrl)}
                           alt=""
                           className="h-full w-full object-cover"
                         />
@@ -385,6 +387,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                     </div>
                     <div className="min-w-0">
                       <p className="truncate font-medium">{item.productName}</p>
+                      <ProductLatinName latinName={item.latinName} />
                       {item.variantLabel ? (
                         <p className="text-xs text-muted-foreground">{item.variantLabel}</p>
                       ) : null}

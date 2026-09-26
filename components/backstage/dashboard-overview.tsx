@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Loader2, Package, ShoppingCart, TrendingUp, Users } from 'lucide-react'
+import { Loader2, Package, ShoppingCart, TrendingUp, Users, Warehouse } from 'lucide-react'
 
 import {
   AccountPageEmpty,
@@ -17,10 +17,16 @@ import {
 } from '@/lib/backstage/order-status'
 import { formatOrderCustomerName } from '@/lib/backstage/order-display'
 import { fetchBackstageOrders, fetchBackstageOrdersSummary } from '@/lib/backstage/orders'
-import { fetchBackstageProducts } from '@/lib/backstage/products'
+import {
+  fetchBackstageProductsPage,
+  fetchInventoryRetailValue,
+  type InventoryRetailValue,
+} from '@/lib/backstage/products'
 import { fetchBackstageUsersCount } from '@/lib/backstage/users'
 import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
 import { formatDateTime } from '@/lib/i18n/format-datetime'
+
+const LOW_STOCK_THRESHOLD = 50
 
 type SectionStatus = 'loading' | 'ready' | 'error'
 
@@ -47,6 +53,19 @@ function sectionErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback
 }
 
+function formatMoney(amount: number, currency: string, locale: string) {
+  const code = currency.trim().toUpperCase() || 'EUR'
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: code,
+      maximumFractionDigits: 2,
+    }).format(amount)
+  } catch {
+    return `${amount.toLocaleString(locale)} ${code}`
+  }
+}
+
 export function DashboardOverview() {
   const t = useTranslations('pages.overview')
   const tc = useTranslations('common')
@@ -56,6 +75,7 @@ export function DashboardOverview() {
   const [productsError, setProductsError] = useState<string | null>(null)
   const [productCount, setProductCount] = useState<number | null>(null)
   const [lowStock, setLowStock] = useState<LowStockRow[]>([])
+  const [inventory, setInventory] = useState<InventoryRetailValue | null>(null)
 
   const [customersStatus, setCustomersStatus] = useState<SectionStatus>('loading')
   const [customersError, setCustomersError] = useState<string | null>(null)
@@ -75,24 +95,32 @@ export function DashboardOverview() {
     setProductsStatus('loading')
     setProductsError(null)
     try {
-      const products = await fetchBackstageProducts()
-      setProductCount(products.length)
+      const [countPage, lowStockPage, inventoryValue] = await Promise.all([
+        fetchBackstageProductsPage({ page: 1, pageSize: 1 }),
+        fetchBackstageProductsPage({
+          page: 1,
+          pageSize: 5,
+          sort: 'low_stock',
+          lowStockThreshold: LOW_STOCK_THRESHOLD,
+        }),
+        fetchInventoryRetailValue(),
+      ])
+      setProductCount(countPage.total)
       setLowStock(
-        products
-          .filter((product) => product.stock < 50)
-          .slice(0, 5)
-          .map((product) => ({
-            id: product.id,
-            name: product.name,
-            sku: product.sku,
-            stock: product.stock,
-            label: product.variantLabel,
-          })),
+        lowStockPage.items.map((product) => ({
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          stock: product.stock,
+          label: product.variantLabel,
+        })),
       )
+      setInventory(inventoryValue)
       setProductsStatus('ready')
     } catch (err) {
       setProductCount(null)
       setLowStock([])
+      setInventory(null)
       setProductsError(sectionErrorMessage(err, t('loadError')))
       setProductsStatus('error')
     }
@@ -118,7 +146,7 @@ export function DashboardOverview() {
     try {
       const [summary, recent] = await Promise.all([
         fetchBackstageOrdersSummary(),
-        fetchBackstageOrders({ page: 1, pageSize: 5 }),
+        fetchBackstageOrders({ page: 1, pageSize: 5, excludeCancelled: true }),
       ])
       const currencyLabel = summary.currency === 'UAH' ? '₴' : summary.currency
       const active = summary.activeOrders ?? summary.totalOrders
@@ -132,10 +160,10 @@ export function DashboardOverview() {
           total: summary.totalOrders,
         }),
       )
-      setRevenue(`${ordersValue.toLocaleString('uk-UA')} ${currencyLabel}`)
+      setRevenue(formatMoney(ordersValue, summary.currency, locale))
       setRevenueDesc(
         t('statOrdersValueDesc', {
-          paid: paid.toLocaleString('uk-UA'),
+          paid: paid.toLocaleString(locale),
           currency: currencyLabel,
         }),
       )
@@ -161,7 +189,7 @@ export function DashboardOverview() {
       setOrdersError(sectionErrorMessage(err, t('loadError')))
       setOrdersStatus('error')
     }
-  }, [t])
+  }, [t, locale])
 
   useEffect(() => {
     void loadProducts()
@@ -170,6 +198,11 @@ export function DashboardOverview() {
   }, [loadProducts, loadCustomers, loadOrders, reloadToken])
 
   const retryAll = () => setReloadToken((n) => n + 1)
+
+  const inventoryNet =
+    inventory != null ? formatMoney(inventory.net, inventory.currency, locale) : null
+  const inventoryGross =
+    inventory != null ? formatMoney(inventory.gross, inventory.currency, locale) : null
 
   const stats = [
     {
@@ -212,6 +245,28 @@ export function DashboardOverview() {
       onRetry: loadCustomers,
       value: customerCount != null ? String(customerCount) : null,
     },
+    {
+      key: 'inventoryNet',
+      title: t('statInventoryNet'),
+      description: t('statInventoryNetDesc'),
+      icon: Warehouse,
+      status: productsStatus,
+      error: productsError,
+      onRetry: loadProducts,
+      value: inventoryNet,
+    },
+    {
+      key: 'inventoryGross',
+      title: t('statInventoryGross'),
+      description: t('statInventoryGrossDesc', {
+        rate: inventory?.displayTaxRatePercent ?? '—',
+      }),
+      icon: Warehouse,
+      status: productsStatus,
+      error: productsError,
+      onRetry: loadProducts,
+      value: inventoryGross,
+    },
   ] as const
 
   const allFailed =
@@ -230,7 +285,7 @@ export function DashboardOverview() {
         <AccountPageError message={t('loadError')} onRetry={retryAll} />
       ) : null}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => (
           <Card key={stat.key}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -307,8 +362,7 @@ export function DashboardOverview() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm font-medium">
-                        {order.totalAmount.toLocaleString('uk-UA')}{' '}
-                        {order.currency === 'UAH' || !order.currency ? '₴' : order.currency}
+                        {formatMoney(order.totalAmount, order.currency || 'EUR', locale)}
                       </td>
                       <td className="px-4 py-3">
                         <span

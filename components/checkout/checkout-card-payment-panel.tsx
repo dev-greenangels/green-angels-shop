@@ -9,6 +9,7 @@ import { useMarketRegion } from '@/components/providers/market-region-provider'
 import { PaymentDeadlineCountdown } from '@/components/checkout/payment-deadline-countdown'
 import { StripePaymentForm } from '@/components/checkout/stripe-payment-form'
 import { checkoutPanelClassName } from '@/components/checkout/checkout-utils'
+import { ProductLatinName } from '@/components/product/product-latin-name'
 import { Button } from '@/components/ui/button'
 import { formatMoneyAmount } from '@/lib/commerce/format'
 import { getMarketBranding } from '@/lib/branding/market-branding'
@@ -114,7 +115,8 @@ export function CheckoutCardPaymentPanel({
                     className="flex items-start justify-between gap-3 text-sm"
                   >
                     <span className="min-w-0 flex-1 text-foreground">
-                      {item.productName}
+                      <span className="block">{item.productName}</span>
+                      <ProductLatinName latinName={item.latinName} />
                       {item.variantLabel ? (
                         <span className="text-muted-foreground"> ({item.variantLabel})</span>
                       ) : null}

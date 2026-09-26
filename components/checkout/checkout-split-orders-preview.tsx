@@ -8,6 +8,7 @@ import { CartOrderTotalsBreakdown } from '@/components/cart/cart-order-totals-br
 import { useMinOrderCheckoutMessage } from '@/components/cart/min-order-info-banner'
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
 import { VariantSizeLabel } from '@/components/product/variant-size-label'
+import { ProductLatinName } from '@/components/product/product-latin-name'
 import { cn } from '@/lib/utils'
 import { useFormatPrice } from '@/lib/commerce/use-format-price'
 import { findVariantOnPlant } from '@/lib/cart-limits'
@@ -100,6 +101,7 @@ function OrderItemsList({
               <p className="truncate text-sm font-medium leading-snug text-foreground">
                 {plantName}
               </p>
+              <ProductLatinName latinName={item.plant.latinName} />
               {variantSize ? (
                 <VariantSizeLabel
                   as="p"

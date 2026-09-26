@@ -23,6 +23,7 @@ import { BrandLogo } from '@/components/brand-logo'
 import { CheckoutShippingLeadNotice } from '@/components/checkout/checkout-shipping-lead-notice'
 import { ClientPublicPageBreadcrumbs } from '@/components/client-public-page-breadcrumbs'
 import { shopPublicBaseUrl } from '@/components/checkout/checkout-utils'
+import { ProductLatinName } from '@/components/product/product-latin-name'
 import { useCatalogHref } from '@/components/providers/catalog-paths-provider'
 import { useSession } from '@/components/providers/session-provider'
 import { Button } from '@/components/ui/button'
@@ -212,6 +213,7 @@ function OrderCard({
           <li key={item.id} className="flex items-start justify-between gap-3 text-sm">
             <div className="min-w-0">
               <p className="font-medium text-foreground">{item.productName}</p>
+              <ProductLatinName latinName={item.latinName} />
               {item.variantLabel ? (
                 <p className="text-xs text-muted-foreground">{item.variantLabel}</p>
               ) : null}

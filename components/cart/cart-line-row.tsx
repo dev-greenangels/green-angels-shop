@@ -12,6 +12,7 @@ import { NotifyAvailabilityButton } from '@/components/product/notify-availabili
 import { NotifyWhenAvailableModal } from '@/components/product/notify-when-available-modal'
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
 import { VariantSizeLabel } from '@/components/product/variant-size-label'
+import { ProductLatinName } from '@/components/product/product-latin-name'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { isCartItemInStock } from '@/lib/cart-availability'
@@ -92,6 +93,7 @@ export function CartLineRow({
                   <Link href={productHref} className="block min-w-0" onClick={onNavigate}>
                     <h4 className="truncate text-sm font-medium">{item.plant.name}</h4>
                   </Link>
+                  <ProductLatinName latinName={item.plant.latinName} />
                   {item.variantLabel ? (
                     <VariantSizeLabel
                       as="p"
@@ -279,6 +281,7 @@ function InStockCartLineRow({
             <Link href={productHref} className="block min-w-0" onClick={onNavigate}>
               <p className="truncate text-sm font-medium text-foreground">{item.plant.name}</p>
             </Link>
+            <ProductLatinName latinName={item.plant.latinName} />
             {item.variantLabel ? (
               <VariantSizeLabel
                 as="p"
@@ -420,6 +423,7 @@ function InStockCartLineRow({
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
+          <ProductLatinName latinName={item.plant.latinName} />
           {item.variantLabel ? (
             <VariantSizeLabel
               as="p"

@@ -6,6 +6,7 @@ export type ServerCartLine = {
   productId: string
   productSlug: string
   productName: string
+  latinName?: string | null
   variantLabel: string | null
 }
 
@@ -39,7 +40,7 @@ export function serverLinesToCartItems(lines: ServerCartLine[]): CartItem[] {
     plant: {
       id: line.productId,
       name: line.productName,
-      latinName: '',
+      latinName: line.latinName?.trim() || '',
       slug: line.productSlug,
       category: '',
       price: 0,

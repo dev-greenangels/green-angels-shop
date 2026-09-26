@@ -352,6 +352,8 @@ export type BackstageProductsFilters = {
   categoryId?: string
   published?: 'all' | 'true' | 'false'
   stock?: 'all' | 'in_stock' | 'out_of_stock'
+  lowStockThreshold?: number
+  sort?: string
   page?: number
   pageSize?: number
   locale?: string
@@ -378,6 +380,10 @@ function buildProductsQuery(params?: BackstageProductsFilters) {
   if (params?.stock && params.stock !== 'all') {
     query.set('stock', params.stock)
   }
+  if (params?.lowStockThreshold != null) {
+    query.set('lowStockThreshold', String(params.lowStockThreshold))
+  }
+  if (params?.sort) query.set('sort', params.sort)
   if (params?.page != null) query.set('page', String(params.page))
   if (params?.pageSize != null) query.set('pageSize', String(params.pageSize))
   return query
@@ -461,6 +467,26 @@ export async function fetchBackstageProduct(
   const query = new URLSearchParams({ locale })
   if (options?.edit === false) query.set('edit', '0')
   const res = await fetch(`/api/backstage/products/${id}?${query}`, {
+    credentials: 'include',
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export type InventoryRetailValue = {
+  net: number
+  gross: number
+  currency: string
+  priceBasis: 'inc_vat' | 'ex_vat'
+  displayTaxRatePercent: number
+  pricedVariantCount: number
+  skippedNoPriceCount: number
+  unitsCounted: number
+}
+
+export async function fetchInventoryRetailValue(): Promise<InventoryRetailValue> {
+  const res = await fetch('/api/backstage/products/inventory-retail-value', {
     credentials: 'include',
     cache: 'no-store',
   })

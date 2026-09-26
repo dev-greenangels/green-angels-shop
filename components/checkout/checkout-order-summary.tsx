@@ -9,6 +9,7 @@ import { CartOrderTotalsBreakdown } from '@/components/cart/cart-order-totals-br
 import { CartPromoGiftLines } from '@/components/cart/cart-promo-gift-lines'
 import { checkoutPanelClassName } from '@/components/checkout/checkout-utils'
 import { VariantSizeLabel } from '@/components/product/variant-size-label'
+import { ProductLatinName } from '@/components/product/product-latin-name'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -215,6 +216,7 @@ export const CheckoutOrderSummary = memo(function CheckoutOrderSummary({
                       <p className="truncate text-sm font-medium leading-snug text-foreground">
                         {plantName}
                       </p>
+                      <ProductLatinName latinName={item.plant.latinName} />
                       {variantSize ? (
                         <VariantSizeLabel
                           as="p"

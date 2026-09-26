@@ -46,6 +46,7 @@ export type AccountOrderDetailItem = {
   priceAtPurchase: number
   lineTotal: number
   productName: string
+  latinName: string | null
   productSlug: string
   variantLabel: string | null
   sku: string | null

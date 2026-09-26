@@ -35,6 +35,7 @@ export type BackstageOrderItem = {
   lineTotal: number
   productVariantId: string
   productName: string
+  latinName?: string | null
   productSlug: string
   variantLabel: string | null
   sku: string | null
@@ -134,6 +135,7 @@ export type BackstageOrderDetail = BackstageOrderListItem & {
 export type BackstageOrdersFilters = {
   search?: string
   status?: string
+  excludeCancelled?: boolean
   page?: number
   pageSize?: number
 }
@@ -164,6 +166,7 @@ export async function fetchBackstageOrders(
   if (params?.status && params.status !== 'all') {
     query.set('status', params.status.toUpperCase())
   }
+  if (params?.excludeCancelled) query.set('excludeCancelled', '1')
   if (params?.page != null) query.set('page', String(params.page))
   if (params?.pageSize != null) query.set('pageSize', String(params.pageSize))
 

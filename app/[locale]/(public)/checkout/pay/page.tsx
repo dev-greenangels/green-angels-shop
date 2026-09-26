@@ -42,8 +42,10 @@ function confirmationFromQuery(
     paymentExpiresAt: order.paymentExpiresAt ?? null,
     items: order.items.map((item) => ({
       productName: item.productName,
+      latinName: item.latinName,
       variantLabel: item.variantLabel,
       quantity: item.quantity,
+      lineTotal: item.lineTotal,
     })),
   }
 }

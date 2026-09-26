@@ -4,6 +4,7 @@ export type PublicOrderConfirmationItem = {
   priceAtPurchase: number
   lineTotal: number
   productName: string
+  latinName: string | null
   productSlug: string
   variantLabel: string | null
 }

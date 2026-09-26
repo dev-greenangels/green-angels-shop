@@ -20,6 +20,7 @@ export type StripePendingPayment = {
   } | null
   items?: Array<{
     productName: string
+    latinName?: string | null
     variantLabel?: string | null
     quantity: number
     lineTotal?: number
@@ -160,6 +161,7 @@ export function stripePaymentsFromCreatedOrders(
         billingPrefill: billingPrefill ?? null,
         items: (order.items ?? []).map((item) => ({
           productName: item.productName,
+          latinName: item.latinName ?? null,
           variantLabel: item.variantLabel ?? null,
           quantity: item.quantity,
           lineTotal: item.lineTotal,

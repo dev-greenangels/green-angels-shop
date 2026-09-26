@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { FormattedPrice } from '@/components/commerce/formatted-price'
 import type { CartMergePreview, CartMergeStrategy, ServerCartLine } from '@/lib/carts/types'
+import { ProductLatinName } from '@/components/product/product-latin-name'
 import { fetchPricingQuote } from '@/lib/pricing/quote'
 
 function toQuoteItems(items: ServerCartLine[]) {
@@ -58,10 +59,11 @@ function CartPreviewList({
           {items.map((item) => (
             <li key={item.productVariantId} className="flex items-start justify-between gap-2">
               <span className="min-w-0 text-foreground">
-                <span className="line-clamp-2">
-                  {item.productName}
-                  {item.variantLabel ? ` · ${item.variantLabel}` : ''}
-                </span>
+                <span className="line-clamp-2">{item.productName}</span>
+                <ProductLatinName latinName={item.latinName} className="line-clamp-1 text-xs italic text-muted-foreground" />
+                {item.variantLabel ? (
+                  <span className="block text-xs text-muted-foreground">{item.variantLabel}</span>
+                ) : null}
               </span>
               <span className="shrink-0 pt-0.5">{item.quantity} {tc('pieceShort')}</span>
             </li>

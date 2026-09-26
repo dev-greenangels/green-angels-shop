@@ -14,6 +14,7 @@ import { toast } from '@/lib/toast'
 import { useTranslations } from 'next-intl'
 
 import { CancelOrderDialog } from '@/components/backstage/cancel-order-dialog'
+import { CountryDisplay } from '@/components/backstage/country-display'
 import { OrderStatusBadge, OrderStatusSelect } from '@/components/backstage/order-status-select'
 import {
   AlertDialog,
@@ -40,6 +41,7 @@ import { Switch } from '@/components/ui/switch'
 import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
 import { useStoreSettings } from '@/components/providers/store-settings-provider'
 import {
+  formatOrderBillingPersonName,
   formatOrderCustomerName,
   formatOrderDeliveryLines,
   formatOrderReceiverName,
@@ -50,10 +52,10 @@ import {
   buyerTypeLabel,
   canManualErpSync,
   copyText,
-  countryCodeLabel,
   formatOrderMoney,
   taxRegimeLabel,
 } from '@/lib/backstage/order-detail-helpers'
+import type { BackstageCountryLocale } from '@/lib/backstage/country-display'
 import {
   DELIVERY_METHOD_LABELS,
   PAYMENT_METHOD_LABELS,
@@ -99,6 +101,9 @@ function Copyable({ value }: { value: string }) {
 
 export function OrderDetailContent({ orderId }: { orderId: string }) {
   const { locale } = useBackstageUiLocale()
+  const countryLocale = (
+    locale === 'uk' || locale === 'sk' ? locale : 'en'
+  ) as BackstageCountryLocale
   const tPacketa = useTranslations('packetaOrderSnapshot')
   const store = useStoreSettings()
   const pickupAddress = formatStoreAddress(store)
@@ -288,7 +293,18 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
           <p className="text-sm text-muted-foreground">
             {formatDateTime(order.createdAt, locale, 'datetime')}
             {order.locale ? ` · locale ${order.locale}` : ''}
-            {order.countrySiteCode ? ` · site ${order.countrySiteCode.toUpperCase()}` : ''}
+            {order.countrySiteCode ? (
+              <>
+                {' · site '}
+                <CountryDisplay
+                  code={order.countrySiteCode}
+                  locale={countryLocale}
+                  variant="compact"
+                />
+              </>
+            ) : (
+              ''
+            )}
             {` · ${order.currency}`}
           </p>
           <div className="flex flex-wrap items-center gap-2">
@@ -491,10 +507,18 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
               <CardContent>
                 <dl className="space-y-2">
                   <MetaRow label="Доставка">
-                    {countryCodeLabel(order.deliveryCountryCode)}
+                    <CountryDisplay
+                      code={order.deliveryCountryCode}
+                      locale={countryLocale}
+                      variant="compact"
+                    />
                   </MetaRow>
                   <MetaRow label="Оподаткування">
-                    {countryCodeLabel(order.taxCountryCode)}
+                    <CountryDisplay
+                      code={order.taxCountryCode}
+                      locale={countryLocale}
+                      variant="compact"
+                    />
                   </MetaRow>
                   <MetaRow label="Режим">{taxRegimeLabel(order.taxRegime)}</MetaRow>
                   <MetaRow label="Ставка">
@@ -503,9 +527,16 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                   <MetaRow label="Тип покупця">{buyerTypeLabel(order.buyerType)}</MetaRow>
                   {order.companyVatId ? (
                     <MetaRow label="VAT ID">
-                      {order.vatCountryCode
-                        ? `${order.vatCountryCode}${order.companyVatId}`
-                        : order.companyVatId}
+                      <span className="inline-flex flex-wrap items-center gap-2">
+                        {order.vatCountryCode ? (
+                          <CountryDisplay
+                            code={order.vatCountryCode}
+                            locale={countryLocale}
+                            variant="compact"
+                          />
+                        ) : null}
+                        <span>{order.companyVatId}</span>
+                      </span>
                     </MetaRow>
                   ) : null}
                 </dl>
@@ -537,7 +568,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
         <div className="space-y-6 lg:sticky lg:top-4 lg:self-start">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Клієнт</CardTitle>
+              <CardTitle className="text-base">Objednávateľ</CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="space-y-2">
@@ -556,10 +587,62 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                     {order.customerPhone}
                   </a>
                 </MetaRow>
-                {order.companyLegalName ? (
-                  <MetaRow label="Компанія">{order.companyLegalName}</MetaRow>
+              </dl>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Fakturačné údaje</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="space-y-2">
+                {order.buyerType === 'company' || order.companyLegalName ? (
+                  <>
+                    {order.companyLegalName ? (
+                      <MetaRow label="Компанія">{order.companyLegalName}</MetaRow>
+                    ) : null}
+                    {order.companyIco ? <MetaRow label="IČO">{order.companyIco}</MetaRow> : null}
+                    {order.companyDic ? <MetaRow label="DIČ">{order.companyDic}</MetaRow> : null}
+                    {order.companyVatId ? (
+                      <MetaRow label="IČ DPH">{order.companyVatId}</MetaRow>
+                    ) : null}
+                    <MetaRow label="Адреса">
+                      {[
+                        order.companyStreet,
+                        [order.companyPostalCode, order.companyCity].filter(Boolean).join(' '),
+                      ]
+                        .filter(Boolean)
+                        .join(', ') || '—'}
+                    </MetaRow>
+                  </>
+                ) : (
+                  <>
+                    <MetaRow label="Імʼя">{formatOrderBillingPersonName(order)}</MetaRow>
+                    <MetaRow label="Адреса">
+                      {order.billingStreet || order.billingCity || order.billingPostalCode
+                        ? [
+                            [order.billingStreet, order.billingHouseNumber]
+                              .filter(Boolean)
+                              .join(' '),
+                            order.billingCity,
+                            order.billingPostalCode,
+                          ]
+                            .filter(Boolean)
+                            .join(', ')
+                        : '—'}
+                    </MetaRow>
+                  </>
+                )}
+                {order.billingCountryCode ? (
+                  <MetaRow label="Країна">
+                    <CountryDisplay
+                      code={order.billingCountryCode}
+                      locale={countryLocale}
+                      variant="compact"
+                    />
+                  </MetaRow>
                 ) : null}
-                {order.companyIco ? <MetaRow label="IČO">{order.companyIco}</MetaRow> : null}
               </dl>
             </CardContent>
           </Card>
@@ -573,7 +656,12 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                 {DELIVERY_METHOD_LABELS[order.deliveryMethod] ?? order.deliveryMethod}
               </p>
               <p className="text-muted-foreground">
-                Країна: {countryCodeLabel(order.deliveryCountryCode)}
+                Країна:{' '}
+                <CountryDisplay
+                  code={order.deliveryCountryCode}
+                  locale={countryLocale}
+                  variant="compact"
+                />
               </p>
               {formatOrderDeliveryLines(order, pickupAddress).map((line) => (
                 <p key={line}>{line}</p>
@@ -616,37 +704,11 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
               {isOrderReceiverDifferent(order) ? (
                 <div className="border-t pt-3">
                   <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Отримувач
+                    Príjemca
                   </p>
                   <p>{formatOrderReceiverName(order)}</p>
                   <p>{order.receiverPhone}</p>
                   {order.receiverCompanyName ? <p>{order.receiverCompanyName}</p> : null}
-                </div>
-              ) : null}
-              {(order.billingStreet ||
-                order.billingCity ||
-                order.billingPostalCode ||
-                ((order.companyStreet || order.companyCity || order.companyPostalCode) &&
-                  (order.companyStreet !== order.deliveryStreet ||
-                    order.companyCity !== order.deliveryCity))) ? (
-                <div className="border-t pt-3">
-                  <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Billing
-                  </p>
-                  <p>
-                    {order.billingStreet || order.billingCity || order.billingPostalCode
-                      ? [
-                          [order.billingStreet, order.billingHouseNumber].filter(Boolean).join(' '),
-                          order.billingCity,
-                          order.billingPostalCode,
-                          order.billingCountryCode,
-                        ]
-                          .filter(Boolean)
-                          .join(', ')
-                      : [order.companyStreet, order.companyCity, order.companyPostalCode]
-                          .filter(Boolean)
-                          .join(', ')}
-                  </p>
                 </div>
               ) : null}
               {order.comment ? (

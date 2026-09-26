@@ -16,6 +16,21 @@ export function formatOrderCustomerName(
   )
 }
 
+/** B2C invoice person — falls back to orderer when billing names are null (legacy). */
+export function formatOrderBillingPersonName(
+  order: Pick<
+    BackstageOrderDetail,
+    | 'billingFirstName'
+    | 'billingLastName'
+    | 'customerFirstName'
+    | 'customerLastName'
+  >,
+): string {
+  const first = order.billingFirstName?.trim() || order.customerFirstName
+  const last = order.billingLastName?.trim() || order.customerLastName
+  return formatPersonName(last, first)
+}
+
 export function formatOrderReceiverName(order: {
   receiverLastName: string
   receiverFirstName: string

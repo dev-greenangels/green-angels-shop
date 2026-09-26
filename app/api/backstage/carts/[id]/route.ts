@@ -3,30 +3,20 @@ import { NextResponse } from 'next/server'
 import { fetchBackend, readBackendJson } from '@/lib/api/backend-fetch'
 import { requireBackstageSession } from '@/lib/backstage-auth/require-session'
 
-export async function GET(request: Request) {
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
   const { error } = await requireBackstageSession(request)
   if (error) return error
 
-  const { searchParams } = new URL(request.url)
-  const params = new URLSearchParams()
-  for (const key of [
-    'search',
-    'kind',
-    'state',
-    'locale',
-    'updatedFrom',
-    'updatedTo',
-    'page',
-    'pageSize',
-  ]) {
-    const value = searchParams.get(key)
-    if (value) params.set(key, value)
-  }
-
-  const suffix = params.toString() ? `?${params}` : ''
+  const { id } = await context.params
 
   try {
-    const res = await fetchBackend(`/carts${suffix}`, { request, cache: 'no-store' })
+    const res = await fetchBackend(`/carts/${encodeURIComponent(id)}`, {
+      request,
+      cache: 'no-store',
+    })
     const data = await readBackendJson(res)
     if (!res.ok) return NextResponse.json(data, { status: res.status })
     return NextResponse.json(data)

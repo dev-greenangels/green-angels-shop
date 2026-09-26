@@ -50,6 +50,8 @@ export function stripeBillingPrefillFromPayload(
   payload: {
     customerFirstName?: string
     customerLastName?: string
+    billingFirstName?: string
+    billingLastName?: string
     companyLegalName?: string
     buyerType?: string
     billingStreet?: string
@@ -65,11 +67,14 @@ export function stripeBillingPrefillFromPayload(
     .trim()
   const country = (payload.billingCountryCode ?? '').trim().toUpperCase()
   if (!line1 || !country) return null
-  // B2C: contact full name. B2B: company legal name is billing identity.
+  // B2C: billing person (fallback orderer). B2B: company legal name.
   const name =
     payload.buyerType === 'company' && payload.companyLegalName?.trim()
       ? payload.companyLegalName.trim()
-      : [payload.customerFirstName?.trim(), payload.customerLastName?.trim()]
+      : [
+          (payload.billingFirstName ?? payload.customerFirstName)?.trim(),
+          (payload.billingLastName ?? payload.customerLastName)?.trim(),
+        ]
           .filter(Boolean)
           .join(' ')
           .trim()

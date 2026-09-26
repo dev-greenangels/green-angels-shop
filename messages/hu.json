@@ -993,6 +993,7 @@
       }
     },
     "billingTitle": "Számlázás",
+    "deliveryAddressSameAsBilling": "A szállítási cím megegyezik a számlázási címmel",
     "billingHint": "Számla adatok. A csomag címzettje lehet más személy.",
     "vatReverseChargeApplied": "✓ Adószám ellenőrizve. Fordított adózás kerül alkalmazásra.",
     "deliveryEstimateAfterDispatch": "Becsült kézbesítés: 2–3 munkanap a feladás után",

@@ -6,29 +6,22 @@ import { UrlLocaleIntlProvider } from '@/components/localization/url-locale-intl
 import {
   applyCartMerge,
   fetchCartMergePreview,
-  fetchServerCart,
-  syncServerCart,
 } from '@/lib/carts/api'
-import { serverLinesToCartItems } from '@/lib/carts/types'
-import { refreshCartItemPlants } from '@/lib/cart-refresh'
-import { normalizeCartItems } from '@/lib/cart-normalize'
+import {
+  CART_CROSS_TAB_STORAGE_KEY,
+  parseCartCrossTabEvent,
+  publishCartCrossTabInvalidate,
+} from '@/lib/carts/cart-cross-tab'
+import { bumpCheckoutDraftPersistEpoch } from '@/lib/carts/checkout-draft-persist-control'
+import { hydrateCartFromServer } from '@/lib/carts/hydrate-cart-from-server'
+import {
+  bumpCartServerSyncEpoch,
+  cancelPendingCartServerSync,
+  scheduleCartServerSync,
+} from '@/lib/carts/cart-server-sync'
 import { useCartStore } from '@/lib/cart-store'
 import type { CartMergePreview } from '@/lib/carts/types'
 import { useEffect, useRef, useState } from 'react'
-
-async function hydrateCartFromServer() {
-  const store = useCartStore.getState()
-  store.setServerSyncPaused(true)
-  try {
-    const lines = await fetchServerCart()
-    const partial = serverLinesToCartItems(lines)
-    const refreshed = partial.length ? await refreshCartItemPlants(partial) : []
-    store.replaceItems(normalizeCartItems(refreshed))
-  } finally {
-    store.setServerSyncPaused(false)
-    store.setHasHydratedFromServer(true)
-  }
-}
 
 async function resolveAuthenticatedCart(
   setMergePreview: (preview: CartMergePreview) => void,
@@ -48,8 +41,23 @@ async function resolveAuthenticatedCart(
 
   if (preview.guestItems.length > 0 && preview.userItems.length === 0) {
     await applyCartMerge('keep_guest')
+    publishCartCrossTabInvalidate('cart-merge')
   }
 
+  await hydrateCartFromServer()
+}
+
+/**
+ * Cross-tab invalidate: cancel pending writes, then GET authoritative Cart.
+ * Never blind-clear — server may already hold a legitimate new cart.
+ */
+async function handleCartCrossTabInvalidate(at: number, lastProcessedAt: { current: number }) {
+  if (at <= lastProcessedAt.current) return
+  lastProcessedAt.current = at
+
+  // Cancel debounced PUT + invalidate in-flight sync completions before GET.
+  bumpCartServerSyncEpoch()
+  bumpCheckoutDraftPersistEpoch()
   await hydrateCartFromServer()
 }
 
@@ -62,7 +70,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const guestHydratedRef = useRef(false)
   const skipGuestServerSyncRef = useRef(false)
   const isAuthenticatedRef = useRef(false)
-  const syncTimerRef = useRef<number | null>(null)
+  const lastCrossTabAtRef = useRef(0)
 
   useEffect(() => {
     isAuthenticatedRef.current = Boolean(user?.id)
@@ -78,20 +86,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       if (!isAuthenticatedRef.current && skipGuestServerSyncRef.current) return
 
-      if (syncTimerRef.current) {
-        window.clearTimeout(syncTimerRef.current)
-      }
-
-      syncTimerRef.current = window.setTimeout(() => {
-        if (!isAuthenticatedRef.current && skipGuestServerSyncRef.current) return
-        void syncServerCart(state.items).catch(() => {})
-      }, 700)
+      scheduleCartServerSync(state.items, {
+        isBlocked: () => !isAuthenticatedRef.current && skipGuestServerSyncRef.current,
+      })
     })
 
     return () => {
       unsubscribe()
-      if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current)
+      cancelPendingCartServerSync()
     }
+  }, [])
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.storageArea && event.storageArea !== window.localStorage) return
+      if (event.key !== CART_CROSS_TAB_STORAGE_KEY) return
+      if (event.newValue == null) return
+      const parsed = parseCartCrossTabEvent(event.newValue)
+      if (!parsed) return
+      void handleCartCrossTabInvalidate(parsed.at, lastCrossTabAtRef)
+    }
+
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
   }, [])
 
   useEffect(() => {
@@ -104,14 +121,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (wasLoggedIn) {
         skipGuestServerSyncRef.current = true
         guestHydratedRef.current = false
-        if (syncTimerRef.current) {
-          window.clearTimeout(syncTimerRef.current)
-          syncTimerRef.current = null
-        }
+        cancelPendingCartServerSync()
+        bumpCartServerSyncEpoch()
         const store = useCartStore.getState()
         store.setServerSyncPaused(true)
         store.replaceItems([])
         store.setServerSyncPaused(false)
+        // No cross-tab logout broadcast — other tabs may still be authenticated via cookie.
         return
       }
 
@@ -134,11 +150,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const store = useCartStore.getState()
       store.setServerSyncPaused(true)
       try {
-        if (syncTimerRef.current) {
-          window.clearTimeout(syncTimerRef.current)
-          syncTimerRef.current = null
-        }
-
+        cancelPendingCartServerSync()
+        bumpCartServerSyncEpoch()
         await resolveAuthenticatedCart(setMergePreview, setMergeOpen)
       } finally {
         store.setServerSyncPaused(false)
@@ -152,6 +165,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setMergeLoading(true)
     try {
       await applyCartMerge(strategy)
+      publishCartCrossTabInvalidate('cart-merge')
       await hydrateCartFromServer()
       setMergeOpen(false)
       setMergePreview(null)

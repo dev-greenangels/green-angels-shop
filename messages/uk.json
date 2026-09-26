@@ -992,6 +992,7 @@
       }
     },
     "billingTitle": "Платник",
+    "deliveryAddressSameAsBilling": "Адреса доставки збігається з платіжною",
     "billingHint": "Дані для рахунку. Отримувач доставки може бути іншою особою.",
     "vatReverseChargeApplied": "✓ VAT number verified. Reverse charge will be applied.",
     "deliveryEstimateAfterDispatch": "Орієнтовна доставка: 2–3 робочі дні після відправлення",

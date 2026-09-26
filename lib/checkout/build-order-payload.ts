@@ -1,4 +1,8 @@
 import { getCheckoutRecipientPhoneRaw } from '@/components/checkout/checkout-utils'
+import {
+  deliveryAddressFromBilling,
+  isCourierHomeDeliveryMethod,
+} from '@/lib/checkout/delivery-same-as-billing'
 import type { CheckoutShipmentSlice } from '@/lib/checkout/shipment-slice'
 import { applyShipmentSliceToForm } from '@/lib/checkout/shipment-slice'
 import { buildPricingQuoteLineItems } from '@/lib/pricing/quote-line-items'
@@ -45,6 +49,8 @@ export type CreateOrderPayload = {
   companyStreet?: string
   companyCity?: string
   companyPostalCode?: string
+  billingFirstName?: string
+  billingLastName?: string
   billingStreet?: string
   billingHouseNumber?: string
   billingCity?: string
@@ -129,20 +135,26 @@ export function buildOrderPayload(
   const deliveryPhonePolicy =
     options?.deliveryPhonePolicy ?? defaultDeliveryPhonePolicy(region)
 
-  const deliveryForm = options?.shipmentSlice
+  const deliveryFormRaw = options?.shipmentSlice
     ? applyShipmentSliceToForm(form, options.shipmentSlice)
     : form
-  const receiver = getReceiverNames(deliveryForm)
+  // Authoritative: same-as courier delivery always derives from billing (UI drift cannot win).
+  const deliveryForm =
+    form.deliveryAddressSameAsBilling &&
+    isCourierHomeDeliveryMethod(deliveryFormRaw.deliveryMethod)
+      ? { ...deliveryFormRaw, ...deliveryAddressFromBilling(form) }
+      : deliveryFormRaw
+  const receiver = getReceiverNames(deliveryFormRaw)
   const uaDeliveryLock = isUaDeliveryPhoneLockActive(region, deliveryPhonePolicy)
   const customerPhoneRaw =
     isValidUkrPhone(form.phone.trim()) || !uaDeliveryLock
       ? form.phone.trim()
-      : !deliveryForm.isOtherRecipient && deliveryForm.deliveryPhone.trim()
-        ? deliveryForm.deliveryPhone.trim()
+      : !deliveryFormRaw.isOtherRecipient && deliveryFormRaw.deliveryPhone.trim()
+        ? deliveryFormRaw.deliveryPhone.trim()
         : form.phone.trim()
   const customerPhone = normalizePhoneForApi(customerPhoneRaw, authPhonePolicy, region)
   const recipientPhoneRaw = getCheckoutRecipientPhoneRaw(
-    deliveryForm,
+    deliveryFormRaw,
     region,
     deliveryPhonePolicy,
   )
@@ -256,6 +268,8 @@ export function buildOrderPayload(
       ).toLowerCase()
     } else {
       // Individual: billing is collected on contact step (never Packeta point / shipping copy).
+      payload.billingFirstName = form.billingFirstName.trim() || undefined
+      payload.billingLastName = form.billingLastName.trim() || undefined
       payload.billingStreet = form.billingStreet.trim() || undefined
       payload.billingHouseNumber = form.billingHouseNumber.trim() || undefined
       payload.billingCity = form.billingCity.trim() || undefined

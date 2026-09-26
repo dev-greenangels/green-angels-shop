@@ -993,6 +993,7 @@
       }
     },
     "billingTitle": "Rechnungsstellung",
+    "deliveryAddressSameAsBilling": "Lieferadresse entspricht der Rechnungsadresse",
     "billingHint": "Rechnungsdaten. Der Paketempfänger kann eine andere Person sein.",
     "vatReverseChargeApplied": "✓ USt-IdNr. verifiziert. Reverse Charge wird angewendet.",
     "deliveryEstimateAfterDispatch": "Voraussichtliche Lieferung: 2–3 Werktage nach Versand",

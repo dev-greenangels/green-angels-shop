@@ -23,8 +23,6 @@ import { Link } from '@/i18n/navigation'
 import {
   getCheckoutContactFieldError,
   customerNeedsCheckoutNameEntry,
-  sanitizeCyrillicName,
-  sanitizeLatinName,
   type CheckoutContactFieldKey,
   type CheckoutFormValues,
   type CheckoutIdentificationState,
@@ -32,6 +30,7 @@ import {
   type CheckoutRecipientFieldKey,
   type CheckoutShippingFieldKey,
 } from '@/lib/validation/checkout-form'
+import { sanitizePersonNameForMarket } from '@/lib/settings/market-person-name-policy'
 import { useFormatFieldError } from '@/lib/validation/use-field-error-messages'
 import { extractShipmentSlice } from '@/lib/checkout/shipment-slice'
 import type { CheckoutDeliveryMethodSlug } from '@/lib/checkout/methods'
@@ -97,7 +96,7 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
   const t = useTranslations('checkout')
   const tc = useTranslations('common')
   const contactErrorOptions = { marketRegion, deliveryPhonePolicy, authPhonePolicy: undefined }
-  const sanitizeName = marketRegion === 'sk' ? sanitizeLatinName : sanitizeCyrillicName
+  const sanitizeName = (value: string) => sanitizePersonNameForMarket(value, marketRegion)
 
   const showContactError = (field: CheckoutContactFieldKey) =>
     Boolean(

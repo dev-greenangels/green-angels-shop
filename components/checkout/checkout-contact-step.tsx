@@ -51,8 +51,6 @@ import {
   formatPhoneDisplay,
   getCheckoutContactFieldError,
   sanitizeCheckoutPhoneInput,
-  sanitizeCyrillicName,
-  sanitizeLatinName,
   type CheckoutContactFieldKey,
   type CheckoutFormValues,
   type CheckoutIdentificationState,
@@ -60,11 +58,14 @@ import {
 } from '@/lib/validation/checkout-form'
 import { useFormatFieldError } from '@/lib/validation/use-field-error-messages'
 import {
-  isValidCyrillicName,
   isValidEmail,
-  isValidLatinName,
   sanitizeEmail,
 } from '@/lib/validation/register-form'
+import {
+  arePersonNamesUsableForMarket,
+  personNameHasDisallowedScriptForMarket,
+  sanitizePersonNameForMarket,
+} from '@/lib/settings/market-person-name-policy'
 import {
   DEFAULT_MARKET_SETTINGS,
   isOtpChannelEnabled,
@@ -81,6 +82,11 @@ type AuthMethod = 'google' | 'sms' | 'email' | null
 
 const phoneLeadingIcon = <Phone className="h-4 w-4" />
 const emailLeadingIcon = <Mail className="h-4 w-4" />
+
+function nameFieldDisplayValue(value: string, marketRegion: CheckoutMarketRegion): string {
+  if (personNameHasDisallowedScriptForMarket(value, marketRegion)) return ''
+  return value
+}
 
 function NameFields({
   formData,
@@ -100,8 +106,21 @@ function NameFields({
   const fe = useFormatFieldError()
 
   const tc = useTranslations('common')
-  const sanitizeName = marketRegion === 'sk' ? sanitizeLatinName : sanitizeCyrillicName
+  const sanitizeName = (value: string) => sanitizePersonNameForMarket(value, marketRegion)
   const errorOptions = { marketRegion }
+
+  useEffect(() => {
+    const patch: Partial<CheckoutFormValues> = {}
+    if (personNameHasDisallowedScriptForMarket(formData.firstName, marketRegion)) {
+      patch.firstName = ''
+    }
+    if (personNameHasDisallowedScriptForMarket(formData.lastName, marketRegion)) {
+      patch.lastName = ''
+    }
+    if (Object.keys(patch).length > 0) onPatchForm(patch)
+    // One-shot: clear wrong-script hydrate so Latin/Cyrillic sanitize does not collapse on edit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -113,7 +132,7 @@ function NameFields({
           placeholder={tc('firstName')}
           className={cn(checkoutInputClassName, showError('firstName') && 'border-destructive/80 ring-destructive/30')}
           aria-invalid={showError('firstName')}
-          value={formData.firstName}
+          value={nameFieldDisplayValue(formData.firstName, marketRegion)}
           onBlur={() => onBlurField('firstName')}
           onChange={(e) => onPatchForm({ firstName: sanitizeName(e.target.value) })}
           onClear={() => onPatchForm({ firstName: '' })}
@@ -132,7 +151,7 @@ function NameFields({
           placeholder={tc('lastName')}
           className={cn(checkoutInputClassName, showError('lastName') && 'border-destructive/80 ring-destructive/30')}
           aria-invalid={showError('lastName')}
-          value={formData.lastName}
+          value={nameFieldDisplayValue(formData.lastName, marketRegion)}
           onBlur={() => onBlurField('lastName')}
           onChange={(e) => onPatchForm({ lastName: sanitizeName(e.target.value) })}
           onClear={() => onPatchForm({ lastName: '' })}
@@ -264,6 +283,9 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
   const [sessionLockUserId, setSessionLockUserId] = useState<string | null>(null)
 
   const isAuthenticated = identification.returningVerified
+  const needsNameEntry = customerNeedsCheckoutNameEntry(formData, identification, {
+    marketRegion,
+  })
   const sessionPending = sessionHydrationPending
   const showGuestForm =
     !isAuthenticated &&
@@ -304,10 +326,11 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
           marketSettings.region,
         )
       : Boolean(formData.email.trim()) && isValidEmail(formData.email.trim())
-  const canSaveProfile =
-    marketRegion === 'sk'
-      ? isValidLatinName(formData.firstName) && isValidLatinName(formData.lastName)
-      : isValidCyrillicName(formData.firstName) && isValidCyrillicName(formData.lastName)
+  const canSaveProfile = arePersonNamesUsableForMarket(
+    formData.firstName,
+    formData.lastName,
+    marketRegion,
+  )
 
   const showError = (field: CheckoutContactFieldKey) =>
     Boolean(
@@ -391,8 +414,9 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
         },
         profile,
         method,
+        marketRegion,
       ),
-    [formData.email, formData.firstName, formData.lastName, formData.phone],
+    [formData.email, formData.firstName, formData.lastName, formData.phone, marketRegion],
   )
 
   const applyCustomerProfile = useCallback(
@@ -860,9 +884,15 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
           )}
         >
           <div className="min-w-0">
-            <p className="font-serif text-lg font-semibold text-foreground">
-              {formData.lastName} {formData.firstName}
-            </p>
+            {needsNameEntry ? (
+              <p className="font-serif text-lg font-semibold text-foreground">
+                {t('completeNameTitle')}
+              </p>
+            ) : (
+              <p className="font-serif text-lg font-semibold text-foreground">
+                {formData.lastName} {formData.firstName}
+              </p>
+            )}
             {showVerifiedPhone && (
               <p className="mt-1 text-sm text-muted-foreground">
                 {formatPhoneDisplay(verifiedPhone)}
@@ -967,7 +997,7 @@ export const CheckoutContactStep = memo(function CheckoutContactStep({
               />
             </div>
           ) : null}
-          {customerNeedsCheckoutNameEntry(formData, identification, { marketRegion }) ? (
+          {needsNameEntry ? (
             <NameFields
               formData={formData}
               contactTouched={contactTouched}

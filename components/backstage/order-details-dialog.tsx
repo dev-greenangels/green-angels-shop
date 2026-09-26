@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Eye, ExternalLink, Loader2 } from 'lucide-react'
 
 import { OrderStatusBadge } from '@/components/backstage/order-status-select'
+import { CountryDisplay } from '@/components/backstage/country-display'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -17,9 +18,9 @@ import {
 import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
 import { formatOrderCustomerName } from '@/lib/backstage/order-display'
 import {
-  countryCodeLabel,
   formatOrderMoney,
 } from '@/lib/backstage/order-detail-helpers'
+import type { BackstageCountryLocale } from '@/lib/backstage/country-display'
 import {
   fetchBackstageOrder,
   type BackstageOrderDetail,
@@ -37,6 +38,9 @@ export function OrderDetailsDialog({
   onDeleted?: (orderId: string) => void
 }) {
   const { locale } = useBackstageUiLocale()
+  const countryLocale = (
+    locale === 'uk' || locale === 'sk' ? locale : 'en'
+  ) as BackstageCountryLocale
   const [open, setOpen] = useState(false)
   const [order, setOrder] = useState<BackstageOrderDetail | null>(null)
   const [loading, setLoading] = useState(false)
@@ -115,9 +119,13 @@ export function OrderDetailsDialog({
               </div>
 
               <div className="space-y-1">
-                <p>
-                  <span className="text-muted-foreground">Країна доставки:</span>{' '}
-                  {countryCodeLabel(order.deliveryCountryCode)}
+                <p className="inline-flex flex-wrap items-center gap-2">
+                  <span className="text-muted-foreground">Країна доставки:</span>
+                  <CountryDisplay
+                    code={order.deliveryCountryCode}
+                    locale={countryLocale}
+                    variant="compact"
+                  />
                 </p>
                 <p>
                   <span className="text-muted-foreground">Разом:</span>{' '}

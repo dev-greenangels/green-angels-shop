@@ -61,7 +61,6 @@ import {
   showOrdererDeliveryPhoneField,
   sanitizeCheckoutPhoneInput,
   sanitizeCyrillicName,
-  sanitizeLatinName,
   sanitizeRecipientPhoneInput,
   type CheckoutDeliveryMethod,
   type CheckoutFormValues,
@@ -70,6 +69,7 @@ import {
   type CheckoutRecipientFieldKey,
   type CheckoutShippingFieldKey,
 } from '@/lib/validation/checkout-form'
+import { sanitizePersonNameForMarket } from '@/lib/settings/market-person-name-policy'
 import { useFormatFieldError } from '@/lib/validation/use-field-error-messages'
 import {
   defaultDeliveryPhonePolicy,
@@ -142,7 +142,7 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
   enabledDeliveryMethods?: CheckoutDeliveryMethodSlug[]
   shippingTouched: Partial<Record<CheckoutShippingFieldKey, boolean>>
   recipientTouched: Partial<Record<CheckoutRecipientFieldKey, boolean>>
-  onPatchShipment: (patch: Partial<CheckoutShipmentSlice>) => void
+  onPatchShipment: (patch: Partial<CheckoutFormValues>) => void
   onBlurField: (field: CheckoutShippingFieldKey) => void
   onBlurRecipientField: (field: CheckoutRecipientFieldKey) => void
   deliveryPhoneInputRef?: RefObject<HTMLInputElement | null>
@@ -174,7 +174,8 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
     deliveryPhonePolicyProp ?? defaultDeliveryPhonePolicy(marketRegion)
   const fieldOptions = { marketRegion, deliveryPhonePolicy }
   const isSk = marketRegion === 'sk'
-  const sanitizePersonName = isSk ? sanitizeLatinName : sanitizeCyrillicName
+  const sanitizePersonName = (value: string) =>
+    sanitizePersonNameForMarket(value, marketRegion)
 
   const mergedForm = useMemo(
     () => applyShipmentSliceToForm(orderer, shipment),
@@ -529,7 +530,29 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
       {(shipment.deliveryMethod === 'packeta-courier' ||
         shipment.deliveryMethod === 'gls-courier') && (
         <div className="space-y-4">
-          <div className={cn('grid gap-4', isSk ? 'sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' : '')}>
+          {isSk ? (
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
+              <Checkbox
+                checked={Boolean(orderer.deliveryAddressSameAsBilling)}
+                onCheckedChange={(checked) =>
+                  onPatchShipment({
+                    deliveryAddressSameAsBilling: checked === true,
+                  })
+                }
+                className="mt-0.5"
+              />
+              <span className="text-sm leading-snug text-foreground">
+                {t('deliveryAddressSameAsBilling')}
+              </span>
+            </label>
+          ) : null}
+          <div
+            className={cn(
+              'grid gap-4',
+              isSk ? 'sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]' : '',
+              orderer.deliveryAddressSameAsBilling && 'pointer-events-none opacity-70',
+            )}
+          >
             {isSk ? (
               <div className="space-y-2">
                 <RequiredLabel htmlFor={`${idPrefix}-courier-postal`}>

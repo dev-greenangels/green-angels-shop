@@ -1,5 +1,7 @@
 import type { BackstageOrderDetail } from '@/lib/backstage/orders'
 
+import { formatCountryDisplay } from '@/lib/backstage/country-display'
+
 export function formatOrderMoney(amount: number, currency = 'EUR') {
   if (currency === 'UAH') return `${amount.toLocaleString('uk-UA')} ₴`
   return `${amount.toLocaleString('uk-UA')} ${currency}`
@@ -43,18 +45,7 @@ export function buyerTypeLabel(buyerType: string | null | undefined): string {
 }
 
 export function countryCodeLabel(code: string | null | undefined): string {
-  const c = (code ?? '').trim().toUpperCase()
-  if (!c) return '—'
-  const names: Record<string, string> = {
-    SK: 'Slovakia',
-    AT: 'Austria',
-    HU: 'Hungary',
-    CZ: 'Czechia',
-    DE: 'Germany',
-    PL: 'Poland',
-    UA: 'Ukraine',
-  }
-  return names[c] ? `${names[c]} (${c})` : c
+  return formatCountryDisplay(code, 'en')?.label ?? '—'
 }
 
 export type OrderTimelineEvent = {

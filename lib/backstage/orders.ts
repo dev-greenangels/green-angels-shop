@@ -118,6 +118,8 @@ export type BackstageOrderDetail = BackstageOrderListItem & {
   billingCity?: string | null
   billingPostalCode?: string | null
   billingCountryCode?: string | null
+  billingFirstName?: string | null
+  billingLastName?: string | null
   viesCheck?: {
     valid: boolean | null
     vatCountryCode: string

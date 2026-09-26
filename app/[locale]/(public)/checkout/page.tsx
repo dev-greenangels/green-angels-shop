@@ -40,6 +40,11 @@ import {
   type CountrySiteCode,
 } from '@/lib/settings/market'
 import {
+  applyDeliveryAddressSameAsBilling,
+  reduceCheckoutFormPatch,
+  reduceSplitShipmentPatch,
+} from '@/lib/checkout/delivery-same-as-billing'
+import {
   checkoutPageContentClassName,
   checkoutPageShellClassName,
   checkoutStepDomId,
@@ -61,10 +66,9 @@ import { buildOrderPayload } from '@/lib/checkout/build-order-payload'
 import {
   cloneShipmentSlice,
   extractShipmentSlice,
-  patchShipmentSlice,
-  type CheckoutShipmentSlice,
 } from '@/lib/checkout/shipment-slice'
-import { useCheckoutSessionHydration } from '@/lib/checkout/use-checkout-session-hydration'
+import { useCheckoutInitialHydration } from '@/lib/checkout/use-checkout-initial-hydration'
+import { useCheckoutDraftPersistence } from '@/lib/checkout/use-checkout-draft-persistence'
 import {
   useCartActions,
   useCartAppliedPromoCodes,
@@ -86,6 +90,7 @@ import {
 import { syncStripePayment, cancelUnpaidOrder, retryOrderPayment, fetchOrderConfirmation } from '@/lib/orders/fetch-order-confirmation'
 import { buildPricingQuoteLineItems } from '@/lib/pricing/quote-line-items'
 import { usePricingQuote, promoCodesKey, resolveDisplayedAppliedPromos } from '@/lib/pricing/use-pricing-quote'
+import { useDobierkaFeePreview } from '@/lib/pricing/use-dobierka-fee-preview'
 import { tryApplyPromoCode } from '@/lib/pricing/try-apply-promo-code'
 import { resolveRemovedPromoInfo, resolvePromoQuoteError, isPromoBlockingMessage } from '@/lib/pricing/promo-messages'
 import {
@@ -97,7 +102,10 @@ import {
   pickDefaultDeliveryMethod,
   pickDefaultPaymentMethod,
 } from '@/lib/settings/cart-checkout.normalize'
-import { isPaymentMethodCurrentlyAllowed } from '@/lib/checkout/payment-availability'
+import {
+  isPaymentMethodCurrentlyAllowed,
+  resolveVisiblePaymentMethods,
+} from '@/lib/checkout/payment-availability'
 import type { CartCheckoutSettings, MarketSettings } from '@/lib/settings/types'
 import { DEFAULT_CART_CHECKOUT_SETTINGS, DEFAULT_MARKET_SETTINGS } from '@/lib/settings/defaults'
 import { Link, useRouter } from '@/i18n/navigation'
@@ -170,7 +178,9 @@ const initialFormData: CheckoutFormValues = {
   streetLabel: '',
   houseNumber: '',
   postalCode: '',
-  billingSameAsShipping: false,
+  deliveryAddressSameAsBilling: false,
+  billingFirstName: '',
+  billingLastName: '',
   billingStreet: '',
   billingHouseNumber: '',
   billingCity: '',
@@ -349,6 +359,64 @@ export default function CheckoutPage() {
         : undefined,
     enabled: mounted && catalogReady && quoteItemsKey.length > 0,
   })
+
+  const dobierkaPaymentVisible = useMemo(
+    () =>
+      resolveVisiblePaymentMethods({
+        enabledPaymentMethods: cartCheckoutSettings.enabledPaymentMethods,
+        hideLegalBankTransfer: isSkMarket,
+        allowPayOnPickup: cartCheckoutSettings.allowPayOnPickup === true,
+        deliveryMethod: formData.deliveryMethod,
+      }).includes('dobierka'),
+    [
+      cartCheckoutSettings.allowPayOnPickup,
+      cartCheckoutSettings.enabledPaymentMethods,
+      formData.deliveryMethod,
+      isSkMarket,
+    ],
+  )
+
+  const { feeAmount: dobierkaFeePreview } = useDobierkaFeePreview({
+    items: quoteLineItems,
+    itemsKey: quoteItemsKey,
+    audienceKey: user?.id ?? null,
+    promoCodes: appliedPromoCodes.length ? appliedPromoCodes : undefined,
+    deliveryMethod: formData.deliveryMethod,
+    splitOrderParts,
+    countryCode,
+    deliveryCountryCode,
+    buyerType: isSkMarket ? buyerType : undefined,
+    vatCountryCode: isSkMarket && buyerType === 'company' ? vatCountryCode : undefined,
+    viesValid:
+      isSkMarket && buyerType === 'company' && viesValid != null
+        ? viesValid
+        : undefined,
+    pickupPointId:
+      formData.deliveryMethod === 'packeta-box' && formData.postOffice
+        ? formData.postOffice
+        : undefined,
+    pickupPointKind:
+      formData.deliveryMethod === 'packeta-box' && formData.packetaPickupKind
+        ? formData.packetaPickupKind
+        : undefined,
+    packetaCarrierId:
+      formData.deliveryMethod === 'packeta-box' && formData.packetaCarrierId
+        ? formData.packetaCarrierId
+        : undefined,
+    // Preview only when dobierka is an option but not the selected payment (main quote then owns the fee).
+    enabled:
+      mounted &&
+      catalogReady &&
+      quoteItemsKey.length > 0 &&
+      dobierkaPaymentVisible &&
+      formData.paymentMethod !== 'dobierka',
+  })
+
+  const dobierkaFeeAmount =
+    formData.paymentMethod === 'dobierka'
+      ? pricingQuote?.checkout?.codFeeAmount ?? 0
+      : dobierkaFeePreview
+
   const allowedDeliveryMethods = useMemo(() => {
     const fromQuote = pricingQuote?.checkout?.allowedDeliveryMethods
     if (Array.isArray(fromQuote) && fromQuote.length > 0) {
@@ -1065,39 +1133,80 @@ export default function CheckoutPage() {
     tp,
   ])
 
+  const billingNamesSeededRef = useRef(false)
+
   const patchForm = useCallback((patch: Partial<CheckoutFormValues>) => {
-    setFormData((prev) => ({ ...prev, ...patch }))
+    setFormData((prev) => reduceCheckoutFormPatch(prev, patch))
   }, [])
 
-  const patchImmediateShipment = useCallback((patch: Partial<CheckoutShipmentSlice>) => {
-    setFormData((prev) => {
-      const current = prev.splitShipments ?? {
-        immediate: extractShipmentSlice(prev),
-        dated: cloneShipmentSlice(extractShipmentSlice(prev)),
+  const { hydrationReady } = useCheckoutInitialHydration({
+    enabled: mounted && catalogReady && hasCheckoutable,
+    allowedDeliveryMethods,
+    allowedPaymentMethods: cartCheckoutSettings.enabledPaymentMethods,
+    skipSessionIdentity: identification.returningVerified,
+    marketRegion: isSkMarket ? 'sk' : 'ua',
+    onHydrate: (result) => {
+      if (Object.keys(result.formPatch).length) patchForm(result.formPatch)
+      if (result.identification) {
+        setIdentification((prev) =>
+          prev.returningVerified ? prev : result.identification!,
+        )
       }
-      const immediate = patchShipmentSlice(current.immediate, patch)
-      const dated =
-        prev.datedDeliverySynced !== false ? cloneShipmentSlice(immediate) : current.dated
-      return {
-        ...prev,
-        splitShipments: { immediate, dated },
-        datedDeliverySynced: prev.datedDeliverySynced !== false,
+      if (result.personalDiscountPercent != null) {
+        setPersonalDiscountPercent(result.personalDiscountPercent)
       }
+      if (result.buyerType) setBuyerType(result.buyerType)
+      if (result.vatCountryCode) setVatCountryCode(result.vatCountryCode)
+      if (result.companyVatId) setVatId(result.companyVatId)
+      if (result.shipmentSplitMode === 'together' || result.shipmentSplitMode === 'split') {
+        setShipmentSplitMode(result.shipmentSplitMode)
+      }
+      setSessionHydratedForKey(result.settledKey)
+    },
+  })
+
+  useEffect(() => {
+    if (!hydrationReady || !isSkMarket || buyerType === 'company') return
+    if (billingNamesSeededRef.current) return
+    if (formData.billingFirstName.trim() || formData.billingLastName.trim()) {
+      billingNamesSeededRef.current = true
+      return
+    }
+    if (!formData.firstName.trim() && !formData.lastName.trim()) return
+    billingNamesSeededRef.current = true
+    patchForm({
+      billingFirstName: formData.firstName.trim(),
+      billingLastName: formData.lastName.trim(),
     })
+  }, [
+    hydrationReady,
+    isSkMarket,
+    buyerType,
+    formData.billingFirstName,
+    formData.billingLastName,
+    formData.firstName,
+    formData.lastName,
+    patchForm,
+  ])
+
+  useCheckoutDraftPersistence({
+    enabled: mounted && catalogReady && hasCheckoutable && hydrationReady,
+    formData,
+    locale,
+    countryCode,
+    buyerType: isSkMarket ? buyerType : undefined,
+    vatCountryCode: isSkMarket && buyerType === 'company' ? vatCountryCode : undefined,
+    companyVatId: isSkMarket && buyerType === 'company' ? vatId : undefined,
+    shipmentSplitMode: needsShipmentSplitChoice ? shipmentSplitMode : undefined,
+    promoCodes: appliedPromoCodes,
+  })
+
+  const patchImmediateShipment = useCallback((patch: Partial<CheckoutFormValues>) => {
+    setFormData((prev) => reduceSplitShipmentPatch(prev, 'immediate', patch))
   }, [])
 
-  const patchDatedShipment = useCallback((patch: Partial<CheckoutShipmentSlice>) => {
-    setFormData((prev) => {
-      if (!prev.splitShipments) return prev
-      return {
-        ...prev,
-        datedDeliverySynced: false,
-        splitShipments: {
-          ...prev.splitShipments,
-          dated: patchShipmentSlice(prev.splitShipments.dated, patch),
-        },
-      }
-    })
+  const patchDatedShipment = useCallback((patch: Partial<CheckoutFormValues>) => {
+    setFormData((prev) => reduceSplitShipmentPatch(prev, 'dated', patch))
   }, [])
 
   const handleShipmentSplitModeChange = useCallback((mode: ShipmentSplitMode) => {
@@ -1111,7 +1220,7 @@ export default function CheckoutPage() {
     setFormData((prev) => {
       if (mode === 'split') {
         const slice = extractShipmentSlice(prev)
-        return {
+        let next: CheckoutFormValues = {
           ...prev,
           splitShipments: {
             immediate: slice,
@@ -1119,6 +1228,9 @@ export default function CheckoutPage() {
           },
           datedDeliverySynced: true,
         }
+        // Same-as is form-level: refresh courier slices from billing when entering split.
+        next = applyDeliveryAddressSameAsBilling(next)
+        return next
       }
       return {
         ...prev,
@@ -1128,33 +1240,11 @@ export default function CheckoutPage() {
     })
   }, [])
 
-  const handleSessionHydrate = useCallback(
-    (payload: {
-      formPatch: Partial<CheckoutFormValues>
-      identification: CheckoutIdentificationState
-      personalDiscountPercent: number
-    }) => {
-      setIdentification((prev) =>
-        prev.returningVerified ? prev : payload.identification,
-      )
-      setPersonalDiscountPercent(payload.personalDiscountPercent)
-      patchForm(payload.formPatch)
-    },
-    [patchForm, setPersonalDiscountPercent],
-  )
-
-  useCheckoutSessionHydration({
-    mounted,
-    returningVerified: identification.returningVerified,
-    onHydrate: handleSessionHydrate,
-    onSettled: setSessionHydratedForKey,
-  })
-
   const sessionKey = user?.id ?? user?.email ?? null
   const sessionHydrationPending =
     Boolean(sessionKey) &&
     !identification.returningVerified &&
-    sessionHydratedForKey !== sessionKey
+    (!hydrationReady || sessionHydratedForKey !== sessionKey)
 
   const moveDeliveryPhoneCursorToEnd = useCallback(() => {
     requestAnimationFrame(() => {
@@ -1979,11 +2069,7 @@ export default function CheckoutPage() {
                     vatCountryCode={vatCountryCode}
                     onVatCountryCodeChange={setVatCountryCode}
                     onViesResult={(result) => setViesValid(result?.valid ?? null)}
-                    dobierkaFeeAmount={
-                      formData.paymentMethod === 'dobierka'
-                        ? pricingQuote?.checkout?.codFeeAmount ?? 0
-                        : 0
-                    }
+                    dobierkaFeeAmount={dobierkaFeeAmount}
                     formatDobierkaFee={formatMoney}
                   />
                 </section>

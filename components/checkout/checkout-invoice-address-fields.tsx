@@ -20,6 +20,7 @@ import {
   type CheckoutFormValues,
   type CheckoutMarketRegion,
 } from '@/lib/validation/checkout-form'
+import { sanitizePersonNameForMarket } from '@/lib/settings/market-person-name-policy'
 import { useFormatFieldError } from '@/lib/validation/use-field-error-messages'
 
 export function CheckoutInvoiceAddressFields({
@@ -87,6 +88,67 @@ export function CheckoutInvoiceAddressFields({
       )}
 
       <div className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <RequiredLabel htmlFor="billing-firstName">{tc('firstName')}</RequiredLabel>
+            <InputWithClear
+              id="billing-firstName"
+              autoComplete="billing given-name"
+              className={cn(
+                checkoutInputClassName,
+                showError('billingFirstName') && 'border-destructive/80 ring-destructive/30',
+              )}
+              value={formData.billingFirstName}
+              onBlur={() => onBlurBillingField('billingFirstName')}
+              onChange={(e) =>
+                onPatchForm({
+                  billingFirstName: sanitizePersonNameForMarket(e.target.value, marketRegion),
+                })
+              }
+              onClear={() => onPatchForm({ billingFirstName: '' })}
+            />
+            <FieldHint
+              id="billing-firstName-error"
+              show={Boolean(billingTouched.billingFirstName)}
+              message={fe(
+                getCheckoutBillingFieldError('billingFirstName', formData, {
+                  marketRegion,
+                  buyerType,
+                }),
+              )}
+            />
+          </div>
+          <div className="space-y-2">
+            <RequiredLabel htmlFor="billing-lastName">{tc('lastName')}</RequiredLabel>
+            <InputWithClear
+              id="billing-lastName"
+              autoComplete="billing family-name"
+              className={cn(
+                checkoutInputClassName,
+                showError('billingLastName') && 'border-destructive/80 ring-destructive/30',
+              )}
+              value={formData.billingLastName}
+              onBlur={() => onBlurBillingField('billingLastName')}
+              onChange={(e) =>
+                onPatchForm({
+                  billingLastName: sanitizePersonNameForMarket(e.target.value, marketRegion),
+                })
+              }
+              onClear={() => onPatchForm({ billingLastName: '' })}
+            />
+            <FieldHint
+              id="billing-lastName-error"
+              show={Boolean(billingTouched.billingLastName)}
+              message={fe(
+                getCheckoutBillingFieldError('billingLastName', formData, {
+                  marketRegion,
+                  buyerType,
+                }),
+              )}
+            />
+          </div>
+        </div>
+
         <div className="space-y-2">
           <RequiredLabel htmlFor="billing-country">{t('billingCountry')}</RequiredLabel>
           <Select

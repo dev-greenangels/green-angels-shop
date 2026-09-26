@@ -993,6 +993,7 @@
       }
     },
     "billingTitle": "Billing",
+    "deliveryAddressSameAsBilling": "Delivery address is the same as billing",
     "billingHint": "Invoice details. The package recipient can be someone else.",
     "vatReverseChargeApplied": "✓ VAT number verified. Reverse charge will be applied.",
     "deliveryEstimateAfterDispatch": "Estimated delivery: 2–3 business days after dispatch",

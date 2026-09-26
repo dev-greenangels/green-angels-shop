@@ -987,6 +987,7 @@
       }
     },
     "billingTitle": "Fakturačné údaje",
+    "deliveryAddressSameAsBilling": "Doručovacia adresa je rovnaká ako fakturačná",
     "billingHint": "Údaje pre faktúru. Príjemca zásielky môže byť iná osoba.",
     "vatReverseChargeApplied": "✓ DIČ overené. Bude uplatnený reverse charge.",
     "deliveryEstimateAfterDispatch": "Orientačné doručenie po odoslaní podľa dopravcu.",

@@ -134,4 +134,43 @@ describe('buildVerifiedCheckoutContactPatch — keep typed sibling contacts', ()
     )
     assert.equal(phoneAuth.phone, '+421900000002')
   })
+
+  it('SK market drops Cyrillic profile names and keeps typed Latin', () => {
+    const patch = buildVerifiedCheckoutContactPatch(
+      {
+        firstName: 'Artur',
+        lastName: 'Denysenko',
+        email: 'a@example.com',
+        phone: '+421900000002',
+      },
+      {
+        firstName: 'Артур',
+        lastName: 'Денисенко',
+        email: 'a@example.com',
+        phone: '',
+        user: { email: 'a@example.com', phone: null },
+      },
+      'email',
+      'sk',
+    )
+    assert.equal(patch.firstName, 'Artur')
+    assert.equal(patch.lastName, 'Denysenko')
+  })
+
+  it('SK market clears Cyrillic when form has no Latin fallback', () => {
+    const patch = buildVerifiedCheckoutContactPatch(
+      { firstName: '', lastName: '', email: 'a@example.com', phone: '' },
+      {
+        firstName: 'Артур',
+        lastName: 'Денисенко',
+        email: 'a@example.com',
+        phone: '',
+        user: { email: 'a@example.com', phone: null },
+      },
+      'email',
+      'sk',
+    )
+    assert.equal(patch.firstName, '')
+    assert.equal(patch.lastName, '')
+  })
 })

@@ -1,14 +1,16 @@
 import {
-  containsCyrillicLetters,
-  containsLatinLetters,
   getRecipientUkrPhoneError,
   isValidCyrillicName,
   isValidEmail,
   isValidInternationalPhone,
-  isValidLatinName,
   isValidRecipientUkrPhone,
   isValidUkrPhone,
 } from '@/lib/validation/register-form'
+import {
+  arePersonNamesUsableForMarket,
+  getPersonNameMarketFieldError,
+  isPersonNameUsableForMarket,
+} from '@/lib/settings/market-person-name-policy'
 import {
   defaultAuthPhonePolicy,
   defaultDeliveryPhonePolicy,
@@ -71,8 +73,13 @@ export type CheckoutFormValues = {
   houseNumber: string
   /** Courier postal code (PSČ) */
   postalCode: string
-  /** SK/EU: when true (courier), billing snapshot copies shipping at submit */
-  billingSameAsShipping: boolean
+  /**
+   * When true (courier only), delivery address stays synced from billing.
+   * Default false — independent delivery entry.
+   */
+  deliveryAddressSameAsBilling: boolean
+  billingFirstName: string
+  billingLastName: string
   billingStreet: string
   billingHouseNumber: string
   billingCity: string
@@ -129,6 +136,8 @@ export type CheckoutPaymentFieldKey =
   | 'companyPostalCode'
 
 export type CheckoutBillingFieldKey =
+  | 'billingFirstName'
+  | 'billingLastName'
   | 'billingStreet'
   | 'billingHouseNumber'
   | 'billingCity'
@@ -238,8 +247,23 @@ function hasValue(value: string): boolean {
 }
 
 function isPersonNameValid(value: string, region: CheckoutMarketRegion): boolean {
-  if (region === 'sk') return isValidLatinName(value)
-  return isValidCyrillicName(value)
+  return isPersonNameUsableForMarket(value, region)
+}
+
+/**
+ * Keep a profile/draft name only when it matches the deploy market script.
+ * Wrong-script or incomplete names become '' so SK Latin sanitizers do not
+ * collapse Cyrillic-filled inputs on the first keystroke.
+ */
+export function acceptCheckoutPersonName(
+  value: string | null | undefined,
+  region: CheckoutMarketRegion | undefined,
+): string {
+  const raw = value ?? ''
+  if (region == null) return raw
+  const trimmed = raw.trim()
+  if (!trimmed) return ''
+  return isPersonNameUsableForMarket(trimmed, region) ? trimmed : ''
 }
 
 function isOptionalPersonNameValid(value: string, region: CheckoutMarketRegion): boolean {
@@ -360,15 +384,7 @@ export function customerNeedsCheckoutNameEntry(
   const last = values.lastName.trim()
   if (!first || !last) return true
 
-  if (region === 'sk') {
-    if (containsCyrillicLetters(first) || containsCyrillicLetters(last)) return true
-    if (!isValidLatinName(first) || !isValidLatinName(last)) return true
-    return false
-  }
-
-  if (containsLatinLetters(first) || containsLatinLetters(last)) return true
-  if (!isValidCyrillicName(first) || !isValidCyrillicName(last)) return true
-  return false
+  return !arePersonNamesUsableForMarket(first, last, region)
 }
 
 /** @deprecated використовуйте customerNeedsCheckoutNameEntry */
@@ -411,7 +427,7 @@ export function isContactStepValid(
   if (region === 'sk') {
     if (checkoutEmailRequired && !emailValid) return false
     if (!values.phone.trim() || !isValidInternationalPhone(values.phone)) return false
-    if (!isValidLatinName(values.firstName) || !isValidLatinName(values.lastName)) {
+    if (!arePersonNamesUsableForMarket(values.firstName, values.lastName, 'sk')) {
       if (
         !allowGuest &&
         identification.authMethod === 'google' &&
@@ -432,7 +448,7 @@ export function isContactStepValid(
     return false
   }
 
-  if (!isValidCyrillicName(values.firstName) || !isValidCyrillicName(values.lastName)) {
+  if (!arePersonNamesUsableForMarket(values.firstName, values.lastName, 'ua')) {
     if (identification.authMethod === 'google' && (hasPhone || hasEmail)) {
       return true
     }
@@ -597,7 +613,9 @@ export function isBillingAddressValid(
   }
 
   return Boolean(
-    values.billingStreet.trim() &&
+    isPersonNameUsableForMarket(values.billingFirstName, 'sk') &&
+      isPersonNameUsableForMarket(values.billingLastName, 'sk') &&
+      values.billingStreet.trim() &&
       values.billingHouseNumber.trim() &&
       values.billingCity.trim() &&
       values.billingPostalCode.trim() &&
@@ -614,6 +632,18 @@ export function getCheckoutBillingFieldError(
   if (options.buyerType === 'company') return null
 
   switch (field) {
+    case 'billingFirstName':
+      if (!values.billingFirstName.trim()) return 'required'
+      if (!isPersonNameUsableForMarket(values.billingFirstName, 'sk')) {
+        return 'latinCharactersRequired'
+      }
+      return null
+    case 'billingLastName':
+      if (!values.billingLastName.trim()) return 'required'
+      if (!isPersonNameUsableForMarket(values.billingLastName, 'sk')) {
+        return 'latinCharactersRequired'
+      }
+      return null
     case 'billingStreet':
       return values.billingStreet.trim() ? null : 'required'
     case 'billingHouseNumber':
@@ -683,40 +713,10 @@ export function getCheckoutContactFieldError(
   switch (field) {
     case 'firstName':
       if (!values.firstName.trim()) return 'required'
-      if (region === 'sk') {
-        if (containsCyrillicLetters(values.firstName)) {
-          return 'latinCharactersRequired'
-        }
-        if (!isValidLatinName(values.firstName)) {
-          return 'minLatinLetters'
-        }
-        return null
-      }
-      if (containsLatinLetters(values.firstName)) {
-        return 'cyrillicFirstName'
-      }
-      if (!isValidCyrillicName(values.firstName)) {
-        return 'cyrillicNameMin'
-      }
-      return null
+      return getPersonNameMarketFieldError(values.firstName, region, 'firstName')
     case 'lastName':
       if (!values.lastName.trim()) return 'required'
-      if (region === 'sk') {
-        if (containsCyrillicLetters(values.lastName)) {
-          return 'latinCharactersRequired'
-        }
-        if (!isValidLatinName(values.lastName)) {
-          return 'minLatinLetters'
-        }
-        return null
-      }
-      if (containsLatinLetters(values.lastName)) {
-        return 'cyrillicLastName'
-      }
-      if (!isValidCyrillicName(values.lastName)) {
-        return 'cyrillicNameMin'
-      }
-      return null
+      return getPersonNameMarketFieldError(values.lastName, region, 'lastName')
     case 'phone': {
       const authPolicy = resolveAuthPhonePolicy(options)
       const err = phoneErrorForPolicy(values.phone, authPolicy, region)

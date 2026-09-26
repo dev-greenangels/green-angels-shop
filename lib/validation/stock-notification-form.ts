@@ -4,14 +4,14 @@ import {
   type PhonePolicy,
 } from '@/lib/settings/market'
 import {
+  isPersonNameUsableForMarket,
+  sanitizePersonNameForMarket,
+} from '@/lib/settings/market-person-name-policy'
+import {
   getRecipientUkrPhoneError,
-  isValidCyrillicName,
   isValidEmail,
-  isValidLatinName,
   sanitizeCheckoutPhoneInput,
-  sanitizeCyrillicName,
   sanitizeEmail,
-  sanitizeLatinName,
   sanitizeRecipientPhoneInput,
 } from '@/lib/validation/register-form'
 
@@ -22,11 +22,11 @@ export {
 } from '@/lib/validation/register-form'
 
 export function sanitizeNotifyName(value: string, region: MarketRegion): string {
-  return region === 'sk' ? sanitizeLatinName(value) : sanitizeCyrillicName(value)
+  return sanitizePersonNameForMarket(value, region)
 }
 
 export function isValidNotifyName(value: string, region: MarketRegion): boolean {
-  return region === 'sk' ? isValidLatinName(value) : isValidCyrillicName(value)
+  return isPersonNameUsableForMarket(value, region)
 }
 
 export function sanitizeNotifyPhoneInput(value: string, policy: PhonePolicy): string {

@@ -68,7 +68,7 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
   vatCountryCode?: string
   onVatCountryCodeChange?: (code: string) => void
   onViesResult?: (result: { valid: boolean | null } | null) => void
-  /** Authoritative COD fee from live pricing quote (0 when not Dobierka / no fee). */
+  /** COD fee shown on the dobierka button (preview or live quote). */
   dobierkaFeeAmount?: number
   formatDobierkaFee?: (amount: number) => string
 }) {

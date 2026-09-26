@@ -1,5 +1,10 @@
 import type { GoogleCheckoutProfile, PublicSession } from '@/lib/auth/types'
-import type { CheckoutFormValues, CheckoutIdentificationState } from '@/lib/validation/checkout-form'
+import {
+  acceptCheckoutPersonName,
+  type CheckoutFormValues,
+  type CheckoutIdentificationState,
+  type CheckoutMarketRegion,
+} from '@/lib/validation/checkout-form'
 import { isValidEmail } from '@/lib/validation/register-form'
 
 export type CheckoutSessionData = {
@@ -20,7 +25,10 @@ export async function fetchCheckoutSession(): Promise<CheckoutSessionData | null
   return { user: data.user, profile: data.profile ?? null }
 }
 
-export function buildCheckoutHydrationFromSession(data: CheckoutSessionData): {
+export function buildCheckoutHydrationFromSession(
+  data: CheckoutSessionData,
+  marketRegion?: CheckoutMarketRegion,
+): {
   formPatch: Partial<CheckoutFormValues>
   identification: CheckoutIdentificationState
   personalDiscountPercent: number
@@ -29,8 +37,14 @@ export function buildCheckoutHydrationFromSession(data: CheckoutSessionData): {
 
   return {
     formPatch: {
-      firstName: profile?.firstName ?? user.firstName ?? '',
-      lastName: profile?.lastName ?? user.lastName ?? '',
+      firstName: acceptCheckoutPersonName(
+        profile?.firstName ?? user.firstName ?? '',
+        marketRegion,
+      ),
+      lastName: acceptCheckoutPersonName(
+        profile?.lastName ?? user.lastName ?? '',
+        marketRegion,
+      ),
       phone: profile?.phone ?? user.phone ?? '',
       email: user.email && isValidEmail(user.email) ? user.email : '',
     },

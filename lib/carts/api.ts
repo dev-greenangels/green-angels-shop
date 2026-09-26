@@ -38,6 +38,60 @@ export async function syncServerCart(items: CartItem[]): Promise<ServerCartLine[
   return Array.isArray(data.items) ? data.items : []
 }
 
+export async function fetchCheckoutDraft(): Promise<{
+  draft: import('@/lib/carts/types').CheckoutDraftV1 | null
+  checkoutStartedAt: string | null
+  updatedAt: string | null
+}> {
+  const res = await fetch('/api/carts/checkout-draft', {
+    credentials: 'include',
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    return { draft: null, checkoutStartedAt: null, updatedAt: null }
+  }
+  const data = (await res.json()) as {
+    draft?: import('@/lib/carts/types').CheckoutDraftV1 | null
+    checkoutStartedAt?: string | null
+    updatedAt?: string | null
+  }
+  return {
+    draft: data.draft ?? null,
+    checkoutStartedAt: data.checkoutStartedAt ?? null,
+    updatedAt: data.updatedAt ?? null,
+  }
+}
+
+/** Best-effort: never throws to callers that soft-fail. */
+export async function patchCheckoutDraft(
+  draft: import('@/lib/carts/types').CheckoutDraftV1,
+): Promise<boolean> {
+  try {
+    const res = await fetch('/api/carts/checkout-draft', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(draft),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+/** Best-effort: set checkoutStartedAt once. */
+export async function startCheckoutDraft(): Promise<boolean> {
+  try {
+    const res = await fetch('/api/carts/checkout-start', {
+      method: 'POST',
+      credentials: 'include',
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 export async function fetchCartMergePreview(): Promise<CartMergePreview | null> {
   const res = await fetch('/api/carts/merge-preview', { credentials: 'include', cache: 'no-store' })
   if (res.status === 401) return null

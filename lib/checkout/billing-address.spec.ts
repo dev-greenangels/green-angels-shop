@@ -33,7 +33,9 @@ const baseForm: CheckoutFormValues = {
   streetLabel: 'Hlavná',
   houseNumber: '1',
   postalCode: '811 01',
-  billingSameAsShipping: false,
+  deliveryAddressSameAsBilling: false,
+  billingFirstName: 'Dušan',
+  billingLastName: 'Štofík',
   billingStreet: 'Fakturačná',
   billingHouseNumber: '10',
   billingCity: 'Nitra',
@@ -68,6 +70,8 @@ describe('SK billing payload + validation', () => {
       countryCode: 'sk',
       privacyConsent: true,
     })
+    assert.equal(payload.billingFirstName, 'Dušan')
+    assert.equal(payload.billingLastName, 'Štofík')
     assert.equal(payload.billingStreet, 'Fakturačná')
     assert.equal(payload.billingHouseNumber, '10')
     assert.equal(payload.billingCity, 'Nitra')

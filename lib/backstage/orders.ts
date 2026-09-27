@@ -132,6 +132,25 @@ export type BackstageOrderDetail = BackstageOrderListItem & {
     source: string
   } | null
   items: BackstageOrderItem[]
+  confirmationPdfPresent?: boolean
+  communications?: BackstageOrderCommunication[]
+}
+
+export type BackstageOrderCommunication = {
+  id: string
+  orderId: string | null
+  orderNumber: string | null
+  audience: string
+  type: string
+  source: string
+  status: string
+  toEmail: string | null
+  subjectSnapshot: string | null
+  hasAttachment: boolean
+  errorMessage: string | null
+  providerMessageId: string | null
+  sentAt: string | null
+  createdAt: string
 }
 
 export type BackstageOrdersFilters = {
@@ -215,6 +234,25 @@ export async function fetchBackstageOrder(id: string): Promise<BackstageOrderDet
   const res = await fetch(`/api/backstage/orders/${id}`, {
     credentials: 'include',
     cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function sendBackstageOrderManualEmail(
+  id: string,
+  payload: {
+    subject: string
+    body: string
+    attachConfirmationPdf?: boolean
+    idempotencyKey: string
+  },
+): Promise<BackstageOrderCommunication> {
+  const res = await fetch(`/api/backstage/orders/${id}/communications/manual`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
   })
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()

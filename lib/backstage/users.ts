@@ -185,3 +185,42 @@ export async function deleteBackstageUser(
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()
 }
+
+export type BackstageUserCommunication = {
+  id: string
+  orderId: string | null
+  orderNumber: string | null
+  audience: string
+  type: string
+  source: string
+  status: string
+  toEmail: string | null
+  subjectSnapshot: string | null
+  hasAttachment: boolean
+  errorMessage: string | null
+  providerMessageId: string | null
+  sentAt: string | null
+  createdAt: string
+}
+
+export async function fetchBackstageUserCommunications(
+  id: string,
+  params?: { page?: number; pageSize?: number },
+): Promise<{
+  items: BackstageUserCommunication[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}> {
+  const query = new URLSearchParams()
+  if (params?.page != null) query.set('page', String(params.page))
+  if (params?.pageSize != null) query.set('pageSize', String(params.pageSize))
+  const suffix = query.toString() ? `?${query}` : ''
+  const res = await fetch(`/api/backstage/users/${id}/communications${suffix}`, {
+    credentials: 'include',
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}

@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
 import { Download, Loader2, RefreshCw, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
@@ -256,13 +255,13 @@ export default function BackstageMarketingSubscribersPage() {
                         <td className="px-4 py-3">
                           {row.isRegistered ? (
                             row.userId ? (
-                              <Link
+                              // Hard navigation: Next 16.2 + Turbopack soft nav hangs on /backstage.
+                              <a
                                 href={`/backstage/users/${row.userId}`}
-                                prefetch={false}
                                 className="text-primary underline-offset-2 hover:underline"
                               >
                                 {t('clientType.registered')}
-                              </Link>
+                              </a>
                             ) : (
                               t('clientType.registered')
                             )

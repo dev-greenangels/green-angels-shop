@@ -15,6 +15,7 @@ import { useTranslations } from 'next-intl'
 
 import { CancelOrderDialog } from '@/components/backstage/cancel-order-dialog'
 import { CountryDisplay } from '@/components/backstage/country-display'
+import { OrderCommunicationsPanel } from '@/components/backstage/order-communications-panel'
 import { OrderStatusBadge, OrderStatusSelect } from '@/components/backstage/order-status-select'
 import {
   AlertDialog,
@@ -841,6 +842,28 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
           </Card>
         </div>
       </div>
+
+      <OrderCommunicationsPanel
+        orderId={order.id}
+        defaultRecipient={order.customerEmail}
+        confirmationPdfPresent={order.confirmationPdfPresent === true}
+        initialCommunications={order.communications ?? []}
+        onSent={(row) => {
+          setOrder((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  communications: [
+                    row,
+                    ...(prev.communications ?? []).filter((c) => c.id !== row.id),
+                  ],
+                  confirmationPdfPresent:
+                    prev.confirmationPdfPresent || row.hasAttachment,
+                }
+              : prev,
+          )
+        }}
+      />
 
       <CancelOrderDialog
         open={cancelOpen}

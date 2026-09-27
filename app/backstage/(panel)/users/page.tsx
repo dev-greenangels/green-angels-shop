@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { ChevronRight, Loader2, Plus, RefreshCw, Search, Users } from 'lucide-react'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
@@ -52,7 +51,6 @@ function UserField({
 }
 
 export default function UsersPage() {
-  const router = useRouter()
   const [segment, setSegment] = useState<BackstageUserSegment>('customers')
   const [users, setUsers] = useState<BackstageUserListItem[]>([])
   const [search, setSearch] = useState('')
@@ -207,10 +205,11 @@ export default function UsersPage() {
             ) : (
               <div className="space-y-2 p-4">
                 {users.map((user) => (
-                  <button
+                  // Hard navigation: Next 16.2 + Turbopack soft nav hangs on /backstage
+                  // (same workaround as AdminLayout nav + orders list).
+                  <a
                     key={user.id}
-                    type="button"
-                    onClick={() => router.push(`/backstage/users/${user.id}`)}
+                    href={`/backstage/users/${user.id}`}
                     className={userRowClassName}
                   >
                     {segment === 'customers' ? (
@@ -250,7 +249,7 @@ export default function UsersPage() {
                       </div>
                     )}
                     <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
-                  </button>
+                  </a>
                 ))}
               </div>
             )}

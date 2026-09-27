@@ -1,12 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { ArrowLeft, Loader2, Trash2 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
+import { UserCommunicationsPanel } from '@/components/backstage/user-communications-panel'
 import { UserEditCard } from '@/components/backstage/user-edit-card'
 import { UserGroupsCard } from '@/components/backstage/user-groups-card'
 import { UserOrderCard } from '@/components/backstage/user-order-card'
@@ -47,7 +47,6 @@ type DeleteMode = 'keep-orders' | 'with-orders'
 
 export default function UserDetailPage() {
   const params = useParams<{ id: string }>()
-  const router = useRouter()
   const userId = params.id
   const { locale } = useBackstageUiLocale()
 
@@ -97,8 +96,8 @@ export default function UserDetailPage() {
     try {
       await deleteBackstageUser(userId, deleteMode === 'with-orders')
       toast.success('Користувача видалено.')
-      router.push('/backstage/users')
-      router.refresh()
+      // Hard navigation: Next 16.2 + Turbopack soft nav hangs on /backstage.
+      window.location.assign('/backstage/users')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося видалити користувача.')
     } finally {
@@ -154,10 +153,11 @@ export default function UserDetailPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-2">
             <Button variant="ghost" size="sm" className="-ml-2 w-fit" asChild>
-              <Link href="/backstage/users" prefetch={false}>
+              {/* Hard navigation: Next 16.2 + Turbopack soft nav hangs on /backstage. */}
+              <a href="/backstage/users">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 До списку
-              </Link>
+              </a>
             </Button>
             <h1 className="font-serif text-3xl font-bold text-foreground">
               {loading ? 'Користувач' : fullName || 'Користувач'}
@@ -245,6 +245,8 @@ export default function UserDetailPage() {
                 </div>
               </CardContent>
             </Card>
+
+            <UserCommunicationsPanel userId={userId} />
 
             <Card>
               <CardHeader>

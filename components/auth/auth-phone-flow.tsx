@@ -25,6 +25,10 @@ import {
 import { startGoogleOAuth } from '@/lib/auth/google-oauth-client'
 import { isGoogleOAuthConfigured } from '@/lib/auth/google-oauth'
 import { hardRedirectToInternalPath } from '@/lib/auth/post-auth-redirect'
+import {
+  normalizeSessionOtpPurpose,
+  type SessionOtpPurpose,
+} from '@/lib/auth/session-otp-purpose'
 import type { AppLocale } from '@/i18n/routing'
 import { SUPPORTED_LOCALES } from '@/lib/i18n/locales'
 import { useOAuthReturn, type OAuthReturnPayload } from '@/lib/auth/use-oauth-return'
@@ -54,7 +58,11 @@ type AuthStep = 'identifier' | 'otp'
 const phoneLeadingIcon = <Phone className="h-4 w-4" />
 const emailLeadingIcon = <Mail className="h-4 w-4" />
 
-async function createPhoneSession(phone: string, verificationToken: string) {
+async function createPhoneSession(
+  phone: string,
+  verificationToken: string,
+  purpose: SessionOtpPurpose,
+) {
   const res = await fetch('/api/auth/phone-session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -62,6 +70,7 @@ async function createPhoneSession(phone: string, verificationToken: string) {
     body: JSON.stringify({
       phone: phone.trim(),
       verificationToken,
+      purpose,
     }),
   })
   const data = (await res.json().catch(() => ({}))) as {
@@ -74,7 +83,11 @@ async function createPhoneSession(phone: string, verificationToken: string) {
   return data.user
 }
 
-async function createEmailSession(email: string, verificationToken: string) {
+async function createEmailSession(
+  email: string,
+  verificationToken: string,
+  purpose: SessionOtpPurpose,
+) {
   const res = await fetch('/api/auth/email-session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -82,6 +95,7 @@ async function createEmailSession(email: string, verificationToken: string) {
     body: JSON.stringify({
       email: email.trim().toLowerCase(),
       verificationToken,
+      purpose,
     }),
   })
   const data = (await res.json().catch(() => ({}))) as {
@@ -353,14 +367,15 @@ export function AuthPhoneFlow({
     setSubmitting(true)
     setCodeError(null)
     try {
+      const sessionPurpose = normalizeSessionOtpPurpose(purpose)
       if (channel === 'phone') {
         const { verificationToken } = await verifyAuthSmsCode(phone, code, purpose)
-        const sessionUser = await createPhoneSession(phone, verificationToken)
+        const sessionUser = await createPhoneSession(phone, verificationToken, sessionPurpose)
         setUser(sessionUser)
         await persistMarketingConsentIfNeeded(sessionUser.email)
       } else {
         const { verificationToken } = await verifyAuthEmailCode(email, code, purpose)
-        const sessionUser = await createEmailSession(email, verificationToken)
+        const sessionUser = await createEmailSession(email, verificationToken, sessionPurpose)
         setUser(sessionUser)
         await persistMarketingConsentIfNeeded(email)
       }

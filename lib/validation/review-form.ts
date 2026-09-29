@@ -1,24 +1,22 @@
 import {
   getRecipientUkrPhoneError,
-  isValidCyrillicName,
   isValidEmail,
-  sanitizeCyrillicName,
   sanitizeEmail,
   sanitizeRecipientPhoneInput,
 } from '@/lib/validation/register-form'
+import {
+  isValidPersonName,
+  sanitizePersonName,
+} from '@/lib/validation/person-name'
 import { REVIEW_IMAGE_PATH_REGEX } from '@/lib/review-image'
 
-const FULL_NAME_FILTER = /[^А-Яа-яІіЇїЄєҐґ'ʼ\s.-]/g
-
+/** Live typing: shared Unicode person-name filter; trim leading spaces for UX. */
 export function sanitizeReviewFullName(value: string): string {
-  return value.replace(FULL_NAME_FILTER, '').replace(/\s+/g, ' ').trimStart()
+  return sanitizePersonName(value).trimStart()
 }
 
 export function isValidReviewFullName(value: string): boolean {
-  const trimmed = value.trim()
-  if (trimmed.length < 2 || trimmed.length > 120) return false
-  if (!/[А-Яа-яІіЇїЄєҐґ'ʼ]/.test(trimmed)) return false
-  return /^[А-Яа-яІіЇїЄєҐґ'ʼ\s.-]+$/.test(trimmed)
+  return isValidPersonName(value)
 }
 
 export function sanitizeReviewText(value: string): string {
@@ -86,9 +84,4 @@ export function validateReviewImages(imageUrls: string[]): string | null {
   return null
 }
 
-export {
-  sanitizeCyrillicName,
-  sanitizeEmail,
-  sanitizeRecipientPhoneInput,
-  isValidCyrillicName,
-}
+export { sanitizeEmail, sanitizeRecipientPhoneInput, isValidPersonName, sanitizePersonName }

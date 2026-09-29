@@ -4,6 +4,10 @@ import {
   sanitizeEmail,
   sanitizeLatinName,
 } from '@/lib/validation/register-form'
+import {
+  isValidPersonName,
+  sanitizePersonName,
+} from '@/lib/validation/person-name'
 import { isValidPhoneForPolicy, type PhonePolicy } from '@/lib/settings/market'
 import type { MarketRegion } from '@/lib/settings/market'
 
@@ -35,18 +39,7 @@ export const EMPTY_WHOLESALE_INQUIRY_FORM: WholesaleInquiryFormValues = {
   fax: '',
 }
 
-const NAME_FILTER =
-  /[^A-Za-zÀ-ÖØ-öø-ÿĀ-žĄąĆćČčĎďĐđĘęĚěĹĺĽľŁłŃńŇňŐőŘřŚśŠšŤťŮůŰűŹźŻżŽžА-Яа-яІіЇїЄєҐґЁё'ʼ\- ]/g
-
-export function sanitizePersonName(value: string): string {
-  return value.replace(NAME_FILTER, '').replace(/\s+/g, ' ').slice(0, 120)
-}
-
-export function isValidPersonName(value: string): boolean {
-  const trimmed = value.trim()
-  if (trimmed.length < 2 || trimmed.length > 120) return false
-  return /[A-Za-zÀ-ÖØ-öø-ÿĀ-žА-Яа-яІіЇїЄєҐґЁё]/.test(trimmed)
-}
+export { isValidPersonName, sanitizePersonName }
 
 export function sanitizeCompanyName(value: string): string {
   return value.replace(/[<>]/g, '').replace(/\s+/g, ' ').slice(0, 200)

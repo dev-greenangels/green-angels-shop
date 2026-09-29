@@ -5,11 +5,12 @@ import {
   forwardBackendCookies,
   readBackendJson,
 } from '@/lib/api/backend-fetch'
+import { normalizeSessionOtpPurpose } from '@/lib/auth/session-otp-purpose'
 import { fetchPublicSiteSettings, getMarketSettings } from '@/lib/settings/fetch'
 import { isValidPhoneForPolicy, phoneErrorForPolicy } from '@/lib/settings/market'
 
 export async function POST(request: Request) {
-  let body: { phone?: string; verificationToken?: string }
+  let body: { phone?: string; verificationToken?: string; purpose?: string }
   try {
     body = await request.json()
   } catch {
@@ -18,6 +19,9 @@ export async function POST(request: Request) {
 
   const phone = typeof body.phone === 'string' ? body.phone.trim() : ''
   const market = getMarketSettings(await fetchPublicSiteSettings())
+  const purpose = normalizeSessionOtpPurpose(
+    typeof body.purpose === 'string' ? body.purpose : undefined,
+  )
 
   if (!phone || !isValidPhoneForPolicy(phone, market.authPhonePolicy, market.region)) {
     return NextResponse.json(
@@ -41,6 +45,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         phone,
         verificationToken: verificationToken || undefined,
+        purpose,
       }),
     })
 

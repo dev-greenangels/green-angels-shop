@@ -5,10 +5,11 @@ import {
   forwardBackendCookies,
   readBackendJson,
 } from '@/lib/api/backend-fetch'
+import { normalizeSessionOtpPurpose } from '@/lib/auth/session-otp-purpose'
 import { isValidEmail } from '@/lib/validation/register-form'
 
 export async function POST(request: Request) {
-  let body: { email?: string; verificationToken?: string }
+  let body: { email?: string; verificationToken?: string; purpose?: string }
   try {
     body = await request.json()
   } catch {
@@ -18,6 +19,9 @@ export async function POST(request: Request) {
   const emailRaw = typeof body.email === 'string' ? body.email.trim() : ''
   const verificationToken =
     typeof body.verificationToken === 'string' ? body.verificationToken.trim() : ''
+  const purpose = normalizeSessionOtpPurpose(
+    typeof body.purpose === 'string' ? body.purpose : undefined,
+  )
 
   if (!emailRaw || !isValidEmail(emailRaw)) {
     return NextResponse.json({ error: 'Вкажіть коректний email.' }, { status: 400 })
@@ -34,6 +38,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         email: emailRaw.toLowerCase(),
         verificationToken,
+        purpose,
       }),
     })
 

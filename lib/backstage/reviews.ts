@@ -1,5 +1,7 @@
 import type { ReviewFilters, ReviewListItem, ReviewStatus } from '@/lib/reviews/types'
 
+export const REVIEWS_PENDING_COUNT_EVENT = 'ga:reviews-pending-count-refresh'
+
 function buildReviewQuery(filters?: ReviewFilters): string {
   if (!filters) return ''
   const params = new URLSearchParams()
@@ -11,6 +13,12 @@ function buildReviewQuery(filters?: ReviewFilters): string {
   return query ? `?${query}` : ''
 }
 
+function notifyReviewsPendingCountChanged() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(REVIEWS_PENDING_COUNT_EVENT))
+  }
+}
+
 export async function fetchBackstageReviews(filters?: ReviewFilters): Promise<ReviewListItem[]> {
   const res = await fetch(`/api/backstage/reviews${buildReviewQuery(filters)}`, { cache: 'no-store' })
   const data = await res.json().catch(() => ({}))
@@ -20,6 +28,20 @@ export async function fetchBackstageReviews(filters?: ReviewFilters): Promise<Re
     )
   }
   return Array.isArray(data) ? data : []
+}
+
+export async function fetchReviewsPendingCount(): Promise<number> {
+  const res = await fetch('/api/backstage/reviews/pending-count', {
+    credentials: 'include',
+    cache: 'no-store',
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new Error(
+      typeof data.error === 'string' ? data.error : 'Не вдалося завантажити лічильник відгуків.',
+    )
+  }
+  return typeof data.count === 'number' && data.count >= 0 ? data.count : 0
 }
 
 export async function updateBackstageReviewStatus(
@@ -37,6 +59,7 @@ export async function updateBackstageReviewStatus(
       typeof data.error === 'string' ? data.error : 'Не вдалося оновити статус відгуку.',
     )
   }
+  notifyReviewsPendingCountChanged()
   return data as ReviewListItem
 }
 
@@ -68,4 +91,5 @@ export async function deleteBackstageReview(id: string): Promise<void> {
       typeof data.error === 'string' ? data.error : 'Не вдалося видалити відгук.',
     )
   }
+  notifyReviewsPendingCountChanged()
 }

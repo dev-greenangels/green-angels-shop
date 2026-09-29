@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import type { PublicSession } from '@/lib/auth/types'
+import { toPublicMediaUrl } from '@/lib/media/public-url'
 import { submitReview, uploadReviewImage } from '@/lib/reviews/fetch'
 import { MAX_REVIEW_IMAGES } from '@/lib/reviews/utils'
 import {
@@ -265,7 +266,14 @@ export function ReviewSubmitDialog({
                   key={`${url}-${index}`}
                   className="relative h-20 w-20 overflow-hidden rounded-lg border"
                 >
-                  <Image src={url} alt={t('photoN', { n: index + 1 })} fill className="object-cover" sizes="80px" />
+                  <Image
+                    src={toPublicMediaUrl(url)}
+                    alt={t('photoN', { n: index + 1 })}
+                    fill
+                    className="object-cover"
+                    sizes="80px"
+                    unoptimized
+                  />
                   <Button
                     type="button"
                     size="icon"

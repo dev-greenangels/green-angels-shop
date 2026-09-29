@@ -60,12 +60,17 @@ import {
   fetchContractWithdrawalsNewCount,
 } from '@/lib/backstage/contract-withdrawals'
 import { fetchStockNotificationsPendingCount } from '@/lib/backstage/stock-notifications'
+import {
+  REVIEWS_PENDING_COUNT_EVENT,
+  fetchReviewsPendingCount,
+} from '@/lib/backstage/reviews'
 import { cn } from '@/lib/utils'
 import type { BackstageSession } from '@/lib/backstage-auth/types'
 
 const WHOLESALE_NEW_COUNT_EVENT = 'ga:wholesale-new-count-refresh'
 const STOCK_PENDING_EVENT = 'ga:stock-notify-pending-refresh'
 const WITHDRAWALS_NEW_COUNT_EVENT = CONTRACT_WITHDRAWALS_NEW_COUNT_EVENT
+const REVIEWS_PENDING_EVENT = REVIEWS_PENDING_COUNT_EVENT
 const WHOLESALE_NEW_COUNT_POLL_MS = 60_000
 
 type NavItem = {
@@ -110,13 +115,6 @@ const navGroups: NavGroup[] = [
     labelKey: 'groupSales',
     items: [
       { href: '/backstage/orders', labelKey: 'orders', icon: ShoppingCart },
-      { href: '/backstage/supplier-invoices', labelKey: 'supplierInvoices', icon: Receipt },
-      { href: '/backstage/order-dictionaries', labelKey: 'orderDictionaries', icon: ClipboardList },
-      {
-        href: '/backstage/dispatch-calendar',
-        labelKey: 'dispatchCalendar',
-        icon: CalendarDays,
-      },
       { href: '/backstage/carts', labelKey: 'carts', icon: ShoppingBasket },
       {
         href: '/backstage/users',
@@ -126,6 +124,14 @@ const navGroups: NavGroup[] = [
       },
       { href: '/backstage/promotions', labelKey: 'promotions', icon: Percent },
       { href: '/backstage/referrals', labelKey: 'referrals', icon: Gift },
+      {
+        href: '/backstage/marketing-subscribers',
+        labelKey: 'marketingSubscribers',
+        icon: Mail,
+      },
+      { href: '/backstage/reviews', labelKey: 'reviews', icon: MessageSquareQuote },
+      { href: '/backstage/wholesale-inquiries', labelKey: 'wholesaleInquiries', icon: Warehouse },
+      { href: '/backstage/stock-notifications', labelKey: 'stockNotifications', icon: Bell },
     ],
   },
   {
@@ -137,19 +143,18 @@ const navGroups: NavGroup[] = [
       { href: '/backstage/about', labelKey: 'about', icon: Sprout },
       { href: '/backstage/wholesale', labelKey: 'wholesalePage', icon: Handshake },
       { href: '/backstage/legal', labelKey: 'legal', icon: ScrollText },
+      { href: '/backstage/supplier-invoices', labelKey: 'supplierInvoices', icon: Receipt },
+      { href: '/backstage/order-dictionaries', labelKey: 'orderDictionaries', icon: ClipboardList },
       {
-        href: '/backstage/marketing-subscribers',
-        labelKey: 'marketingSubscribers',
-        icon: Mail,
+        href: '/backstage/dispatch-calendar',
+        labelKey: 'dispatchCalendar',
+        icon: CalendarDays,
       },
-      { href: '/backstage/reviews', labelKey: 'reviews', icon: MessageSquareQuote },
-      { href: '/backstage/wholesale-inquiries', labelKey: 'wholesaleInquiries', icon: Warehouse },
       {
         href: '/backstage/contract-withdrawals',
         labelKey: 'contractWithdrawals',
         icon: Undo2,
       },
-      { href: '/backstage/stock-notifications', labelKey: 'stockNotifications', icon: Bell },
     ],
   },
   {
@@ -282,6 +287,10 @@ function NavGroupSection({
 }) {
   const tNav = useTranslations('nav')
   const hasActive = group.items.some((item) => isNavActive(pathname, item))
+  const childBadgeTotal = group.items.reduce(
+    (sum, item) => sum + (badgeByHref?.[item.href] ?? 0),
+    0,
+  )
 
   return (
     <div className="space-y-0.5">
@@ -295,7 +304,16 @@ function NavGroupSection({
             : 'text-sidebar-foreground/50 hover:text-sidebar-foreground/80',
         )}
       >
-        <span>{tNav(group.labelKey)}</span>
+        <span className="inline-flex min-w-0 items-center gap-2">
+          <span className="truncate">{tNav(group.labelKey)}</span>
+          {childBadgeTotal > 0 ? (
+            <span
+              className="h-2 w-2 shrink-0 rounded-full bg-primary"
+              title={formatBadgeCount(childBadgeTotal)}
+              aria-label={formatBadgeCount(childBadgeTotal)}
+            />
+          ) : null}
+        </span>
         <ChevronDown
           className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-180')}
         />
@@ -328,6 +346,7 @@ function Sidebar({
   const [wholesaleNewCount, setWholesaleNewCount] = useState(0)
   const [withdrawalsNewCount, setWithdrawalsNewCount] = useState(0)
   const [stockPendingCount, setStockPendingCount] = useState(0)
+  const [reviewsPendingCount, setReviewsPendingCount] = useState(0)
 
   const initiallyOpen = useMemo(() => {
     const open: Record<string, boolean> = {}
@@ -356,21 +375,24 @@ function Sidebar({
 
     const refresh = async () => {
       try {
-        const [wholesale, withdrawals, stock] = await Promise.all([
+        const [wholesale, withdrawals, stock, reviews] = await Promise.all([
           fetchWholesaleInquiriesNewCount(),
           fetchContractWithdrawalsNewCount(),
           fetchStockNotificationsPendingCount(),
+          fetchReviewsPendingCount(),
         ])
         if (!cancelled) {
           setWholesaleNewCount(wholesale)
           setWithdrawalsNewCount(withdrawals)
           setStockPendingCount(stock)
+          setReviewsPendingCount(reviews)
         }
       } catch {
         if (!cancelled) {
           setWholesaleNewCount(0)
           setWithdrawalsNewCount(0)
           setStockPendingCount(0)
+          setReviewsPendingCount(0)
         }
       }
     }
@@ -385,6 +407,7 @@ function Sidebar({
     window.addEventListener(WHOLESALE_NEW_COUNT_EVENT, onRefresh)
     window.addEventListener(WITHDRAWALS_NEW_COUNT_EVENT, onRefresh)
     window.addEventListener(STOCK_PENDING_EVENT, onRefresh)
+    window.addEventListener(REVIEWS_PENDING_EVENT, onRefresh)
 
     return () => {
       cancelled = true
@@ -392,6 +415,7 @@ function Sidebar({
       window.removeEventListener(WHOLESALE_NEW_COUNT_EVENT, onRefresh)
       window.removeEventListener(WITHDRAWALS_NEW_COUNT_EVENT, onRefresh)
       window.removeEventListener(STOCK_PENDING_EVENT, onRefresh)
+      window.removeEventListener(REVIEWS_PENDING_EVENT, onRefresh)
     }
   }, [])
 
@@ -400,8 +424,9 @@ function Sidebar({
       '/backstage/wholesale-inquiries': wholesaleNewCount,
       '/backstage/contract-withdrawals': withdrawalsNewCount,
       '/backstage/stock-notifications': stockPendingCount,
+      '/backstage/reviews': reviewsPendingCount,
     }),
-    [wholesaleNewCount, withdrawalsNewCount, stockPendingCount],
+    [wholesaleNewCount, withdrawalsNewCount, stockPendingCount, reviewsPendingCount],
   )
 
   return (

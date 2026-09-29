@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Loader2, MessageSquareReply, Pencil, Trash2 } from 'lucide-react'
 import { toast } from '@/lib/toast'
+import { useTranslations } from 'next-intl'
 
 import { ReviewStoreReply } from '@/components/reviews/review-store-reply'
 import { Button } from '@/components/ui/button'
@@ -19,16 +20,20 @@ export function ReviewBackstageReplyPanel({
   review: ReviewListItem
   onUpdated: (review: ReviewListItem) => void
 }) {
+  const tPages = useTranslations('pages.reviews')
+  const defaultAuthor = tPages('defaultReplyAuthor')
   const [editing, setEditing] = useState(false)
-  const [authorName, setAuthorName] = useState(review.storeReply?.authorName ?? 'Зелені Янголи')
+  const [authorName, setAuthorName] = useState(
+    () => review.storeReply?.authorName?.trim() || defaultAuthor,
+  )
   const [text, setText] = useState(review.storeReply?.text ?? '')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    setAuthorName(review.storeReply?.authorName ?? 'Зелені Янголи')
+    setAuthorName(review.storeReply?.authorName?.trim() || defaultAuthor)
     setText(review.storeReply?.text ?? '')
     setEditing(!review.storeReply)
-  }, [review.id, review.storeReply])
+  }, [review.id, review.storeReply, defaultAuthor])
 
   const handleSave = async () => {
     const trimmedText = text.trim()
@@ -62,7 +67,7 @@ export function ReviewBackstageReplyPanel({
     setSaving(true)
     try {
       const updated = await updateBackstageReviewReply(review.id, {
-        authorName: review.storeReply?.authorName ?? 'Зелені Янголи',
+        authorName: review.storeReply?.authorName?.trim() || defaultAuthor,
         text: null,
       })
       onUpdated(updated)
@@ -107,7 +112,7 @@ export function ReviewBackstageReplyPanel({
               id={`reply-author-${review.id}`}
               value={authorName}
               onChange={(e) => setAuthorName(e.target.value)}
-              placeholder="Name"
+              placeholder={defaultAuthor}
             />
           </div>
           <div className="space-y-2">

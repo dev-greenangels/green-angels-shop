@@ -7,6 +7,15 @@ import type { ReviewStoreReply as ReviewStoreReplyType } from '@/lib/reviews/typ
 import { formatReviewDate, formatReviewDateTime } from '@/lib/reviews/utils'
 import { cn } from '@/lib/utils'
 
+/** Historical / backend default labels that must follow UI locale brand. */
+const LOCALIZE_STORE_REPLY_AUTHORS = new Set(['Зелені Янголи', 'Магазин', 'Green Angels'])
+
+function resolveStoreReplyAuthorDisplay(authorName: string, brand: string): string {
+  const trimmed = authorName.trim()
+  if (!trimmed || LOCALIZE_STORE_REPLY_AUTHORS.has(trimmed)) return brand
+  return trimmed
+}
+
 type ReviewStoreReplyProps = {
   reply: ReviewStoreReplyType
   className?: string
@@ -21,8 +30,10 @@ export function ReviewStoreReply({
   showTime = false,
 }: ReviewStoreReplyProps) {
   const t = useTranslations('reviews')
+  const tc = useTranslations('common')
   const locale = useLocale()
   const marketRegion = useMarketRegion()
+  const authorLabel = resolveStoreReplyAuthorDisplay(reply.authorName, tc('brand'))
   const dateLabel = showTime
     ? formatReviewDateTime(reply.createdAt, locale, marketRegion)
     : formatReviewDate(reply.createdAt, locale, marketRegion)
@@ -33,7 +44,7 @@ export function ReviewStoreReply({
         <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
           <p className="text-xs font-semibold tracking-wide text-primary">
             {t('storeReply')}
-            <span className="font-normal text-muted-foreground"> · {reply.authorName}</span>
+            <span className="font-normal text-muted-foreground"> · {authorLabel}</span>
           </p>
           <time className="text-[11px] text-muted-foreground" dateTime={reply.createdAt}>
             {dateLabel}
@@ -54,7 +65,7 @@ export function ReviewStoreReply({
       <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <p className="text-xs font-semibold text-primary">
           {t('storeReply')}
-          <span className="font-normal text-muted-foreground"> · {reply.authorName}</span>
+          <span className="font-normal text-muted-foreground"> · {authorLabel}</span>
         </p>
         <time className="text-[11px] text-muted-foreground" dateTime={reply.createdAt}>
           {dateLabel}

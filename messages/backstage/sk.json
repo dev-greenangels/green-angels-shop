@@ -725,7 +725,8 @@
       "filterAll": "Všetko",
       "filterPending": "Čaká na moderáciu",
       "filterApproved": "Publikované",
-      "filterRejected": "Zamietnuté"
+      "filterRejected": "Zamietnuté",
+      "defaultReplyAuthor": "Green Angels"
     },
     "overview": {
       "title": "Prehľad",

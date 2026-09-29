@@ -725,7 +725,8 @@
       "filterAll": "Усі",
       "filterPending": "На модерації",
       "filterApproved": "Опубліковані",
-      "filterRejected": "Відхилені"
+      "filterRejected": "Відхилені",
+      "defaultReplyAuthor": "Зелені Янголи"
     },
     "overview": {
       "title": "Огляд",

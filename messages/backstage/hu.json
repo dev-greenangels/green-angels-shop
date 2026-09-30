@@ -1259,7 +1259,17 @@
     "busyUpdateOn": "Updating data and enabling…",
     "busyOrders": "Refreshing order statuses…",
     "legacyTitle": "Legacy recovery (old system)",
-    "legacyWarning": "This is the old sync journal (FlexiChangeEvent). Do not process it — use “Update all data from ABRA” to repair.",
+    "legacyWarning": "These are records from the old sync system. The new sync does not use them.",
+    "legacyJournal": "Legacy journal",
+    "legacyDownloadBackup": "Download backup",
+    "legacyDeleteJournal": "Delete legacy journal",
+    "legacyEvidenceSummary": "Evidence (technical)",
+    "legacyConfirmHint": "Type DELETE_LEGACY_FLEXI_JOURNAL to confirm",
+    "legacyBackupDone": "Backup downloaded",
+    "legacyDeleteConfirm": "This will permanently delete {count} FlexiChangeEvent rows. These old-system sync records will not be processed or restored.\n\nAfter deletion, manually run “Update all data from ABRA”.",
+    "legacyClearedTitle": "Legacy journal cleared.",
+    "legacyClearedHint": "Now run “Update all data from ABRA” to refresh catalog, prices, and stock.",
+    "legacyClearedOrdersHint": "If needed, also run “Refresh order statuses from ABRA”.",
     "lastWebhookReceived": "Last webhook"
   }
 }

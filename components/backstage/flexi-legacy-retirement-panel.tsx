@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
@@ -13,33 +13,28 @@ import {
 } from '@/lib/backstage/flexi'
 
 /**
- * ADMIN retirement UI — Technical → Legacy recovery only.
- * Does not expose PENDING/SUPERSEDED internals in primary sync UI.
+ * ADMIN — Technical → Legacy recovery.
+ * Permanently deletes abandoned FlexiChangeEvent rows. No Full Refresh / reconcile.
  */
 export function FlexiLegacyRetirementPanel() {
   const t = useTranslations('flexiAutoSync')
-  const [preflight, setPreflight] = useState<FlexiLegacyJournalPreflight | null>(null)
+  const [stats, setStats] = useState<FlexiLegacyJournalPreflight | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [confirmText, setConfirmText] = useState('')
+  const [cleared, setCleared] = useState(false)
 
-  const runPreflight = async () => {
-    setBusy('preflight')
-    setMessage(null)
-    try {
-      const data = await fetchFlexiLegacyJournalPreflight()
-      setPreflight(data)
-      setMessage(
-        data.safeToRetire
-          ? t('legacySafe')
-          : `${t('legacyNotSafe')}: ${data.blockers.slice(0, 3).join(' | ')}`,
-      )
-    } catch (error) {
+  const load = useCallback(async () => {
+    const data = await fetchFlexiLegacyJournalPreflight()
+    setStats(data)
+    if (data.total === 0) setCleared(true)
+  }, [])
+
+  useEffect(() => {
+    void load().catch((error) => {
       setMessage(error instanceof Error ? error.message : t('error'))
-    } finally {
-      setBusy(null)
-    }
-  }
+    })
+  }, [load, t])
 
   const runBackup = async () => {
     setBusy('backup')
@@ -54,32 +49,35 @@ export function FlexiLegacyRetirementPanel() {
     }
   }
 
-  const runRetire = async () => {
-    if (!preflight?.safeToRetire) {
-      setMessage(t('legacyNeedPreflight'))
-      return
-    }
-    if (confirmText.trim() !== 'RETIRE_LEGACY_FLEXI_JOURNAL') {
+  const runDelete = async () => {
+    if (confirmText.trim() !== 'DELETE_LEGACY_FLEXI_JOURNAL') {
       setMessage(t('legacyConfirmHint'))
       return
     }
-    const ok = window.confirm(
-      t('legacyRetireConfirm', { count: preflight.total.toLocaleString() }),
-    )
-    if (!ok) return
-    setBusy('retire')
+    const count = stats?.total ?? 0
+    if (!window.confirm(t('legacyDeleteConfirm', { count: count.toLocaleString() }))) return
+
+    setBusy('delete')
     setMessage(null)
     try {
       const result = await retireFlexiLegacyJournal()
       setMessage(result.message)
-      setPreflight(await fetchFlexiLegacyJournalPreflight())
+      await load()
       setConfirmText('')
+      if (result.ok && result.remainingCount === 0) setCleared(true)
     } catch (error) {
       setMessage(error instanceof Error ? error.message : t('error'))
+      try {
+        await load()
+      } catch {
+        // ignore
+      }
     } finally {
       setBusy(null)
     }
   }
+
+  const total = stats?.total
 
   return (
     <div className="space-y-3">
@@ -87,76 +85,68 @@ export function FlexiLegacyRetirementPanel() {
       <p className="text-sm">
         {t('legacyJournal')}:{' '}
         <span className="font-semibold tabular-nums">
-          {preflight ? preflight.total.toLocaleString() : t('legacyRunPreflightFirst')}
+          {total == null ? '…' : total.toLocaleString()}
         </span>
       </p>
 
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="outline" disabled={Boolean(busy)} onClick={() => void runPreflight()}>
-          {busy === 'preflight' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {t('legacyCheckRetire')}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={Boolean(busy) || !preflight}
-          onClick={() => void runBackup()}
-        >
-          {busy === 'backup' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {t('legacyDownloadBackup')}
-        </Button>
-      </div>
-
-      {preflight ? (
-        <div className="rounded-md border p-3 text-xs space-y-2">
-          <p
-            className={
-              preflight.safeToRetire
-                ? 'font-semibold text-emerald-700 dark:text-emerald-400'
-                : 'font-semibold text-destructive'
-            }
-          >
-            {preflight.safeToRetire ? t('legacySafe') : t('legacyNotSafe')}
-          </p>
-          <p className="text-muted-foreground">
-            {t('legacyEvidenceSummary')}:{' '}
-            {preflight.byEvidence
-              .slice(0, 8)
-              .map((e) => `${e.evidence}×${e.count}`)
-              .join(', ')}
-            {preflight.byEvidence.length > 8 ? '…' : ''}
-          </p>
-          {preflight.unknownEvidence.length > 0 ? (
-            <p className="text-destructive">
-              UNKNOWN: {preflight.unknownEvidence.map((u) => u.evidence).join(', ')}
-            </p>
-          ) : null}
-          {preflight.safeToRetire ? (
-            <div className="space-y-2 pt-2 border-t">
-              <label className="block text-xs text-muted-foreground" htmlFor="legacy-retire-confirm">
-                {t('legacyConfirmHint')}
-              </label>
-              <input
-                id="legacy-retire-confirm"
-                className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
-                value={confirmText}
-                onChange={(e) => setConfirmText(e.target.value)}
-                placeholder="RETIRE_LEGACY_FLEXI_JOURNAL"
-                autoComplete="off"
-              />
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={Boolean(busy)}
-                onClick={() => void runRetire()}
-              >
-                {busy === 'retire' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {t('legacyDeleteJournal')}
-              </Button>
-            </div>
-          ) : null}
+      {cleared && total === 0 ? (
+        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs space-y-1">
+          <p className="font-medium text-foreground">{t('legacyClearedTitle')}</p>
+          <p className="text-muted-foreground">{t('legacyClearedHint')}</p>
+          <p className="text-muted-foreground">{t('legacyClearedOrdersHint')}</p>
         </div>
-      ) : null}
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={Boolean(busy) || total === 0}
+              onClick={() => void runBackup()}
+            >
+              {busy === 'backup' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {t('legacyDownloadBackup')}
+            </Button>
+          </div>
+
+          <div className="space-y-2 rounded-md border p-3">
+            <label className="block text-xs text-muted-foreground" htmlFor="legacy-delete-confirm">
+              {t('legacyConfirmHint')}
+            </label>
+            <input
+              id="legacy-delete-confirm"
+              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="DELETE_LEGACY_FLEXI_JOURNAL"
+              autoComplete="off"
+              disabled={Boolean(busy) || total === 0}
+            />
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={Boolean(busy) || total === 0}
+              onClick={() => void runDelete()}
+            >
+              {busy === 'delete' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {t('legacyDeleteJournal')}
+            </Button>
+          </div>
+
+          {stats && stats.byEvidence.length > 0 ? (
+            <details className="text-xs text-muted-foreground">
+              <summary className="cursor-pointer">{t('legacyEvidenceSummary')}</summary>
+              <p className="mt-1 break-words">
+                {stats.byEvidence
+                  .slice(0, 12)
+                  .map((e) => `${e.evidence}×${e.count}`)
+                  .join(', ')}
+                {stats.byEvidence.length > 12 ? '…' : ''}
+              </p>
+            </details>
+          ) : null}
+        </>
+      )}
 
       {message ? <p className="text-xs break-words text-muted-foreground">{message}</p> : null}
     </div>

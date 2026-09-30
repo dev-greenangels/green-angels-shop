@@ -599,35 +599,29 @@ export async function runFlexiOrderReconcile(): Promise<{ ok: boolean; message: 
 
 export type FlexiLegacyJournalPreflight = {
   total: number
-  byEvidence: Array<{
-    evidence: string
-    count: number
-    classification: string
-    deleteCount: number
-    deleteRecoverableWithoutReplay: boolean
-  }>
-  unknownEvidence: Array<{ evidence: string; count: number }>
-  deleteByEvidence: Array<{
-    evidence: string
-    count: number
-    classification: string
-    recoverableWithoutReplay: boolean
-  }>
+  byEvidence: Array<{ evidence: string; count: number }>
+  byOperation?: Array<{ operation: string; count: number }>
   globalVersion: number
+  webhookRemoteId?: string
   webhookAccepting: boolean
-  normalRuntimeDependsOnJournal: false
-  safeToRetire: boolean
-  blockers: string[]
+  deletionBlocked: false
+  blockers: []
 }
 
 export type FlexiLegacyRetireResult = {
   ok: boolean
   message: string
-  deleted: number
+  deletedCount: number
+  remainingCount: number
   globalVersionBefore: number
   globalVersionAfter: number
-  globalVersionUnchangedByDelete: boolean
-  autoSyncRemainsOff: boolean
+  globalVersionUnchanged: boolean
+  webhookRemoteIdBefore: string
+  webhookRemoteIdAfter: string
+  webhookRemoteIdUnchanged: boolean
+  webhookAcceptingBefore: boolean
+  webhookAcceptingAfter: boolean
+  webhookAcceptingUnchanged: boolean
   stage?: string
 }
 
@@ -660,7 +654,7 @@ export async function retireFlexiLegacyJournal(): Promise<FlexiLegacyRetireResul
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ confirm: 'RETIRE_LEGACY_FLEXI_JOURNAL' }),
+    body: JSON.stringify({ confirm: 'DELETE_LEGACY_FLEXI_JOURNAL' }),
   })
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()

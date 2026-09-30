@@ -101,9 +101,9 @@ export function FlexiQueueCard() {
       <CardHeader>
         <CardTitle>Незакриті зміни</CardTitle>
         <CardDescription>
-          Журнал V / FlexiChangeEvent — legacy. Новий live path не створює PENDING backlog.
-          Після Full Refresh production recovery очищає таблицю окремою ADMIN-операцією (не
-          автоматично).
+          Журнал V / FlexiChangeEvent — LEGACY ONLY. Новий live path не створює PENDING і не
+          викликає processDurableIntake. Кнопки нижче лише діагностика/closing статусів журналу —
+          НЕ запускайте їх для «синхронізації». Retirement: Technical → Legacy recovery.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

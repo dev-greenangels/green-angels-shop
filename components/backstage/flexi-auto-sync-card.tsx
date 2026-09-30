@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
+import { FlexiAbraHooksPanel } from '@/components/backstage/flexi-abra-hooks-panel'
 import { FlexiLegacyRetirementPanel } from '@/components/backstage/flexi-legacy-retirement-panel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -511,16 +512,10 @@ export function FlexiAutoSyncCard() {
                 <p>
                   {t('techLastError')}: {ops?.webhookLastError || settings?.webhookLastError || dash}
                 </p>
-                {(ops?.remoteHooks?.length ?? 0) > 0 ? (
-                  <div className="pt-1 space-y-1">
-                    <p className="font-medium text-foreground">{t('remoteHooks')}</p>
-                    {ops!.remoteHooks!.map((h) => (
-                      <p key={h.id}>
-                        id={h.id} lastVersion={h.lastVersion ?? '—'} {h.url}
-                      </p>
-                    ))}
-                  </div>
-                ) : null}
+                <FlexiAbraHooksPanel
+                  configuredWebhookUrl={ops?.webhookUrl || settings?.webhookUrl || ''}
+                  onChanged={() => void load()}
+                />
               </div>
 
               <details className="rounded-lg border border-amber-500/30 p-3">

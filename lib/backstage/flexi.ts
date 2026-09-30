@@ -495,7 +495,12 @@ export type FlexiOperationsSnapshot = {
     | 'error'
   openFailures?: Array<{ key: string; at: string; message: string }>
   apiUsage?: FlexiApiUsageSnapshot
-  remoteHooks?: Array<{ id: string; url: string; lastVersion?: number }>
+  remoteHooks?: Array<{
+    id: string
+    url: string
+    lastVersion?: number
+    classification?: 'CURRENT' | 'OTHER'
+  }>
 }
 
 export type FlexiFullRefreshResponse = {
@@ -656,6 +661,83 @@ export async function retireFlexiLegacyJournal(): Promise<FlexiLegacyRetireResul
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ confirm: 'RETIRE_LEGACY_FLEXI_JOURNAL' }),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export type FlexiRemoteHook = {
+  id: string
+  url: string
+  lastVersion?: number
+  format?: string
+  classification: 'CURRENT' | 'OTHER'
+}
+
+export type FlexiHooksListResponse = {
+  hooks: FlexiRemoteHook[]
+  webhookUrl: string
+  webhookRemoteId: string
+  globalVersion: number
+}
+
+export type FlexiHookDeleteOneResult = {
+  ok: boolean
+  deletedId: string
+  clearedWebhookRemoteId: boolean
+  remaining: FlexiRemoteHook[]
+  webhookRemoteId: string
+  globalVersion: number
+  message: string
+}
+
+export type FlexiHookBulkDeleteResult = {
+  ok: boolean
+  requested: string[]
+  deleted: string[]
+  failed: Array<{ id: string; error: string }>
+  remaining: FlexiRemoteHook[]
+  clearedWebhookRemoteId: boolean
+  webhookRemoteId: string
+  globalVersion: number
+  message: string
+}
+
+export async function fetchFlexiRemoteHooks(): Promise<FlexiHooksListResponse> {
+  const res = await fetch('/api/backstage/flexi/webhooks', {
+    credentials: 'include',
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function deleteFlexiRemoteHook(id: string): Promise<FlexiHookDeleteOneResult> {
+  const res = await fetch(`/api/backstage/flexi/webhooks/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function deleteFlexiOrphanHooks(): Promise<FlexiHookBulkDeleteResult> {
+  const res = await fetch('/api/backstage/flexi/webhooks/delete-orphans', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ confirm: 'DELETE_ORPHAN_ABRA_HOOKS' }),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function deleteAllFlexiRemoteHooks(): Promise<FlexiHookBulkDeleteResult> {
+  const res = await fetch('/api/backstage/flexi/webhooks/delete-all', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ confirm: 'DELETE_ALL_ABRA_HOOKS' }),
   })
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()

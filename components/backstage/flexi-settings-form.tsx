@@ -1091,9 +1091,9 @@ export function FlexiSettingsForm() {
         <CardHeader>
           <CardTitle>Дії синхронізації</CardTitle>
           <CardDescription>
-            У повсякденні достатньо webhook. Дві кнопки нижче — ручний знімок з дерева ABRA (ті самі
-            поля: назви, Text above/below, описи, ціни, сток). Після успіху журнал каталогу
-            закривається, щоб webhook не ганяв той самий backlog знову.
+            Ручні дії з деревом ABRA (strom). Live Auto Sync — у картці «Синхронізація з ABRA Flexi»
+            вище. Поле «Останній журнал» може показувати старий текст помилки intake (pollStart /
+            bind variables) з минулих деплоїв — це не означає, що зараз крутиться journal replay.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

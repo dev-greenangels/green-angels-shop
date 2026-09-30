@@ -310,6 +310,11 @@ export function normalizeCartCheckoutSettings(
     paymentPurposeTemplate:
       asTrimmedString(base.paymentPurposeTemplate) ||
       DEFAULT_CART_CHECKOUT_SETTINGS.paymentPurposeTemplate,
+    bankPaymentTermBusinessDays:
+      Number.isFinite(Number(base.bankPaymentTermBusinessDays)) &&
+      Number(base.bankPaymentTermBusinessDays) > 0
+        ? Math.trunc(Number(base.bankPaymentTermBusinessDays))
+        : DEFAULT_CART_CHECKOUT_SETTINGS.bankPaymentTermBusinessDays,
     nextSteps: normalizeNextSteps(base.nextSteps),
     gdprConsentText:
       asTrimmedString(base.gdprConsentText) || DEFAULT_CART_CHECKOUT_SETTINGS.gdprConsentText,

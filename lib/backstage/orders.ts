@@ -72,6 +72,10 @@ export type BackstageOrderDetail = BackstageOrderListItem & {
   monopayInvoiceId?: string | null
   paidAt?: string | null
   paymentExpiresAt?: string | null
+  /** Bank-transfer only: end-of-business-day deadline (ISO). preferredShipDate never changes this. */
+  paymentDueAt?: string | null
+  /** COD at create; card/bank set on payment success (paidAt + shippingLeadTimeMaxBusinessDays). */
+  shipByDate?: string | null
   productsSubtotal?: number | null
   deliveryAmount?: number | null
   packagingAmount?: number | null
@@ -286,6 +290,15 @@ export async function patchBackstageOrderStatus(
 
 export async function syncBackstageOrderTracking(id: string): Promise<BackstageOrderDetail> {
   const res = await fetch(`/api/backstage/orders/${id}/sync-tracking`, {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function markBackstageBankTransferPaid(id: string): Promise<BackstageOrderDetail> {
+  const res = await fetch(`/api/backstage/orders/${id}/mark-bank-paid`, {
     method: 'POST',
     credentials: 'include',
   })

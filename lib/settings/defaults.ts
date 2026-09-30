@@ -340,6 +340,7 @@ export const DEFAULT_CART_CHECKOUT_SETTINGS: CartCheckoutSettings = {
   bankDetailsSource: 'cart',
   bankDetails: { ...DEFAULT_CHECKOUT_BANK_DETAILS },
   paymentPurposeTemplate: 'Оплата за замовлення {orderNumber}',
+  bankPaymentTermBusinessDays: 5,
   nextSteps: DEFAULT_CHECKOUT_NEXT_STEPS.map((step) => ({ ...step })),
   gdprConsentText:
     'Я погоджуюся з обробкою персональних даних та умовами використання.',

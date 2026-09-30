@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   fetchBackstageWholesaleInquiries,
+  syncWholesaleInquiryToAbra,
   updateBackstageWholesaleInquiryStatus,
   type WholesaleInquiryListItem,
   type WholesaleInquiryStatus,
@@ -37,6 +38,28 @@ function statusVariant(status: WholesaleInquiryStatus): 'default' | 'secondary' 
   return 'outline'
 }
 
+function erpSyncLabel(status: string | null): string {
+  switch (status) {
+    case 'SYNCED':
+      return 'Синхронізовано з ABRA'
+    case 'PENDING_ERP':
+      return 'Очікує синхронізації'
+    case 'FAILED':
+      return 'Помилка синхронізації'
+    case 'NOT_REQUIRED':
+    case null:
+    default:
+      return 'Не синхронізовано'
+  }
+}
+
+function erpSyncVariant(status: string | null): 'default' | 'secondary' | 'outline' | 'destructive' {
+  if (status === 'SYNCED') return 'default'
+  if (status === 'FAILED') return 'destructive'
+  if (status === 'PENDING_ERP') return 'secondary'
+  return 'outline'
+}
+
 export default function BackstageWholesaleInquiriesPage() {
   const { locale } = useBackstageUiLocale()
   const [items, setItems] = useState<WholesaleInquiryListItem[]>([])
@@ -46,6 +69,7 @@ export default function BackstageWholesaleInquiriesPage() {
   const [statusFilter, setStatusFilter] = useState<WholesaleInquiryStatus | 'ALL'>('ALL')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [syncingId, setSyncingId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -73,6 +97,24 @@ export default function BackstageWholesaleInquiriesPage() {
       toast.success('Статус оновлено.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося оновити статус.')
+    }
+  }
+
+  const syncAbra = async (id: string) => {
+    setSyncingId(id)
+    try {
+      const result = await syncWholesaleInquiryToAbra(id)
+      // Refetch to reflect the true persisted erpSyncStatus / erpLastErrorMessage.
+      await load()
+      if (result.ok) {
+        toast.success(result.message || 'Синхронізовано з ABRA Flexi.')
+      } else {
+        toast.error(result.message || 'Не вдалося синхронізувати з ABRA Flexi.')
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Не вдалося синхронізувати з ABRA Flexi.')
+    } finally {
+      setSyncingId(null)
     }
   }
 
@@ -136,7 +178,12 @@ export default function BackstageWholesaleInquiriesPage() {
                         {item.fullName} · {item.city}
                       </p>
                     </div>
-                    <Badge variant={statusVariant(item.status)}>{statusLabel(item.status)}</Badge>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={statusVariant(item.status)}>{statusLabel(item.status)}</Badge>
+                      <Badge variant={erpSyncVariant(item.erpSyncStatus)}>
+                        {erpSyncLabel(item.erpSyncStatus)}
+                      </Badge>
+                    </div>
                   </div>
                   <div className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
                     <p>
@@ -171,7 +218,25 @@ export default function BackstageWholesaleInquiriesPage() {
                     {formatDateTime(item.createdAt, locale)} · {item.marketRegion.toUpperCase()} ·{' '}
                     {item.locale}
                   </p>
+                  {item.erpSyncStatus === 'FAILED' && item.erpLastErrorMessage ? (
+                    <p className="text-xs text-destructive">{item.erpLastErrorMessage}</p>
+                  ) : null}
+                  {item.erpNativeKod ? (
+                    <p className="text-xs text-muted-foreground">ABRA Adresář: {item.erpNativeKod}</p>
+                  ) : null}
                   <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={syncingId === item.id}
+                      onClick={() => void syncAbra(item.id)}
+                    >
+                      {syncingId === item.id ? (
+                        <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                      ) : null}
+                      Зберегти в ABRA
+                    </Button>
                     {item.status !== 'IN_PROGRESS' ? (
                       <Button
                         type="button"

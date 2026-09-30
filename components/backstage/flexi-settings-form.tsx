@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, RefreshCw } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
-import { FlexiQueueCard } from '@/components/backstage/flexi-queue-card'
+import { FlexiAutoSyncCard } from '@/components/backstage/flexi-auto-sync-card'
 import { FormSaveBar } from '@/components/backstage/form-save-bar'
 
 import { Button } from '@/components/ui/button'
@@ -83,6 +83,11 @@ const EMPTY: FlexiPublicSettings = {
   boxesCenikKod: 'BOXES',
   palletCenikKod: '',
   codFeeCenikKod: 'COD',
+  advanceDocTypeCode: '',
+  bankAccountCodeCard: '',
+  bankAccountCodeBank: '',
+  stripeClearingBankDocTypeCode: '',
+  wholesaleAdresarLabelCode: '',
   deliveryMethodCodes: { ...DEFAULT_DELIVERY_METHOD_CODES },
   defaultCategoryId: '',
   stromRootCode: 'STR_CEN',
@@ -150,6 +155,11 @@ function editableFlexiSnapshot(
     boxesCenikKod: settings.boxesCenikKod,
     palletCenikKod: settings.palletCenikKod,
     codFeeCenikKod: settings.codFeeCenikKod,
+    advanceDocTypeCode: settings.advanceDocTypeCode,
+    bankAccountCodeCard: settings.bankAccountCodeCard,
+    bankAccountCodeBank: settings.bankAccountCodeBank,
+    stripeClearingBankDocTypeCode: settings.stripeClearingBankDocTypeCode,
+    wholesaleAdresarLabelCode: settings.wholesaleAdresarLabelCode,
     deliveryMethodCodes: settings.deliveryMethodCodes,
     defaultCategoryId: settings.defaultCategoryId,
     stromRootCode: settings.stromRootCode,
@@ -228,6 +238,11 @@ export function FlexiSettingsForm() {
         boxesCenikKod: settings.boxesCenikKod,
         palletCenikKod: settings.palletCenikKod,
         codFeeCenikKod: settings.codFeeCenikKod,
+        advanceDocTypeCode: settings.advanceDocTypeCode,
+        bankAccountCodeCard: settings.bankAccountCodeCard,
+        bankAccountCodeBank: settings.bankAccountCodeBank,
+        stripeClearingBankDocTypeCode: settings.stripeClearingBankDocTypeCode,
+        wholesaleAdresarLabelCode: settings.wholesaleAdresarLabelCode,
         deliveryMethodCodes: settings.deliveryMethodCodes,
         defaultCategoryId: settings.defaultCategoryId,
         stromRootCode: settings.stromRootCode,
@@ -461,6 +476,66 @@ export function FlexiSettingsForm() {
                 value={settings.codFeeCenikKod ?? 'COD'}
                 onChange={(e) => setSettings((s) => ({ ...s, codFeeCenikKod: e.target.value }))}
                 placeholder="COD"
+              />
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <Label className="text-sm font-semibold">Záloha / банк (EU order/payment)</Label>
+              <p className="text-xs text-muted-foreground">
+                Коди довідників ABRA Flexi для авансового рахунку (ZÁLOHA), банківських рахунків
+                картки/банк. переказу та клірингу Stripe.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="flexi-advance-doctype">Тип документу ZÁLOHA (advanceDocTypeCode)</Label>
+              <Input
+                id="flexi-advance-doctype"
+                value={settings.advanceDocTypeCode ?? ''}
+                onChange={(e) => setSettings((s) => ({ ...s, advanceDocTypeCode: e.target.value }))}
+                placeholder="ZAL"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="flexi-bank-account-card">Банк. рахунок для картки (bankAccountCodeCard)</Label>
+              <Input
+                id="flexi-bank-account-card"
+                value={settings.bankAccountCodeCard ?? ''}
+                onChange={(e) => setSettings((s) => ({ ...s, bankAccountCodeCard: e.target.value }))}
+                placeholder="STRIPE"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="flexi-bank-account-bank">Банк. рахунок для переказу (bankAccountCodeBank)</Label>
+              <Input
+                id="flexi-bank-account-bank"
+                value={settings.bankAccountCodeBank ?? ''}
+                onChange={(e) => setSettings((s) => ({ ...s, bankAccountCodeBank: e.target.value }))}
+                placeholder="BANKOVNÍ ÚČET"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="flexi-stripe-clearing-doctype">
+                Тип документу «банка» для Stripe (stripeClearingBankDocTypeCode)
+              </Label>
+              <Input
+                id="flexi-stripe-clearing-doctype"
+                value={settings.stripeClearingBankDocTypeCode ?? ''}
+                onChange={(e) =>
+                  setSettings((s) => ({ ...s, stripeClearingBankDocTypeCode: e.target.value }))
+                }
+                placeholder="порожньо = кліринг Stripe вимкнено"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="flexi-wholesale-adresar-label">
+                Код мітки Adresář для гуртових заявок (wholesaleAdresarLabelCode)
+              </Label>
+              <Input
+                id="flexi-wholesale-adresar-label"
+                value={settings.wholesaleAdresarLabelCode ?? ''}
+                onChange={(e) =>
+                  setSettings((s) => ({ ...s, wholesaleAdresarLabelCode: e.target.value }))
+                }
+                placeholder="порожньо = без мітки"
               />
             </div>
             <div className="space-y-3 sm:col-span-2">
@@ -710,7 +785,7 @@ export function FlexiSettingsForm() {
                     ['categoryDescriptions', 'Опис (txtNad)'],
                     ['categoryFooters', 'Footer опис (txtPod)'],
                     ['categoryLatinName', 'Latin name'],
-                    ['categoryTree', 'Дерево (parent, position) — лише при створенні'],
+                    ['categoryTree', 'Дерево (parent, position) — з ABRA при sync'],
                   ] as const
                 ).map(([key, label]) => (
                   <div key={key} className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
@@ -733,13 +808,14 @@ export function FlexiSettingsForm() {
         </CardContent>
       </Card>
 
+      <FlexiAutoSyncCard />
+
       <Card>
         <CardHeader>
-          <CardTitle>Webhook — основний live-sync</CardTitle>
+          <CardTitle>Webhook — URL / secKey (технічне)</CardTitle>
           <CardDescription>
-            Flexi сам надсилає зміни (ціна, залишок, дерево, замовлення). Це не те саме, що розклад
-            прайсу і не те саме, що підстраховка журналу нижче. Вимкнути webhook ≠ зупинити poll /
-            експорт замовлень / checkout.
+            URL і секрет для endpoint. Увімкнення/вимкнення Auto Sync — у картці вище. Експорт
+            замовлень SITE→ABRA не залежить від Auto Sync.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -752,10 +828,8 @@ export function FlexiSettingsForm() {
               Nest endpoint:{' '}
               <code className="text-xs">POST &#123;API_PUBLIC_URL&#125;/flexi/webhook</code>
             </li>
-            <li>
-              Збережіть URL + secKey нижче → «Підключити webhook» (PUT hooks.json?format=JSON&amp;secKey=…)
-            </li>
-            <li>Flexi надсилає зміни cenik / strom / strom-cenik / skladova-karta / objednavka-prijata</li>
+            <li>Збережіть URL + secKey нижче, потім увімкніть Auto Sync у картці вище</li>
+            <li>Flexi надсилає зміни cenik / strom / skladova-karta / objednavka-prijata</li>
           </ol>
 
           <div className="rounded-lg border p-3 text-sm space-y-1">
@@ -826,62 +900,72 @@ export function FlexiSettingsForm() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={Boolean(busy)}
-              onClick={() =>
-                void run('hook', async () => {
-                  const result = await registerFlexiWebhook()
-                  await load()
-                  return result
-                })
-              }
-            >
-              {busy === 'hook' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Підключити webhook
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={Boolean(busy)}
-              onClick={() =>
-                void run('hook-off', async () => {
-                  const result = await disableFlexiWebhook()
-                  await load()
-                  return result
-                })
-              }
-            >
-              {busy === 'hook-off' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Вимкнути webhook
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={Boolean(busy)}
-              onClick={() =>
-                void run('hook-status', async () => {
-                  const result = await refreshFlexiWebhookStatus()
-                  await load()
-                  return result
-                })
-              }
-            >
-              {busy === 'hook-status' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Оновити статус
-            </Button>
-          </div>
+          <details className="rounded-lg border border-dashed p-3">
+            <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
+              Діагностика webhook (не для щоденної роботи)
+            </summary>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Для звичайного ON/OFF використовуйте картку Auto Sync вище. Ці кнопки — лише ручна
+              перереєстрація URL у Flexi.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={Boolean(busy)}
+                onClick={() =>
+                  void run('hook', async () => {
+                    const result = await registerFlexiWebhook()
+                    await load()
+                    return result
+                  })
+                }
+              >
+                {busy === 'hook' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Перереєструвати webhook у Flexi
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={Boolean(busy)}
+                onClick={() =>
+                  void run('hook-off', async () => {
+                    const result = await disableFlexiWebhook()
+                    await load()
+                    return result
+                  })
+                }
+              >
+                {busy === 'hook-off' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Видалити webhook у Flexi
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={Boolean(busy)}
+                onClick={() =>
+                  void run('hook-status', async () => {
+                    const result = await refreshFlexiWebhookStatus()
+                    await load()
+                    return result
+                  })
+                }
+              >
+                {busy === 'hook-status' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Оновити статус
+              </Button>
+            </div>
+          </details>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Підстраховка журналу змін (не розклад прайсу)</CardTitle>
+          <CardTitle>Резервний poll змін (не розклад прайсу)</CardTitle>
           <CardDescription>
-            Раз на N годин Nest питає Flexi «що нового з закладки». Це запас, якщо webhook не
-            дійшов. Не проходить увесь прайс і не замінює кнопку «Оновити каталог». 0 = вимкнено.
+            Раз на N годин Nest питає Flexi «що нового з baseline» і ставить live refresh (не
+            історичний replay). Працює лише коли Auto Sync увімкнено. 0 = вимкнено. Значення
+            зберігається навіть коли Auto Sync OFF.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1141,15 +1225,15 @@ export function FlexiSettingsForm() {
 
           <details className="rounded-lg border p-3">
             <summary className="cursor-pointer text-sm font-medium">
-              Ремонт і додатково (журнал / повний прайс)
+              Ремонт і додатково (live poll / повний прайс)
             </summary>
             <div className="mt-3 space-y-3">
               <div className="flex flex-col gap-2 rounded-lg border border-dashed p-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 space-y-1">
-                  <p className="font-medium">Наздогнати журнал змін</p>
+                  <p className="font-medium">Live poll змін з baseline</p>
                   <p className="text-sm text-muted-foreground">
-                    Changes API з курсора — якщо webhook відстав і ви ще не робили ручний знімок
-                    вище. Коли webhook живий — рідко потрібно.
+                    Changes API → coalesce → GET current state. Не відтворює історію FlexiChangeEvent.
+                    Зазвичай достатньо webhook або «Оновити всі дані з ABRA».
                   </p>
                 </div>
                 <Button
@@ -1169,7 +1253,7 @@ export function FlexiSettingsForm() {
                   ) : (
                     <RefreshCw className="h-4 w-4" />
                   )}
-                  Наздогнати журнал
+                  Live poll зараз
                 </Button>
               </div>
 
@@ -1201,8 +1285,6 @@ export function FlexiSettingsForm() {
           </details>
         </CardContent>
       </Card>
-      <FlexiQueueCard />
-
       <FormSaveBar onSave={() => void save()} saving={saving} isDirty={isDirty} sticky />
     </div>
   )

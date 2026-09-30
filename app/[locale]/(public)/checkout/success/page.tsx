@@ -334,11 +334,17 @@ function resolvePaymentNextSteps(
   }
 
   if (isBankTransferPaymentMethod(primary.paymentMethod)) {
-    return [
+    const steps = [
       { title: t('nextBank1Title'), description: t('nextBank1Body') },
       { title: t('nextBank2Title'), description: t('nextBank2Body') },
       { title: t('nextBank3Title'), description: t('nextBank3Body') },
     ]
+    // Dispatch calendar was enabled at checkout and the customer picked a
+    // date — clarify it does not extend the bank payment deadline.
+    if (primary.preferredShipDate) {
+      steps.push({ title: t('nextBank4Title'), description: t('nextBank4Body') })
+    }
+    return steps
   }
 
   if (isCodPaymentMethod(primary.paymentMethod)) {
@@ -628,6 +634,7 @@ function SuccessContent() {
       : { title: t('resultLoadingTitle'), subtitle: t('successLoadingDetails') }
 
   const deadlineLabel = formatPaymentDeadline(primary?.paymentExpiresAt, locale)
+  const bankDueLabel = formatPaymentDeadline(primary?.paymentDueAt, locale)
 
   const supportEmail = resolvePublicSupportEmail({
     store: storeSettings,
@@ -821,6 +828,12 @@ function SuccessContent() {
                   <p className="font-semibold tabular-nums text-foreground">
                     {formatMoney(primary.totalAmount)}
                   </p>
+                </div>
+              ) : null}
+              {bankDueLabel ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  <p className="font-medium">{t('bankPaymentDueDate', { date: bankDueLabel })}</p>
+                  <p className="mt-1 text-xs">{t('bankPaymentDueWarning')}</p>
                 </div>
               ) : null}
             </div>

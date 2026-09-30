@@ -46,6 +46,8 @@ const EMPTY: DispatchCalendarSettings = {
   minLeadDays: 0,
   dailyCapacity: 100,
   externalReservedByDate: {},
+  shippingLeadTimeMinBusinessDays: 2,
+  shippingLeadTimeMaxBusinessDays: 5,
   shippingLeadNotice: {
     enabled: false,
     showMode: 'when_calendar_off',
@@ -62,6 +64,8 @@ function settingsSnapshot(s: DispatchCalendarSettings): string {
     minLeadDays: s.minLeadDays,
     dailyCapacity: s.dailyCapacity,
     externalReservedByDate: s.externalReservedByDate,
+    shippingLeadTimeMinBusinessDays: s.shippingLeadTimeMinBusinessDays,
+    shippingLeadTimeMaxBusinessDays: s.shippingLeadTimeMaxBusinessDays,
     shippingLeadNotice: s.shippingLeadNotice,
   })
 }
@@ -304,6 +308,51 @@ export function DispatchCalendarSettingsForm() {
               {d.label}
             </label>
           ))}
+        </div>
+      </div>
+
+      <div className="space-y-3 rounded-lg border p-4">
+        <div>
+          <p className="font-medium">SLA відправки замовлення (Order.shipByDate)</p>
+          <p className="text-sm text-muted-foreground">
+            Відкриті робочі дні від дати оплати (картка/банк) або від дати створення (накладений
+            платіж). Діє незалежно від календаря дат вище.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Мін. термін відправки (роб. днів)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={30}
+              value={settings.shippingLeadTimeMinBusinessDays}
+              onChange={(e) =>
+                patchSettings((s) => ({
+                  ...s,
+                  shippingLeadTimeMinBusinessDays: Math.max(0, Number(e.target.value) || 0),
+                }))
+              }
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Макс. термін відправки (роб. днів)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={30}
+              value={settings.shippingLeadTimeMaxBusinessDays}
+              onChange={(e) =>
+                patchSettings((s) => ({
+                  ...s,
+                  shippingLeadTimeMaxBusinessDays: Math.max(0, Number(e.target.value) || 0),
+                }))
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              Це значення визначає Order.shipByDate (дедлайн відправки).
+            </p>
+          </div>
         </div>
       </div>
 

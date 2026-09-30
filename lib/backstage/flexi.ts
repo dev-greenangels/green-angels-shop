@@ -71,6 +71,16 @@ export type FlexiPublicSettings = {
   /** Empty = pallet line not exported until ABRA ceník exists. */
   palletCenikKod: string
   codFeeCenikKod: string
+  /** ABRA doc type code for the ZÁLOHA advance invoice (createAdvanceInvoice). */
+  advanceDocTypeCode: string
+  /** ABRA bank account code used as bankovniUcet when paid by card (Stripe). */
+  bankAccountCodeCard: string
+  /** ABRA bank account code used as bankovniUcet for bank-transfer orders. */
+  bankAccountCodeBank: string
+  /** ABRA "banka" doc type code for the Stripe clearing entry (registerMatchPayment). */
+  stripeClearingBankDocTypeCode: string
+  /** ABRA Adresář label/kategorie code applied to wholesale-inquiry contacts on sync. */
+  wholesaleAdresarLabelCode: string
   /** Website deliveryMethod slug → Flexi forma-dopravy abbreviation. */
   deliveryMethodCodes: Record<string, string>
   defaultCategoryId: string
@@ -87,6 +97,8 @@ export type FlexiPublicSettings = {
   webhookRemoteId: string
   webhookRegistrationStatus: FlexiWebhookRegistrationStatus
   webhookLastRegisterAt?: string
+  lastWebhookReceivedAt?: string
+  lastWebhookTestAt?: string
   webhookLastError?: string
   hasUsername: boolean
   documentSend: {
@@ -124,6 +136,11 @@ export type FlexiSettingsPatch = Partial<{
   boxesCenikKod: string
   palletCenikKod: string
   codFeeCenikKod: string
+  advanceDocTypeCode: string
+  bankAccountCodeCard: string
+  bankAccountCodeBank: string
+  stripeClearingBankDocTypeCode: string
+  wholesaleAdresarLabelCode: string
   deliveryMethodCodes: Record<string, string>
   defaultCategoryId: string
   stromRootCode: string
@@ -420,3 +437,227 @@ export async function closeFlexiBacklogTier(opts: {
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()
 }
+
+export type FlexiOperationLogEntry = {
+  id: string
+  at: string
+  operation: string
+  status: 'ok' | 'error' | 'running'
+  durationMs?: number
+  initiatedBy?: string
+  refreshed?: number
+  ignored?: number
+  failed?: number
+  error?: string
+  detail?: string
+  webhookAccepting?: boolean
+}
+
+export type FlexiApiUsageSnapshot = {
+  source: 'LOCAL'
+  used: number
+  limit: number
+  percent: number
+  dateUtc: string
+  breakdown: {
+    catalog: number
+    live: number
+    orders: number
+    checkout: number
+    fullRefresh: number
+    other: number
+  }
+  note: string
+}
+
+export type FlexiOperationsSnapshot = {
+  entries: FlexiOperationLogEntry[]
+  webhookAccepting: boolean
+  webhookRemoteId: string
+  webhookUrl: string
+  globalVersion: number
+  lastSyncAt?: string
+  lastSyncStatus?: string
+  lastStromSyncAt?: string
+  lastWebhookRegisterAt?: string
+  lastWebhookReceivedAt?: string
+  lastWebhookTestAt?: string
+  webhookLastError?: string
+  ignoredEvidence: Record<string, number>
+  jobs: { waiting: number; active: number; delayed: number; failed: number }
+  healthStatus?: 'healthy' | 'error' | 'disabled' | 'degraded'
+  webhookDeliveryStatus?:
+    | 'off'
+    | 'unreachable_url'
+    | 'registered_waiting'
+    | 'test_only'
+    | 'receiving'
+    | 'error'
+  openFailures?: Array<{ key: string; at: string; message: string }>
+  apiUsage?: FlexiApiUsageSnapshot
+  remoteHooks?: Array<{ id: string; url: string; lastVersion?: number }>
+}
+
+export type FlexiFullRefreshResponse = {
+  ok: boolean
+  message: string
+  baselineBefore?: number
+  baselineAfter?: number
+  bridgeRefreshed?: number
+  stage?: string
+  counts?: {
+    categories?: number
+    products?: number
+    variants?: number
+    cenikUpdated?: number
+    cenikUnmatched?: number
+    unpublished?: number
+    deactivatedCategories?: number
+    ordersChecked?: number
+    ordersUpdated?: number
+    bridgeEntitiesRefreshed?: number
+    durationMs?: number
+  }
+}
+
+export async function fetchFlexiOperations(): Promise<FlexiOperationsSnapshot> {
+  const res = await fetch('/api/backstage/flexi/operations', {
+    credentials: 'include',
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function runFlexiFullRefresh(): Promise<FlexiFullRefreshResponse> {
+  const res = await fetch('/api/backstage/flexi/full-refresh/run', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function disableFlexiAutoSync(): Promise<{ ok: boolean; message: string }> {
+  const res = await fetch('/api/backstage/flexi/auto-sync/disable', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function enableFlexiAutoSyncWithoutUpdate(): Promise<{
+  ok: boolean
+  message: string
+  baseline?: number
+}> {
+  const res = await fetch('/api/backstage/flexi/auto-sync/enable-without-update', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function updateAndEnableFlexiAutoSync(): Promise<{
+  ok: boolean
+  message: string
+  baseline?: number
+}> {
+  const res = await fetch('/api/backstage/flexi/auto-sync/update-and-enable', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function runFlexiOrderReconcile(): Promise<{ ok: boolean; message: string }> {
+  const res = await fetch('/api/backstage/flexi/orders/reconcile/run', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export type FlexiLegacyJournalPreflight = {
+  total: number
+  byEvidence: Array<{
+    evidence: string
+    count: number
+    classification: string
+    deleteCount: number
+    deleteRecoverableWithoutReplay: boolean
+  }>
+  unknownEvidence: Array<{ evidence: string; count: number }>
+  deleteByEvidence: Array<{
+    evidence: string
+    count: number
+    classification: string
+    recoverableWithoutReplay: boolean
+  }>
+  globalVersion: number
+  webhookAccepting: boolean
+  normalRuntimeDependsOnJournal: false
+  safeToRetire: boolean
+  blockers: string[]
+}
+
+export type FlexiLegacyRetireResult = {
+  ok: boolean
+  message: string
+  deleted: number
+  globalVersionBefore: number
+  globalVersionAfter: number
+  globalVersionUnchangedByDelete: boolean
+  autoSyncRemainsOff: boolean
+  stage?: string
+}
+
+export async function fetchFlexiLegacyJournalPreflight(): Promise<FlexiLegacyJournalPreflight> {
+  const res = await fetch('/api/backstage/flexi/recovery/legacy-journal/preflight', {
+    method: 'GET',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export async function downloadFlexiLegacyJournalBackup(): Promise<void> {
+  const res = await fetch('/api/backstage/flexi/recovery/legacy-journal/export', {
+    method: 'GET',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `flexi-change-event-legacy-${new Date().toISOString().slice(0, 10)}.jsonl`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export async function retireFlexiLegacyJournal(): Promise<FlexiLegacyRetireResult> {
+  const res = await fetch('/api/backstage/flexi/recovery/retire-legacy-journal', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ confirm: 'RETIRE_LEGACY_FLEXI_JOURNAL' }),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+

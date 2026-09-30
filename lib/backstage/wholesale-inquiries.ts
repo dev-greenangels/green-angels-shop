@@ -16,6 +16,23 @@ export type WholesaleInquiryListItem = {
   companyVatId: string | null
   consentAt: string | null
   createdAt: string
+  /** ABRA Flexi Adresář sync correlation id (ext:GA-WHO:{id} or matched existing). */
+  externalErpId: string | null
+  erpNativeId: string | null
+  erpNativeKod: string | null
+  /** NOT_REQUIRED | PENDING_ERP | SYNCED | FAILED */
+  erpSyncStatus: string | null
+  erpSyncedAt: string | null
+  erpLastErrorMessage: string | null
+}
+
+export type WholesaleInquirySyncAbraResult = {
+  ok: boolean
+  message: string
+  externalId?: string
+  nativeId?: string
+  nativeKod?: string
+  skipped?: boolean
 }
 
 export type WholesaleInquiryPage = {
@@ -68,6 +85,22 @@ export async function updateBackstageWholesaleInquiryStatus(
     window.dispatchEvent(new CustomEvent('ga:wholesale-new-count-refresh'))
   }
   return res.json()
+}
+
+export async function syncWholesaleInquiryToAbra(
+  id: string,
+): Promise<WholesaleInquirySyncAbraResult> {
+  const res = await fetch(`/api/backstage/wholesale-inquiries/${id}/sync-abra`, {
+    method: 'POST',
+    credentials: 'include',
+  })
+  const data = (await res.json().catch(() => ({}))) as WholesaleInquirySyncAbraResult & {
+    error?: string
+  }
+  if (!res.ok) {
+    throw new Error(data.error || 'Не вдалося синхронізувати з ABRA Flexi')
+  }
+  return data
 }
 
 export async function fetchWholesaleInquiriesNewCount(): Promise<number> {

@@ -101,8 +101,9 @@ export function FlexiQueueCard() {
       <CardHeader>
         <CardTitle>Незакриті зміни</CardTitle>
         <CardDescription>
-          Журнал V (курсор poll) vs відкриті FlexiChangeEvent. Застряглі події блокують курсор;
-          при рестарті API worker знову обробляє backlog (якщо не перевищено reconcile threshold).
+          Журнал V / FlexiChangeEvent — legacy. Новий live path не створює PENDING backlog.
+          Після Full Refresh production recovery очищає таблицю окремою ADMIN-операцією (не
+          автоматично).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -38,9 +38,17 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
 import { useStoreSettings } from '@/components/providers/store-settings-provider'
+import { fetchBackstageSettings } from '@/lib/backstage/settings'
 import {
   formatOrderBillingPersonName,
   formatOrderCustomerName,
@@ -65,6 +73,7 @@ import {
 import {
   deleteBackstageOrder,
   fetchBackstageOrder,
+  markBackstageBankTransferPaid,
   patchBackstageOrder,
   patchBackstageOrderStatus,
   syncBackstageOrderErp,
@@ -112,6 +121,10 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
   const [order, setOrder] = useState<BackstageOrderDetail | null>(null)
   const [status, setStatus] = useState<OrderStatus>('PENDING')
   const [ttn, setTtn] = useState('')
+  const [carrier, setCarrier] = useState('')
+  /** UA-only Nova Poshta ТТН flow vs generic EU carrier tracking — no context
+   *  provider wraps backstage, so fetch once like `useBackstageUiLocale` does. */
+  const [marketRegion, setMarketRegion] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -129,6 +142,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
       setOrder(detail)
       setStatus(detail.status)
       setTtn(detail.trackingNumber ?? '')
+      setCarrier(detail.trackingCarrier ?? '')
     } catch (err) {
       setOrder(null)
       setError(err instanceof Error ? err.message : 'Не вдалося завантажити замовлення.')
@@ -141,10 +155,25 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
     void load()
   }, [load])
 
+  useEffect(() => {
+    let cancelled = false
+    void fetchBackstageSettings()
+      .then((data) => {
+        if (!cancelled) setMarketRegion(data.market?.region ?? 'ua')
+      })
+      .catch(() => {
+        if (!cancelled) setMarketRegion('ua')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const applyOrder = (detail: BackstageOrderDetail) => {
     setOrder(detail)
     setStatus(detail.status)
     setTtn(detail.trackingNumber ?? '')
+    setCarrier(detail.trackingCarrier ?? '')
   }
 
   const handleSaveStatus = async () => {
@@ -165,20 +194,48 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
     }
   }
 
+  const isNpDeliveryMethod = order?.deliveryMethod?.trim().startsWith('nova-poshta') ?? false
+  // UA + NP delivery keeps the Nova Poshta ТТН sync flow; everything else
+  // (any EU deploy, or UA orders on a non-NP carrier) gets generic tracking.
+  const showNpTracking = marketRegion === 'ua' && isNpDeliveryMethod
+
   const handleSaveTtn = async () => {
     if (!order) return
     const next = ttn.trim()
-    if (next === (order.trackingNumber ?? '')) return
+    const nextCarrier = showNpTracking
+      ? next
+        ? 'nova-poshta'
+        : null
+      : next
+        ? carrier.trim() || null
+        : null
+    if (next === (order.trackingNumber ?? '') && nextCarrier === (order.trackingCarrier ?? null)) {
+      return
+    }
     setSaving(true)
     try {
       const updated = await patchBackstageOrder(order.id, {
         trackingNumber: next || null,
-        trackingCarrier: next ? 'nova-poshta' : null,
+        trackingCarrier: nextCarrier,
       })
       applyOrder(updated as BackstageOrderDetail)
       toast.success('ТТН збережено.')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося зберегти ТТН.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleMarkBankPaid = async () => {
+    if (!order) return
+    setSaving(true)
+    try {
+      const updated = await markBackstageBankTransferPaid(order.id)
+      applyOrder(updated)
+      toast.success('Банківський переказ позначено як оплачений.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Не вдалося позначити оплату.')
     } finally {
       setSaving(false)
     }
@@ -487,6 +544,16 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                   <MetaRow label="Оплачено">
                     {formatDateTimeOrDash(order.paidAt, locale, 'datetime')}
                   </MetaRow>
+                  {order.paymentDueAt ? (
+                    <MetaRow label="Термін оплати (банк. переказ)">
+                      {formatDateTimeOrDash(order.paymentDueAt, locale, 'datetime')}
+                    </MetaRow>
+                  ) : null}
+                  {order.shipByDate ? (
+                    <MetaRow label="Відправити до">
+                      {formatDateTimeOrDash(order.shipByDate, locale, 'datetime')}
+                    </MetaRow>
+                  ) : null}
                   {order.stripePaymentId ? (
                     <MetaRow label="Stripe">
                       <Copyable value={order.stripePaymentId} />
@@ -498,6 +565,25 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                     </MetaRow>
                   ) : null}
                 </dl>
+                {(order.paymentMethod === 'bank-transfer' ||
+                  order.paymentMethod === 'bank-transfer-legal') &&
+                order.paymentStatus !== 'success' &&
+                order.status !== 'CANCELLED' ? (
+                  <div className="mt-4">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={saving}
+                      onClick={() => void handleMarkBankPaid()}
+                    >
+                      {saving ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : null}
+                      Позначити оплаченим
+                    </Button>
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
 
@@ -723,23 +809,43 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
               <CardTitle className="text-base">Відправлення / ТТН</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              {!showNpTracking ? (
+                <div className="space-y-2">
+                  <Label htmlFor="order-detail-carrier">Перевізник</Label>
+                  <Select value={carrier || 'none'} onValueChange={(v) => setCarrier(v === 'none' ? '' : v)}>
+                    <SelectTrigger id="order-detail-carrier">
+                      <SelectValue placeholder="Оберіть перевізника" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">—</SelectItem>
+                      <SelectItem value="packeta">Packeta (Zásilkovna)</SelectItem>
+                      <SelectItem value="gls">GLS</SelectItem>
+                      <SelectItem value="manual">Інше / вручну</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null}
               <div className="space-y-2">
                 <Label htmlFor="order-detail-ttn">Номер ТТН</Label>
                 <Input
                   id="order-detail-ttn"
                   value={ttn}
                   onChange={(e) => setTtn(e.target.value)}
-                  placeholder="2045xxxxxxxx"
+                  placeholder={showNpTracking ? '2045xxxxxxxx' : 'Трек-номер'}
                 />
               </div>
               <dl className="space-y-2">
-                <MetaRow label="Carrier">{order.trackingCarrier ?? '—'}</MetaRow>
-                <MetaRow label="NP ref">{order.npDocumentRef ?? '—'}</MetaRow>
+                {showNpTracking ? (
+                  <>
+                    <MetaRow label="Carrier">{order.trackingCarrier ?? '—'}</MetaRow>
+                    <MetaRow label="NP ref">{order.npDocumentRef ?? '—'}</MetaRow>
+                  </>
+                ) : null}
                 <MetaRow label="Sync">
                   {formatDateTimeOrDash(order.trackingSyncedAt, locale, 'datetime')}
                 </MetaRow>
               </dl>
-              {!ttn.trim() ? (
+              {showNpTracking && !ttn.trim() ? (
                 <p className="text-xs text-muted-foreground">
                   Спочатку вкажіть і збережіть ТТН, щоб синхронізувати статус з НП.
                 </p>
@@ -749,21 +855,27 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                   type="button"
                   variant="secondary"
                   size="sm"
-                  disabled={saving || ttn.trim() === (order.trackingNumber ?? '')}
+                  disabled={
+                    saving ||
+                    (ttn.trim() === (order.trackingNumber ?? '') &&
+                      (showNpTracking || carrier.trim() === (order.trackingCarrier ?? '')))
+                  }
                   onClick={() => void handleSaveTtn()}
                 >
                   Зберегти ТТН
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={syncing || !ttn.trim()}
-                  onClick={() => void handleSyncTtn()}
-                >
-                  <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${syncing ? 'animate-spin' : ''}`} />
-                  Синхронізувати з НП
-                </Button>
+                {showNpTracking ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={syncing || !ttn.trim()}
+                    onClick={() => void handleSyncTtn()}
+                  >
+                    <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${syncing ? 'animate-spin' : ''}`} />
+                    Синхронізувати з НП
+                  </Button>
+                ) : null}
               </div>
             </CardContent>
           </Card>

@@ -39,6 +39,9 @@ export type DispatchCalendarSettings = {
   dailyCapacity: number
   externalReservedByDate: Record<string, number>
   shippingLeadNotice: ShippingLeadNoticeSettings
+  /** Open-business-days SLA range used for Order.shipByDate (min shown as an estimate, max as the hard deadline). */
+  shippingLeadTimeMinBusinessDays: number
+  shippingLeadTimeMaxBusinessDays: number
 }
 
 export type DispatchDaySlot = {

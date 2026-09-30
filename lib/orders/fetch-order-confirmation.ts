@@ -40,6 +40,12 @@ export type PublicOrderConfirmation = {
   paymentStatus: string | null
   paymentProvider?: string | null
   paymentExpiresAt?: string | null
+  /** Bank-transfer only: end-of-business-day deadline (ISO). preferredShipDate never changes this. */
+  paymentDueAt?: string | null
+  /** COD from create; card/bank get it after payment. */
+  shipByDate?: string | null
+  /** Customer-selected dispatch date, if the calendar was enabled at checkout. */
+  preferredShipDate?: string | null
   canRetry?: boolean
   clientSecret?: string
   publishableKey?: string

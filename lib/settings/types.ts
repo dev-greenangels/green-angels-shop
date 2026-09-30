@@ -419,6 +419,8 @@ export type CartCheckoutSettings = {
   bankDetailsSource: 'cart' | 'store'
   bankDetails: CheckoutBankDetails
   paymentPurposeTemplate: string
+  /** Order.paymentDueAt = createdAt + this many open business days (bank-transfer only). */
+  bankPaymentTermBusinessDays: number
   nextSteps: CheckoutNextStepItem[]
   gdprConsentText: string
   allowShipmentSplit: boolean

@@ -1254,6 +1254,24 @@ export function CartCheckoutSettingsForm({
               Підстановки: {'{orderNumber}'}, {'{orderNumbers}'}
             </p>
           </div>
+          <div className="space-y-2">
+            <Label>Термін оплати банк. переказом (роб. днів)</Label>
+            <Input
+              type="number"
+              min={1}
+              max={30}
+              value={cart.bankPaymentTermBusinessDays ?? DEFAULT_CART_CHECKOUT_SETTINGS.bankPaymentTermBusinessDays}
+              onChange={(e) =>
+                patch({
+                  bankPaymentTermBusinessDays: Math.max(1, Number(e.target.value) || 1),
+                })
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              Дедлайн Order.paymentDueAt = дата створення + це число відкритих робочих днів.
+              Обрана клієнтом дата відправки на нього не впливає.
+            </p>
+          </div>
         </CardContent>
       </Card>
 

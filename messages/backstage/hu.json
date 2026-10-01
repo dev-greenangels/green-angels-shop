@@ -774,7 +774,13 @@
       "whatCard": "Mi",
       "progressCard": "Előrehaladás",
       "resultCard": "Eredmény",
-      "siteCountryHint": "Kirakat ország (nem szállítás/számla)"
+      "siteCountryHint": "Kirakat ország (nem szállítás/számla)",
+      "device": "Eszköz",
+      "deviceMobile": "Mobil",
+      "deviceTablet": "Tablet",
+      "deviceDesktop": "Asztali",
+      "deviceUnknown": "Ismeretlen",
+      "cartNumber": "Kosár száma"
     }
   },
   "valueTypes": {

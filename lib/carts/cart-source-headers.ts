@@ -16,7 +16,11 @@ export const CART_SOURCE_HEADERS = {
   sourceHost: 'x-ga-cart-source-host',
   locale: 'x-ga-cart-locale',
   currency: 'x-ga-cart-currency',
+  /** Truncated browser User-Agent — Nest parses deviceClass/model; not stored raw. */
+  userAgent: 'x-ga-cart-user-agent',
 } as const
+
+const MAX_UA_HEADER_LEN = 512
 
 /** Client → BFF: actual next-intl page locale (not NEXT_LOCALE cookie). */
 export const PAGE_LOCALE_HEADER = 'x-ga-page-locale'
@@ -110,5 +114,9 @@ export function buildCartSourceHeaders(
   if (host) headers[CART_SOURCE_HEADERS.sourceHost] = host
   if (pageLocale) headers[CART_SOURCE_HEADERS.locale] = pageLocale
   // Intentionally omit currency — Nest resolveCurrencyForCountrySite uses market.countrySites
+  const ua = request.headers.get('user-agent')?.trim()
+  if (ua) {
+    headers[CART_SOURCE_HEADERS.userAgent] = ua.slice(0, MAX_UA_HEADER_LEN)
+  }
   return headers
 }

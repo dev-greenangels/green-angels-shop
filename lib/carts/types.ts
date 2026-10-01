@@ -125,6 +125,8 @@ export type BackstageConvertedOrder = {
 
 export type BackstageCartListItem = {
   id: string
+  cartNumber: number
+  cartNumberFormatted: string
   kind: 'guest' | 'user'
   state: CartActivityState
   activityBucket: 'active' | 'abandoned' | 'converted'
@@ -160,6 +162,10 @@ export type BackstageCartListItem = {
   sourceHost: string | null
   locale: string | null
   currencyCode: string | null
+  /** mobile | tablet | desktop | unknown — best-effort UA at cart origin. */
+  deviceClass?: string | null
+  /** Coarse model when UA exposes it (often null). */
+  deviceModel?: string | null
   /** Checkout-draft context — not captured Cart origin. */
   checkoutDraftCountryCode?: string | null
   checkoutDraftLocale?: string | null
@@ -190,6 +196,8 @@ export type BackstageCartListItem = {
 
 export type BackstageCartDetail = {
   id: string
+  cartNumber: number
+  cartNumberFormatted: string
   kind: 'guest' | 'user'
   state: CartActivityState | null
   activityBucket: 'active' | 'abandoned' | 'converted' | null
@@ -230,6 +238,8 @@ export type BackstageCartDetail = {
     sourceHost: string | null
     locale: string | null
     currencyCode: string | null
+    deviceClass?: string | null
+    deviceModel?: string | null
     checkoutDraftCountryCode?: string | null
     checkoutDraftLocale?: string | null
   }

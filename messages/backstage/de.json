@@ -775,7 +775,13 @@
       "whatCard": "Was",
       "progressCard": "Fortschritt",
       "resultCard": "Ergebnis",
-      "siteCountryHint": "Schaufenster-Land (nicht Lieferung/Rechnung)"
+      "siteCountryHint": "Schaufenster-Land (nicht Lieferung/Rechnung)",
+      "device": "Gerät",
+      "deviceMobile": "Mobil",
+      "deviceTablet": "Tablet",
+      "deviceDesktop": "Desktop",
+      "deviceUnknown": "Unbekannt",
+      "cartNumber": "Warenkorb-Nr."
     }
   },
   "valueTypes": {

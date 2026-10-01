@@ -879,7 +879,13 @@
       "whatCard": "Що",
       "progressCard": "Прогрес",
       "resultCard": "Результат",
-      "siteCountryHint": "Країна вітрини (не доставка/рахунок)"
+      "siteCountryHint": "Країна вітрини (не доставка/рахунок)",
+      "device": "Пристрій",
+      "deviceMobile": "Мобільний",
+      "deviceTablet": "Планшет",
+      "deviceDesktop": "Десктоп",
+      "deviceUnknown": "Невідомий",
+      "cartNumber": "Номер кошика"
     }
   },
   "valueTypes": {

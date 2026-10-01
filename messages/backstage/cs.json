@@ -189,7 +189,13 @@
       "whatCard": "Co",
       "progressCard": "Průběh",
       "resultCard": "Výsledek",
-      "siteCountryHint": "Země výlohy (ne doručení/fakturace)"
+      "siteCountryHint": "Země výlohy (ne doručení/fakturace)",
+      "device": "Zařízení",
+      "deviceMobile": "Mobil",
+      "deviceTablet": "Tablet",
+      "deviceDesktop": "Desktop",
+      "deviceUnknown": "Neznámé",
+      "cartNumber": "Číslo košíku"
     }
   },
   "orderCommunications": {

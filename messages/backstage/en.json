@@ -879,7 +879,13 @@
       "whatCard": "What",
       "progressCard": "Progress",
       "resultCard": "Result",
-      "siteCountryHint": "Storefront country-site (not delivery/billing)"
+      "siteCountryHint": "Storefront country-site (not delivery/billing)",
+      "device": "Device",
+      "deviceMobile": "Mobile",
+      "deviceTablet": "Tablet",
+      "deviceDesktop": "Desktop",
+      "deviceUnknown": "Unknown",
+      "cartNumber": "Cart number"
     }
   },
   "valueTypes": {

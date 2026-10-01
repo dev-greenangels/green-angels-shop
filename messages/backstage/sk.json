@@ -879,7 +879,13 @@
       "whatCard": "Čo",
       "progressCard": "Priebeh",
       "resultCard": "Výsledok",
-      "siteCountryHint": "Krajina výkladu (nie doručenie/fakturácia)"
+      "siteCountryHint": "Krajina výkladu (nie doručenie/fakturácia)",
+      "device": "Zariadenie",
+      "deviceMobile": "Mobil",
+      "deviceTablet": "Tablet",
+      "deviceDesktop": "Desktop",
+      "deviceUnknown": "Neznáme",
+      "cartNumber": "Číslo košíka"
     }
   },
   "valueTypes": {

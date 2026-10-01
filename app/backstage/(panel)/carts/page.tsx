@@ -2,7 +2,16 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ChevronDown, Loader2, RefreshCw, Search } from 'lucide-react'
+import {
+  ChevronDown,
+  HelpCircle,
+  Loader2,
+  Monitor,
+  RefreshCw,
+  Search,
+  Smartphone,
+  Tablet,
+} from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
@@ -62,6 +71,77 @@ function formatAge(ageMs: number): string {
   const hours = Math.floor(minutes / 60)
   if (hours < 48) return `${hours} год`
   return `${Math.floor(hours / 24)} д`
+}
+
+function deviceClassLabel(
+  deviceClass: string | null | undefined,
+  t: (key: string) => string,
+): string {
+  switch (deviceClass) {
+    case 'mobile':
+      return t('deviceMobile')
+    case 'tablet':
+      return t('deviceTablet')
+    case 'desktop':
+      return t('deviceDesktop')
+    case 'unknown':
+      return t('deviceUnknown')
+    default:
+      return t('originUnknown')
+  }
+}
+
+function DeviceClassIcon({
+  deviceClass,
+  className,
+}: {
+  deviceClass: string | null | undefined
+  className?: string
+}) {
+  const iconClass = cn('size-3.5 shrink-0 text-muted-foreground', className)
+  switch (deviceClass) {
+    case 'mobile':
+      return <Smartphone className={iconClass} aria-hidden />
+    case 'tablet':
+      return <Tablet className={iconClass} aria-hidden />
+    case 'desktop':
+      return <Monitor className={iconClass} aria-hidden />
+    case 'unknown':
+      return <HelpCircle className={iconClass} aria-hidden />
+    default:
+      return <HelpCircle className={iconClass} aria-hidden />
+  }
+}
+
+function DeviceClassBadge({
+  deviceClass,
+  deviceModel,
+  t,
+}: {
+  deviceClass: string | null | undefined
+  deviceModel?: string | null
+  t: (key: string) => string
+}) {
+  if (!deviceClass) {
+    return (
+      <span className="inline-flex items-center gap-1 text-muted-foreground">
+        <DeviceClassIcon deviceClass={null} />
+        {t('originUnknown')}
+      </span>
+    )
+  }
+  return (
+    <span
+      className="inline-flex items-center gap-1"
+      title={deviceModel ? `${deviceClassLabel(deviceClass, t)} · ${deviceModel}` : undefined}
+    >
+      <DeviceClassIcon deviceClass={deviceClass} />
+      <span>{deviceClassLabel(deviceClass, t)}</span>
+      {deviceModel ? (
+        <span className="text-muted-foreground">· {deviceModel}</span>
+      ) : null}
+    </span>
+  )
 }
 
 function formatPiiCleanupDate(iso: string, locale: string): string {
@@ -294,6 +374,13 @@ function CartDetailPanel({
             </MetaRow>
           ) : null}
           <MetaRow label={t('sourceDomain')}>{detail.site.sourceHost || t('originUnknown')}</MetaRow>
+          <MetaRow label={t('device')}>
+            <DeviceClassBadge
+              deviceClass={detail.site.deviceClass}
+              deviceModel={detail.site.deviceModel}
+              t={t}
+            />
+          </MetaRow>
           <MetaRow label={t('locale')}>
             {detail.site.locale || t('originUnknown')}
           </MetaRow>
@@ -309,12 +396,21 @@ function CartDetailPanel({
         </DetailSection>
 
         <DetailSection title={t('whoCard')}>
+          <MetaRow label={t('cartNumber')}>
+            <span className="font-mono text-sm font-medium tabular-nums">
+              {detail.cartNumberFormatted}
+            </span>
+          </MetaRow>
           <MetaRow label={t('cartId')}>
-            <span className="break-all font-mono text-xs">{detail.id}</span>
+            <span className="break-all font-mono text-[11px] text-muted-foreground">
+              {detail.id}
+            </span>
           </MetaRow>
           {detail.guestSessionId ? (
             <MetaRow label={t('session')}>
-              <span className="break-all font-mono text-xs">{detail.guestSessionId}</span>
+              <span className="break-all font-mono text-[11px] text-muted-foreground">
+                {detail.guestSessionId}
+              </span>
             </MetaRow>
           ) : null}
           <MetaRow label={t('type')}>
@@ -724,14 +820,14 @@ export default function CartsPage() {
                           </span>
                         </div>
                         <p className="font-medium text-foreground">
-                          {cart.customerName ||
-                            (cart.kind === 'guest'
-                              ? `${t('session')}: ${cart.guestSessionId || '—'}`
-                              : t('noName'))}
+                          {cart.customerName || t('noName')}
+                        </p>
+                        <p className="font-mono text-sm font-medium tabular-nums text-foreground">
+                          {t('cartNumber')}: {cart.cartNumberFormatted}
                         </p>
                         <p className="break-all font-mono text-[11px] leading-snug text-muted-foreground/80">
                           {t('cartId')}: {cart.id}
-                          {cart.kind === 'guest' && cart.guestSessionId && cart.customerName ? (
+                          {cart.kind === 'guest' && cart.guestSessionId ? (
                             <>
                               <br />
                               {t('session')}: {cart.guestSessionId}
@@ -770,6 +866,14 @@ export default function CartsPage() {
                               {t('sourceDomain')}: {cart.sourceHost}
                             </span>
                           ) : null}
+                          <span className="inline-flex items-center gap-1">
+                            {t('device')}:{' '}
+                            <DeviceClassBadge
+                              deviceClass={cart.deviceClass}
+                              deviceModel={cart.deviceModel}
+                              t={t}
+                            />
+                          </span>
                           <span>
                             {t('locale')}: {cart.locale || t('originUnknown')}
                           </span>

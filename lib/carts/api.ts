@@ -1,4 +1,5 @@
 import type { CartMergePreview, CartMergeStrategy, ServerCartLine } from '@/lib/carts/types'
+import { PAGE_LOCALE_HEADER } from '@/lib/carts/cart-source-headers-client'
 import { extractCustomerErrorCode } from '@/lib/api/extract-customer-error-code'
 import { buildPricingQuoteLineItems } from '@/lib/pricing/quote-line-items'
 import type { CartItem } from '@/lib/types'
@@ -18,6 +19,12 @@ function throwCartError(data: unknown): never {
   throw new CartApiError(code ?? 'CART_ERROR', code)
 }
 
+function pageLocaleHeaders(locale?: string | null): Record<string, string> {
+  const value = locale?.trim().toLowerCase()
+  if (!value) return {}
+  return { [PAGE_LOCALE_HEADER]: value }
+}
+
 export async function fetchServerCart(): Promise<ServerCartLine[]> {
   const res = await fetch('/api/carts', { credentials: 'include', cache: 'no-store' })
   if (!res.ok) return []
@@ -25,12 +32,18 @@ export async function fetchServerCart(): Promise<ServerCartLine[]> {
   return Array.isArray(data.items) ? data.items : []
 }
 
-export async function syncServerCart(items: CartItem[]): Promise<ServerCartLine[]> {
+export async function syncServerCart(
+  items: CartItem[],
+  options?: { locale?: string | null },
+): Promise<ServerCartLine[]> {
   const payload = buildPricingQuoteLineItems(items)
   const res = await fetch('/api/carts', {
     method: 'PUT',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...pageLocaleHeaders(options?.locale),
+    },
     body: JSON.stringify({ items: payload }),
   })
   const data = (await res.json().catch(() => ({}))) as { items?: ServerCartLine[] }
@@ -65,12 +78,16 @@ export async function fetchCheckoutDraft(): Promise<{
 /** Best-effort: never throws to callers that soft-fail. */
 export async function patchCheckoutDraft(
   draft: import('@/lib/carts/types').CheckoutDraftV1,
+  options?: { locale?: string | null },
 ): Promise<boolean> {
   try {
     const res = await fetch('/api/carts/checkout-draft', {
       method: 'PATCH',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...pageLocaleHeaders(options?.locale),
+      },
       body: JSON.stringify(draft),
     })
     return res.ok
@@ -80,11 +97,14 @@ export async function patchCheckoutDraft(
 }
 
 /** Best-effort: set checkoutStartedAt once. */
-export async function startCheckoutDraft(): Promise<boolean> {
+export async function startCheckoutDraft(options?: {
+  locale?: string | null
+}): Promise<boolean> {
   try {
     const res = await fetch('/api/carts/checkout-start', {
       method: 'POST',
       credentials: 'include',
+      headers: pageLocaleHeaders(options?.locale),
     })
     return res.ok
   } catch {
@@ -99,11 +119,17 @@ export async function fetchCartMergePreview(): Promise<CartMergePreview | null> 
   return (await res.json()) as CartMergePreview
 }
 
-export async function applyCartMerge(strategy: CartMergeStrategy): Promise<ServerCartLine[]> {
+export async function applyCartMerge(
+  strategy: CartMergeStrategy,
+  options?: { locale?: string | null },
+): Promise<ServerCartLine[]> {
   const res = await fetch('/api/carts/merge', {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...pageLocaleHeaders(options?.locale),
+    },
     body: JSON.stringify({ strategy }),
   })
   const data = (await res.json().catch(() => ({}))) as { items?: ServerCartLine[] }

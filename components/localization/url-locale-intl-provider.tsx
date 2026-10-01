@@ -1,10 +1,10 @@
 'use client'
 
 import { NextIntlClientProvider } from 'next-intl'
-import { useParams } from 'next/navigation'
 import type { ReactNode } from 'react'
 
-import { defaultLocale, isAppLocale } from '@/i18n/routing'
+import { useRouteAppLocale } from '@/components/localization/use-route-locale'
+import { defaultLocale } from '@/i18n/routing'
 import csMessages from '@/messages/cs.json'
 import deMessages from '@/messages/de.json'
 import enMessages from '@/messages/en.json'
@@ -22,17 +22,9 @@ const BASE_MESSAGES: Record<AppLocale, Record<string, unknown>> = {
   cs: csMessages as Record<string, unknown>,
 }
 
-function localeFromParams(params: ReturnType<typeof useParams>): AppLocale {
-  const raw = params?.locale
-  if (typeof raw === 'string' && isAppLocale(raw)) {
-    return raw
-  }
-  return defaultLocale
-}
-
 /** Intl context for UI rendered outside `app/[locale]/layout` (e.g. cart merge dialog). */
 export function UrlLocaleIntlProvider({ children }: { children: ReactNode }) {
-  const locale = localeFromParams(useParams())
+  const locale = useRouteAppLocale() ?? defaultLocale
 
   return (
     <NextIntlClientProvider locale={locale} messages={BASE_MESSAGES[locale]} timeZone="Europe/Kyiv">

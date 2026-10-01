@@ -99,7 +99,7 @@ export function PromotionsPageContent() {
                   onClick={() => setSelectedDiscountTier(null)}
                 >
                   <Sparkles className="h-3 w-3" />
-                  Усі
+                  {t('promotionsFilterAll')}
                 </Button>
                 {tierOptions.map((tier) => (
                   <Button
@@ -143,7 +143,7 @@ export function PromotionsPageContent() {
                   onClick={() => setSelectedDiscountTier(null)}
                 >
                   <Sparkles className="h-3 w-3" />
-                  Усі
+                  {t('promotionsFilterAll')}
                 </Button>
                 {tierOptions.map((tier) => (
                   <Button

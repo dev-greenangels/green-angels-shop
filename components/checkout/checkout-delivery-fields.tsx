@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/select'
 import type { CheckoutShipmentSlice } from '@/lib/checkout/shipment-slice'
 import { applyShipmentSliceToForm } from '@/lib/checkout/shipment-slice'
+import { canUseDeliveryAddressSameAsBilling } from '@/lib/checkout/delivery-same-as-billing'
 import {
   searchNpSettlements,
   searchNpStreets,
@@ -174,6 +175,14 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
     deliveryPhonePolicyProp ?? defaultDeliveryPhonePolicy(marketRegion)
   const fieldOptions = { marketRegion, deliveryPhonePolicy }
   const isSk = marketRegion === 'sk'
+  const canSameAsBilling = useMemo(
+    () =>
+      canUseDeliveryAddressSameAsBilling(
+        orderer.billingCountryCode,
+        enabledDeliveryCountries,
+      ),
+    [orderer.billingCountryCode, enabledDeliveryCountries],
+  )
   const sanitizePersonName = (value: string) =>
     sanitizePersonNameForMarket(value, marketRegion)
 
@@ -531,20 +540,33 @@ export const CheckoutDeliveryFields = memo(function CheckoutDeliveryFields({
         shipment.deliveryMethod === 'gls-courier') && (
         <div className="space-y-4">
           {isSk ? (
-            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
-              <Checkbox
-                checked={Boolean(orderer.deliveryAddressSameAsBilling)}
-                onCheckedChange={(checked) =>
-                  onPatchShipment({
-                    deliveryAddressSameAsBilling: checked === true,
-                  })
-                }
-                className="mt-0.5"
-              />
-              <span className="text-sm leading-snug text-foreground">
-                {t('deliveryAddressSameAsBilling')}
-              </span>
-            </label>
+            <div className="space-y-2">
+              <label
+                className={cn(
+                  'flex items-start gap-3 rounded-xl border border-border/60 bg-muted/20 px-4 py-3',
+                  canSameAsBilling ? 'cursor-pointer' : 'cursor-not-allowed opacity-70',
+                )}
+              >
+                <Checkbox
+                  checked={Boolean(orderer.deliveryAddressSameAsBilling) && canSameAsBilling}
+                  disabled={!canSameAsBilling}
+                  onCheckedChange={(checked) =>
+                    onPatchShipment({
+                      deliveryAddressSameAsBilling: checked === true,
+                    })
+                  }
+                  className="mt-0.5"
+                />
+                <span className="text-sm leading-snug text-foreground">
+                  {t('deliveryAddressSameAsBilling')}
+                </span>
+              </label>
+              {!canSameAsBilling ? (
+                <p className="px-1 text-xs text-muted-foreground">
+                  {t('deliveryAddressSameAsBillingUnavailable')}
+                </p>
+              ) : null}
+            </div>
           ) : null}
           <div
             className={cn(

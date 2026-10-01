@@ -25,6 +25,15 @@ export type CartActivityState =
   | 'CHECKOUT_ACTIVE'
   | 'CART_ABANDONED'
   | 'CHECKOUT_ABANDONED'
+  | 'CONVERTED'
+
+export type CartCheckoutProgress =
+  | 'CART'
+  | 'CHECKOUT_STARTED'
+  | 'CUSTOMER_DETAILS'
+  | 'DELIVERY'
+  | 'BILLING'
+  | 'PAYMENT'
 
 export type CheckoutDraftV1 = {
   v: 1
@@ -84,22 +93,58 @@ export type CheckoutDraftV1 = {
   shipmentSplitMode?: 'together' | 'split'
   comment?: string
   promoCodes?: string[]
+
+  /**
+   * Last successful checkout quote for Backoffice informational display only.
+   * Never storefront pricing authority — returning customers use live quote.
+   */
+  lastQuote?: CheckoutDraftLastQuote
+}
+
+/** BO-only informational last-seen checkout money. Not pricing authority. */
+export type CheckoutDraftLastQuote = {
+  quotedAt: string
+  currencyCode: string
+  deliveryAmount: number
+  packagingAmount?: number
+  taxAmount?: number
+  grandTotal: number
+  productsSubtotal?: number
+}
+
+export type BackstageCheckoutTotalsBasis =
+  | 'order'
+  | 'last_quote_informational'
+  | 'none'
+
+export type BackstageConvertedOrder = {
+  id: string
+  orderNumber: number
+  orderNumberFormatted: string
 }
 
 export type BackstageCartListItem = {
   id: string
   kind: 'guest' | 'user'
   state: CartActivityState
-  activityBucket: 'active' | 'abandoned'
+  activityBucket: 'active' | 'abandoned' | 'converted'
+  checkoutProgress: CartCheckoutProgress
   updatedAt: string
   createdAt: string
   checkoutStartedAt: string | null
+  closedAt?: string | null
   ageMs: number
   itemCount: number
   totalQuantity: number
   productsSubtotal: number
   currency: string
   productsSubtotalBasis: 'current_retail'
+  /** Informational last checkout / Order delivery — not live retail. */
+  checkoutDeliveryAmount: number | null
+  checkoutGrandTotal: number | null
+  checkoutTotalsCurrency: string | null
+  checkoutTotalsBasis: BackstageCheckoutTotalsBasis
+  checkoutQuoteQuotedAt: string | null
   guestSessionId: string | null
   user: {
     id: string
@@ -110,12 +155,23 @@ export type BackstageCartListItem = {
   customerName: string | null
   customerEmail: string | null
   customerPhone: string | null
+  /** Origin/storefront country-site (sk|hu|at). Not delivery/billing. */
+  countrySiteCode: string | null
+  sourceHost: string | null
   locale: string | null
+  currencyCode: string | null
+  /** Checkout-draft context — not captured Cart origin. */
+  checkoutDraftCountryCode?: string | null
+  checkoutDraftLocale?: string | null
+  /** Alias of countrySiteCode for older UI; prefer countrySiteCode. */
   siteCountryCode: string | null
   deliveryCountryCode: string | null
   billingCountryCode: string | null
   deliveryMethod: string | null
   paymentMethod: string | null
+  convertedOrderId: string | null
+  convertedAt: string | null
+  convertedOrder: BackstageConvertedOrder | null
   hasCheckoutDraftPii: boolean
   piiCleanupAt: string | null
   piiStatus: 'none' | 'scheduled' | 'pending_cleanup'
@@ -136,10 +192,12 @@ export type BackstageCartDetail = {
   id: string
   kind: 'guest' | 'user'
   state: CartActivityState | null
-  activityBucket: 'active' | 'abandoned' | null
+  activityBucket: 'active' | 'abandoned' | 'converted' | null
+  checkoutProgress: CartCheckoutProgress
   updatedAt: string
   createdAt: string
   checkoutStartedAt: string | null
+  closedAt?: string | null
   ageMs: number
   guestSessionId: string | null
   user: BackstageCartListItem['user']
@@ -168,7 +226,12 @@ export type BackstageCartDetail = {
   }
   site: {
     countryCode: string | null
+    countrySiteCode: string | null
+    sourceHost: string | null
     locale: string | null
+    currencyCode: string | null
+    checkoutDraftCountryCode?: string | null
+    checkoutDraftLocale?: string | null
   }
   delivery: {
     countryCode: string | null
@@ -196,9 +259,18 @@ export type BackstageCartDetail = {
   payment: {
     method: string | null
   }
+  convertedOrderId: string | null
+  convertedAt: string | null
+  convertedOrder: BackstageConvertedOrder | null
   productsSubtotal: number
   currency: string
   productsSubtotalBasis: 'current_retail'
+  /** Informational last checkout / Order delivery — not live retail. */
+  checkoutDeliveryAmount: number | null
+  checkoutGrandTotal: number | null
+  checkoutTotalsCurrency: string | null
+  checkoutTotalsBasis: BackstageCheckoutTotalsBasis
+  checkoutQuoteQuotedAt: string | null
   hasCheckoutDraftPii: boolean
   piiCleanupAt: string | null
   piiStatus: 'none' | 'scheduled' | 'pending_cleanup'

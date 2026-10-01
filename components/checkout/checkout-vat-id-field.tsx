@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Check, Loader2, X } from 'lucide-react'
+import { AlertCircle, Check, Loader2, RefreshCw, X } from 'lucide-react'
 
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -14,46 +15,24 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { EU_VIES_VAT_COUNTRY_CODES } from '@/lib/checkout/eu-member-states'
+import { isIntraEuB2bGoodsEligible } from '@/lib/checkout/intra-eu-b2b-eligibility'
+import {
+  resolveCheckoutViesUiState,
+  viesRequestKey,
+} from '@/lib/checkout/vies-status'
 
-type ViesResult = {
+export type CheckoutViesResult = {
   valid: boolean | null
   countryCode: string
   vatNumber: string
   name?: string | null
   address?: string | null
   message?: string | null
+  source?: string | null
 }
 
-const EU_VAT_COUNTRIES = [
-  'AT',
-  'BE',
-  'BG',
-  'CY',
-  'CZ',
-  'DE',
-  'DK',
-  'EE',
-  'EL',
-  'ES',
-  'FI',
-  'FR',
-  'HR',
-  'HU',
-  'IE',
-  'IT',
-  'LT',
-  'LU',
-  'LV',
-  'MT',
-  'NL',
-  'PL',
-  'PT',
-  'RO',
-  'SE',
-  'SI',
-  'SK',
-] as const
-
+const EU_VAT_COUNTRIES = EU_VIES_VAT_COUNTRY_CODES
 const EU_VAT_COUNTRY_SET = new Set<string>(EU_VAT_COUNTRIES)
 
 const MIN_VAT_DIGITS = 4
@@ -81,72 +60,142 @@ export function parseVatInput(
   }
 }
 
+/**
+ * Immediately invalidate prior VIES success when VAT digits/country change.
+ * Exported for unit tests (stale quote protection).
+ */
+export function shouldClearViesOnVatChange(
+  previousKey: string | null,
+  nextCountry: string,
+  nextDigits: string,
+): boolean {
+  const next = viesRequestKey(nextCountry, nextDigits)
+  if (!previousKey) return false
+  if (!nextDigits.replace(/\D/g, '').trim()) return true
+  return previousKey !== next
+}
+
 export function CheckoutVatIdField({
   countryCode,
   onCountryCodeChange,
   value,
   onChange,
   onViesResult,
+  buyerType = 'company',
+  deliveryCountryCode,
 }: {
   countryCode: string
   onCountryCodeChange?: (code: string) => void
   value: string
   onChange: (value: string) => void
-  onViesResult?: (result: ViesResult | null) => void
+  onViesResult?: (result: CheckoutViesResult | null) => void
+  buyerType?: 'individual' | 'company'
+  deliveryCountryCode?: string | null
 }) {
   const t = useTranslations('checkout')
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<ViesResult | null>(null)
+  const [result, setResult] = useState<CheckoutViesResult | null>(null)
   const lastValidatedRef = useRef<string>('')
+  const inFlightKeyRef = useRef<string>('')
+  const abortRef = useRef<AbortController | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const countryRef = useRef(countryCode)
   countryRef.current = countryCode
 
+  const clearVerification = useCallback(() => {
+    abortRef.current?.abort()
+    abortRef.current = null
+    inFlightKeyRef.current = ''
+    lastValidatedRef.current = ''
+    setResult(null)
+    setLoading(false)
+    onViesResult?.(null)
+  }, [onViesResult])
+
   const validate = useCallback(
-    async (cc: string, vatNumber: string) => {
+    async (cc: string, vatNumber: string, opts?: { force?: boolean }) => {
       const digits = vatNumber.replace(/\D/g, '').trim()
       if (digits.length < MIN_VAT_DIGITS) {
-        setResult(null)
-        onViesResult?.(null)
+        abortRef.current?.abort()
+        abortRef.current = null
+        inFlightKeyRef.current = ''
         lastValidatedRef.current = ''
+        setLoading(false)
+        if (!digits) {
+          setResult(null)
+          onViesResult?.(null)
+        } else {
+          const formatResult: CheckoutViesResult = {
+            valid: null,
+            countryCode: cc,
+            vatNumber: digits,
+            source: 'format',
+            message: t('vatIdFormatError'),
+          }
+          setResult(formatResult)
+          onViesResult?.(formatResult)
+        }
         return
       }
 
-      const key = `${cc.toUpperCase()}:${digits}`
-      if (lastValidatedRef.current === key) return
+      const key = viesRequestKey(cc, digits)
+      if (!opts?.force && lastValidatedRef.current === key) return
 
+      abortRef.current?.abort()
+      const controller = new AbortController()
+      abortRef.current = controller
+      inFlightKeyRef.current = key
+      // Stale success must not linger while a new check runs.
+      lastValidatedRef.current = ''
+      setResult(null)
+      onViesResult?.(null)
       setLoading(true)
+
       try {
         const res = await fetch('/api/checkout/vies', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ countryCode: cc, vatNumber: digits }),
+          signal: controller.signal,
         })
-        const data = (await res.json()) as ViesResult & { error?: string }
-        if (!res.ok) throw new Error(data.error || data.message || 'VIES error')
+        const data = (await res.json()) as CheckoutViesResult & { error?: string }
+        if (inFlightKeyRef.current !== key) return
+        if (!res.ok) throw new Error('vies_http')
         lastValidatedRef.current = key
         setResult(data)
         onViesResult?.(data)
-      } catch (err) {
-        const fallback: ViesResult = {
+      } catch {
+        if (controller.signal.aborted) return
+        if (inFlightKeyRef.current !== key) return
+        const fallback: CheckoutViesResult = {
           valid: null,
           countryCode: cc,
           vatNumber: digits,
-          message: err instanceof Error ? err.message : 'VIES unavailable',
+          source: 'unavailable',
+          // Customer UI uses i18n for ERROR — never surface raw HTTP/stack text.
+          message: null,
         }
         lastValidatedRef.current = ''
         setResult(fallback)
         onViesResult?.(fallback)
       } finally {
-        setLoading(false)
+        if (inFlightKeyRef.current === key) {
+          setLoading(false)
+        }
       }
     },
-    [onViesResult],
+    [onViesResult, t],
   )
 
   const scheduleValidate = useCallback(
     (cc: string, vatNumber: string) => {
+      const digits = vatNumber.replace(/\D/g, '').trim()
       if (debounceRef.current) clearTimeout(debounceRef.current)
+      if (digits.length >= MIN_VAT_DIGITS) {
+        // Avoid showing stale VALID / empty-optional while debounce waits.
+        setLoading(true)
+        setResult(null)
+      }
       debounceRef.current = setTimeout(() => {
         void validate(cc, vatNumber)
       }, DEBOUNCE_MS)
@@ -157,6 +206,7 @@ export function CheckoutVatIdField({
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
+      abortRef.current?.abort()
     }
   }, [])
 
@@ -166,9 +216,16 @@ export function CheckoutVatIdField({
       onCountryCodeChange?.(parsed.countryCode)
     }
     onChange(parsed.vatNumber)
-    if (parsed.vatNumber !== value.replace(/\D/g, '')) {
-      setResult(null)
-      lastValidatedRef.current = ''
+    const prevKey = lastValidatedRef.current || inFlightKeyRef.current || null
+    if (
+      shouldClearViesOnVatChange(
+        prevKey,
+        parsed.countryChanged ? parsed.countryCode : countryRef.current,
+        parsed.vatNumber,
+      ) ||
+      parsed.vatNumber !== value.replace(/\D/g, '')
+    ) {
+      clearVerification()
     }
     scheduleValidate(
       parsed.countryChanged ? parsed.countryCode : countryRef.current,
@@ -183,31 +240,71 @@ export function CheckoutVatIdField({
 
   const handleCountryChange = (code: string) => {
     onCountryCodeChange?.(code)
-    setResult(null)
-    lastValidatedRef.current = ''
+    clearVerification()
     scheduleValidate(code, value)
   }
 
-  const statusIcon = loading ? (
-    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-hidden />
-  ) : result?.valid === true ? (
-    <Check className="h-4 w-4 text-primary" aria-hidden />
-  ) : result?.valid === false || (result && result.valid === null) ? (
-    <X className="h-4 w-4 text-destructive" aria-hidden />
-  ) : null
+  const handleRetry = () => {
+    void validate(countryCode, value, { force: true })
+  }
+
+  const uiState = resolveCheckoutViesUiState({
+    vatDigits: value,
+    loading,
+    result,
+  })
+
+  const zeroEligible =
+    result?.valid === true &&
+    isIntraEuB2bGoodsEligible({
+      buyerType,
+      viesValid: true,
+      vatCountryCode: countryCode,
+      deliveryCountryCode,
+    })
+
+  const deliveryIsSk =
+    (deliveryCountryCode ?? '').trim().toLowerCase() === 'sk'
 
   const statusMessage = (() => {
-    if (loading) return null
-    if (result?.valid === true) {
-      if (countryCode.toUpperCase() !== 'SK') {
-        return t('vatIdConfirmedWithZeroDph')
-      }
-      return t('vatIdConfirmed')
+    switch (uiState) {
+      case 'EMPTY':
+        return t('vatIdOptionalHint')
+      case 'CHECKING':
+        return t('vatIdChecking')
+      case 'FORMAT':
+        return t('vatIdFormatError')
+      case 'VALID':
+        if (zeroEligible) {
+          return `${t('vatIdVerified')} ${t('vatIdZeroEligible')}`
+        }
+        if (deliveryIsSk) {
+          return `${t('vatIdVerified')} ${t('vatIdDeliverySkVatApplies')}`
+        }
+        return `${t('vatIdVerified')} ${t('vatIdVerifiedVatApplies')}`
+      case 'INVALID':
+        return t('vatIdInvalidContinue')
+      case 'ERROR':
+        return t('vatIdUnavailableContinue')
+      default:
+        return t('vatIdOptionalHint')
     }
-    if (result?.valid === false) return t('vatIdInvalid')
-    if (result?.valid === null) return result.message || t('vatIdUnavailable')
-    return t('vatIdHint')
   })()
+
+  const statusIcon =
+    uiState === 'CHECKING' ? (
+      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-hidden />
+    ) : uiState === 'VALID' ? (
+      <Check className="h-4 w-4 text-primary" aria-hidden />
+    ) : uiState === 'INVALID' ? (
+      <X className="h-4 w-4 text-destructive" aria-hidden />
+    ) : uiState === 'ERROR' ? (
+      <AlertCircle className="h-4 w-4 text-amber-600" aria-hidden />
+    ) : uiState === 'FORMAT' ? (
+      <AlertCircle className="h-4 w-4 text-destructive" aria-hidden />
+    ) : null
+
+  const showRetry = uiState === 'ERROR' || uiState === 'INVALID'
 
   return (
     <div className="space-y-2 rounded-xl border border-border/70 bg-muted p-4">
@@ -234,8 +331,15 @@ export function CheckoutVatIdField({
             onChange={(e) => handleInputChange(e.target.value)}
             onBlur={handleBlur}
             placeholder={t('vatIdPlaceholder')}
-            className={cn('pr-10', result?.valid === true && 'border-primary/50')}
+            className={cn(
+              'pr-10',
+              uiState === 'VALID' && 'border-primary/50',
+              uiState === 'ERROR' && 'border-amber-500/50',
+              (uiState === 'INVALID' || uiState === 'FORMAT') && 'border-destructive/50',
+            )}
             autoComplete="off"
+            aria-busy={loading || undefined}
+            aria-describedby="checkout-ic-dph-status"
           />
           {statusIcon ? (
             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
@@ -244,19 +348,38 @@ export function CheckoutVatIdField({
           ) : null}
         </div>
       </div>
-      {statusMessage ? (
-        <p
-          className={cn(
-            'text-xs',
-            result?.valid === true
-              ? 'font-medium text-primary'
-              : result?.valid === false || result?.valid === null
+      <p
+        id="checkout-ic-dph-status"
+        role="status"
+        className={cn(
+          'text-xs',
+          uiState === 'VALID'
+            ? 'font-medium text-primary'
+            : uiState === 'ERROR'
+              ? 'text-amber-800 dark:text-amber-200'
+              : uiState === 'INVALID' || uiState === 'FORMAT'
                 ? 'text-destructive'
                 : 'text-muted-foreground',
-          )}
+        )}
+      >
+        {statusMessage}
+      </p>
+      {showRetry ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={loading}
+          onClick={handleRetry}
+          className="h-8"
         >
-          {statusMessage}
-        </p>
+          {loading ? (
+            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden />
+          ) : (
+            <RefreshCw className="mr-2 h-3.5 w-3.5" aria-hidden />
+          )}
+          {t('vatIdRetry')}
+        </Button>
       ) : null}
     </div>
   )

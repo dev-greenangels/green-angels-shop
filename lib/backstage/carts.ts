@@ -18,6 +18,7 @@ export type BackstageCartsQuery = {
     | 'checkout_started'
     | 'cart_abandoned'
     | 'checkout_abandoned'
+    | 'converted'
   locale?: string
   updatedFrom?: string
   updatedTo?: string
@@ -92,6 +93,8 @@ export function cartStateLabel(state: CartActivityState | null | undefined): str
       return 'Покинутий кошик'
     case 'CHECKOUT_ABANDONED':
       return 'Покинуте оформлення'
+    case 'CONVERTED':
+      return 'Конвертований'
     default:
       return '—'
   }

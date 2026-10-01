@@ -406,7 +406,7 @@ export function PacketaSettingsForm() {
 
       <PacketaShippingSettingsSection cart={cart} onChange={patchCart} />
 
-      <FormSaveBar isDirty={dirty} saving={saving} onSave={() => void save()} />
+      <FormSaveBar sticky isDirty={dirty} saving={saving} onSave={() => void save()} />
     </div>
   )
 }

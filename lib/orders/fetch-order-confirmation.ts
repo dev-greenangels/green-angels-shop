@@ -2,6 +2,8 @@ export type PublicOrderConfirmationItem = {
   id: string
   quantity: number
   priceAtPurchase: number
+  commercialUnitPrice?: number | null
+  commercialLineAmount?: number | null
   lineTotal: number
   productName: string
   latinName: string | null
@@ -69,6 +71,7 @@ export type PublicOrderConfirmation = {
   billingCountryCode?: string | null
   deliveryPostalCode?: string | null
   deliveryCountryCode?: string | null
+  viesStatus?: 'VALID' | 'INVALID' | 'ERROR' | 'NOT_CHECKED'
   items: PublicOrderConfirmationItem[]
 }
 

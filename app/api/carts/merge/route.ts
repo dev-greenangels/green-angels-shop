@@ -6,6 +6,7 @@ import {
   readBackendJson,
 } from '@/lib/api/backend-fetch'
 import { requireCustomerSession } from '@/lib/auth/require-customer-session'
+import { buildCartSourceHeaders } from '@/lib/carts/cart-source-headers'
 
 export async function POST(request: Request) {
   const { error } = await requireCustomerSession(request)
@@ -19,10 +20,11 @@ export async function POST(request: Request) {
   }
 
   try {
+    const sourceHeaders = buildCartSourceHeaders(request)
     const res = await fetchBackend('/carts/merge', {
       request,
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...sourceHeaders },
       body: JSON.stringify(body),
     })
     const data = await readBackendJson(res)

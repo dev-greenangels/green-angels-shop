@@ -79,6 +79,8 @@ export type FlexiPublicSettings = {
   bankAccountCodeBank: string
   /** ABRA "banka" doc type code for the Stripe clearing entry (registerMatchPayment). */
   stripeClearingBankDocTypeCode: string
+  /** EU e-shop KS / konSym (e.g. 0008 = Platby za tovar). Not document kod. */
+  salesConstantSymbol: string
   /** ABRA Adresář label/kategorie code applied to wholesale-inquiry contacts on sync. */
   wholesaleAdresarLabelCode: string
   /** Website deliveryMethod slug → Flexi forma-dopravy abbreviation. */
@@ -140,6 +142,7 @@ export type FlexiSettingsPatch = Partial<{
   bankAccountCodeCard: string
   bankAccountCodeBank: string
   stripeClearingBankDocTypeCode: string
+  salesConstantSymbol: string
   wholesaleAdresarLabelCode: string
   deliveryMethodCodes: Record<string, string>
   defaultCategoryId: string

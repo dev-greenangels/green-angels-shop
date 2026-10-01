@@ -29,8 +29,11 @@ import type {
   CartCheckoutSettings,
   PacketaCodAmountTier,
   PacketaCodSettings,
+  PacketaCountryMethodsSettings,
   PacketaCustomerCodFeeBase,
   PacketaCustomerCodPriceMode,
+  PacketaCustomerCodPriceSettings,
+  PacketaServiceCodCarrierSettings,
 } from '@/lib/settings/types'
 import type { CheckoutDeliveryMethodSlug } from '@/lib/checkout/methods'
 
@@ -49,6 +52,10 @@ const PACKETA_COUNTRIES = [
   { code: 'HU', label: 'Угорщина' },
 ] as const
 
+/** Countries where Packeta pickup/box is offered by default (matches backend defaults). */
+const DEFAULT_BOX_COUNTRIES = new Set(['SK', 'CZ', 'HU'])
+const DEFAULT_COURIER_COUNTRIES = new Set(['SK', 'CZ', 'AT', 'DE', 'HU'])
+
 const PACKETA_SERVICES: Array<{
   method: 'packeta-box' | 'packeta-courier'
   label: string
@@ -57,7 +64,8 @@ const PACKETA_SERVICES: Array<{
   {
     method: 'packeta-box',
     label: 'Packeta Z-Point / Z-Box',
-    countries: ['SK', 'CZ', 'HU'],
+    // Tariff editors for all markets; storefront visibility is controlled by methodsByCountry.
+    countries: ['SK', 'CZ', 'HU', 'AT', 'DE'],
   },
   {
     method: 'packeta-courier',
@@ -133,6 +141,17 @@ const DEFAULT_SURCHARGE: CarrierSurchargeConfig = {
 
 function rateKey(method: string, country: string): string {
   return `${method}:${country}`
+}
+
+function resolveCountryMethodEnabled(
+  methodsByCountry: Record<string, PacketaCountryMethodsSettings> | undefined,
+  method: 'packeta-box' | 'packeta-courier',
+  country: string,
+): boolean {
+  const row = methodsByCountry?.[country]
+  if (row && method in row) return row[method] === true
+  if (method === 'packeta-box') return DEFAULT_BOX_COUNTRIES.has(country)
+  return DEFAULT_COURIER_COUNTRIES.has(country)
 }
 
 function resolveSurcharge(
@@ -314,6 +333,38 @@ export function PacketaShippingSettingsSection({ cart, onChange }: Props) {
         packeta: {
           ...packetaConfig,
           cod: next,
+        },
+      },
+    })
+  }
+
+  const setCountryMethodEnabled = (
+    country: string,
+    method: 'packeta-box' | 'packeta-courier',
+    enabled: boolean,
+  ) => {
+    const prev = packetaConfig?.methodsByCountry ?? {}
+    const prevRow = prev[country] ?? {}
+    onChange({
+      carrierConfigs: {
+        ...cart.carrierConfigs,
+        packeta: {
+          ...packetaConfig,
+          methodsByCountry: {
+            ...prev,
+            [country]: {
+              ...prevRow,
+              // Persist both defaults so AT/DE box=false survives after first edit.
+              'packeta-box':
+                method === 'packeta-box'
+                  ? enabled
+                  : resolveCountryMethodEnabled(prev, 'packeta-box', country),
+              'packeta-courier':
+                method === 'packeta-courier'
+                  ? enabled
+                  : resolveCountryMethodEnabled(prev, 'packeta-courier', country),
+            },
+          },
         },
       },
     })
@@ -759,6 +810,16 @@ export function PacketaShippingSettingsSection({ cart, onChange }: Props) {
       {PACKETA_COUNTRIES.map((country) => {
         const services = PACKETA_SERVICES.filter((s) => s.countries.includes(country.code))
         if (!services.length) return null
+        const boxEnabled = resolveCountryMethodEnabled(
+          packetaConfig?.methodsByCountry,
+          'packeta-box',
+          country.code,
+        )
+        const courierEnabled = resolveCountryMethodEnabled(
+          packetaConfig?.methodsByCountry,
+          'packeta-courier',
+          country.code,
+        )
         return (
           <Card key={country.code}>
             <CardHeader>
@@ -770,12 +831,35 @@ export function PacketaShippingSettingsSection({ cart, onChange }: Props) {
                 Customer delivery prices for Packeta pickup/box and courier to {country.code}
                 (key <code className="text-xs">method:{country.code}</code>). Last-mile carrier
                 choice is not required. Basis {tariffsAreNet ? 'NET (ex-VAT)' : 'GROSS (inc-VAT)'}.
-                Fuel / toll / insurance rows below still adjust the customer delivery total today —
-                true Packeta contract-cost separation needs manager confirmation of production
-                amounts (values are preserved, not migrated).
+                Country method switches control which buttons appear at checkout; country tariffs
+                and surcharges override the general Packeta defaults when set.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-4">
+                <p className="text-sm font-medium">{tSur('countryMethodsTitle')}</p>
+                <p className="text-xs text-muted-foreground">{tSur('countryMethodsHelp')}</p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-6">
+                  <div className="flex items-center justify-between gap-4 sm:min-w-[220px]">
+                    <Label>{tSur('showPickupBox')}</Label>
+                    <Switch
+                      checked={boxEnabled}
+                      onCheckedChange={(enabled) =>
+                        setCountryMethodEnabled(country.code, 'packeta-box', enabled)
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-4 sm:min-w-[220px]">
+                    <Label>{tSur('showCourier')}</Label>
+                    <Switch
+                      checked={courierEnabled}
+                      onCheckedChange={(enabled) =>
+                        setCountryMethodEnabled(country.code, 'packeta-courier', enabled)
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
               {services.map((service) => {
                 const key = rateKey(service.method, country.code)
                 const tiers = [...(tables[key] ?? [])]
@@ -788,10 +872,14 @@ export function PacketaShippingSettingsSection({ cart, onChange }: Props) {
                   setTiers(service.method, country.code, next)
                 const writeSurcharge = (next: CarrierSurchargeConfig) =>
                   setSurcharge(service.method, country.code, next)
+                const methodEnabled =
+                  service.method === 'packeta-box' ? boxEnabled : courierEnabled
                 return (
                   <div
                     key={service.method}
-                    className="space-y-4 rounded-xl border border-border/70 bg-muted/20 p-4"
+                    className={`space-y-4 rounded-xl border border-border/70 bg-muted/20 p-4 ${
+                      methodEnabled ? '' : 'opacity-60'
+                    }`}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="space-y-2">
@@ -1214,14 +1302,12 @@ export function PacketaShippingSettingsSection({ cart, onChange }: Props) {
                     {/* Country/method COD support (customer-facing; not Packeta carrier id) */}
                     <div className="space-y-3 border-t border-border/60 pt-4">
                       <p className="text-sm font-medium">{tSur('serviceCodTitle')}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Customer COD eligibility for this delivery method and country (not a Packeta
-                        last-mile carrier id). Internal Packeta COD cost (A) may still use
-                        service-specific keys in Settings JSON when present.
-                      </p>
+                      <p className="text-xs text-muted-foreground">{tSur('serviceCodHelp')}</p>
                       {(() => {
                         const svcKey = rateKey(service.method, country.code)
-                        const svcCod = cod.byService?.[svcKey] ?? {
+                        const svcCod: PacketaServiceCodCarrierSettings = cod.byService?.[
+                          svcKey
+                        ] ?? {
                           supportsCod: true,
                           maxAmount: null,
                           carrierCost: {
@@ -1231,9 +1317,7 @@ export function PacketaShippingSettingsSection({ cart, onChange }: Props) {
                             tiers: [],
                           },
                         }
-                        const setSvcCod = (
-                          next: NonNullable<PacketaCodSettings['byService']>[string],
-                        ) => {
+                        const setSvcCod = (next: PacketaServiceCodCarrierSettings) => {
                           setCod({
                             ...cod,
                             byService: {
@@ -1241,6 +1325,19 @@ export function PacketaShippingSettingsSection({ cart, onChange }: Props) {
                               [svcKey]: next,
                             },
                           })
+                        }
+                        const overridePrice = svcCod.customerPrice
+                        const overrideMode: PacketaCustomerCodPriceMode | 'inherit' =
+                          overridePrice?.mode ?? 'inherit'
+                        const setOverridePrice = (
+                          next: PacketaCustomerCodPriceSettings | undefined,
+                        ) => {
+                          const { customerPrice: _drop, ...rest } = svcCod
+                          if (!next) {
+                            setSvcCod(rest)
+                            return
+                          }
+                          setSvcCod({ ...svcCod, customerPrice: next })
                         }
                         return (
                           <>
@@ -1270,30 +1367,102 @@ export function PacketaShippingSettingsSection({ cart, onChange }: Props) {
                                 }}
                               />
                             </div>
-                            <div className="flex items-center justify-between gap-4">
-                              <Label>{tSur('carrierCodCostEnable')}</Label>
-                              <Switch
-                                checked={svcCod.carrierCost.enabled}
-                                onCheckedChange={(enabled) =>
-                                  setSvcCod({
-                                    ...svcCod,
-                                    carrierCost: { ...svcCod.carrierCost, enabled },
+                            <div className="space-y-2">
+                              <Label>{tSur('customerPriceOverride')}</Label>
+                              <p className="text-xs text-muted-foreground">
+                                {tSur('customerPriceOverrideHelp')}
+                              </p>
+                              <Select
+                                value={overrideMode}
+                                onValueChange={(value) => {
+                                  if (value === 'inherit') {
+                                    setOverridePrice(undefined)
+                                    return
+                                  }
+                                  const mode = value as PacketaCustomerCodPriceMode
+                                  setOverridePrice({
+                                    mode,
+                                    maxAmount: overridePrice?.maxAmount ?? null,
+                                    feeBase:
+                                      overridePrice?.feeBase ??
+                                      cod.customerPrice.feeBase ??
+                                      'products_subtotal',
+                                    feeAmountsAreNet:
+                                      overridePrice?.feeAmountsAreNet ??
+                                      cod.customerPrice.feeAmountsAreNet ??
+                                      true,
+                                    fixedAmount: overridePrice?.fixedAmount ?? 0,
+                                    tiers: overridePrice?.tiers ?? [],
                                   })
-                                }
-                              />
+                                }}
+                              >
+                                <SelectTrigger className="h-9 w-full max-w-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="inherit">
+                                    {tSur('customerPriceInherit')}
+                                  </SelectItem>
+                                  <SelectItem value="none">{tCod('modeNone')}</SelectItem>
+                                  <SelectItem value="fixed">{tCod('modeFixed')}</SelectItem>
+                                  <SelectItem value="tiers">{tCod('modeTiers')}</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
-                            {svcCod.carrierCost.enabled
+                            {overridePrice && overridePrice.mode === 'fixed' ? (
+                              <div className="space-y-2">
+                                <Label className="inline-flex items-center gap-1.5">
+                                  {tCod('fixedAmount')}{' '}
+                                  <PriceBasisBadge areNet={overridePrice.feeAmountsAreNet} />
+                                </Label>
+                                <NumberInput
+                                  value={overridePrice.fixedAmount}
+                                  min={0}
+                                  step={0.01}
+                                  suffix="€"
+                                  onCommit={(n) =>
+                                    setOverridePrice({ ...overridePrice, fixedAmount: n })
+                                  }
+                                />
+                              </div>
+                            ) : null}
+                            {overridePrice && overridePrice.mode === 'tiers'
                               ? renderTierTable(
-                                  svcCod.carrierCost.tiers,
-                                  (tiers) =>
-                                    setSvcCod({
-                                      ...svcCod,
-                                      carrierCost: { ...svcCod.carrierCost, tiers },
-                                    }),
-                                  svcCod.carrierCost.amountsAreNet,
-                                  tSur('carrierCodCostTiers'),
+                                  overridePrice.tiers,
+                                  (tiers) => setOverridePrice({ ...overridePrice, tiers }),
+                                  overridePrice.feeAmountsAreNet,
+                                  tCod('customerTiers'),
                                 )
                               : null}
+                            <div className="space-y-2 rounded-lg border border-dashed border-border/70 bg-background/60 p-3">
+                              <div className="flex items-center justify-between gap-4">
+                                <Label>{tSur('carrierCodCostEnable')}</Label>
+                                <Switch
+                                  checked={svcCod.carrierCost.enabled}
+                                  onCheckedChange={(enabled) =>
+                                    setSvcCod({
+                                      ...svcCod,
+                                      carrierCost: { ...svcCod.carrierCost, enabled },
+                                    })
+                                  }
+                                />
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {tSur('carrierCodCostHelp')}
+                              </p>
+                              {svcCod.carrierCost.enabled
+                                ? renderTierTable(
+                                    svcCod.carrierCost.tiers,
+                                    (tiers) =>
+                                      setSvcCod({
+                                        ...svcCod,
+                                        carrierCost: { ...svcCod.carrierCost, tiers },
+                                      }),
+                                    svcCod.carrierCost.amountsAreNet,
+                                    tSur('carrierCodCostTiers'),
+                                  )
+                                : null}
+                            </div>
                           </>
                         )
                       })()}

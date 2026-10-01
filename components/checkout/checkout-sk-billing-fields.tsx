@@ -1,16 +1,27 @@
 'use client'
 
+import { useRef } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { FieldHint, RequiredLabel } from '@/components/auth/auth-form-ui'
+import { BillingCountryCombobox } from '@/components/checkout/billing-country-combobox'
 import { CheckoutInvoiceAddressFields } from '@/components/checkout/checkout-invoice-address-fields'
 import { checkoutInputClassName } from '@/components/checkout/checkout-utils'
-import { CheckoutVatIdField } from '@/components/checkout/checkout-vat-id-field'
+import {
+  CheckoutVatIdField,
+  type CheckoutViesResult,
+} from '@/components/checkout/checkout-vat-id-field'
 import type { CheckoutBuyerType } from '@/components/checkout/checkout-payment-step'
 import { InputWithClear } from '@/components/ui/input-with-clear'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { cn } from '@/lib/utils'
+import { viesVatCountryToBillingIso } from '@/lib/checkout/eu-member-states'
+import {
+  isIntraEuB2bGoodsEligible,
+  isMeaningfulViesRegisteredName,
+  viesAutofillKey,
+} from '@/lib/checkout/intra-eu-b2b-eligibility'
 import {
   getCheckoutPaymentFieldError,
   sanitizeEdrpouInput,
@@ -33,7 +44,7 @@ export function CheckoutSkBillingFields({
   onVatCountryCodeChange,
   onViesResult,
   viesValid,
-  enabledCountries,
+  preferCountryFirst,
   billingTouched,
   onBlurBillingField,
 }: {
@@ -47,15 +58,17 @@ export function CheckoutSkBillingFields({
   onVatIdChange: (value: string) => void
   vatCountryCode: string
   onVatCountryCodeChange?: (code: string) => void
-  onViesResult?: (result: { valid: boolean | null } | null) => void
+  onViesResult?: (result: CheckoutViesResult | null) => void
   viesValid?: boolean | null
-  enabledCountries?: string[]
+  /** Host/market countries pinned at top of billing list (not a whitelist). */
+  preferCountryFirst?: string[]
   billingTouched: Partial<Record<CheckoutBillingFieldKey, boolean>>
   onBlurBillingField: (field: CheckoutBillingFieldKey) => void
 }) {
   const fe = useFormatFieldError()
   const t = useTranslations('checkout')
   const requireCompanyFields = buyerType === 'company'
+  const lastAutofilledVatKeyRef = useRef<string | null>(null)
 
   const showPaymentError = (field: CheckoutPaymentFieldKey) =>
     Boolean(
@@ -79,11 +92,48 @@ export function CheckoutSkBillingFields({
       })
       onVatIdChange('')
       onViesResult?.(null)
+      lastAutofilledVatKeyRef.current = null
     }
   }
 
-  const showReverseChargeHint =
-    requireCompanyFields && viesValid === true && vatCountryCode.toUpperCase() !== 'SK'
+  const showReverseChargeHint = isIntraEuB2bGoodsEligible({
+    buyerType: requireCompanyFields ? 'company' : 'individual',
+    viesValid,
+    vatCountryCode,
+    deliveryCountryCode: formData.deliveryCountryCode,
+  })
+
+  const showCompanyCountryError =
+    Boolean(billingTouched.billingCountryCode) &&
+    !formData.billingCountryCode.trim()
+
+  const handleVatCountryCodeChange = (code: string) => {
+    onVatCountryCodeChange?.(code)
+  }
+
+  const handleViesResult = (result: CheckoutViesResult | null) => {
+    onViesResult?.(result)
+    if (!result || result.valid !== true) return
+
+    const key = viesAutofillKey(result.countryCode, result.vatNumber)
+    if (!key || key === lastAutofilledVatKeyRef.current) return
+
+    const patch: Partial<CheckoutFormValues> = {}
+    const billingIso = viesVatCountryToBillingIso(result.countryCode)
+    if (billingIso) {
+      patch.billingCountryCode = billingIso
+    }
+    if (isMeaningfulViesRegisteredName(result.name)) {
+      patch.companyLegalName = result.name!.trim()
+    }
+
+    if (Object.keys(patch).length > 0) {
+      onPatchForm(patch)
+      if (patch.billingCountryCode) onBlurBillingField('billingCountryCode')
+      if (patch.companyLegalName) onBlurPaymentField('companyLegalName')
+    }
+    lastAutofilledVatKeyRef.current = key
+  }
 
   return (
     <div className="mt-8 space-y-4 border-t border-border/60 pt-6">
@@ -128,10 +178,12 @@ export function CheckoutSkBillingFields({
         <div className="space-y-4 rounded-lg border border-border/80 bg-muted p-4 shadow-sm">
           <CheckoutVatIdField
             countryCode={vatCountryCode}
-            onCountryCodeChange={onVatCountryCodeChange}
+            onCountryCodeChange={handleVatCountryCodeChange}
             value={vatId}
             onChange={onVatIdChange}
-            onViesResult={onViesResult}
+            onViesResult={handleViesResult}
+            buyerType={requireCompanyFields ? 'company' : 'individual'}
+            deliveryCountryCode={formData.deliveryCountryCode}
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -182,8 +234,10 @@ export function CheckoutSkBillingFields({
               id="sk-company-legal-name"
               autoComplete="organization"
               placeholder={t('companyPlaceholder')}
+              title={formData.companyLegalName || undefined}
               className={cn(
                 checkoutInputClassName,
+                'overflow-x-auto whitespace-nowrap',
                 showPaymentError('companyLegalName') && 'border-destructive/80 ring-destructive/30',
               )}
               value={formData.companyLegalName}
@@ -199,6 +253,25 @@ export function CheckoutSkBillingFields({
                 marketRegion: 'sk',
               }))}
             />
+          </div>
+          <div className="space-y-2">
+            <RequiredLabel htmlFor="sk-company-country">{t('companyCountry')}</RequiredLabel>
+            <BillingCountryCombobox
+              id="sk-company-country"
+              value={formData.billingCountryCode}
+              preferFirst={preferCountryFirst}
+              invalid={showCompanyCountryError}
+              onChange={(code) => {
+                onPatchForm({ billingCountryCode: code })
+                onBlurBillingField('billingCountryCode')
+              }}
+            />
+            <FieldHint
+              id="sk-company-country-error"
+              show={Boolean(billingTouched.billingCountryCode)}
+              message={showCompanyCountryError ? fe('required') : null}
+            />
+            <p className="text-xs text-muted-foreground">{t('companyCountryHint')}</p>
           </div>
           <div className="space-y-2">
             <RequiredLabel htmlFor="sk-company-street">{t('companyStreet')}</RequiredLabel>
@@ -273,7 +346,7 @@ export function CheckoutSkBillingFields({
             </div>
           </div>
           {showReverseChargeHint ? (
-            <p className="text-sm font-medium text-primary">{t('vatZeroDphApplied')}</p>
+            <p className="text-sm font-medium text-primary">{t('vatIdZeroEligible')}</p>
           ) : null}
         </div>
       ) : (
@@ -282,7 +355,7 @@ export function CheckoutSkBillingFields({
           formData={formData}
           marketRegion="sk"
           buyerType={buyerType}
-          enabledCountries={enabledCountries}
+          preferCountryFirst={preferCountryFirst}
           billingTouched={billingTouched}
           onBlurBillingField={onBlurBillingField}
           onPatchForm={onPatchForm}

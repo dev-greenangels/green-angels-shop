@@ -279,12 +279,25 @@ export type PacketaServiceCodCarrierSettings = {
   supportsCod: boolean
   maxAmount: number | null
   carrierCost: PacketaCodCarrierCostSettings
+  /** When set, overrides global Packeta customerPrice for this method:CC. */
+  customerPrice?: PacketaCustomerCodPriceSettings
+}
+
+/** Which Packeta checkout methods are offered for a destination country (ISO CC). */
+export type PacketaCountryMethodsSettings = {
+  'packeta-box'?: boolean
+  'packeta-courier'?: boolean
 }
 
 export type CarrierConfig = {
   tariffAmountsAreNet?: boolean
   services?: Partial<Record<string, CarrierServicePhysicalLimits>>
   cod?: PacketaCodSettings
+  /**
+   * Packeta-only: per destination country method visibility.
+   * Missing country → defaults (box: SK/CZ/HU; courier: SK/CZ/AT/DE/HU).
+   */
+  methodsByCountry?: Record<string, PacketaCountryMethodsSettings>
   /** Packeta-only: internal service identity catalog + maps. */
   serviceIdentity?: PacketaServiceIdentitySettings
 }

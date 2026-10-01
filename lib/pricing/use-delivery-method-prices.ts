@@ -6,6 +6,8 @@ import { fetchPricingQuote, type CheckoutTotalsBreakdown } from '@/lib/pricing/q
 
 export type DeliveryMethodPriceSnapshot = {
   deliveryAmount: number
+  /** Packaging folded into the same customer-facing shipping line as the order summary. */
+  packagingAmount: number
   deliveryIncludedInTotal: boolean
   deliveryUnavailableReason: CheckoutTotalsBreakdown['deliveryUnavailableReason']
   taxAppliesToFees?: boolean
@@ -104,6 +106,7 @@ export function useDeliveryMethodPrices({
                   method,
                   {
                     deliveryAmount: checkout.deliveryAmount ?? 0,
+                    packagingAmount: Math.max(0, checkout.packagingAmount ?? 0),
                     deliveryIncludedInTotal: checkout.deliveryIncludedInTotal !== false,
                     deliveryUnavailableReason: checkout.deliveryUnavailableReason ?? null,
                     taxAppliesToFees: checkout.taxAppliesToFees,

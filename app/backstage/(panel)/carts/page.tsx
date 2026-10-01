@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ChevronDown, Loader2, RefreshCw, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -29,8 +30,31 @@ import {
 import { formatOrderMoney } from '@/lib/backstage/order-detail-helpers'
 import { formatDateTime } from '@/lib/i18n/format-datetime'
 import type { BackstageCountryLocale } from '@/lib/backstage/country-display'
-import type { CartActivityState } from '@/lib/carts/types'
+import type { CartActivityState, CartCheckoutProgress } from '@/lib/carts/types'
 import { cn } from '@/lib/utils'
+
+
+function progressLabel(
+  progress: CartCheckoutProgress | null | undefined,
+  t: (key: string) => string,
+): string {
+  switch (progress) {
+    case 'CART':
+      return t('progressCart')
+    case 'CHECKOUT_STARTED':
+      return t('progressCheckoutStarted')
+    case 'CUSTOMER_DETAILS':
+      return t('progressCustomerDetails')
+    case 'DELIVERY':
+      return t('progressDelivery')
+    case 'BILLING':
+      return t('progressBilling')
+    case 'PAYMENT':
+      return t('progressPayment')
+    default:
+      return '—'
+  }
+}
 
 function formatAge(ageMs: number): string {
   const minutes = Math.floor(ageMs / 60000)
@@ -97,7 +121,12 @@ function CartStateBadge({
   label: string
 }) {
   const abandoned = state === 'CART_ABANDONED' || state === 'CHECKOUT_ABANDONED'
-  return <Badge variant={abandoned ? 'destructive' : 'secondary'}>{label}</Badge>
+  const converted = state === 'CONVERTED'
+  return (
+    <Badge variant={abandoned ? 'destructive' : converted ? 'default' : 'secondary'}>
+      {label}
+    </Badge>
+  )
 }
 
 function KindBadge({ kind, guest, registered }: { kind: 'guest' | 'user'; guest: string; registered: string }) {
@@ -160,6 +189,8 @@ function CartDetailPanel({
           return t('stateCartAbandonedLabel')
         case 'CHECKOUT_ABANDONED':
           return t('stateCheckoutAbandonedLabel')
+        case 'CONVERTED':
+          return t('stateConvertedLabel')
         default:
           return '—'
       }
@@ -241,11 +272,51 @@ function CartDetailPanel({
           )}
         </DetailSection>
 
-        <DetailSection title={t('siteSource')}>
-          <MetaRow label={t('siteCountry')}>
-            <CountryDisplay code={detail.site.countryCode} locale={locale} variant="compact" />
+        <DetailSection title={t('whereCard')}>
+          <MetaRow label={t('siteStorefront')}>
+            {detail.site.countrySiteCode ? (
+              <CountryDisplay
+                code={detail.site.countrySiteCode}
+                locale={locale}
+                variant="compact"
+              />
+            ) : (
+              t('originUnknown')
+            )}
           </MetaRow>
-          <MetaRow label={t('locale')}>{detail.site.locale || '—'}</MetaRow>
+          {!detail.site.countrySiteCode && detail.site.checkoutDraftCountryCode ? (
+            <MetaRow label={t('checkoutSiteContext')}>
+              <CountryDisplay
+                code={detail.site.checkoutDraftCountryCode}
+                locale={locale}
+                variant="compact"
+              />
+            </MetaRow>
+          ) : null}
+          <MetaRow label={t('sourceDomain')}>{detail.site.sourceHost || t('originUnknown')}</MetaRow>
+          <MetaRow label={t('locale')}>
+            {detail.site.locale || t('originUnknown')}
+          </MetaRow>
+          {!detail.site.locale && detail.site.checkoutDraftLocale ? (
+            <MetaRow label={t('checkoutLocaleContext')}>
+              {detail.site.checkoutDraftLocale}
+            </MetaRow>
+          ) : null}
+          <MetaRow label={t('originCurrency')}>
+            {detail.site.currencyCode || t('originUnknown')}
+          </MetaRow>
+          <MetaRow label={t('currentMerchandiseCurrency')}>{detail.currency}</MetaRow>
+        </DetailSection>
+
+        <DetailSection title={t('whoCard')}>
+          <MetaRow label={t('cartId')}>
+            <span className="break-all font-mono text-xs">{detail.id}</span>
+          </MetaRow>
+          {detail.guestSessionId ? (
+            <MetaRow label={t('session')}>
+              <span className="break-all font-mono text-xs">{detail.guestSessionId}</span>
+            </MetaRow>
+          ) : null}
           <MetaRow label={t('type')}>
             <KindBadge
               kind={detail.kind}
@@ -255,6 +326,7 @@ function CartDetailPanel({
           </MetaRow>
         </DetailSection>
 
+        {detail.delivery.method || detail.delivery.countryCode || detail.delivery.city ? (
         <DetailSection title={t('deliveryCard')}>
           <MetaRow label={t('deliveryCountry')}>
             <CountryDisplay code={detail.delivery.countryCode} locale={locale} variant="compact" />
@@ -277,7 +349,9 @@ function CartDetailPanel({
             </MetaRow>
           )}
         </DetailSection>
+        ) : null}
 
+        {(detail.billing.countryCode || detail.billing.street || detail.billing.city || detail.payment.method) ? (
         <DetailSection title={t('billingPayment')}>
           <MetaRow label={t('billingCountry')}>
             <CountryDisplay code={detail.billing.countryCode} locale={locale} variant="compact" />
@@ -295,8 +369,9 @@ function CartDetailPanel({
           )}
           <MetaRow label={t('payment')}>{detail.payment.method || '—'}</MetaRow>
         </DetailSection>
+        ) : null}
 
-        <DetailSection title={t('cartCard')} className="lg:col-span-2">
+        <DetailSection title={t('whatCard')} className="lg:col-span-2">
           <ul className="space-y-3">
             {detail.items.map((item) => (
               <li key={item.productVariantId} className="flex gap-3 text-sm">
@@ -335,27 +410,69 @@ function CartDetailPanel({
             ))}
           </ul>
           <p className="mt-3 text-right text-sm font-medium">
-            {t('productsSubtotal')}:{' '}
+            {t('currentMerchandise')}:{' '}
             {formatOrderMoney(detail.productsSubtotal, detail.currency)}
             <span className="ml-1 text-xs font-normal text-muted-foreground">
               {t('currentRetail')}
             </span>
           </p>
+          {detail.checkoutGrandTotal != null || detail.checkoutDeliveryAmount != null ? (
+            <div className="mt-2 space-y-1 border-t border-border/60 pt-2 text-right text-sm">
+              <p className="text-muted-foreground">
+                {t('checkoutDeliveryInformational')}:{' '}
+                {detail.checkoutDeliveryAmount != null
+                  ? formatOrderMoney(
+                      detail.checkoutDeliveryAmount,
+                      detail.checkoutTotalsCurrency || detail.currency,
+                    )
+                  : '—'}
+              </p>
+              <p className="font-medium">
+                {detail.checkoutTotalsBasis === 'order'
+                  ? t('orderGrandTotal')
+                  : t('checkoutGrandTotalInformational')}
+                :{' '}
+                {detail.checkoutGrandTotal != null
+                  ? formatOrderMoney(
+                      detail.checkoutGrandTotal,
+                      detail.checkoutTotalsCurrency || detail.currency,
+                    )
+                  : '—'}
+              </p>
+              {detail.checkoutTotalsBasis === 'last_quote_informational' ? (
+                <p className="text-xs font-normal text-muted-foreground">
+                  {t('checkoutTotalsInformationalHint')}
+                  {detail.checkoutQuoteQuotedAt
+                    ? ` · ${formatDateTime(detail.checkoutQuoteQuotedAt, locale, 'datetime')}`
+                    : ''}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </DetailSection>
 
-        <DetailSection title={t('activityCard')}>
-          <MetaRow label={t('created')}>
-            {formatDateTime(detail.createdAt, locale, 'datetime')}
+        <DetailSection title={t('progressCard')}>
+          <MetaRow label={t('checkoutProgress')}>
+            {progressLabel(detail.checkoutProgress, t)}
           </MetaRow>
           <MetaRow label={t('checkoutStarted')}>
             {detail.checkoutStartedAt
               ? formatDateTime(detail.checkoutStartedAt, locale, 'datetime')
               : '—'}
           </MetaRow>
+        </DetailSection>
+
+        <DetailSection title={t('activityCard')}>
+          <MetaRow label={t('created')}>
+            {formatDateTime(detail.createdAt, locale, 'datetime')}
+          </MetaRow>
           <MetaRow label={t('lastActivity')}>
             {formatDateTime(detail.updatedAt, locale, 'datetime')}
           </MetaRow>
           <MetaRow label={t('age')}>{formatAge(detail.ageMs)}</MetaRow>
+        </DetailSection>
+
+        <DetailSection title={t('resultCard')}>
           <MetaRow label={t('status')}>
             {detail.state ? (
               <CartStateBadge state={detail.state} label={stateLabel(detail.state)} />
@@ -363,6 +480,17 @@ function CartDetailPanel({
               '—'
             )}
           </MetaRow>
+          {detail.convertedOrder ? (
+            <MetaRow label={t('order')}>
+              <Link
+                href={`/backstage/orders/${detail.convertedOrder.id}`}
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                {detail.convertedOrder.orderNumberFormatted}
+              </Link>
+              <span className="ml-2 text-xs text-muted-foreground">{t('openOrder')}</span>
+            </MetaRow>
+          ) : null}
         </DetailSection>
 
         <DetailSection title={t('retentionCard')}>
@@ -406,6 +534,8 @@ export default function CartsPage() {
           return t('stateCartAbandonedLabel')
         case 'CHECKOUT_ABANDONED':
           return t('stateCheckoutAbandonedLabel')
+        case 'CONVERTED':
+          return t('stateConvertedLabel')
         default:
           return '—'
       }
@@ -511,6 +641,7 @@ export default function CartsPage() {
                 <SelectItem value="checkout_started">{t('stateCheckoutStarted')}</SelectItem>
                 <SelectItem value="cart_abandoned">{t('stateCartAbandoned')}</SelectItem>
                 <SelectItem value="checkout_abandoned">{t('stateCheckoutAbandoned')}</SelectItem>
+                <SelectItem value="converted">{t('stateConverted')}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={localeFilter} onValueChange={setLocaleFilter}>
@@ -580,13 +711,32 @@ export default function CartsPage() {
                           <span className="text-sm text-muted-foreground">
                             {cart.itemCount} поз. · {cart.totalQuantity} {t('pcs')} ·{' '}
                             {formatOrderMoney(cart.productsSubtotal, cart.currency)}
+                            {cart.checkoutGrandTotal != null ? (
+                              <>
+                                {' '}
+                                · {t('checkoutGrandTotalShort')}:{' '}
+                                {formatOrderMoney(
+                                  cart.checkoutGrandTotal,
+                                  cart.checkoutTotalsCurrency || cart.currency,
+                                )}
+                              </>
+                            ) : null}
                           </span>
                         </div>
                         <p className="font-medium text-foreground">
                           {cart.customerName ||
                             (cart.kind === 'guest'
-                              ? `${t('session')}: ${cart.guestSessionId?.slice(0, 8)}…`
+                              ? `${t('session')}: ${cart.guestSessionId || '—'}`
                               : t('noName'))}
+                        </p>
+                        <p className="break-all font-mono text-[11px] leading-snug text-muted-foreground/80">
+                          {t('cartId')}: {cart.id}
+                          {cart.kind === 'guest' && cart.guestSessionId && cart.customerName ? (
+                            <>
+                              <br />
+                              {t('session')}: {cart.guestSessionId}
+                            </>
+                          ) : null}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           {[cart.customerPhone, cart.customerEmail].filter(Boolean).join(' · ') ||
@@ -594,36 +744,70 @@ export default function CartsPage() {
                         </p>
                         <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                           <span className="inline-flex items-center gap-1">
-                            {t('site')}:{' '}
-                            <CountryDisplay
-                              code={cart.siteCountryCode}
-                              locale={uiLocale}
-                              variant="compact"
-                            />
+                            {t('siteStorefront')}:{' '}
+                            {cart.countrySiteCode ? (
+                              <CountryDisplay
+                                code={cart.countrySiteCode}
+                                locale={uiLocale}
+                                variant="compact"
+                              />
+                            ) : (
+                              t('originUnknown')
+                            )}
                           </span>
-                          <span className="inline-flex items-center gap-1">
-                            {t('delivery')}:{' '}
-                            <CountryDisplay
-                              code={cart.deliveryCountryCode}
-                              locale={uiLocale}
-                              variant="compact"
-                            />
-                          </span>
-                          <span className="inline-flex items-center gap-1">
-                            {t('billing')}:{' '}
-                            <CountryDisplay
-                              code={cart.billingCountryCode}
-                              locale={uiLocale}
-                              variant="compact"
-                            />
-                          </span>
-                          {cart.locale ? (
-                            <span>
-                              {t('locale')}: {cart.locale}
+                          {!cart.countrySiteCode && cart.checkoutDraftCountryCode ? (
+                            <span className="inline-flex items-center gap-1">
+                              {t('checkoutSiteContext')}:{' '}
+                              <CountryDisplay
+                                code={cart.checkoutDraftCountryCode}
+                                locale={uiLocale}
+                                variant="compact"
+                              />
                             </span>
                           ) : null}
-                          {cart.deliveryMethod ? <span>{cart.deliveryMethod}</span> : null}
+                          {cart.sourceHost ? (
+                            <span>
+                              {t('sourceDomain')}: {cart.sourceHost}
+                            </span>
+                          ) : null}
+                          <span>
+                            {t('locale')}: {cart.locale || t('originUnknown')}
+                          </span>
+                          {!cart.locale && cart.checkoutDraftLocale ? (
+                            <span>
+                              {t('checkoutLocaleContext')}: {cart.checkoutDraftLocale}
+                            </span>
+                          ) : null}
+                          <span>
+                            {t('originCurrency')}: {cart.currencyCode || t('originUnknown')}
+                          </span>
+                          <span>
+                            {t('currentMerchandiseCurrency')}: {cart.currency}
+                          </span>
+                          <span>
+                            {t('checkoutProgress')}: {progressLabel(cart.checkoutProgress, t)}
+                          </span>
+                          {cart.deliveryMethod ? (
+                            <span className="inline-flex items-center gap-1">
+                              {t('delivery')}: {cart.deliveryMethod}
+                              {cart.deliveryCountryCode ? (
+                                <>
+                                  {' · '}
+                                  <CountryDisplay
+                                    code={cart.deliveryCountryCode}
+                                    locale={uiLocale}
+                                    variant="compact"
+                                  />
+                                </>
+                              ) : null}
+                            </span>
+                          ) : null}
                           {cart.paymentMethod ? <span>{cart.paymentMethod}</span> : null}
+                          {cart.convertedOrder ? (
+                            <span>
+                              {t('order')}: {cart.convertedOrder.orderNumberFormatted}
+                            </span>
+                          ) : null}
                         </div>
                         <div className="hidden text-xs sm:block">
                           <PiiCleanupLabel cart={cart} t={t} />

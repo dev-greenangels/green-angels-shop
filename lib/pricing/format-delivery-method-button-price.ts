@@ -4,9 +4,13 @@ import {
   resolveCheckoutTaxRatePercent,
   shouldGrossUpCheckoutPrices,
 } from '@/lib/pricing/checkout-tax-display'
+import { roundMoney } from '@/lib/pricing/vat-price'
 import type { VatDisplayPolicy } from '@/lib/pricing/vat-price'
 
-/** Short delivery price for method buttons (amount + currency symbol). */
+/**
+ * Price on delivery-method buttons — same combined amount as order summary
+ * «Доставка та пакування» (delivery + packaging when delivery is included).
+ */
 export function formatDeliveryMethodButtonPrice(
   snapshot: DeliveryMethodPriceSnapshot | null | undefined,
   opts: {
@@ -24,7 +28,9 @@ export function formatDeliveryMethodButtonPrice(
     return null
   }
 
-  const amount = Math.max(0, snapshot.deliveryAmount)
+  const amount = roundMoney(
+    Math.max(0, snapshot.deliveryAmount) + Math.max(0, snapshot.packagingAmount ?? 0),
+  )
   const reverseCharge = isReverseChargeCheckout(
     {
       taxRegime: snapshot.taxRegime,

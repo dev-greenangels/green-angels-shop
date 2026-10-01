@@ -9,8 +9,18 @@ export function formatOrderMoney(amount: number, currency = 'EUR') {
 
 export function canManualErpSync(order: Pick<
   BackstageOrderDetail,
-  'erpSyncStatus' | 'erpNativeId' | 'erpNativeKod'
+  | 'erpSyncStatus'
+  | 'erpNativeId'
+  | 'erpNativeKod'
+  | 'erpAdvanceSyncStatus'
+  | 'erpStripePaySyncStatus'
+  | 'erpBankPaySyncStatus'
 >): boolean {
+  const advance = (order.erpAdvanceSyncStatus ?? '').trim()
+  const stripePay = (order.erpStripePaySyncStatus ?? '').trim()
+  const bankPay = (order.erpBankPaySyncStatus ?? '').trim()
+  if (advance === 'FAILED' || stripePay === 'FAILED' || bankPay === 'FAILED') return true
+
   const status = (order.erpSyncStatus ?? 'NOT_REQUIRED').trim()
   if (status === 'SYNCED') return false
   if (status === 'CANCEL_PENDING_ERP' || status === 'CANCEL_SYNCED') return false

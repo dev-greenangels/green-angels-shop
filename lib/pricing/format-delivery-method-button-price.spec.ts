@@ -11,9 +11,28 @@ const vat = {
 }
 
 describe('formatDeliveryMethodButtonPrice', () => {
+  it('formats delivery + packaging like order summary shipping line', () => {
+    const snapshot: DeliveryMethodPriceSnapshot = {
+      deliveryAmount: 7.64,
+      packagingAmount: 3.08,
+      deliveryIncludedInTotal: true,
+      deliveryUnavailableReason: null,
+      taxAppliesToFees: true,
+      taxRatePercent: 23,
+      taxRegime: 'destination',
+    }
+    const label = formatDeliveryMethodButtonPrice(snapshot, {
+      formatShelf: (n) => `SHELF:${n}`,
+      formatRaw: (n) => `RAW:${n}`,
+      vat,
+    })
+    assert.equal(label, 'SHELF:10.72')
+  })
+
   it('formats positive delivery amount with shelf when fees are ex-VAT', () => {
     const snapshot: DeliveryMethodPriceSnapshot = {
       deliveryAmount: 3.69,
+      packagingAmount: 0,
       deliveryIncludedInTotal: true,
       deliveryUnavailableReason: null,
       taxAppliesToFees: true,
@@ -31,6 +50,7 @@ describe('formatDeliveryMethodButtonPrice', () => {
   it('formats zero as money (not hidden)', () => {
     const snapshot: DeliveryMethodPriceSnapshot = {
       deliveryAmount: 0,
+      packagingAmount: 0,
       deliveryIncludedInTotal: true,
       deliveryUnavailableReason: null,
       taxAppliesToFees: true,
@@ -48,6 +68,7 @@ describe('formatDeliveryMethodButtonPrice', () => {
   it('returns null when tariff unavailable', () => {
     const snapshot: DeliveryMethodPriceSnapshot = {
       deliveryAmount: 0,
+      packagingAmount: 3.08,
       deliveryIncludedInTotal: false,
       deliveryUnavailableReason: 'no_tariff',
     }

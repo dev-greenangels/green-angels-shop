@@ -3,17 +3,10 @@
 import { useTranslations } from 'next-intl'
 
 import { FieldHint, RequiredLabel } from '@/components/auth/auth-form-ui'
+import { BillingCountryCombobox } from '@/components/checkout/billing-country-combobox'
 import { checkoutInputClassName } from '@/components/checkout/checkout-utils'
 import { InputWithClear } from '@/components/ui/input-with-clear'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import { deliveryCountryFlag } from '@/lib/checkout/delivery-country-flags'
 import {
   getCheckoutBillingFieldError,
   type CheckoutBillingFieldKey,
@@ -27,7 +20,7 @@ export function CheckoutInvoiceAddressFields({
   formData,
   marketRegion = 'ua',
   buyerType = 'individual',
-  enabledCountries,
+  preferCountryFirst,
   billingTouched,
   onBlurBillingField,
   onPatchForm,
@@ -37,7 +30,8 @@ export function CheckoutInvoiceAddressFields({
   formData: CheckoutFormValues
   marketRegion?: CheckoutMarketRegion
   buyerType?: 'individual' | 'company'
-  enabledCountries?: string[]
+  /** Host/market countries pinned at top of billing list (not a whitelist). */
+  preferCountryFirst?: string[]
   billingTouched: Partial<Record<CheckoutBillingFieldKey, boolean>>
   onBlurBillingField: (field: CheckoutBillingFieldKey) => void
   onPatchForm: (patch: Partial<CheckoutFormValues>) => void
@@ -48,16 +42,10 @@ export function CheckoutInvoiceAddressFields({
   const fe = useFormatFieldError()
 
   if (marketRegion !== 'sk') return null
-  // B2B: company seat is the billing snapshot source (copied in payload).
+  // B2B: company seat is collected on company form (including country → billingCountryCode).
   if (buyerType === 'company') return null
 
-  const countries =
-    enabledCountries && enabledCountries.length > 0
-      ? enabledCountries
-      : ['sk', 'hu', 'at']
-
-  const billingCountry =
-    formData.billingCountryCode || formData.deliveryCountryCode || countries[0] || 'sk'
+  const billingCountry = formData.billingCountryCode.trim().toLowerCase()
 
   const showError = (field: CheckoutBillingFieldKey) =>
     Boolean(
@@ -151,37 +139,16 @@ export function CheckoutInvoiceAddressFields({
 
         <div className="space-y-2">
           <RequiredLabel htmlFor="billing-country">{t('billingCountry')}</RequiredLabel>
-          <Select
+          <BillingCountryCombobox
+            id="billing-country"
             value={billingCountry}
-            onValueChange={(value) => {
-              onPatchForm({ billingCountryCode: value })
+            preferFirst={preferCountryFirst}
+            invalid={showError('billingCountryCode')}
+            onChange={(code) => {
+              onPatchForm({ billingCountryCode: code })
               onBlurBillingField('billingCountryCode')
             }}
-          >
-            <SelectTrigger
-              id="billing-country"
-              className={cn(
-                'h-10 w-full border-2',
-                formData.billingCountryCode &&
-                  'border-primary/35 bg-primary/[0.06] font-medium',
-                showError('billingCountryCode') &&
-                  'border-destructive/80 ring-destructive/30',
-              )}
-              aria-invalid={showError('billingCountryCode')}
-            >
-              <SelectValue placeholder={t('billingCountry')} />
-            </SelectTrigger>
-            <SelectContent>
-              {countries.map((code) => (
-                <SelectItem key={code} value={code}>
-                  <span className="flex items-center gap-2">
-                    <span aria-hidden>{deliveryCountryFlag(code)}</span>
-                    <span>{t(`deliveryCountries.${code}` as 'deliveryCountries.sk')}</span>
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          />
           <FieldHint
             id="billing-country-error"
             show={Boolean(billingTouched.billingCountryCode)}

@@ -608,7 +608,8 @@ export function isBillingAddressValid(
     return Boolean(
       values.companyStreet.trim() &&
         values.companyCity.trim() &&
-        values.companyPostalCode.trim(),
+        values.companyPostalCode.trim() &&
+        values.billingCountryCode.trim(),
     )
   }
 
@@ -619,7 +620,7 @@ export function isBillingAddressValid(
       values.billingHouseNumber.trim() &&
       values.billingCity.trim() &&
       values.billingPostalCode.trim() &&
-      (values.billingCountryCode.trim() || values.deliveryCountryCode.trim()),
+      values.billingCountryCode.trim(),
   )
 }
 
@@ -652,12 +653,16 @@ export function getCheckoutBillingFieldError(
       return values.billingCity.trim() ? null : 'required'
     case 'billingPostalCode':
       if (!values.billingPostalCode.trim()) return 'required'
-      if (!isValidSkPostalCode(values.billingPostalCode)) return 'invalidSkPostal'
+      // SK-format check only when billing country is SK (foreign billing keeps free-form PSC).
+      if (
+        values.billingCountryCode.trim().toLowerCase() === 'sk' &&
+        !isValidSkPostalCode(values.billingPostalCode)
+      ) {
+        return 'invalidSkPostal'
+      }
       return null
     case 'billingCountryCode':
-      return values.billingCountryCode.trim() || values.deliveryCountryCode.trim()
-        ? null
-        : 'required'
+      return values.billingCountryCode.trim() ? null : 'required'
     default:
       return null
   }

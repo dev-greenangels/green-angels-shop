@@ -12,6 +12,16 @@ const CART_SYNC_DEBOUNCE_MS = 700
 let syncEpoch = 0
 let pendingTimer: ReturnType<typeof setTimeout> | null = null
 let inFlight = 0
+/** Latest storefront route locale from CartProvider (app/[locale] via useRouteAppLocale). */
+let pageLocale: string | null = null
+
+export function setCartServerSyncLocale(locale: string | null | undefined): void {
+  pageLocale = locale?.trim().toLowerCase() || null
+}
+
+export function getCartServerSyncLocale(): string | null {
+  return pageLocale
+}
 
 export function getCartServerSyncEpoch(): number {
   return syncEpoch
@@ -35,30 +45,37 @@ export function scheduleCartServerSync(
   items: CartItem[],
   options?: {
     isBlocked?: () => boolean
+    locale?: string | null
   },
 ): void {
+  if (options?.locale !== undefined) {
+    setCartServerSyncLocale(options.locale)
+  }
   cancelPendingCartServerSync()
   const epochAtSchedule = syncEpoch
   const snapshot = items
+  const localeAtSchedule = pageLocale
   pendingTimer = setTimeout(() => {
     pendingTimer = null
     if (epochAtSchedule !== syncEpoch) return
     if (options?.isBlocked?.()) return
-    void runCartServerSync(snapshot, epochAtSchedule)
+    void runCartServerSync(snapshot, epochAtSchedule, localeAtSchedule)
   }, CART_SYNC_DEBOUNCE_MS)
 }
 
-async function runCartServerSync(items: CartItem[], epochAtStart: number): Promise<void> {
+async function runCartServerSync(
+  items: CartItem[],
+  epochAtStart: number,
+  locale: string | null,
+): Promise<void> {
   if (epochAtStart !== syncEpoch) return
   inFlight += 1
   try {
-    await syncServerCart(items)
+    await syncServerCart(items, { locale })
   } catch {
     // Soft-fail: UI remains local; next hydrate/sync recovers.
   } finally {
     inFlight = Math.max(0, inFlight - 1)
-    // In-flight stale PUT may have completed after a newer invalidation.
-    // Re-assert server authority once.
     if (epochAtStart !== syncEpoch) {
       void hydrateCartFromServer().catch(() => {})
     }

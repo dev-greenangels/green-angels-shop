@@ -5,6 +5,7 @@ import {
   forwardBackendCookies,
   readBackendJson,
 } from '@/lib/api/backend-fetch'
+import { buildCartSourceHeaders } from '@/lib/carts/cart-source-headers'
 
 export async function GET(request: Request) {
   try {
@@ -30,10 +31,11 @@ export async function PUT(request: Request) {
   }
 
   try {
+    const sourceHeaders = buildCartSourceHeaders(request)
     const res = await fetchBackend('/carts/me', {
       request,
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...sourceHeaders },
       body: JSON.stringify(body),
     })
     const data = await readBackendJson(res)

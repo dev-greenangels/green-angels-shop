@@ -32,6 +32,8 @@ export type BackstageOrderItem = {
   id: string
   quantity: number
   priceAtPurchase: number
+  commercialUnitPrice?: number | null
+  commercialLineAmount?: number | null
   lineTotal: number
   productVariantId: string
   productName: string
@@ -105,6 +107,22 @@ export type BackstageOrderDetail = BackstageOrderListItem & {
   erpLastErrorMessage?: string | null
   erpLastSyncAt?: string | null
   erpSyncedAt?: string | null
+  erpAdvanceExternalId?: string | null
+  erpAdvanceNativeId?: string | null
+  erpAdvanceKod?: string | null
+  erpAdvanceSyncStatus?: string | null
+  erpAdvanceSyncedAt?: string | null
+  erpAdvanceLastError?: string | null
+  erpStripePayExternalId?: string | null
+  erpStripePayNativeId?: string | null
+  erpStripePaySyncStatus?: string | null
+  erpStripePayLastError?: string | null
+  erpBankPayExternalId?: string | null
+  erpBankPayNativeId?: string | null
+  erpBankPayNativeKod?: string | null
+  erpBankPaySyncStatus?: string | null
+  erpBankPaySyncedAt?: string | null
+  erpBankPayLastError?: string | null
   buyerType?: string | null
   taxRegime?: string | null
   taxRatePercent?: number | null
@@ -135,6 +153,13 @@ export type BackstageOrderDetail = BackstageOrderListItem & {
     registeredAddress: string | null
     source: string
   } | null
+  viesStatus?: 'VALID' | 'INVALID' | 'ERROR' | 'NOT_CHECKED'
+  /** Present on Retry VIES responses only. */
+  flexiNoteSync?: {
+    ok: boolean
+    skipped?: boolean
+    message: string
+  }
   items: BackstageOrderItem[]
   confirmationPdfPresent?: boolean
   communications?: BackstageOrderCommunication[]
@@ -308,6 +333,16 @@ export async function markBackstageBankTransferPaid(id: string): Promise<Backsta
 
 export async function syncBackstageOrderErp(id: string): Promise<BackstageOrderDetail> {
   const res = await fetch(`/api/backstage/orders/${id}/erp-sync`, {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+/** AUDIT ONLY — refreshes OrderViesCheck; does not mutate tax/payment/Flexi. */
+export async function retryBackstageOrderVies(id: string): Promise<BackstageOrderDetail> {
+  const res = await fetch(`/api/backstage/orders/${id}/vies-retry`, {
     method: 'POST',
     credentials: 'include',
   })

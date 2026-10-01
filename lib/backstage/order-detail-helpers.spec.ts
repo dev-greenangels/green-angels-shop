@@ -27,6 +27,19 @@ describe('order detail helpers', () => {
     )
   })
 
+  it('canManualErpSync allows retry when Stripe payment FAILED even if Received Order SYNCED', () => {
+    assert.equal(
+      canManualErpSync({
+        erpSyncStatus: 'SYNCED',
+        erpNativeId: '151',
+        erpNativeKod: 'OBP0013/2026',
+        erpAdvanceSyncStatus: 'SYNCED',
+        erpStripePaySyncStatus: 'FAILED',
+      }),
+      true,
+    )
+  })
+
   it('taxRegimeLabel is human-readable for seller/destination', () => {
     assert.match(taxRegimeLabel('seller'), /Seller VAT/i)
     assert.match(taxRegimeLabel('destination'), /Destination VAT/i)

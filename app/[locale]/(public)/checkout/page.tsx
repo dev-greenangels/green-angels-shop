@@ -26,6 +26,7 @@ import type { SkCheckoutAuthMode } from '@/components/checkout/checkout-sk-auth-
 import { CartDrawer } from '@/components/cart-drawer'
 import { formatMinOrderCheckoutMessage } from '@/components/cart/min-order-info-banner'
 import { useCountrySiteOverlay } from '@/components/providers/country-site-provider'
+import { useDefaultCurrency } from '@/components/providers/commerce-provider'
 import { useSession } from '@/components/providers/session-provider'
 import { useFormatPrice } from '@/lib/commerce/use-format-price'
 import { RecentlyViewedSection } from '@/components/product/recently-viewed-section'
@@ -209,6 +210,7 @@ export default function CheckoutPage() {
   const tp = useTranslations('promo')
   const tApi = useTranslations('apiErrors')
   const formatMoney = useFormatPrice('shelf')
+  const defaultCurrency = useDefaultCurrency()
   const router = useRouter()
   const { user } = useSession()
   const items = useCartItems()
@@ -325,6 +327,14 @@ export default function CheckoutPage() {
         : [],
     [isSkMarket, marketSettings, hostCountryCode],
   )
+  const billingPreferCountries = useMemo(() => {
+    if (!isSkMarket) return []
+    const prefer = [
+      ...(hostCountryCode ? [hostCountryCode] : []),
+      ...enabledDeliveryCountries,
+    ]
+    return [...new Set(prefer.map((c) => c.toLowerCase()))]
+  }, [isSkMarket, hostCountryCode, enabledDeliveryCountries])
   const deliveryCountryCode = formData.deliveryCountryCode || hostCountryCode || undefined
   const countryCode = hostCountryCode ?? undefined
   const splitOrderParts =
@@ -367,12 +377,14 @@ export default function CheckoutPage() {
         hideLegalBankTransfer: isSkMarket,
         allowPayOnPickup: cartCheckoutSettings.allowPayOnPickup === true,
         deliveryMethod: formData.deliveryMethod,
+        dobierkaAllowed: pricingQuote?.checkout?.dobierkaAllowed !== false,
       }).includes('dobierka'),
     [
       cartCheckoutSettings.allowPayOnPickup,
       cartCheckoutSettings.enabledPaymentMethods,
       formData.deliveryMethod,
       isSkMarket,
+      pricingQuote?.checkout?.dobierkaAllowed,
     ],
   )
 
@@ -961,6 +973,7 @@ export default function CheckoutPage() {
         hideLegalBankTransfer: marketSettings.region === 'sk',
         allowPayOnPickup: cartCheckoutSettings.allowPayOnPickup === true,
         deliveryMethod,
+        dobierkaAllowed: pricingQuote?.checkout?.dobierkaAllowed !== false,
       }
 
       const isPaymentAllowed = (method: CheckoutFormValues['paymentMethod']) =>
@@ -1004,10 +1017,22 @@ export default function CheckoutPage() {
         deliveryCountryCode = allowed[0] ?? deliveryCountryCode
       }
 
+      // Initial billing country convenience: host site code only (never delivery allowlist).
+      let billingCountryCode = current.billingCountryCode
+      if (marketSettings.region === 'sk' && !billingCountryCode.trim()) {
+        const host = countryOverlay?.countryCode
+        if (host === 'sk' || host === 'hu' || host === 'at') {
+          billingCountryCode = host
+        } else {
+          billingCountryCode = 'sk'
+        }
+      }
+
       if (
         deliveryMethod === current.deliveryMethod &&
         paymentMethod === current.paymentMethod &&
-        deliveryCountryCode === current.deliveryCountryCode
+        deliveryCountryCode === current.deliveryCountryCode &&
+        billingCountryCode === current.billingCountryCode
       ) {
         return current
       }
@@ -1017,12 +1042,19 @@ export default function CheckoutPage() {
         deliveryMethod,
         paymentMethod,
         deliveryCountryCode,
+        billingCountryCode,
         ...(marketSettings.region !== 'sk' && paymentMethod !== 'bank-transfer-legal'
           ? { companyEdrpou: '', companyLegalName: '' }
           : {}),
       }
     })
-  }, [allowedDeliveryMethods, cartCheckoutSettings, marketSettings, countryOverlay?.countryCode])
+  }, [
+    allowedDeliveryMethods,
+    cartCheckoutSettings,
+    marketSettings,
+    countryOverlay?.countryCode,
+    pricingQuote?.checkout?.dobierkaAllowed,
+  ])
 
   // Reset pay-on-pickup (and any other gated method) when delivery method changes.
   useEffect(() => {
@@ -1032,6 +1064,7 @@ export default function CheckoutPage() {
         hideLegalBankTransfer: marketSettings.region === 'sk',
         allowPayOnPickup: cartCheckoutSettings.allowPayOnPickup === true,
         deliveryMethod: current.deliveryMethod,
+        dobierkaAllowed: pricingQuote?.checkout?.dobierkaAllowed !== false,
       }
       if (isPaymentMethodCurrentlyAllowed(current.paymentMethod, paymentVisibility)) {
         return current
@@ -1047,6 +1080,7 @@ export default function CheckoutPage() {
     cartCheckoutSettings.allowPayOnPickup,
     cartCheckoutSettings.enabledPaymentMethods,
     marketSettings.region,
+    pricingQuote?.checkout?.dobierkaAllowed,
   ])
 
   useEffect(() => {
@@ -1136,8 +1170,12 @@ export default function CheckoutPage() {
   const billingNamesSeededRef = useRef(false)
 
   const patchForm = useCallback((patch: Partial<CheckoutFormValues>) => {
-    setFormData((prev) => reduceCheckoutFormPatch(prev, patch))
-  }, [])
+    setFormData((prev) =>
+      reduceCheckoutFormPatch(prev, patch, {
+        enabledDeliveryCountries,
+      }),
+    )
+  }, [enabledDeliveryCountries])
 
   const { hydrationReady } = useCheckoutInitialHydration({
     enabled: mounted && catalogReady && hasCheckoutable,
@@ -1199,15 +1237,25 @@ export default function CheckoutPage() {
     companyVatId: isSkMarket && buyerType === 'company' ? vatId : undefined,
     shipmentSplitMode: needsShipmentSplitChoice ? shipmentSplitMode : undefined,
     promoCodes: appliedPromoCodes,
+    pricingQuote,
+    currencyCode: defaultCurrency.code,
   })
 
   const patchImmediateShipment = useCallback((patch: Partial<CheckoutFormValues>) => {
-    setFormData((prev) => reduceSplitShipmentPatch(prev, 'immediate', patch))
-  }, [])
+    setFormData((prev) =>
+      reduceSplitShipmentPatch(prev, 'immediate', patch, {
+        enabledDeliveryCountries,
+      }),
+    )
+  }, [enabledDeliveryCountries])
 
   const patchDatedShipment = useCallback((patch: Partial<CheckoutFormValues>) => {
-    setFormData((prev) => reduceSplitShipmentPatch(prev, 'dated', patch))
-  }, [])
+    setFormData((prev) =>
+      reduceSplitShipmentPatch(prev, 'dated', patch, {
+        enabledDeliveryCountries,
+      }),
+    )
+  }, [enabledDeliveryCountries])
 
   const handleShipmentSplitModeChange = useCallback((mode: ShipmentSplitMode) => {
     setShipmentSplitMode(mode)
@@ -1799,7 +1847,7 @@ export default function CheckoutPage() {
                           onVatCountryCodeChange={setVatCountryCode}
                           onViesResult={(result) => setViesValid(result?.valid ?? null)}
                           viesValid={viesValid}
-                          enabledCountries={enabledDeliveryCountries}
+                          preferCountryFirst={billingPreferCountries}
                           billingTouched={billingTouched}
                           onBlurBillingField={(field) =>
                             setBillingTouched((p) => ({ ...p, [field]: true }))
@@ -2052,6 +2100,7 @@ export default function CheckoutPage() {
                     formData={formData}
                     enabledPaymentMethods={cartCheckoutSettings.enabledPaymentMethods}
                     allowPayOnPickup={cartCheckoutSettings.allowPayOnPickup === true}
+                    dobierkaAllowed={pricingQuote?.checkout?.dobierkaAllowed !== false}
                     paymentTouched={paymentTouched}
                     onPatchForm={patchForm}
                     onBlurPaymentField={(field) =>

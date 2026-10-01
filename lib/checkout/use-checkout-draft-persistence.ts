@@ -13,10 +13,12 @@ import {
   scheduleCheckoutDraftPersist,
 } from '@/lib/carts/checkout-draft-persist-control'
 import {
+  buildCheckoutDraftLastQuote,
   buildCheckoutDraftPayload,
   CHECKOUT_DRAFT_DEBOUNCE_MS,
   type CheckoutDraftPersistInput,
 } from '@/lib/checkout/checkout-draft'
+import type { PricingQuote } from '@/lib/pricing/quote'
 import type { CheckoutFormValues } from '@/lib/validation/checkout-form'
 
 type UseCheckoutDraftPersistenceArgs = {
@@ -30,6 +32,9 @@ type UseCheckoutDraftPersistenceArgs = {
   companyVatId?: string
   shipmentSplitMode?: 'together' | 'split'
   promoCodes?: string[]
+  /** Live quote — write-only lastQuote for BO; never read back for pricing. */
+  pricingQuote?: PricingQuote | null
+  currencyCode?: string | null
 }
 
 /**
@@ -47,11 +52,15 @@ export function useCheckoutDraftPersistence({
   companyVatId,
   shipmentSplitMode,
   promoCodes,
+  pricingQuote,
+  currencyCode,
 }: UseCheckoutDraftPersistenceArgs) {
   const lastMethodsRef = useRef({ delivery: '', payment: '' })
   const skipFirstRef = useRef(true)
   /** After order-completed, suppress until enabled cycles off (consumed checkout). */
   const suppressAfterOrderRef = useRef(false)
+
+  const lastQuote = buildCheckoutDraftLastQuote(pricingQuote, currencyCode)
 
   const persistInput: CheckoutDraftPersistInput = {
     form: formData,
@@ -62,6 +71,7 @@ export function useCheckoutDraftPersistence({
     companyVatId,
     shipmentSplitMode,
     promoCodes,
+    lastQuote: lastQuote ?? undefined,
   }
 
   const payload = buildCheckoutDraftPayload(persistInput)
@@ -119,9 +129,9 @@ export function useCheckoutDraftPersistence({
         delivery: payload.deliveryMethod ?? '',
         payment: payload.paymentMethod ?? '',
       }
-      return patchCheckoutDraft(payload)
+      return patchCheckoutDraft(payload, { locale })
     })
 
     return () => cancelPendingCheckoutDraftPersist()
-  }, [enabled, payloadKey, payload])
+  }, [enabled, payloadKey, payload, locale])
 }

@@ -63,6 +63,10 @@ import {
   hasCompanyBankDetails,
   resolveCheckoutBankDetails,
 } from '@/lib/settings/company-bank-details'
+import {
+  EU_SALES_CONSTANT_SYMBOL,
+  numericOrderVarSym,
+} from '@/lib/checkout/sales-constant-symbol'
 import { DEFAULT_CART_CHECKOUT_SETTINGS, UNAVAILABLE_STORE_SETTINGS } from '@/lib/settings/defaults'
 import {
   fetchPublicSiteSettingsFromApiRoute,
@@ -256,6 +260,18 @@ function OrderCard({
             <span className="text-muted-foreground">{t('resultAmountDueOnDelivery')}</span>
             <span className="tabular-nums font-medium">{formatMoney(order.totalAmount)}</span>
           </div>
+        ) : null}
+        {order.buyerType === 'company' &&
+        (order.taxRegime === 'reverse_charge' ||
+          order.viesStatus === 'ERROR' ||
+          order.viesStatus === 'INVALID') ? (
+          <p className="pt-2 text-xs text-muted-foreground">
+            {order.taxRegime === 'reverse_charge'
+              ? t('orderVatReverseChargeNote')
+              : order.viesStatus === 'ERROR'
+                ? t('orderVatUnavailableNote')
+                : t('orderVatInvalidNote')}
+          </p>
         ) : null}
       </div>
 
@@ -822,6 +838,20 @@ function SuccessContent() {
               <CopyableRow label={t('bankLegalAddress')} value={bankDetails.legalAddress} t={t} />
               <CopyableRow label={t('bankTaxStatus')} value={bankDetails.taxStatus} t={t} />
               <CopyableRow label={t('bankPaymentPurpose')} value={paymentPurpose} t={t} />
+              {isSk && primary ? (
+                <>
+                  <CopyableRow
+                    label={t('bankVariableSymbol')}
+                    value={numericOrderVarSym(primary.orderNumber)}
+                    t={t}
+                  />
+                  <CopyableRow
+                    label={t('bankConstantSymbol')}
+                    value={EU_SALES_CONSTANT_SYMBOL}
+                    t={t}
+                  />
+                </>
+              ) : null}
               {primary ? (
                 <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm">
                   <p className="text-xs text-muted-foreground">{t('resultAmountToPay')}</p>

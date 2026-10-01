@@ -23,12 +23,16 @@ export function resolveVisiblePaymentMethods(input: {
   hideLegalBankTransfer: boolean
   allowPayOnPickup: boolean
   deliveryMethod: string
+  /** When false, hide dobierka (e.g. Packeta country/method disallows COD). */
+  dobierkaAllowed?: boolean
 }): CheckoutPaymentMethodSlug[] {
   const enabled = input.enabledPaymentMethods
   const isPickup = isSelfPickupDeliveryMethod(input.deliveryMethod)
+  const dobierkaAllowed = input.dobierkaAllowed !== false
 
   const base = TOGGLEABLE_PAYMENT_METHODS.filter((method) => {
     if (isPickup && method === DOBIERKA_PAYMENT_METHOD) return false
+    if (!dobierkaAllowed && method === DOBIERKA_PAYMENT_METHOD) return false
     if (input.hideLegalBankTransfer && method === 'bank-transfer-legal') return false
     if (!enabled?.length) return true
     if (method === 'bank-transfer' && input.hideLegalBankTransfer) {
@@ -55,6 +59,7 @@ export function isPaymentMethodCurrentlyAllowed(
     hideLegalBankTransfer: boolean
     allowPayOnPickup: boolean
     deliveryMethod: string
+    dobierkaAllowed?: boolean
   },
 ): boolean {
   return resolveVisiblePaymentMethods(input).includes(method as CheckoutPaymentMethodSlug)

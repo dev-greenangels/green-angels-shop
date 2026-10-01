@@ -1,5 +1,6 @@
-import type { CheckoutDraftV1 } from '@/lib/carts/types'
+import type { CheckoutDraftLastQuote, CheckoutDraftV1 } from '@/lib/carts/types'
 import type { CheckoutFormValues } from '@/lib/validation/checkout-form'
+import type { PricingQuote } from '@/lib/pricing/quote'
 
 export const CHECKOUT_DRAFT_DEBOUNCE_MS = 800
 
@@ -12,6 +13,34 @@ export type CheckoutDraftPersistInput = {
   companyVatId?: string
   shipmentSplitMode?: 'together' | 'split'
   promoCodes?: string[]
+  /**
+   * Write-only BO informational snapshot from live quote.
+   * Never read back for storefront pricing.
+   */
+  lastQuote?: CheckoutDraftLastQuote | null
+}
+
+/** Build informational lastQuote from a successful live pricing quote. */
+export function buildCheckoutDraftLastQuote(
+  quote: PricingQuote | null | undefined,
+  currencyCode: string | null | undefined,
+): CheckoutDraftLastQuote | null {
+  const checkout = quote?.checkout
+  if (!checkout) return null
+  const code = (currencyCode ?? '').trim().toUpperCase()
+  if (!code || !/^[A-Z]{3}$/.test(code)) return null
+  if (!Number.isFinite(checkout.deliveryAmount) || !Number.isFinite(checkout.grandTotal)) {
+    return null
+  }
+  return {
+    quotedAt: new Date().toISOString(),
+    currencyCode: code,
+    deliveryAmount: checkout.deliveryAmount,
+    packagingAmount: checkout.packagingAmount,
+    taxAmount: checkout.taxAmount,
+    grandTotal: checkout.grandTotal,
+    productsSubtotal: checkout.productsSubtotal,
+  }
 }
 
 function trimOrUndef(value: string | undefined | null): string | undefined {
@@ -85,6 +114,8 @@ export function buildCheckoutDraftPayload(input: CheckoutDraftPersistInput): Che
     .map((c) => c.trim().toUpperCase())
     .filter(Boolean)
   if (codes.length) draft.promoCodes = [...new Set(codes)]
+
+  if (input.lastQuote) draft.lastQuote = input.lastQuote
 
   return draft
 }

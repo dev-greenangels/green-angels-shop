@@ -5,8 +5,14 @@ import {
   extractShipmentSlice,
   patchShipmentSlice,
 } from '@/lib/checkout/shipment-slice'
+import { isBillingCountryDeliverable } from '@/lib/checkout/billing-countries'
 
 const COURIER_HOME_METHODS = new Set(['packeta-courier', 'gls-courier', 'nova-poshta-address'])
+
+export type DeliverySameAsOptions = {
+  /** Domain delivery allowlist — when set, same-as only if billing country is deliverable. */
+  enabledDeliveryCountries?: readonly string[] | null
+}
 
 export function isCourierHomeDeliveryMethod(method: string): boolean {
   return COURIER_HOME_METHODS.has(method)
@@ -14,6 +20,13 @@ export function isCourierHomeDeliveryMethod(method: string): boolean {
 
 export function isPacketaPickupMethod(method: string): boolean {
   return method === 'packeta-box'
+}
+
+export function canUseDeliveryAddressSameAsBilling(
+  billingCountryCode: string,
+  enabledDeliveryCountries?: readonly string[] | null,
+): boolean {
+  return isBillingCountryDeliverable(billingCountryCode, enabledDeliveryCountries)
 }
 
 /** Patch that copies billing address into courier delivery fields. */
@@ -28,8 +41,7 @@ export function deliveryAddressFromBilling(
     | 'deliveryCountryCode'
   >,
 ): Partial<CheckoutFormValues> {
-  const country =
-    form.billingCountryCode.trim() || form.deliveryCountryCode.trim() || 'sk'
+  const country = form.billingCountryCode.trim().toLowerCase()
   const city = form.billingCity.trim()
   const street = form.billingStreet.trim()
   return {
@@ -138,6 +150,7 @@ export function syncCourierSlicesFromBilling(
 
 /**
  * When same-as is ON, copy billing into main courier fields and every courier split slice.
+ * Caller must ensure billing country is deliverable.
  */
 export function applyDeliveryAddressSameAsBilling(
   form: CheckoutFormValues,
@@ -155,6 +168,22 @@ export function applyDeliveryAddressSameAsBilling(
     }
   }
   return next
+}
+
+function enforceSameAsDeliverability(
+  form: CheckoutFormValues,
+  options?: DeliverySameAsOptions,
+): CheckoutFormValues {
+  if (!form.deliveryAddressSameAsBilling) return form
+  if (
+    canUseDeliveryAddressSameAsBilling(
+      form.billingCountryCode,
+      options?.enabledDeliveryCountries,
+    )
+  ) {
+    return form
+  }
+  return { ...form, deliveryAddressSameAsBilling: false }
 }
 
 /**
@@ -189,7 +218,11 @@ function applyDeliveryMethodTransitionToSlice(
   if (prevMethod === nextMethod) return slice
 
   if (isPacketaPickupMethod(prevMethod) && isCourierHomeDeliveryMethod(nextMethod)) {
-    let next = { ...slice, ...clearPacketaPointLeakFields(), deliveryMethod: nextMethod }
+    let next: CheckoutShipmentSlice = {
+      ...slice,
+      ...clearPacketaPointLeakFields(),
+      deliveryMethod: nextMethod as CheckoutShipmentSlice['deliveryMethod'],
+    }
     if (form.deliveryAddressSameAsBilling) {
       next = { ...next, ...deliveryAddressFieldsForSlice(form) }
     }
@@ -206,6 +239,7 @@ function applyDeliveryMethodTransitionToSlice(
 export function reduceCheckoutFormPatch(
   prev: CheckoutFormValues,
   patch: Partial<CheckoutFormValues>,
+  options?: DeliverySameAsOptions,
 ): CheckoutFormValues {
   let next: CheckoutFormValues = { ...prev, ...patch }
 
@@ -227,8 +261,12 @@ export function reduceCheckoutFormPatch(
     next = { ...next, deliveryAddressSameAsBilling: false }
   }
 
+  // Billing country outside delivery allowlist cannot drive same-as copy.
+  next = enforceSameAsDeliverability(next, options)
+
+  // Turning same-as ON when undeliverable is a no-op (flag already cleared).
   const turnedSameOn =
-    patch.deliveryAddressSameAsBilling === true && !prev.deliveryAddressSameAsBilling
+    patch.deliveryAddressSameAsBilling === true && next.deliveryAddressSameAsBilling
   const billingTouched = isBillingAddressPatch(patch)
   const methodBecameCourier =
     patch.deliveryMethod !== undefined &&
@@ -253,6 +291,7 @@ export function reduceSplitShipmentPatch(
   prev: CheckoutFormValues,
   which: 'immediate' | 'dated',
   patch: Partial<CheckoutFormValues>,
+  options?: DeliverySameAsOptions,
 ): CheckoutFormValues {
   const { deliveryAddressSameAsBilling: sameAsPatch, ...rest } = patch
 
@@ -260,6 +299,8 @@ export function reduceSplitShipmentPatch(
   if (typeof sameAsPatch === 'boolean') {
     next = { ...next, deliveryAddressSameAsBilling: sameAsPatch }
   }
+
+  next = enforceSameAsDeliverability(next, options)
 
   const seed = extractShipmentSlice(next)
   const current = next.splitShipments ?? {
@@ -308,7 +349,7 @@ export function reduceSplitShipmentPatch(
   }
 
   const turnedSameOn =
-    sameAsPatch === true && !prev.deliveryAddressSameAsBilling
+    sameAsPatch === true && next.deliveryAddressSameAsBilling
   const methodBecameCourier =
     slicePatch.deliveryMethod !== undefined &&
     isCourierHomeDeliveryMethod(updated.deliveryMethod) &&

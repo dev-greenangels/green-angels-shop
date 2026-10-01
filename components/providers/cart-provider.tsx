@@ -3,6 +3,7 @@
 import { useSession } from '@/components/providers/session-provider'
 import { CartMergeDialog } from '@/components/cart/cart-merge-dialog'
 import { UrlLocaleIntlProvider } from '@/components/localization/url-locale-intl-provider'
+import { useRouteAppLocale } from '@/components/localization/use-route-locale'
 import {
   applyCartMerge,
   fetchCartMergePreview,
@@ -18,6 +19,7 @@ import {
   bumpCartServerSyncEpoch,
   cancelPendingCartServerSync,
   scheduleCartServerSync,
+  setCartServerSyncLocale,
 } from '@/lib/carts/cart-server-sync'
 import { useCartStore } from '@/lib/cart-store'
 import type { CartMergePreview } from '@/lib/carts/types'
@@ -26,6 +28,7 @@ import { useEffect, useRef, useState } from 'react'
 async function resolveAuthenticatedCart(
   setMergePreview: (preview: CartMergePreview) => void,
   setMergeOpen: (open: boolean) => void,
+  locale: string,
 ) {
   const preview = await fetchCartMergePreview()
   if (!preview) {
@@ -40,7 +43,7 @@ async function resolveAuthenticatedCart(
   }
 
   if (preview.guestItems.length > 0 && preview.userItems.length === 0) {
-    await applyCartMerge('keep_guest')
+    await applyCartMerge('keep_guest', { locale })
     publishCartCrossTabInvalidate('cart-merge')
   }
 
@@ -63,6 +66,8 @@ async function handleCartCrossTabInvalidate(at: number, lastProcessedAt: { curre
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { user } = useSession()
+  // Route [locale] — CartProvider sits above NextIntlClientProvider in root layout.
+  const locale = useRouteAppLocale()
   const [mergePreview, setMergePreview] = useState<CartMergePreview | null>(null)
   const [mergeOpen, setMergeOpen] = useState(false)
   const [mergeLoading, setMergeLoading] = useState(false)
@@ -71,6 +76,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const skipGuestServerSyncRef = useRef(false)
   const isAuthenticatedRef = useRef(false)
   const lastCrossTabAtRef = useRef(0)
+  const localeRef = useRef(locale)
+  localeRef.current = locale
+
+  useEffect(() => {
+    setCartServerSyncLocale(locale)
+  }, [locale])
 
   useEffect(() => {
     isAuthenticatedRef.current = Boolean(user?.id)
@@ -88,6 +99,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       scheduleCartServerSync(state.items, {
         isBlocked: () => !isAuthenticatedRef.current && skipGuestServerSyncRef.current,
+        locale: localeRef.current,
       })
     })
 
@@ -152,7 +164,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       try {
         cancelPendingCartServerSync()
         bumpCartServerSyncEpoch()
-        await resolveAuthenticatedCart(setMergePreview, setMergeOpen)
+        await resolveAuthenticatedCart(setMergePreview, setMergeOpen, localeRef.current)
       } finally {
         store.setServerSyncPaused(false)
       }
@@ -164,7 +176,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   ) => {
     setMergeLoading(true)
     try {
-      await applyCartMerge(strategy)
+      await applyCartMerge(strategy, { locale: localeRef.current })
       publishCartCrossTabInvalidate('cart-merge')
       await hydrateCartFromServer()
       setMergeOpen(false)

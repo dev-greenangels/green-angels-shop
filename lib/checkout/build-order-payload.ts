@@ -254,18 +254,15 @@ export function buildOrderPayload(
     if (psc) payload.companyPostalCode = psc
   }
 
-  // SK/EU immutable billing snapshot (always for sk; never Packeta point)
+  // SK/EU immutable billing snapshot (always for sk; never Packeta point / delivery / domain).
+  // Explicit billingCountryCode only — backend rejects empty/invalid ISO for SK.
   if (options?.marketRegion === 'sk') {
+    const billingCc = form.billingCountryCode.trim().toLowerCase() || undefined
     if (options.buyerType === 'company') {
       payload.billingStreet = form.companyStreet.trim() || undefined
       payload.billingCity = form.companyCity.trim() || undefined
       payload.billingPostalCode = form.companyPostalCode.trim() || undefined
-      payload.billingCountryCode = (
-        form.billingCountryCode.trim() ||
-        form.deliveryCountryCode.trim() ||
-        options.countryCode ||
-        'sk'
-      ).toLowerCase()
+      if (billingCc) payload.billingCountryCode = billingCc
     } else {
       // Individual: billing is collected on contact step (never Packeta point / shipping copy).
       payload.billingFirstName = form.billingFirstName.trim() || undefined
@@ -274,12 +271,7 @@ export function buildOrderPayload(
       payload.billingHouseNumber = form.billingHouseNumber.trim() || undefined
       payload.billingCity = form.billingCity.trim() || undefined
       payload.billingPostalCode = form.billingPostalCode.trim() || undefined
-      payload.billingCountryCode = (
-        form.billingCountryCode.trim() ||
-        deliveryForm.deliveryCountryCode.trim() ||
-        options.countryCode ||
-        'sk'
-      ).toLowerCase()
+      if (billingCc) payload.billingCountryCode = billingCc
     }
   }
 

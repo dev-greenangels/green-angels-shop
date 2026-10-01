@@ -76,10 +76,17 @@ import {
   markBackstageBankTransferPaid,
   patchBackstageOrder,
   patchBackstageOrderStatus,
+  retryBackstageOrderVies,
   syncBackstageOrderErp,
   syncBackstageOrderTracking,
   type BackstageOrderDetail,
 } from '@/lib/backstage/orders'
+import { resolveViesStatus } from '@/lib/checkout/vies-status'
+import {
+  resolveBankPayDisplayStatus,
+  resolveErpAggregateLabel,
+  resolveErpDocumentStages,
+} from '@/lib/backstage/erp-aggregate'
 import { formatDateTime, formatDateTimeOrDash } from '@/lib/i18n/format-datetime'
 import { formatStoreAddress } from '@/lib/settings/store-helpers'
 
@@ -115,6 +122,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
     locale === 'uk' || locale === 'sk' ? locale : 'en'
   ) as BackstageCountryLocale
   const tPacketa = useTranslations('packetaOrderSnapshot')
+  const tVies = useTranslations('orderVies')
   const store = useStoreSettings()
   const pickupAddress = formatStoreAddress(store)
 
@@ -130,6 +138,8 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
   const [saving, setSaving] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [erpSyncing, setErpSyncing] = useState(false)
+  const [viesRetrying, setViesRetrying] = useState(false)
+  const [viesRetryNote, setViesRetryNote] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
@@ -284,6 +294,37 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
     }
   }
 
+  const handleViesRetry = async () => {
+    if (!order) return
+    setViesRetrying(true)
+    setViesRetryNote(null)
+    try {
+      const updated = await retryBackstageOrderVies(order.id)
+      applyOrder(updated)
+      const nextStatus = resolveViesStatus({
+        companyVatId: updated.companyVatId,
+        viesCheck: updated.viesCheck ?? null,
+      })
+      if (nextStatus === 'VALID') {
+        setViesRetryNote(tVies('retryNowValid'))
+        toast.success(tVies('retryNowValid'))
+      } else if (nextStatus === 'INVALID') {
+        setViesRetryNote(tVies('retryStillInvalid'))
+        toast.message(tVies('retryStillInvalid'))
+      } else {
+        setViesRetryNote(tVies('retryStillError'))
+        toast.message(tVies('retryStillError'))
+      }
+      if (updated.flexiNoteSync && !updated.flexiNoteSync.ok && !updated.flexiNoteSync.skipped) {
+        toast.warning(tVies('flexiNoteSyncFailed'))
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : tVies('retryFailed'))
+    } finally {
+      setViesRetrying(false)
+    }
+  }
+
   const handleDelete = async () => {
     if (!order) return
     setDeleting(true)
@@ -325,6 +366,19 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
   }
 
   const erpSynced = (order.erpSyncStatus ?? '').trim() === 'SYNCED'
+  const erpStages = resolveErpDocumentStages(order.paymentMethod)
+  const erpAggregate = resolveErpAggregateLabel({
+    paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    erpSyncStatus: order.erpSyncStatus,
+    erpAdvanceSyncStatus: order.erpAdvanceSyncStatus,
+    erpStripePaySyncStatus: order.erpStripePaySyncStatus,
+    erpBankPaySyncStatus: order.erpBankPaySyncStatus,
+  })
+  const bankPayDisplay = resolveBankPayDisplayStatus({
+    paymentStatus: order.paymentStatus,
+    erpBankPaySyncStatus: order.erpBankPaySyncStatus,
+  })
   const hasPayment = order.paymentStatus === 'success'
   const hasTracking = Boolean(order.trackingNumber?.trim())
   const showErpRetry = canManualErpSync(order)
@@ -373,7 +427,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
               </span>
             ) : null}
             <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
-              ERP: {order.erpSyncStatus ?? 'NOT_REQUIRED'}
+              ERP: {erpAggregate}
             </span>
           </div>
         </div>
@@ -613,7 +667,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                   </MetaRow>
                   <MetaRow label="Тип покупця">{buyerTypeLabel(order.buyerType)}</MetaRow>
                   {order.companyVatId ? (
-                    <MetaRow label="VAT ID">
+                    <MetaRow label={tVies('vatId')}>
                       <span className="inline-flex flex-wrap items-center gap-2">
                         {order.vatCountryCode ? (
                           <CountryDisplay
@@ -629,6 +683,136 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                 </dl>
               </CardContent>
             </Card>
+
+            {order.buyerType === 'company' ? (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">{tVies('title')}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {(() => {
+                    const viesStatus =
+                      order.viesStatus ??
+                      resolveViesStatus({
+                        companyVatId: order.companyVatId,
+                        viesCheck: order.viesCheck ?? null,
+                      })
+                    const check = order.viesCheck
+                    const isRc = order.taxRegime === 'reverse_charge'
+                    const showRetry = viesStatus === 'ERROR' || viesStatus === 'INVALID'
+                    const paidOrExported =
+                      order.paymentStatus === 'success' ||
+                      Boolean(order.erpNativeId) ||
+                      Boolean(order.erpAdvanceNativeId)
+
+                    return (
+                      <>
+                        <dl className="space-y-2">
+                          <MetaRow label={tVies('vatId')}>
+                            {order.companyVatId ? (
+                              <span>
+                                {order.vatCountryCode ? `${order.vatCountryCode} ` : ''}
+                                {order.companyVatId}
+                              </span>
+                            ) : (
+                              tVies('noVat')
+                            )}
+                          </MetaRow>
+                          <MetaRow label={tVies('status')}>
+                            <span
+                              className={
+                                viesStatus === 'VALID'
+                                  ? 'text-primary'
+                                  : viesStatus === 'ERROR'
+                                    ? 'font-semibold text-amber-700'
+                                    : viesStatus === 'INVALID'
+                                      ? 'text-destructive'
+                                      : 'text-muted-foreground'
+                              }
+                            >
+                              {viesStatus === 'VALID'
+                                ? tVies('valid')
+                                : viesStatus === 'INVALID'
+                                  ? tVies('invalid')
+                                  : viesStatus === 'ERROR'
+                                    ? tVies('error')
+                                    : tVies('noVat')}
+                            </span>
+                          </MetaRow>
+                          {check?.checkedAt ? (
+                            <MetaRow label={tVies('checkedAt')}>
+                              {formatDateTime(check.checkedAt, locale, 'datetime')}
+                            </MetaRow>
+                          ) : null}
+                          {check?.registeredName ? (
+                            <MetaRow label={tVies('registeredName')}>
+                              {check.registeredName}
+                            </MetaRow>
+                          ) : null}
+                          {check?.registeredAddress ? (
+                            <MetaRow label={tVies('registeredAddress')}>
+                              {check.registeredAddress}
+                            </MetaRow>
+                          ) : null}
+                          {check?.requestIdentifier ? (
+                            <MetaRow label={tVies('requestId')}>
+                              {check.requestIdentifier}
+                            </MetaRow>
+                          ) : null}
+                        </dl>
+
+                        {viesStatus === 'VALID' ? (
+                          <p className="text-sm text-primary">
+                            {isRc ? tVies('validWithRc') : tVies('validWithVat')}
+                          </p>
+                        ) : null}
+                        {viesStatus === 'INVALID' ? (
+                          <p className="text-sm text-muted-foreground">
+                            {tVies('invalidVatApplied')}
+                          </p>
+                        ) : null}
+                        {viesStatus === 'ERROR' ? (
+                          <div
+                            role="status"
+                            className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+                          >
+                            <p className="font-semibold">{tVies('error')}</p>
+                            <p className="mt-1">{tVies('errorBody')}</p>
+                          </div>
+                        ) : null}
+
+                        {viesRetryNote ? (
+                          <div className="space-y-1 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
+                            <p className="font-medium text-foreground">{viesRetryNote}</p>
+                            <p className="text-muted-foreground">{tVies('auditOnlyWarning')}</p>
+                            {paidOrExported ? (
+                              <p className="text-muted-foreground">{tVies('paidExportedHint')}</p>
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        {showRetry && order.companyVatId ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={viesRetrying}
+                            onClick={() => void handleViesRetry()}
+                          >
+                            {viesRetrying ? (
+                              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden />
+                            ) : (
+                              <RefreshCw className="mr-2 h-3.5 w-3.5" aria-hidden />
+                            )}
+                            {viesRetrying ? tVies('retrying') : tVies('retry')}
+                          </Button>
+                        ) : null}
+                      </>
+                    )
+                  })()}
+                </CardContent>
+              </Card>
+            ) : null}
           </div>
 
           {timeline.length > 1 ? (
@@ -692,7 +876,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                     {order.companyIco ? <MetaRow label="IČO">{order.companyIco}</MetaRow> : null}
                     {order.companyDic ? <MetaRow label="DIČ">{order.companyDic}</MetaRow> : null}
                     {order.companyVatId ? (
-                      <MetaRow label="IČ DPH">{order.companyVatId}</MetaRow>
+                      <MetaRow label={tVies('vatId')}>{order.companyVatId}</MetaRow>
                     ) : null}
                     <MetaRow label="Адреса">
                       {[
@@ -886,29 +1070,129 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
             </CardHeader>
             <CardContent className="space-y-3">
               <dl className="space-y-2">
-                <MetaRow label="Статус">{order.erpSyncStatus ?? 'NOT_REQUIRED'}</MetaRow>
-                <MetaRow label="ext:GA">
-                  {order.externalErpId ? <Copyable value={order.externalErpId} /> : '—'}
-                </MetaRow>
-                <MetaRow label="Native ID">{order.erpNativeId ?? '—'}</MetaRow>
-                <MetaRow label="Документ">{order.erpNativeKod ?? '—'}</MetaRow>
-                <MetaRow label="Attempts">{order.erpSyncAttempts ?? 0}</MetaRow>
-                <MetaRow label="Synced">
-                  {formatDateTimeOrDash(order.erpSyncedAt, locale, 'datetime')}
-                </MetaRow>
+                <MetaRow label="Загальний">{erpAggregate}</MetaRow>
               </dl>
-              {order.erpLastErrorCode || order.erpLastErrorMessage ? (
-                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
-                  <p className="font-medium text-destructive">
-                    {order.erpLastErrorCode ?? 'Error'}
-                  </p>
-                  {order.erpLastErrorMessage ? (
-                    <p className="mt-1 break-words text-xs text-muted-foreground">
-                      {order.erpLastErrorMessage}
+
+              <div className="space-y-3 border-t pt-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Received Order
+                </p>
+                <dl className="space-y-2">
+                  <MetaRow label="Статус">{order.erpSyncStatus ?? 'NOT_REQUIRED'}</MetaRow>
+                  <MetaRow label="ext:GA">
+                    {order.externalErpId ? <Copyable value={order.externalErpId} /> : '—'}
+                  </MetaRow>
+                  <MetaRow label="Native ID">{order.erpNativeId ?? '—'}</MetaRow>
+                  <MetaRow label="Документ">{order.erpNativeKod ?? '—'}</MetaRow>
+                  <MetaRow label="Attempts">{order.erpSyncAttempts ?? 0}</MetaRow>
+                  <MetaRow label="Synced">
+                    {formatDateTimeOrDash(order.erpSyncedAt, locale, 'datetime')}
+                  </MetaRow>
+                </dl>
+                {order.erpLastErrorCode || order.erpLastErrorMessage ? (
+                  <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                    <p className="font-medium text-destructive">
+                      {order.erpLastErrorCode ?? 'Error'}
                     </p>
+                    {order.erpLastErrorMessage ? (
+                      <p className="mt-1 break-words text-xs text-muted-foreground">
+                        {order.erpLastErrorMessage}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+
+              {erpStages.includes('advance') ? (
+                <div className="space-y-3 border-t pt-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    ZÁLOHA
+                  </p>
+                  <dl className="space-y-2">
+                    <MetaRow label="Статус">
+                      {order.erpAdvanceSyncStatus ?? 'NOT_REQUIRED'}
+                    </MetaRow>
+                    <MetaRow label="Документ">{order.erpAdvanceKod ?? '—'}</MetaRow>
+                    <MetaRow label="Native ID">{order.erpAdvanceNativeId ?? '—'}</MetaRow>
+                    <MetaRow label="ext">
+                      {order.erpAdvanceExternalId ? (
+                        <Copyable value={order.erpAdvanceExternalId} />
+                      ) : (
+                        '—'
+                      )}
+                    </MetaRow>
+                    <MetaRow label="Synced">
+                      {formatDateTimeOrDash(order.erpAdvanceSyncedAt, locale, 'datetime')}
+                    </MetaRow>
+                  </dl>
+                  {order.erpAdvanceLastError ? (
+                    <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                      <p className="break-words text-xs text-muted-foreground">
+                        {order.erpAdvanceLastError}
+                      </p>
+                    </div>
                   ) : null}
                 </div>
               ) : null}
+
+              {erpStages.includes('stripePay') ? (
+                <div className="space-y-3 border-t pt-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Stripe payment
+                  </p>
+                  <dl className="space-y-2">
+                    <MetaRow label="Статус">
+                      {order.erpStripePaySyncStatus ?? 'NOT_REQUIRED'}
+                    </MetaRow>
+                    <MetaRow label="Native ID">{order.erpStripePayNativeId ?? '—'}</MetaRow>
+                    <MetaRow label="ext">
+                      {order.erpStripePayExternalId ? (
+                        <Copyable value={order.erpStripePayExternalId} />
+                      ) : (
+                        '—'
+                      )}
+                    </MetaRow>
+                  </dl>
+                  {order.erpStripePayLastError ? (
+                    <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                      <p className="break-words text-xs text-muted-foreground">
+                        {order.erpStripePayLastError}
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {erpStages.includes('bankPay') ? (
+                <div className="space-y-3 border-t pt-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Bank payment
+                  </p>
+                  <dl className="space-y-2">
+                    <MetaRow label="Статус">{bankPayDisplay}</MetaRow>
+                    <MetaRow label="Документ">{order.erpBankPayNativeKod ?? '—'}</MetaRow>
+                    <MetaRow label="Native ID">{order.erpBankPayNativeId ?? '—'}</MetaRow>
+                    <MetaRow label="ext">
+                      {order.erpBankPayExternalId ? (
+                        <Copyable value={order.erpBankPayExternalId} />
+                      ) : (
+                        '—'
+                      )}
+                    </MetaRow>
+                    <MetaRow label="Synced">
+                      {formatDateTimeOrDash(order.erpBankPaySyncedAt, locale, 'datetime')}
+                    </MetaRow>
+                  </dl>
+                  {order.erpBankPayLastError ? (
+                    <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                      <p className="break-words text-xs text-muted-foreground">
+                        {order.erpBankPayLastError}
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
               {showErpRetry ? (
                 <Button
                   type="button"
@@ -918,7 +1202,10 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                   onClick={() => void handleErpSync()}
                 >
                   <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${erpSyncing ? 'animate-spin' : ''}`} />
-                  {order.erpSyncStatus === 'FAILED'
+                  {order.erpSyncStatus === 'FAILED' ||
+                  order.erpAdvanceSyncStatus === 'FAILED' ||
+                  order.erpStripePaySyncStatus === 'FAILED' ||
+                  order.erpBankPaySyncStatus === 'FAILED'
                     ? 'Повторити синхронізацію з ABRA'
                     : 'Синхронізувати з ABRA'}
                 </Button>

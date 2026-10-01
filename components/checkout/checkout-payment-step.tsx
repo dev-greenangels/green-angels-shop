@@ -31,6 +31,7 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
   formData,
   enabledPaymentMethods,
   allowPayOnPickup = false,
+  dobierkaAllowed = true,
   paymentTouched,
   onPatchForm,
   onBlurPaymentField,
@@ -52,6 +53,8 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
   formData: CheckoutFormValues
   enabledPaymentMethods?: CheckoutPaymentMethodSlug[]
   allowPayOnPickup?: boolean
+  /** When false, hide dobierka (Packeta country/method). */
+  dobierkaAllowed?: boolean
   paymentTouched: Partial<Record<CheckoutPaymentFieldKey, boolean>>
   onPatchForm: (patch: Partial<CheckoutFormValues>) => void
   onBlurPaymentField: (field: CheckoutPaymentFieldKey) => void
@@ -67,7 +70,13 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
   onVatIdChange?: (value: string) => void
   vatCountryCode?: string
   onVatCountryCodeChange?: (code: string) => void
-  onViesResult?: (result: { valid: boolean | null } | null) => void
+  onViesResult?: (result: {
+    valid: boolean | null
+    countryCode?: string
+    vatNumber?: string
+    name?: string | null
+    address?: string | null
+  } | null) => void
   /** COD fee shown on the dobierka button (preview or live quote). */
   dobierkaFeeAmount?: number
   formatDobierkaFee?: (amount: number) => string
@@ -83,12 +92,14 @@ export const CheckoutPaymentStep = memo(function CheckoutPaymentStep({
         hideLegalBankTransfer,
         allowPayOnPickup,
         deliveryMethod: formData.deliveryMethod,
+        dobierkaAllowed,
       }),
     [
       enabledPaymentMethods,
       hideLegalBankTransfer,
       allowPayOnPickup,
       formData.deliveryMethod,
+      dobierkaAllowed,
     ],
   )
 

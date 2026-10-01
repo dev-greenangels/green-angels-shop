@@ -42,7 +42,9 @@ export type CheckoutTotalsBreakdown = {
   /** When true, delivery/packaging amounts are ex-VAT; VAT is in taxAmount/grandTotal */
   taxAppliesToFees?: boolean
   allowedDeliveryMethods?: string[]
-  deliveryUnavailableReason?: 'missing_weight' | 'no_tariff' | null
+  /** Packeta country/method supportsCod; non-Packeta → true. */
+  dobierkaAllowed?: boolean
+  deliveryUnavailableReason?: 'missing_weight' | 'no_tariff' | 'insurance_limit' | 'cod_not_supported' | null
 }
 
 export type PricingQuote = {

@@ -87,6 +87,7 @@ const EMPTY: FlexiPublicSettings = {
   bankAccountCodeCard: '',
   bankAccountCodeBank: '',
   stripeClearingBankDocTypeCode: '',
+  salesConstantSymbol: '0008',
   wholesaleAdresarLabelCode: '',
   deliveryMethodCodes: { ...DEFAULT_DELIVERY_METHOD_CODES },
   defaultCategoryId: '',
@@ -159,6 +160,7 @@ function editableFlexiSnapshot(
     bankAccountCodeCard: settings.bankAccountCodeCard,
     bankAccountCodeBank: settings.bankAccountCodeBank,
     stripeClearingBankDocTypeCode: settings.stripeClearingBankDocTypeCode,
+    salesConstantSymbol: settings.salesConstantSymbol ?? '0008',
     wholesaleAdresarLabelCode: settings.wholesaleAdresarLabelCode,
     deliveryMethodCodes: settings.deliveryMethodCodes,
     defaultCategoryId: settings.defaultCategoryId,
@@ -242,6 +244,7 @@ export function FlexiSettingsForm() {
         bankAccountCodeCard: settings.bankAccountCodeCard,
         bankAccountCodeBank: settings.bankAccountCodeBank,
         stripeClearingBankDocTypeCode: settings.stripeClearingBankDocTypeCode,
+        salesConstantSymbol: settings.salesConstantSymbol ?? '0008',
         wholesaleAdresarLabelCode: settings.wholesaleAdresarLabelCode,
         deliveryMethodCodes: settings.deliveryMethodCodes,
         defaultCategoryId: settings.defaultCategoryId,
@@ -524,6 +527,23 @@ export function FlexiSettingsForm() {
                 }
                 placeholder="порожньо = кліринг Stripe вимкнено"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="flexi-sales-kon-sym">
+                Константний символ KS (salesConstantSymbol)
+              </Label>
+              <Input
+                id="flexi-sales-kon-sym"
+                value={settings.salesConstantSymbol ?? '0008'}
+                onChange={(e) =>
+                  setSettings((s) => ({ ...s, salesConstantSymbol: e.target.value }))
+                }
+                placeholder="0008"
+              />
+              <p className="text-xs text-muted-foreground">
+                ABRA konSym для e-shop документів (0008 = Platby za tovar). Не плутати з Interní
+                číslo (kod).
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="flexi-wholesale-adresar-label">

@@ -54,7 +54,7 @@ const baseForm: CheckoutFormValues = {
 }
 
 describe('checkout draft hydrate', () => {
-  it('build payload excludes consents and totals', () => {
+  it('build payload excludes consents', () => {
     const payload = buildCheckoutDraftPayload({
       form: baseForm,
       locale: 'sk',
@@ -65,6 +65,39 @@ describe('checkout draft hydrate', () => {
     assert.equal(payload.deliveryCountryCode, 'at')
     assert.equal(payload.billingCountryCode, 'sk')
     assert.equal('privacyConsent' in payload, false)
+  })
+
+  it('build payload can attach write-only lastQuote', () => {
+    const payload = buildCheckoutDraftPayload({
+      form: baseForm,
+      lastQuote: {
+        quotedAt: '2026-10-01T12:00:00.000Z',
+        currencyCode: 'EUR',
+        deliveryAmount: 3.5,
+        grandTotal: 40,
+      },
+    })
+    assert.ok(payload.lastQuote)
+    assert.equal(payload.lastQuote.grandTotal, 40)
+  })
+
+  it('hydrate ignores lastQuote money fields', () => {
+    const patch = checkoutFormPatchFromDraft(
+      {
+        v: 1,
+        firstName: 'A',
+        lastQuote: {
+          quotedAt: '2026-10-01T12:00:00.000Z',
+          currencyCode: 'EUR',
+          deliveryAmount: 3.5,
+          grandTotal: 40,
+        },
+      },
+      { deliveryMethods: ['packeta-box'], paymentMethods: ['card-online'] },
+    )
+    assert.equal(patch.firstName, 'A')
+    assert.equal('lastQuote' in patch, false)
+    assert.equal(JSON.stringify(patch).includes('grandTotal'), false)
   })
 
   it('does not restore disallowed delivery method', () => {

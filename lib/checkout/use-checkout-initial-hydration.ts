@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useLocale } from 'next-intl'
 
 import { useSession } from '@/components/providers/session-provider'
 import { fetchCheckoutDraft, startCheckoutDraft } from '@/lib/carts/api'
@@ -32,6 +33,7 @@ export function useCheckoutInitialHydration({
   onHydrate: (result: CheckoutInitialHydrationResult) => void
 }): { hydrationReady: boolean } {
   const { setUser } = useSession()
+  const locale = useLocale()
   const [hydrationReady, setHydrationReady] = useState(false)
   const startedRef = useRef(false)
   const onHydrateRef = useRef(onHydrate)
@@ -53,7 +55,7 @@ export function useCheckoutInitialHydration({
     let cancelled = false
 
     void (async () => {
-      void startCheckoutDraft()
+      void startCheckoutDraft({ locale })
 
       const [session, draftResult] = await Promise.all([
         skipSessionIdentity ? Promise.resolve(null) : fetchCheckoutSession(),

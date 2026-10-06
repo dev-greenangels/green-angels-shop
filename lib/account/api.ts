@@ -1,9 +1,28 @@
+import type { CheckoutDeliveryMethodSlug } from '@/lib/checkout/methods'
+
 export type AccountDeliveryDefaults = {
   city?: string
   branch?: string
   street?: string
   houseNumber?: string
-  method?: 'nova-poshta-branch' | 'nova-poshta-address' | 'pickup'
+  postalCode?: string
+  countryCode?: string
+  method?: CheckoutDeliveryMethodSlug | string
+}
+
+export type AccountBillingDefaults = {
+  buyerType?: 'individual' | 'company'
+  firstName?: string
+  lastName?: string
+  countryCode?: string
+  street?: string
+  city?: string
+  postalCode?: string
+  companyLegalName?: string
+  companyIco?: string
+  companyDic?: string
+  companyVatId?: string
+  vatCountryCode?: string
 }
 
 export type AccountProfile = {
@@ -16,6 +35,7 @@ export type AccountProfile = {
   emailVerified: boolean
   phoneVerified: boolean
   deliveryDefaults: AccountDeliveryDefaults | null
+  billingDefaults: AccountBillingDefaults | null
 }
 
 export type AccountDashboardStats = {
@@ -85,6 +105,8 @@ export type AccountReviewItem = {
   rating: number
   text: string
   status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  verificationType: string
+  purchasedVariantLabels: string[]
   productName: string | null
   productSlug: string | null
   productCategorySlug: string | null
@@ -96,11 +118,20 @@ export type AccountStockNotificationItem = {
   id: string
   productId: string
   productName: string
+  latinName: string | null
+  imageUrl: string | null
   productSlug: string
   email: string | null
   phone: string | null
   notifiedAt: string | null
   createdAt: string
+}
+
+export type AccountExportData = {
+  exportedAt: string
+  profile: AccountProfile
+  orders: AccountOrderListItem[]
+  reviews: AccountReviewItem[]
 }
 
 export type AccountListPage<T> = {
@@ -111,23 +142,18 @@ export type AccountListPage<T> = {
   totalPages: number
 }
 
-export type AccountExportData = {
-  exportedAt: string
-  profile: AccountProfile
-  orders: AccountOrderListItem[]
-  reviews: AccountReviewItem[]
-}
-
 export type UpdateAccountProfilePayload = {
   firstName?: string
   lastName?: string
   patronymic?: string
   deliveryDefaults?: AccountDeliveryDefaults
+  billingDefaults?: AccountBillingDefaults
 }
 
 export type AccountListQuery = {
   page?: number
   pageSize?: number
+  locale?: string
 }
 
 function extractError(data: unknown, fallback: string): string {
@@ -166,12 +192,14 @@ async function accountFetch<T>(path: string, init?: RequestInit): Promise<T> {
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    const err = new Error(extractError(data, 'Помилка запиту.')) as Error & {
+    const err = new Error(extractError(data, 'Request failed')) as Error & {
       code?: string
       status?: number
+      body?: unknown
     }
     err.code = extractAccountErrorCode(data) ?? undefined
     err.status = res.status
+    err.body = data
     throw err
   }
   return data as T
@@ -231,8 +259,9 @@ export function fetchAccountOrders(params?: AccountListQuery) {
   return fetchAccountListPage<AccountOrderListItem>('/orders', params)
 }
 
-export function fetchAccountOrder(orderId: string) {
-  return accountFetch<AccountOrderDetail>(`/orders/${encodeURIComponent(orderId)}`)
+export function fetchAccountOrder(orderId: string, locale?: string) {
+  const qs = locale ? `?locale=${encodeURIComponent(locale)}` : ''
+  return accountFetch<AccountOrderDetail>(`/orders/${encodeURIComponent(orderId)}${qs}`)
 }
 
 export function fetchAccountReviews(params?: AccountListQuery) {
@@ -265,7 +294,6 @@ export function claimGuestOrder(_payload: {
   phone?: string
   email?: string
 }): Promise<AccountOrderListItem> {
-  // BATCH 3A: backend rejects weak claim; keep helper only for compatibility callers.
   return accountFetch<AccountOrderListItem>('/orders/claim', {
     method: 'POST',
     body: JSON.stringify(_payload),
@@ -284,6 +312,7 @@ function buildQuery(params?: AccountListQuery): string {
   const query = new URLSearchParams()
   if (params?.page != null) query.set('page', String(params.page))
   if (params?.pageSize != null) query.set('pageSize', String(params.pageSize))
+  if (params?.locale) query.set('locale', params.locale)
   const suffix = query.toString()
   return suffix ? `?${suffix}` : ''
 }

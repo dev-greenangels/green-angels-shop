@@ -9,7 +9,7 @@ export async function requireCustomerSession(_request?: Request) {
   if (!session || (session.role !== 'customer' && session.role !== 'admin')) {
     return {
       session: null,
-      error: NextResponse.json({ error: 'Потрібна авторизація.' }, { status: 401 }),
+      error: NextResponse.json({ code: 'AUTH_REQUIRED' }, { status: 401 }),
     }
   }
   return { session, error: null }

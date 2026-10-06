@@ -10,11 +10,14 @@ export type ReviewStoreReply = {
   createdAt: string
 }
 
+export type ReviewVerificationType = 'NONE' | 'VERIFIED_CUSTOMER' | 'VERIFIED_PURCHASE'
+
 export type ReviewListItem = {
   id: string
   authorName: string
-  email: string | null
-  phone: string | null
+  /** Present on backstage responses only; omitted from public catalog reviews. */
+  email?: string | null
+  phone?: string | null
   text: string
   image: string | null
   images?: string[]
@@ -23,10 +26,17 @@ export type ReviewListItem = {
   productName: string | null
   productSlug: string | null
   status: ReviewStatus
+  verificationType?: ReviewVerificationType
+  purchasedVariantLabels?: string[]
   storeReply?: ReviewStoreReply | null
-  legacyId: string | null
-  legacySource: string | null
-  importedAt: string | null
+  /** Shared by reviews from the same order submission (public + backstage). */
+  submissionGroupId?: string | null
+  /** Backstage / import fields — not returned by public GET /reviews. */
+  legacyId?: string | null
+  legacySource?: string | null
+  importedAt?: string | null
+  /** Backstage audit only — never on public DTO. */
+  orderId?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -58,6 +68,44 @@ export type CreateReviewPayload = {
   images?: string[]
   rating: number
   productId?: string
+}
+
+export type ReviewRequestProduct = {
+  productId: string
+  productName: string
+  productSlug: string | null
+  imageUrl: string | null
+  purchasedVariantLabels: string[]
+  alreadyReviewed: boolean
+  existingRating: number | null
+}
+
+export type ReviewRequestResolve = {
+  orderNumber: string
+  locale: string
+  authorNameDefault: string
+  store: {
+    alreadyReviewed: boolean
+    existingRating: number | null
+  }
+  products: ReviewRequestProduct[]
+  completedAt: string | null
+  expiresAt: string
+}
+
+export type SubmitOrderReviewByTokenPayload = {
+  authorName: string
+  store?: { rating: number; text?: string }
+  products?: Array<{ productId: string; rating: number; text?: string }>
+}
+
+export type SubmitOrderReviewByTokenResult = {
+  createdStore: boolean
+  createdProductIds: string[]
+  skippedStore: boolean
+  skippedProductIds: string[]
+  completedAt: string | null
+  fullyCompleted: boolean
 }
 
 export const REVIEWS_PAGE_SIZE = 10

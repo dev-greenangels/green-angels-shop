@@ -10,10 +10,10 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const params = new URLSearchParams()
-    const page = searchParams.get('page')
-    const pageSize = searchParams.get('pageSize')
-    if (page) params.set('page', page)
-    if (pageSize) params.set('pageSize', pageSize)
+    for (const key of ['page', 'pageSize', 'locale'] as const) {
+      const value = searchParams.get(key)
+      if (value) params.set(key, value)
+    }
     const suffix = params.toString() ? `?${params.toString()}` : ''
     const res = await fetchBackend(`/account/stock-notifications${suffix}`, {
       request,
@@ -22,6 +22,6 @@ export async function GET(request: Request) {
     const data = await readBackendJson(res)
     return NextResponse.json(data, { status: res.status })
   } catch {
-    return NextResponse.json({ error: 'Не вдалося зʼєднатися з API.' }, { status: 502 })
+    return NextResponse.json({ code: 'API_UNAVAILABLE' }, { status: 502 })
   }
 }

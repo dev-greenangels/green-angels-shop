@@ -1,7 +1,7 @@
 import { forceUnlockBodyScroll } from '@/lib/body-scroll-lock'
 
-/** Matches `siteStickyToolbarOuterClassName` sticky top offset (−2px). */
-const STICKY_TOP_ADJUST_PX = 2
+/** Matches measured `--site-header-offset` (no tuck under header). */
+const STICKY_TOP_ADJUST_PX = 0
 const STICKY_SCROLL_TOLERANCE_PX = 4
 const STICKY_TOOLBAR_PANEL_SCROLL_PADDING_PX = 8
 

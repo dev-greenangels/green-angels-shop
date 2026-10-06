@@ -209,7 +209,10 @@ export function FilterSidebarContent({
               className="text-sm font-semibold"
               onPointerDown={emphasizedDividers ? onTriggerPointerDown : undefined}
             >
-              <CatalogFilterSectionTitle name={attribute.name} icon={attribute.icon} />
+              <CatalogFilterSectionTitle
+                name={attribute.name}
+                icon={attribute.icon ?? (isContainer ? 'Container' : null)}
+              />
             </AccordionTrigger>
             <AccordionContent>
               {isContainer ? (

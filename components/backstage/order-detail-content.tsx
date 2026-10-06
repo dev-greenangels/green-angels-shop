@@ -16,6 +16,7 @@ import { useTranslations } from 'next-intl'
 import { CancelOrderDialog } from '@/components/backstage/cancel-order-dialog'
 import { CountryDisplay } from '@/components/backstage/country-display'
 import { OrderCommunicationsPanel } from '@/components/backstage/order-communications-panel'
+import { OrderReviewRequestCard } from '@/components/backstage/order-review-request-card'
 import { OrderStatusBadge, OrderStatusSelect } from '@/components/backstage/order-status-select'
 import {
   AlertDialog,
@@ -1241,6 +1242,23 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
           </Card>
         </div>
       </div>
+
+      <OrderReviewRequestCard
+        orderId={order.id}
+        onCommunicationSent={(row) => {
+          setOrder((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  communications: [
+                    row,
+                    ...(prev.communications ?? []).filter((c) => c.id !== row.id),
+                  ],
+                }
+              : prev,
+          )
+        }}
+      />
 
       <OrderCommunicationsPanel
         orderId={order.id}

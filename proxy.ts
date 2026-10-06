@@ -17,7 +17,11 @@ import {
 } from '@/lib/country-sites/resolve-country-host'
 import { COUNTRY_LOCALES } from '@/lib/country-sites/edge-locales'
 import type { CountrySiteCode } from '@/lib/country-sites/types'
-import { GA_SURFACE_BACKSTAGE, GA_SURFACE_HEADER } from '@/lib/analytics/gtm'
+import {
+  GA_SURFACE_BACKSTAGE,
+  GA_SURFACE_HEADER,
+  GA_SURFACE_REVIEW_REQUEST,
+} from '@/lib/analytics/gtm'
 import { localePath, stripLocalePrefix } from '@/lib/locale-path'
 import { resolveRootFaviconRewritePath } from '@/lib/branding/root-favicon'
 import { resolveRedirectForPath } from '@/lib/redirects/middleware-cache'
@@ -25,8 +29,8 @@ import { resolveRedirectForPath } from '@/lib/redirects/middleware-cache'
 const handleI18nRouting = createIntlMiddleware(routing)
 
 /** Forward surface onto the request so root layout `headers()` can skip analytics. */
-function applyBackstageSurfaceHeader(response: NextResponse): NextResponse {
-  response.headers.set(GA_SURFACE_HEADER, GA_SURFACE_BACKSTAGE)
+function applyGaSurfaceHeader(response: NextResponse, surface: string): NextResponse {
+  response.headers.set(GA_SURFACE_HEADER, surface)
   const override = response.headers.get('x-middleware-override-headers')
   const list = new Set(
     (override ? override.split(',') : [])
@@ -35,8 +39,17 @@ function applyBackstageSurfaceHeader(response: NextResponse): NextResponse {
   )
   list.add(GA_SURFACE_HEADER)
   response.headers.set('x-middleware-override-headers', [...list].join(','))
-  response.headers.set(`x-middleware-request-${GA_SURFACE_HEADER}`, GA_SURFACE_BACKSTAGE)
+  response.headers.set(`x-middleware-request-${GA_SURFACE_HEADER}`, surface)
   return response
+}
+
+function applyBackstageSurfaceHeader(response: NextResponse): NextResponse {
+  return applyGaSurfaceHeader(response, GA_SURFACE_BACKSTAGE)
+}
+
+function applyReviewRequestSurface(response: NextResponse): NextResponse {
+  response.headers.set('Referrer-Policy', 'no-referrer')
+  return applyGaSurfaceHeader(response, GA_SURFACE_REVIEW_REQUEST)
 }
 
 async function hasCustomerSession(request: NextRequest): Promise<boolean> {
@@ -228,6 +241,10 @@ export async function proxy(request: NextRequest) {
   }
 
   const barePath = stripLocalePrefix(localizedPathname)
+
+  if (barePath.startsWith('/reviews/request/')) {
+    return applyCountryHeaders(applyReviewRequestSurface(intlResponse), country)
+  }
 
   if (barePath.startsWith('/account')) {
     if (!(await hasCustomerSession(request))) {

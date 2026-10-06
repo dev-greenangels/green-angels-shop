@@ -251,8 +251,9 @@ export function CartDrawer() {
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent
+        overlayClassName="z-[80]"
         className={cn(
-          'flex h-full w-full min-h-0 flex-col gap-0 border-border/40 p-0 sm:max-w-lg',
+          'flex h-full w-full min-h-0 flex-col gap-0 border-border/40 p-0 sm:max-w-lg z-[80]',
           '!bg-white backdrop-blur-none supports-[backdrop-filter]:!bg-white',
           'dark:!bg-card dark:supports-[backdrop-filter]:!bg-card',
         )}

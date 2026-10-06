@@ -14,10 +14,11 @@ import { FormattedPrice } from '@/components/commerce/formatted-price'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import { fetchAccountOrders, type AccountOrderListItem } from '@/lib/account/api'
+import { accountOrderStatusLabel } from '@/lib/account/order-status-label'
+import { mapAccountError } from '@/lib/account/map-account-error'
 import {
   normalizeOrderStatus,
   orderStatusBadgeClass,
-  orderStatusLabel,
 } from '@/lib/backstage/order-status'
 import { formatDateTime } from '@/lib/i18n/format-datetime'
 import { buildTrackingUrl } from '@/lib/shipping/tracking'
@@ -40,6 +41,7 @@ function useCheckoutMethodLabel() {
 export function AccountOrdersContent() {
   const t = useTranslations('account')
   const tc = useTranslations('common')
+  const tApi = useTranslations('apiErrors')
   const methodLabel = useCheckoutMethodLabel()
   const locale = useLocale()
   const [orders, setOrders] = useState<AccountOrderListItem[]>([])
@@ -52,15 +54,15 @@ export function AccountOrdersContent() {
   const load = useCallback(() => {
     setLoading(true)
     setError(null)
-    void fetchAccountOrders({ page, pageSize: PAGE_SIZE })
+    void fetchAccountOrders({ page, pageSize: PAGE_SIZE, locale })
       .then((data) => {
         setOrders(data.items)
         setTotalPages(data.totalPages)
         setTotal(data.total)
       })
-      .catch((e) => setError(e instanceof Error ? e.message : t('loadError')))
+      .catch((e) => setError(mapAccountError(e, tApi) || t('loadError')))
       .finally(() => setLoading(false))
-  }, [page, t])
+  }, [locale, page, t, tApi])
 
   useEffect(() => {
     load()
@@ -122,7 +124,7 @@ export function AccountOrdersContent() {
                   orderStatusBadgeClass(status),
                 )}
               >
-                {orderStatusLabel(status, order.statusLabel)}
+                {accountOrderStatusLabel(status, t, order.statusLabel)}
               </span>
             </div>
             <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 break-words text-sm text-muted-foreground">

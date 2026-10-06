@@ -6,6 +6,8 @@ import { getVariantSizeIconName } from '@/lib/variant-attributes/size-icon'
 type VariantSizeLabelProps = {
   label: string
   variant?: Pick<ProductVariant, 'displayAttributes'> | null
+  /** When variant attributes are unavailable (e.g. order snapshots), force an icon. */
+  iconName?: string | null
   className?: string
   textClassName?: string
   /** Defaults to 1em so the icon matches text size and does not grow the row. */
@@ -16,12 +18,13 @@ type VariantSizeLabelProps = {
 export function VariantSizeLabel({
   label,
   variant,
+  iconName,
   className,
   textClassName,
   iconClassName = 'h-[1em] w-[1em]',
   as: Tag = 'span',
 }: VariantSizeLabelProps) {
-  const Icon = resolveVariantAttributeIcon(getVariantSizeIconName(variant))
+  const Icon = resolveVariantAttributeIcon(iconName ?? getVariantSizeIconName(variant))
   const trimmed = label.trim()
   if (!trimmed) return null
 

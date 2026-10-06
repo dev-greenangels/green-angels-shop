@@ -167,11 +167,12 @@ function CatalogListProductImage({
         })),
     [plant.id, plant.images, plant.name],
   )
-  const galleryPhotos = variantPhotos.length > 0 ? variantPhotos : plantPhotos
+  // List cover = main product photo; gallery may still open fresh size photos.
   const coverSrc =
-    galleryPhotos[0]?.thumbUrl ??
-    galleryPhotos[0]?.url ??
+    plantPhotos[0]?.thumbUrl ??
+    plantPhotos[0]?.url ??
     (hasProductImage(plant.images) ? plant.images[0] : undefined)
+  const galleryPhotos = variantPhotos.length > 0 ? variantPhotos : plantPhotos
   const canOpenGallery = showVariantPhotos || galleryPhotos.length > 0
 
   return (
@@ -194,20 +195,12 @@ function CatalogListProductImage({
           imageClassName="object-[center_35%] transition-transform duration-200 group-hover:scale-[1.03]"
         />
         {canOpenGallery ? (
-          <>
-            <span
-              className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent opacity-0 transition group-hover:opacity-100"
-              aria-hidden
-            />
-            <span
-              className="pointer-events-none absolute inset-0 flex items-center justify-center"
-              aria-hidden
-            >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black/45 text-white opacity-90 backdrop-blur-sm transition group-hover:opacity-100">
-                <ZoomIn className="h-3.5 w-3.5" />
-              </span>
-            </span>
-          </>
+          <span
+            className="pointer-events-none absolute right-0.5 top-0.5 z-[1] flex h-5 w-5 items-center justify-center rounded-full bg-black/40 text-white opacity-80 backdrop-blur-[2px] transition group-hover:opacity-100 sm:right-1 sm:top-1"
+            aria-hidden
+          >
+            <ZoomIn className="h-2.5 w-2.5" strokeWidth={2.5} />
+          </span>
         ) : null}
         {showBadges ? (
           <div className="absolute inset-x-0 bottom-0 z-[1] flex flex-wrap items-end gap-0.5 p-1">
@@ -243,6 +236,7 @@ function CatalogListProductImage({
 
 function useVariantBuyHandler(plant: Plant) {
   const cartT = useTranslations('cart')
+  const tc = useTranslations('common')
   const currency = useDefaultCurrency()
   const cartItems = useCartItems()
   const { addItem, updateQuantity } = useCartActions()
@@ -267,7 +261,13 @@ function useVariantBuyHandler(plant: Plant) {
         itemName: plant.name,
         itemVariant: variant.label,
       })
-      showAddedToCartToast(cartT('addedToCart', { count: addedCount }), plant.name, variant.label)
+      showAddedToCartToast(
+        cartT('addedToCart', { count: addedCount }),
+        plant.name,
+        variant.label,
+        tc('goToCart'),
+        variant,
+      )
     }
   }
 }

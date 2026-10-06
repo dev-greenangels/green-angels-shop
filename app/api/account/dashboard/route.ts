@@ -9,7 +9,7 @@ async function forwardGet(request: Request, path: string) {
     const data = await readBackendJson(res)
     return NextResponse.json(data, { status: res.status })
   } catch {
-    return NextResponse.json({ error: 'Не вдалося зʼєднатися з API.' }, { status: 502 })
+    return NextResponse.json({ code: 'API_UNAVAILABLE' }, { status: 502 })
   }
 }
 

@@ -145,8 +145,9 @@ export function StickyToolbarShell({
         <div className={cn('relative', compact ? 'h-11' : 'h-12')}>
           <div
             className={cn(
-              'absolute inset-x-0 top-0 z-50 overflow-hidden rounded-b-[0.5rem]',
-              glass && 'boty-glass',
+              // Flat top docks under `#site-header`; sticky (not floating) glass kills the green seam.
+              'absolute inset-x-0 top-0 z-50 overflow-hidden rounded-t-none rounded-b-[0.5rem]',
+              glass && 'boty-glass-sticky border-b border-border/40',
               innerClassName,
             )}
           >

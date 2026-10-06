@@ -20,6 +20,7 @@ import { RecentlyViewedSettingsForm } from '@/components/backstage/recently-view
 import { MarketSettingsForm } from '@/components/backstage/market-settings-form'
 import { clearRecentlyViewedSettingsCache } from '@/components/product/recently-viewed-section'
 import { WithdrawalSettingsForm } from '@/components/backstage/withdrawal-settings-form'
+import { ReviewsSettingsForm } from '@/components/backstage/reviews-settings-form'
 import { StoreContactSettingsForm } from '@/components/backstage/store-contact-settings-form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -36,6 +37,7 @@ import {
   updateBackstageRecentlyViewedSettings,
   updateBackstageStoreSettings,
   updateBackstageWithdrawalSettings,
+  updateBackstageReviewsSettings,
   updateBackstagePrestaImportSettings,
 } from '@/lib/backstage/settings'
 import { fetchCurrencies } from '@/lib/backstage/reference-data'
@@ -73,6 +75,7 @@ import type {
   StoreContactSettings,
 } from '@/lib/settings/types'
 import type { WithdrawalSettings } from '@/lib/settings/withdrawal'
+import type { ReviewsSettings } from '@/lib/settings/reviews'
 
 function stableJson(value: unknown): string {
   return JSON.stringify(value)
@@ -89,6 +92,7 @@ export default function SettingsPage() {
   const [savingPrestaImport, setSavingPrestaImport] = useState(false)
   const [savingMarket, setSavingMarket] = useState(false)
   const [savingWithdrawal, setSavingWithdrawal] = useState(false)
+  const [savingReviews, setSavingReviews] = useState(false)
   const [store, setStore] = useState<StoreContactSettings | null>(null)
   const [cart, setCart] = useState<CartCheckoutSettings | null>(null)
   const [catalog, setCatalog] = useState<CatalogPageSettings | null>(null)
@@ -97,6 +101,7 @@ export default function SettingsPage() {
   const [prestaImport, setPrestaImport] = useState<PrestaImportSettings | null>(null)
   const [market, setMarket] = useState<MarketSettings | null>(null)
   const [withdrawal, setWithdrawal] = useState<WithdrawalSettings | null>(null)
+  const [reviews, setReviews] = useState<ReviewsSettings | null>(null)
   const [currencies, setCurrencies] = useState<CurrencyInfo[]>([])
   const [currenciesLoading, setCurrenciesLoading] = useState(true)
   const [baselineStore, setBaselineStore] = useState<string | null>(null)
@@ -107,6 +112,7 @@ export default function SettingsPage() {
   const [baselinePrestaImport, setBaselinePrestaImport] = useState<string | null>(null)
   const [baselineMarket, setBaselineMarket] = useState<string | null>(null)
   const [baselineWithdrawal, setBaselineWithdrawal] = useState<string | null>(null)
+  const [baselineReviews, setBaselineReviews] = useState<string | null>(null)
   const [activeStoreLocale, setActiveStoreLocale] = useState<AppLocale | null>(null)
 
   const storeDirty = useMemo(
@@ -154,6 +160,10 @@ export default function SettingsPage() {
     () => Boolean(withdrawal && baselineWithdrawal && stableJson(withdrawal) !== baselineWithdrawal),
     [withdrawal, baselineWithdrawal],
   )
+  const reviewsDirty = useMemo(
+    () => Boolean(reviews && baselineReviews && stableJson(reviews) !== baselineReviews),
+    [reviews, baselineReviews],
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -175,6 +185,7 @@ export default function SettingsPage() {
         data.prestaImport ?? DEFAULT_PRESTA_IMPORT_SETTINGS,
       )
       const nextWithdrawal = data.withdrawalFull ?? null
+      const nextReviews = (data as { reviewsFull?: ReviewsSettings }).reviewsFull ?? null
       setStore(nextStore)
       setCart(nextCart)
       setCatalog(nextCatalog)
@@ -183,6 +194,7 @@ export default function SettingsPage() {
       setPrestaImport(nextPresta)
       setMarket(nextMarket)
       setWithdrawal(nextWithdrawal)
+      setReviews(nextReviews)
       setCurrencies(currenciesData)
       setBaselineStore(stableJson(nextStore))
       setBaselineCart(stableJson(nextCart))
@@ -192,6 +204,7 @@ export default function SettingsPage() {
       setBaselinePrestaImport(stableJson(nextPresta))
       setBaselineMarket(stableJson(nextMarket))
       setBaselineWithdrawal(nextWithdrawal ? stableJson(nextWithdrawal) : null)
+      setBaselineReviews(nextReviews ? stableJson(nextReviews) : null)
       setActiveStoreLocale(null)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Не вдалося завантажити налаштування.')
@@ -203,6 +216,7 @@ export default function SettingsPage() {
       setPrestaImport(null)
       setMarket(null)
       setWithdrawal(null)
+      setReviews(null)
     } finally {
       setLoading(false)
       setCurrenciesLoading(false)
@@ -350,6 +364,21 @@ export default function SettingsPage() {
     }
   }
 
+  const saveReviews = async () => {
+    if (!reviews) return
+    setSavingReviews(true)
+    try {
+      const updated = await updateBackstageReviewsSettings(reviews)
+      setReviews(updated)
+      setBaselineReviews(stableJson(updated))
+      toast.success(tSettings('reviews.saveSuccess'))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : tSettings('reviews.saveError'))
+    } finally {
+      setSavingReviews(false)
+    }
+  }
+
   const saveMarket = async () => {
     if (!market) return
     setSavingMarket(true)
@@ -441,6 +470,7 @@ export default function SettingsPage() {
             <TabsTrigger value="flexi">ABRA Flexi</TabsTrigger>
             <TabsTrigger value="presta-import">Імпорт Presta</TabsTrigger>
             <TabsTrigger value="withdrawal">{tSettings('withdrawal.tab')}</TabsTrigger>
+            <TabsTrigger value="reviews">{tSettings('reviews.tab')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="store" className="mt-6 space-y-6">
@@ -623,6 +653,18 @@ export default function SettingsPage() {
                 onSave={() => void saveWithdrawal()}
                 saving={savingWithdrawal}
                 isDirty={withdrawalDirty}
+              />
+            ) : null}
+          </TabsContent>
+
+          <TabsContent value="reviews" className="mt-6 space-y-6">
+            {reviews ? (
+              <ReviewsSettingsForm
+                settings={reviews}
+                onChange={setReviews}
+                onSave={() => void saveReviews()}
+                saving={savingReviews}
+                isDirty={reviewsDirty}
               />
             ) : null}
           </TabsContent>

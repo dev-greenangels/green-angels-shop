@@ -27,6 +27,7 @@ import { clearBodyScrollLock } from '@/lib/clear-body-scroll-lock'
 import { buildLogoutHref } from '@/lib/auth/logout-redirect'
 import { getMarketBranding } from '@/lib/branding/market-branding'
 import { siteContentShellClassName } from '@/lib/layout/site-shell'
+import { useSyncSiteHeaderOffset } from '@/lib/layout/use-sync-site-header-offset'
 import { useCartActions, useCartTotalItems } from '@/lib/cart-store'
 import { useFavoritesCount } from '@/lib/favorites-store'
 import { useCatalogHref, useCatalogRootSlug } from '@/components/providers/catalog-paths-provider'
@@ -82,6 +83,8 @@ export function Navigation() {
   const { openCart } = useCartActions()
   const totalItems = useCartTotalItems()
   const favoritesCount = useFavoritesCount()
+
+  useSyncSiteHeaderOffset()
 
   useEffect(() => {
     setMounted(true)
@@ -246,6 +249,7 @@ export function Navigation() {
                       type="button"
                       variant="ghost"
                       size="icon"
+                      data-cart-trigger
                       className="relative h-9 w-9 overflow-visible text-foreground/70 hover:bg-transparent hover:text-foreground"
                       aria-label={tc('cart')}
                       onClick={() => openCart()}
@@ -502,6 +506,7 @@ export function Navigation() {
                   type="button"
                   variant="ghost"
                   size="icon"
+                  data-cart-trigger
                   className="relative overflow-visible text-foreground/70 hover:bg-transparent hover:text-foreground"
                   aria-label={tc('cart')}
                   onClick={() => openCart()}

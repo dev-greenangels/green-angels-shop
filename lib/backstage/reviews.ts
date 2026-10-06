@@ -63,6 +63,38 @@ export async function updateBackstageReviewStatus(
   return data as ReviewListItem
 }
 
+export async function updateBackstageOrderReviewsStatus(
+  orderId: string,
+  status: ReviewStatus,
+): Promise<{ updated: number; orderId: string; status: ReviewStatus }> {
+  const res = await fetch(
+    `/api/backstage/orders/${encodeURIComponent(orderId)}/reviews/status`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+      credentials: 'include',
+    },
+  )
+  const data = (await res.json().catch(() => ({}))) as {
+    updated?: number
+    orderId?: string
+    status?: ReviewStatus
+    error?: string
+  }
+  if (!res.ok) {
+    throw new Error(
+      typeof data.error === 'string' ? data.error : 'Не вдалося оновити статус відгуків замовлення.',
+    )
+  }
+  notifyReviewsPendingCountChanged()
+  return {
+    updated: typeof data.updated === 'number' ? data.updated : 0,
+    orderId: data.orderId ?? orderId,
+    status: data.status ?? status,
+  }
+}
+
 export async function updateBackstageReviewReply(
   id: string,
   payload: { authorName: string; text: string | null },

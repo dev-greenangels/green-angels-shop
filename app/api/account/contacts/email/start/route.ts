@@ -12,12 +12,12 @@ export async function POST(request: Request) {
   try {
     parsed = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 })
+    return NextResponse.json({ code: 'INVALID_BODY' }, { status: 400 })
   }
 
   const email = typeof parsed.email === 'string' ? parsed.email.trim() : ''
   if (!email) {
-    return NextResponse.json({ error: 'Вкажіть email.' }, { status: 400 })
+    return NextResponse.json({ code: 'EMAIL_REQUIRED' }, { status: 400 })
   }
 
   const countrySiteCode = await getRequestCountrySiteCode()
@@ -35,6 +35,6 @@ export async function POST(request: Request) {
     const data = await readBackendJson(res)
     return NextResponse.json(data, { status: res.status })
   } catch {
-    return NextResponse.json({ error: 'Не вдалося зʼєднатися з API.' }, { status: 502 })
+    return NextResponse.json({ code: 'API_UNAVAILABLE' }, { status: 502 })
   }
 }

@@ -16,6 +16,7 @@ import {
   fetchAccountProfile,
   type AccountProfile,
 } from '@/lib/account/api'
+import { mapAccountError } from '@/lib/account/map-account-error'
 
 type AttachPhase = 'idle' | 'loading' | 'success' | 'error'
 
@@ -30,6 +31,7 @@ function mapAttachError(err: unknown, t: ReturnType<typeof useTranslations<'acco
 
 export function AccountClaimOrderContent() {
   const t = useTranslations('account')
+  const tApi = useTranslations('apiErrors')
   const searchParams = useSearchParams()
   const orderId = searchParams.get('orderId')?.trim() ?? ''
 
@@ -50,11 +52,11 @@ export function AccountClaimOrderContent() {
     void fetchAccountProfile()
       .then(setProfile)
       .catch((e) => {
-        setProfileError(e instanceof Error ? e.message : t('loadError'))
+        setProfileError(mapAccountError(e, tApi) || t('loadError'))
         setProfile(null)
       })
       .finally(() => setProfileLoading(false))
-  }, [t])
+  }, [t, tApi])
 
   useEffect(() => {
     loadProfile()

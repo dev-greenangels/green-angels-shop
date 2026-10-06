@@ -10,9 +10,9 @@ export const plantsSidebarMaxHeightClassName =
 /** Ширина бокової панелі фільтрів (desktop). */
 export const catalogSidebarWidthClassName = 'lg:w-64 lg:shrink-0'
 
-/** Sticky алфавіт на «Рослини А-Я» — ширина як у списку карток (+4px з кожного боку). */
+/** Sticky алфавіт на «Рослини А-Я» — flush під виміряним хедером (без заїзду під хедер). */
 export const plantsAlphabetStickyOuterClassName =
-  'sticky top-[calc(var(--site-header-offset,5rem)-2px)] z-40 -mx-1 mb-6 w-[calc(100%+8px)] min-w-0'
+  'sticky top-[var(--site-header-offset,4.5rem)] z-40 -mx-1 mb-6 w-[calc(100%+8px)] min-w-0'
 
 /** @deprecated Рядок «Обрано» прибрано — лишаємо експорт для сумісності імпортів. */
 export const plantsActiveFiltersStickyOuterClassName =

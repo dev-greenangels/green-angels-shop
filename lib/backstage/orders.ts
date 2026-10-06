@@ -175,6 +175,9 @@ export type BackstageOrderCommunication = {
   status: string
   toEmail: string | null
   subjectSnapshot: string | null
+  bodySnapshot?: string | null
+  locale?: string | null
+  createdByUserId?: string | null
   hasAttachment: boolean
   errorMessage: string | null
   providerMessageId: string | null
@@ -285,6 +288,189 @@ export async function sendBackstageOrderManualEmail(
   })
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()
+}
+
+export type BackstageReviewRequestEvent = {
+  id: string
+  type: 'GENERATED' | 'REGENERATED' | 'REVOKED'
+  createdByUserId: string | null
+  createdAt: string
+}
+
+export type BackstageReviewRequestStatus = {
+  exists: boolean
+  featureEnabled: boolean
+  automaticSendingEnabled: boolean
+  derivedStatus: 'NOT_CREATED' | 'ACTIVE' | 'COMPLETED' | 'EXPIRED' | 'REVOKED'
+  createdAt: string | null
+  expiresAt: string | null
+  revokedAt: string | null
+  completedAt: string | null
+  sentAt: string | null
+  scheduledFor: string | null
+  lastOpenedAt: string | null
+  lastGeneratedAt: string | null
+  locale: string | null
+  storeReviewed: boolean
+  productsReviewed: number
+  productsTotal: number
+  customerEmail: string | null
+  rawUrlAvailable: false
+  canSend: boolean
+  requiresRegenerateToSend: boolean
+  /** Calculated expected date (shippedAt + delayDays) — not proof a queue job exists. */
+  expectedAutomaticSendAt: string | null
+  events: BackstageReviewRequestEvent[]
+  latestFailedCommunication: {
+    id: string
+    status: string
+    source: string
+    errorMessage: string | null
+    createdAt: string
+    sentAt: string | null
+  } | null
+}
+
+export type BackstageReviewRequestGenerateResult = {
+  reviewUrl: string
+  expiresAt: string
+  locale: string
+  regenerated: boolean
+}
+
+export type BackstageReviewRequestEmailPreview = {
+  locale: string
+  toEmail: string | null
+  subject: string
+  bodyText: string
+  bodyHtml: string
+  reviewUrl: string
+  reviewUrlIsPlaceholder: boolean
+}
+
+export type BackstageReviewRequestSendResult = {
+  communication: BackstageOrderCommunication & {
+    bodySnapshot?: string | null
+    locale?: string | null
+    type: string
+    source: string
+  }
+  reviewUrl: string | null
+  regenerated: boolean
+  requestSentAt: string | null
+}
+
+async function parseReviewRequestError(res: Response): Promise<string> {
+  const data = (await res.json().catch(() => ({}))) as {
+    message?: string | string[] | { message?: string; code?: string }
+    error?: string
+    code?: string
+  }
+  if (typeof data.message === 'object' && data.message && 'message' in data.message) {
+    return String(data.message.message ?? data.error ?? 'Помилка запиту')
+  }
+  if (Array.isArray(data.message)) return data.message.join(', ')
+  if (typeof data.message === 'string') return data.message
+  if (typeof data.error === 'string') return data.error
+  return 'Помилка запиту'
+}
+
+export async function fetchBackstageReviewRequestStatus(
+  orderId: string,
+): Promise<BackstageReviewRequestStatus> {
+  const res = await fetch(`/api/backstage/orders/${orderId}/review-request`, {
+    credentials: 'include',
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(await parseReviewRequestError(res))
+  return res.json()
+}
+
+export async function generateBackstageReviewRequest(
+  orderId: string,
+): Promise<BackstageReviewRequestGenerateResult> {
+  const res = await fetch(`/api/backstage/orders/${orderId}/review-request`, {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseReviewRequestError(res))
+  return res.json()
+}
+
+export async function regenerateBackstageReviewRequest(
+  orderId: string,
+): Promise<BackstageReviewRequestGenerateResult> {
+  const res = await fetch(`/api/backstage/orders/${orderId}/review-request/regenerate`, {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseReviewRequestError(res))
+  return res.json()
+}
+
+export async function revokeBackstageReviewRequest(orderId: string): Promise<{ revoked: true }> {
+  const res = await fetch(`/api/backstage/orders/${orderId}/review-request/revoke`, {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseReviewRequestError(res))
+  return res.json()
+}
+
+export async function previewBackstageReviewRequestEmail(
+  orderId: string,
+  payload?: { locale?: string },
+): Promise<BackstageReviewRequestEmailPreview> {
+  const res = await fetch(`/api/backstage/orders/${orderId}/review-request/preview`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload ?? {}),
+  })
+  if (!res.ok) throw new Error(await parseReviewRequestError(res))
+  return res.json()
+}
+
+export async function sendBackstageReviewRequestEmail(
+  orderId: string,
+  payload: {
+    locale?: string
+    confirmRegenerate?: boolean
+    idempotencyKey: string
+  },
+): Promise<BackstageReviewRequestSendResult> {
+  const res = await fetch(`/api/backstage/orders/${orderId}/review-request/send`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const data = (await res.json().catch(() => ({}))) as BackstageReviewRequestSendResult & {
+    message?: string | string[] | { message?: string; code?: string }
+    error?: string
+    code?: string
+  }
+  if (!res.ok) {
+    const code =
+      typeof data.message === 'object' && data.message && 'code' in data.message
+        ? data.message.code
+        : data.code
+    const message =
+      typeof data.message === 'object' && data.message && 'message' in data.message
+        ? String(data.message.message)
+        : Array.isArray(data.message)
+          ? data.message.join(', ')
+          : typeof data.message === 'string'
+            ? data.message
+            : typeof data.error === 'string'
+              ? data.error
+              : 'Помилка запиту'
+    const err = new Error(message) as Error & { code?: string; status?: number }
+    err.code = code
+    err.status = res.status
+    throw err
+  }
+  return data
 }
 
 export async function patchBackstageOrder(

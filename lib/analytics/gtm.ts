@@ -4,9 +4,16 @@ const GTM_ID_PATTERN = /^GTM-[A-Z0-9]+$/
 /** Set by proxy on `/backstage` so root layout can skip GTM / Vercel Analytics. */
 export const GA_SURFACE_HEADER = 'x-ga-surface'
 export const GA_SURFACE_BACKSTAGE = 'backstage'
+/** Capability URL (review invite token) — never send full path to analytics. */
+export const GA_SURFACE_REVIEW_REQUEST = 'review-request'
 
 export function isBackstageSurface(headerValue?: string | null): boolean {
   return headerValue === GA_SURFACE_BACKSTAGE
+}
+
+/** Surfaces that must not load GTM / Vercel Analytics. */
+export function isAnalyticsSkippedSurface(headerValue?: string | null): boolean {
+  return headerValue === GA_SURFACE_BACKSTAGE || headerValue === GA_SURFACE_REVIEW_REQUEST
 }
 
 export function getGtmId(envValue?: string | null): string | null {

@@ -151,7 +151,13 @@ export function FreshPhotoLightbox({ photo, onClose }: FreshPhotoLightboxProps) 
         itemName: plant.name,
         itemVariant: variant.label,
       })
-      showAddedToCartToast(cartT('addedToCart', { count: result.added }), plant.name, variant.label)
+      showAddedToCartToast(
+        cartT('addedToCart', { count: result.added }),
+        plant.name,
+        variant.label,
+        tc('goToCart'),
+        variant,
+      )
       setQty(1)
     }
   }

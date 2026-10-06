@@ -45,6 +45,7 @@ export function ProductCardAddToCartDialog({
   const locale = useLocale()
   const t = useTranslations('product')
   const tc = useTranslations('cart')
+  const tCommon = useTranslations('common')
   const currency = useDefaultCurrency()
   const cartItems = useCartItems()
   const { addItem, updateQuantity } = useCartActions()
@@ -146,6 +147,8 @@ export function ProductCardAddToCartDialog({
         tc('addedToCart', { count: addedCount }),
         displayPlant.name,
         variant.label,
+        tCommon('goToCart'),
+        variant,
       )
     }
   }

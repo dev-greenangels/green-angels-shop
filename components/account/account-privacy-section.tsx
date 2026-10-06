@@ -17,7 +17,10 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Link } from '@/i18n/navigation'
+import { ACCOUNT_ACTION_BUTTON_CLASS } from '@/lib/account/account-ui'
 import { deleteAccount, fetchAccountExport } from '@/lib/account/api'
+import { mapAccountError } from '@/lib/account/map-account-error'
+import { cn } from '@/lib/utils'
 
 const DELETE_CONFIRMATION_WORD = 'DELETE'
 
@@ -36,6 +39,7 @@ function downloadJson(data: unknown, filename: string) {
 export function AccountPrivacySection() {
   const t = useTranslations('account')
   const tc = useTranslations('common')
+  const tApi = useTranslations('apiErrors')
   const [exporting, setExporting] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
@@ -47,7 +51,7 @@ export function AccountPrivacySection() {
       const data = await fetchAccountExport()
       downloadJson(data, `account-data-${new Date().toISOString().slice(0, 10)}.json`)
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('exportDataFailed'))
+      toast.error(mapAccountError(e, tApi) || t('exportDataFailed'))
     } finally {
       setExporting(false)
     }
@@ -60,7 +64,7 @@ export function AccountPrivacySection() {
       await deleteAccount(confirmText.trim())
       window.location.href = '/api/auth/logout'
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('deleteAccountFailed'))
+      toast.error(mapAccountError(e, tApi) || t('deleteAccountFailed'))
       setDeleting(false)
     }
   }
@@ -82,7 +86,10 @@ export function AccountPrivacySection() {
           variant="outline"
           onClick={handleExport}
           disabled={exporting}
-          className="min-h-11 w-full shrink-0 sm:w-auto"
+          className={cn(
+            'min-h-11 w-full shrink-0 sm:w-auto',
+            ACCOUNT_ACTION_BUTTON_CLASS,
+          )}
         >
           {exporting ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

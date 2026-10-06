@@ -140,7 +140,7 @@ export function PlantsAlphabetPageContent() {
               <StickyToolbarShell
                 compact
                 outerClassName="!static top-auto mx-0 mb-0 w-full max-w-none px-0"
-                innerClassName="rounded-b-[0.5rem] border-b border-border/40"
+                innerClassName="rounded-t-none rounded-b-[0.5rem]"
               >
                 <StickyToolbarRow className="h-11 gap-2 px-2.5 py-1.5 sm:px-3">
                   <div className="min-w-0 flex-1 overflow-hidden">{alphabetNav}</div>

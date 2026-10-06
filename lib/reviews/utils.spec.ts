@@ -3,7 +3,11 @@ import { describe, it } from 'node:test'
 
 import { formatFreshPhotoDateCompact } from '@/lib/variant-photos/fresh-photo-card'
 import { businessTimeZoneForMarket } from '@/lib/settings/market'
-import { formatReviewDate } from './utils'
+import {
+  formatPurchasedVariantLabelsLine,
+  formatReviewDate,
+  getReviewVerificationBadgeKey,
+} from './utils'
 
 /** Near UTC midnight — already next calendar day in Bratislava/Kyiv (summer). */
 const BOUNDARY = '2026-08-24T22:30:00.000Z'
@@ -94,5 +98,29 @@ describe('Fresh Photos remain UTC calendar dates (not Bratislava)', () => {
     // 22:30Z is still 24 Aug UTC, but 25 Aug in Bratislava.
     assert.equal(formatFreshPhotoDateCompact(BOUNDARY, 'sk'), '24. 8.')
     assert.equal(formatReviewDate(BOUNDARY, 'sk', 'sk'), '25. augusta 2026')
+  })
+})
+
+describe('verification badge + purchased variant labels', () => {
+  it('maps verification types to badge keys', () => {
+    assert.equal(getReviewVerificationBadgeKey('VERIFIED_PURCHASE'), 'verifiedPurchase')
+    assert.equal(getReviewVerificationBadgeKey('VERIFIED_CUSTOMER'), 'verifiedCustomer')
+    assert.equal(getReviewVerificationBadgeKey('NONE'), null)
+    assert.equal(getReviewVerificationBadgeKey(undefined), null)
+  })
+
+  it('formats one / many / empty purchased variant labels', () => {
+    assert.deepEqual(formatPurchasedVariantLabelsLine(['C5']), {
+      mode: 'one',
+      labels: ['C5'],
+      joined: 'C5',
+    })
+    assert.deepEqual(formatPurchasedVariantLabelsLine(['C2', 'C5']), {
+      mode: 'many',
+      labels: ['C2', 'C5'],
+      joined: 'C2, C5',
+    })
+    assert.equal(formatPurchasedVariantLabelsLine([]), null)
+    assert.equal(formatPurchasedVariantLabelsLine(['', '  ']), null)
   })
 })

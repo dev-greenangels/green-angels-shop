@@ -11,20 +11,46 @@ import {
   AccountPageLoading,
 } from '@/components/account/account-page-state'
 import { AccountListPagination } from '@/components/account/account-list-pagination'
+import { ProductCoverImage } from '@/components/product/product-cover-image'
+import { ProductLatinName } from '@/components/product/product-latin-name'
 import { Button } from '@/components/ui/button'
 import {
   fetchAccountStockNotifications,
   removeAccountStockNotification,
   type AccountStockNotificationItem,
 } from '@/lib/account/api'
+import { ACCOUNT_ACTION_BUTTON_CLASS } from '@/lib/account/account-ui'
+import { mapAccountError } from '@/lib/account/map-account-error'
 import { formatDateTime } from '@/lib/i18n/format-datetime'
 import { Link } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
 const PAGE_SIZE = 20
 
+function NotificationProductLink({ item }: { item: AccountStockNotificationItem }) {
+  return (
+    <Link href={`/product/${item.productSlug}`} className="pressable flex min-w-0 items-start gap-3">
+      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
+        <ProductCoverImage
+          src={item.imageUrl}
+          alt={item.productName}
+          className="h-full w-full"
+          imageClassName="object-cover"
+          logoClassName="h-6 w-6"
+          sizes="56px"
+        />
+      </div>
+      <div className="min-w-0">
+        <p className="break-words font-medium text-primary hover:underline">{item.productName}</p>
+        <ProductLatinName latinName={item.latinName} />
+      </div>
+    </Link>
+  )
+}
+
 export function AccountNotificationsContent() {
   const t = useTranslations('account')
   const tc = useTranslations('common')
+  const tApi = useTranslations('apiErrors')
   const locale = useLocale()
   const [items, setItems] = useState<AccountStockNotificationItem[]>([])
   const [page, setPage] = useState(1)
@@ -37,15 +63,15 @@ export function AccountNotificationsContent() {
   const load = useCallback(() => {
     setLoading(true)
     setError(null)
-    void fetchAccountStockNotifications({ page, pageSize: PAGE_SIZE })
+    void fetchAccountStockNotifications({ page, pageSize: PAGE_SIZE, locale })
       .then((data) => {
         setItems(data.items)
         setTotalPages(data.totalPages)
         setTotal(data.total)
       })
-      .catch((e) => setError(e instanceof Error ? e.message : t('loadError')))
+      .catch((e) => setError(mapAccountError(e, tApi) || t('loadError')))
       .finally(() => setLoading(false))
-  }, [page, t])
+  }, [locale, page, t, tApi])
 
   useEffect(() => {
     load()
@@ -58,7 +84,7 @@ export function AccountNotificationsContent() {
       setItems((prev) => prev.filter((item) => item.id !== id))
       toast.success(t('subscriptionCancelled'))
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('cancelFailed'))
+      toast.error(mapAccountError(e, tApi) || t('cancelFailed'))
     } finally {
       setRemovingId(null)
     }
@@ -99,13 +125,8 @@ export function AccountNotificationsContent() {
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/50 bg-card p-4 shadow-sm"
             >
               <div className="min-w-0">
-                <Link
-                  href={`/product/${item.productSlug}`}
-                  className="pressable break-words font-medium text-primary hover:underline"
-                >
-                  {item.productName}
-                </Link>
-                <p className="mt-1 break-words text-sm text-muted-foreground">
+                <NotificationProductLink item={item} />
+                <p className="mt-2 break-words text-sm text-muted-foreground">
                   {t('subscribedAt', {
                     date: formatDateTime(item.createdAt, locale, 'dateLong'),
                   })}
@@ -117,7 +138,10 @@ export function AccountNotificationsContent() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="min-h-11 w-full shrink-0 sm:w-auto"
+                className={cn(
+                  'min-h-11 w-full shrink-0 sm:w-auto',
+                  ACCOUNT_ACTION_BUTTON_CLASS,
+                )}
                 disabled={removingId === item.id}
                 onClick={() => void handleRemove(item.id)}
               >
@@ -147,11 +171,9 @@ export function AccountNotificationsContent() {
                 'rounded-xl border border-border/40 bg-muted/30 p-4 text-sm text-muted-foreground',
               )}
             >
-              <Link href={`/product/${item.productSlug}`} className="pressable break-words font-medium text-foreground">
-                {item.productName}
-              </Link>
+              <NotificationProductLink item={item} />
               {item.notifiedAt ? (
-                <p className="mt-1">
+                <p className="mt-2">
                   {t('notifiedAt', {
                     date: formatDateTime(item.notifiedAt, locale, 'dateLong'),
                   })}

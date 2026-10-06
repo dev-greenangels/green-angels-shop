@@ -57,6 +57,7 @@ function typeLabel(
     MANAGER_ORDER_CANCELLED_UNPAID: t('type_MANAGER_ORDER_CANCELLED_UNPAID'),
     MANAGER_LATE_PAY_REFUND: t('type_MANAGER_LATE_PAY_REFUND'),
     MANUAL_CUSTOMER_EMAIL: t('type_MANUAL_CUSTOMER_EMAIL'),
+    CUSTOMER_REVIEW_REQUEST: t('type_CUSTOMER_REVIEW_REQUEST'),
   }
   return map[type] ?? type
 }
@@ -86,6 +87,7 @@ export function OrderCommunicationsPanel({
       ? crypto.randomUUID()
       : `manual-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   )
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   useEffect(() => {
     setItems(initialCommunications)
@@ -213,6 +215,14 @@ export function OrderCommunicationsPanel({
                   <span className="rounded bg-muted px-1.5 py-0.5 text-xs">
                     {statusLabel(row.status, t)}
                   </span>
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                    {typeLabel(row.type, t)}
+                  </span>
+                  {row.locale ? (
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                      {row.locale.toUpperCase()}
+                    </span>
+                  ) : null}
                   {row.hasAttachment ? (
                     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <Paperclip className="h-3 w-3" />
@@ -226,6 +236,34 @@ export function OrderCommunicationsPanel({
                 <p className="text-muted-foreground">{row.toEmail ?? '—'}</p>
                 {row.errorMessage ? (
                   <p className="mt-1 text-xs text-destructive">{row.errorMessage}</p>
+                ) : null}
+                <button
+                  type="button"
+                  className="mt-2 text-xs font-medium text-primary underline-offset-2 hover:underline"
+                  onClick={() => setExpandedId((prev) => (prev === row.id ? null : row.id))}
+                >
+                  {expandedId === row.id ? t('hideDetails') : t('showDetails')}
+                </button>
+                {expandedId === row.id ? (
+                  <div className="mt-2 space-y-2 rounded-md bg-muted/40 p-3 text-xs">
+                    <p>
+                      <span className="text-muted-foreground">{t('detailSubject')}: </span>
+                      {row.subjectSnapshot ?? '—'}
+                    </p>
+                    <pre className="whitespace-pre-wrap">{row.bodySnapshot ?? t('noBodySnapshot')}</pre>
+                    {row.providerMessageId ? (
+                      <p>
+                        <span className="text-muted-foreground">{t('providerId')}: </span>
+                        {row.providerMessageId}
+                      </p>
+                    ) : null}
+                    {row.createdByUserId ? (
+                      <p>
+                        <span className="text-muted-foreground">{t('adminActor')}: </span>
+                        {row.createdByUserId}
+                      </p>
+                    ) : null}
+                  </div>
                 ) : null}
               </li>
             ))}

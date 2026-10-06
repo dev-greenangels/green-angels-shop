@@ -16,10 +16,11 @@ import {
   fetchAccountOrder,
   type AccountOrderDetail,
 } from '@/lib/account/api'
+import { accountOrderStatusLabel } from '@/lib/account/order-status-label'
+import { mapAccountError } from '@/lib/account/map-account-error'
 import {
   normalizeOrderStatus,
   orderStatusBadgeClass,
-  orderStatusLabel,
 } from '@/lib/backstage/order-status'
 import { formatDateTime } from '@/lib/i18n/format-datetime'
 import { buildTrackingUrl } from '@/lib/shipping/tracking'
@@ -34,6 +35,7 @@ export function AccountOrderDetailContent({ orderId }: Props) {
   const t = useTranslations('account')
   const tCheckout = useTranslations('checkout')
   const tWithdrawal = useTranslations('contractWithdrawal')
+  const tApi = useTranslations('apiErrors')
   const locale = useLocale()
   const [order, setOrder] = useState<AccountOrderDetail | null>(null)
   const [withdrawalOpen, setWithdrawalOpen] = useState(false)
@@ -46,15 +48,14 @@ export function AccountOrderDetailContent({ orderId }: Props) {
     setLoading(true)
     setError(null)
 
-    void fetchAccountOrder(orderId)
+    void fetchAccountOrder(orderId, locale)
       .then((data) => {
         if (cancelled) return
         setOrder(data)
       })
       .catch((err: unknown) => {
         if (cancelled) return
-        const message = err instanceof Error ? err.message : t('loadError')
-        setError(message || t('orderNotFound'))
+        setError(mapAccountError(err, tApi) || t('orderNotFound'))
         setOrder(null)
       })
       .finally(() => {
@@ -64,7 +65,7 @@ export function AccountOrderDetailContent({ orderId }: Props) {
     return () => {
       cancelled = true
     }
-  }, [orderId, reloadToken, t])
+  }, [locale, orderId, reloadToken, t, tApi])
 
   if (loading) {
     return <AccountPageLoading />
@@ -138,7 +139,7 @@ export function AccountOrderDetailContent({ orderId }: Props) {
               orderStatusBadgeClass(status),
             )}
           >
-            {orderStatusLabel(status, order.statusLabel)}
+            {accountOrderStatusLabel(status, t, order.statusLabel)}
           </span>
         </div>
       </div>

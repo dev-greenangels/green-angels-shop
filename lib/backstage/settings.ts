@@ -182,3 +182,16 @@ export async function updateBackstageWithdrawalSettings(
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()
 }
+
+export async function updateBackstageReviewsSettings(
+  payload: Partial<import('@/lib/settings/reviews').ReviewsSettings>,
+): Promise<import('@/lib/settings/reviews').ReviewsSettings> {
+  const res = await fetch('/api/backstage/settings/reviews', {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}

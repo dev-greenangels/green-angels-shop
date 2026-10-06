@@ -2,7 +2,10 @@ import type {
   CreateReviewPayload,
   ReviewFilters,
   ReviewListItem,
+  ReviewRequestResolve,
   ReviewsPageResult,
+  SubmitOrderReviewByTokenPayload,
+  SubmitOrderReviewByTokenResult,
 } from '@/lib/reviews/types'
 import { EMPTY_REVIEWS_PAGE } from '@/lib/reviews/types'
 
@@ -93,4 +96,39 @@ export async function uploadReviewImage(file: File): Promise<string> {
     throw new Error(data.error ?? 'Не вдалося завантажити зображення.')
   }
   return data.url
+}
+
+export async function submitOrderReviewByToken(
+  token: string,
+  payload: SubmitOrderReviewByTokenPayload,
+): Promise<SubmitOrderReviewByTokenResult> {
+  const res = await fetch(`/api/reviews/request/${encodeURIComponent(token)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  const data = (await res.json().catch(() => ({}))) as SubmitOrderReviewByTokenResult & {
+    error?: string
+    message?: string | string[]
+  }
+  if (!res.ok) {
+    const message =
+      typeof data.error === 'string'
+        ? data.error
+        : Array.isArray(data.message)
+          ? data.message.join(', ')
+          : typeof data.message === 'string'
+            ? data.message
+            : 'Не вдалося надіслати відгук.'
+    throw new Error(message)
+  }
+  return data
+}
+
+/** Client-safe type re-export helper for SSR parsers. */
+export function parseReviewRequestResolve(data: unknown): ReviewRequestResolve | null {
+  if (!data || typeof data !== 'object') return null
+  const row = data as Partial<ReviewRequestResolve>
+  if (typeof row.orderNumber !== 'string' || !Array.isArray(row.products)) return null
+  return row as ReviewRequestResolve
 }

@@ -58,7 +58,7 @@ const Toaster = ({
       position={position}
       offset={offset}
       mobileOffset={mobileOffset}
-      className="toaster group"
+      className="toaster group pointer-events-auto"
       style={toasterStyle}
       toastOptions={{ classNames: toastClassNames }}
       {...props}

@@ -4,8 +4,10 @@ import { describe, it } from 'node:test'
 import {
   buildGtmScript,
   GA_SURFACE_BACKSTAGE,
+  GA_SURFACE_REVIEW_REQUEST,
   getGtmId,
   gtmNoscriptSrc,
+  isAnalyticsSkippedSurface,
   isBackstageSurface,
   isGtmEnabled,
 } from './gtm'
@@ -16,6 +18,14 @@ describe('isBackstageSurface', () => {
     assert.equal(isBackstageSurface('storefront'), false)
     assert.equal(isBackstageSurface(null), false)
     assert.equal(isBackstageSurface(undefined), false)
+  })
+})
+
+describe('isAnalyticsSkippedSurface', () => {
+  it('skips backstage and review-request capability URLs', () => {
+    assert.equal(isAnalyticsSkippedSurface(GA_SURFACE_BACKSTAGE), true)
+    assert.equal(isAnalyticsSkippedSurface(GA_SURFACE_REVIEW_REQUEST), true)
+    assert.equal(isAnalyticsSkippedSurface('storefront'), false)
   })
 })
 

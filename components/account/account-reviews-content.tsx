@@ -13,6 +13,7 @@ import { AccountListPagination } from '@/components/account/account-list-paginat
 import { StarRating } from '@/components/reviews/star-rating'
 import { ReviewStoreReply } from '@/components/reviews/review-store-reply'
 import { fetchAccountReviews, type AccountReviewItem } from '@/lib/account/api'
+import { mapAccountError } from '@/lib/account/map-account-error'
 import { productHrefFromPlant } from '@/lib/catalog/paths'
 import { formatDateTime } from '@/lib/i18n/format-datetime'
 import { Link } from '@/i18n/navigation'
@@ -28,6 +29,7 @@ const PAGE_SIZE = 20
 export function AccountReviewsContent() {
   const t = useTranslations('account')
   const tc = useTranslations('common')
+  const tApi = useTranslations('apiErrors')
   const locale = useLocale()
   const [reviews, setReviews] = useState<AccountReviewItem[]>([])
   const [page, setPage] = useState(1)
@@ -39,15 +41,15 @@ export function AccountReviewsContent() {
   const load = useCallback(() => {
     setLoading(true)
     setError(null)
-    void fetchAccountReviews({ page, pageSize: PAGE_SIZE })
+    void fetchAccountReviews({ page, pageSize: PAGE_SIZE, locale })
       .then((data) => {
         setReviews(data.items)
         setTotalPages(data.totalPages)
         setTotal(data.total)
       })
-      .catch((e) => setError(e instanceof Error ? e.message : t('loadError')))
+      .catch((e) => setError(mapAccountError(e, tApi) || t('loadError')))
       .finally(() => setLoading(false))
-  }, [page, t])
+  }, [locale, page, t, tApi])
 
   useEffect(() => {
     load()

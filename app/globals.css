@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Collapsed sticky header: padding + bar (menu expands absolutely — no JS measure). */
+  /* Collapsed sticky header: padding + bar. JS (`useSyncSiteHeaderOffset`) overwrites with measured px. */
   --site-header-offset: 4.5rem; /* pt-3 + h-[60px] mobile */
 
   /*
@@ -357,14 +357,16 @@
   }
 
   /**
-   * Sticky «Каталог»: той самий матеріал що меню (blur + fill), без бокових тіней.
+   * Sticky catalog / alphabet / reviews toolbars: same fill+blur as menu,
+   * with bottom/side shadow like `.boty-glass` (no top-only lift).
    */
   .boty-glass-sticky {
     background-color: var(--boty-glass-bg, rgba(255, 255, 255, 0.78));
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    border-top-color: transparent;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.1);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
-    box-shadow: none;
-    border: 0;
   }
 
   .dark .boty-glass {
@@ -373,9 +375,15 @@
     box-shadow: 0 10px 50px rgba(0, 0, 0, 0.45);
   }
 
-  .dark .boty-glass-match,
+  .dark .boty-glass-match {
+    background-color: var(--boty-glass-bg, rgba(20, 20, 20, 0.82));
+  }
+
   .dark .boty-glass-sticky {
     background-color: var(--boty-glass-bg, rgba(20, 20, 20, 0.82));
+    border-color: rgba(255, 255, 255, 0.1);
+    border-top-color: transparent;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.45);
   }
 
   [data-backstage-panel] [data-slot='card'] {

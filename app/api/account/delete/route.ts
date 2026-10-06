@@ -20,6 +20,6 @@ export async function POST(request: Request) {
     forwardBackendCookies(res, response)
     return response
   } catch {
-    return NextResponse.json({ error: 'Не вдалося зʼєднатися з API.' }, { status: 502 })
+    return NextResponse.json({ code: 'API_UNAVAILABLE' }, { status: 502 })
   }
 }

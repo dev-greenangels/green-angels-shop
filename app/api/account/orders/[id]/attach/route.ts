@@ -12,7 +12,7 @@ export async function POST(
 
   const { id } = await context.params
   if (!id?.trim()) {
-    return NextResponse.json({ error: 'Невірний ідентифікатор замовлення.' }, { status: 400 })
+    return NextResponse.json({ code: 'ORDER_NOT_FOUND' }, { status: 400 })
   }
 
   try {
@@ -23,6 +23,6 @@ export async function POST(
     const data = await readBackendJson(res)
     return NextResponse.json(data, { status: res.status })
   } catch {
-    return NextResponse.json({ error: 'Не вдалося зʼєднатися з API.' }, { status: 502 })
+    return NextResponse.json({ code: 'API_UNAVAILABLE' }, { status: 502 })
   }
 }

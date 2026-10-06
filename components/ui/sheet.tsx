@@ -53,15 +53,17 @@ function SheetContent({
   side = 'right',
   showCloseButton = true,
   closeOnOverlay = false,
+  overlayClassName,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: 'top' | 'right' | 'bottom' | 'left'
   showCloseButton?: boolean
   closeOnOverlay?: boolean
+  overlayClassName?: string
 }) {
   return (
     <SheetPortal>
-      <SheetOverlay>
+      <SheetOverlay className={overlayClassName}>
         {closeOnOverlay && showCloseButton ? (
           <SheetPrimitive.Close className="ring-offset-background focus:ring-ring absolute top-4 right-[2%] z-[70] flex h-10 w-10 items-center justify-center rounded-full bg-background/95 text-foreground shadow-md opacity-90 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden">
             <XIcon className="size-5" />

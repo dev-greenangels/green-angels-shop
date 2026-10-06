@@ -1,7 +1,7 @@
 'use client'
 
 import { useFormatFieldError } from '@/lib/validation/use-field-error-messages'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
@@ -10,10 +10,13 @@ import {
   AccountPageError,
   AccountPageLoading,
 } from '@/components/account/account-page-state'
+import { BillingCountryCombobox } from '@/components/checkout/billing-country-combobox'
+import { FieldHint } from '@/components/auth/auth-form-ui'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Select,
   SelectContent,
@@ -21,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { ACCOUNT_ACTION_BUTTON_CLASS } from '@/lib/account/account-ui'
 import {
   clearPhoneContact,
   confirmEmailContact,
@@ -29,31 +33,39 @@ import {
   startEmailContact,
   startPhoneContact,
   updateAccountProfile,
+  type AccountBillingDefaults,
   type AccountProfile,
 } from '@/lib/account/api'
+import {
+  isBranchDeliveryMethod,
+  isCourierDeliveryMethod,
+  isPickupDeliveryMethod,
+  needsSkCourierExtras,
+} from '@/lib/account/delivery-defaults-ui'
+import { mapAccountError } from '@/lib/account/map-account-error'
 import {
   sendAuthEmailCode,
   sendAuthSmsCode,
   verifyAuthEmailCode,
   verifyAuthSmsCode,
 } from '@/lib/checkout-customer-lookup'
-import { DELIVERY_METHOD_LABELS } from '@/lib/backstage/order-status'
+import type { CheckoutDeliveryMethodSlug } from '@/lib/checkout/methods'
 import {
   fetchPublicSiteSettingsFromApiRoute,
+  getCartCheckoutSettings,
   getMarketSettings,
 } from '@/lib/settings/fetch'
 import {
   isOtpChannelEnabled,
-  isValidPhoneForPolicy,
   phoneErrorForPolicy,
   phonePlaceholderForPolicy,
   type MarketSettings,
 } from '@/lib/settings/market'
 import { sanitizeCheckoutPhoneInput } from '@/lib/validation/checkout-form'
 import { cn } from '@/lib/utils'
-import { FieldHint } from '@/components/auth/auth-form-ui'
 
 type ContactFlow = 'idle' | 'enter' | 'code' | 'conflict'
+type BuyerType = 'individual' | 'company'
 
 export function AccountSettingsContent() {
   const fe = useFormatFieldError()
@@ -61,19 +73,44 @@ export function AccountSettingsContent() {
 
   const t = useTranslations('account')
   const tc = useTranslations('common')
+  const tCheckout = useTranslations('checkout')
+  const tApi = useTranslations('apiErrors')
+  const errMsg = useCallback(
+    (e: unknown, fallback: string) => mapAccountError(e, tApi, 'generic') || fallback,
+    [tApi],
+  )
+
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [profile, setProfile] = useState<AccountProfile | null>(null)
   const [market, setMarket] = useState<MarketSettings | null>(null)
+  const [enabledDeliveryMethods, setEnabledDeliveryMethods] = useState<
+    CheckoutDeliveryMethodSlug[]
+  >([])
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [patronymic, setPatronymic] = useState('')
-  const [deliveryMethod, setDeliveryMethod] = useState('nova-poshta-branch')
+  const [deliveryMethod, setDeliveryMethod] = useState('')
   const [deliveryCity, setDeliveryCity] = useState('')
   const [deliveryBranch, setDeliveryBranch] = useState('')
   const [deliveryStreet, setDeliveryStreet] = useState('')
   const [deliveryHouseNumber, setDeliveryHouseNumber] = useState('')
+  const [deliveryPostalCode, setDeliveryPostalCode] = useState('')
+  const [deliveryCountryCode, setDeliveryCountryCode] = useState('')
+
+  const [buyerType, setBuyerType] = useState<BuyerType>('individual')
+  const [billingFirstName, setBillingFirstName] = useState('')
+  const [billingLastName, setBillingLastName] = useState('')
+  const [billingCountryCode, setBillingCountryCode] = useState('')
+  const [billingStreet, setBillingStreet] = useState('')
+  const [billingCity, setBillingCity] = useState('')
+  const [billingPostalCode, setBillingPostalCode] = useState('')
+  const [companyLegalName, setCompanyLegalName] = useState('')
+  const [companyIco, setCompanyIco] = useState('')
+  const [companyDic, setCompanyDic] = useState('')
+  const [companyVatId, setCompanyVatId] = useState('')
+  const [vatCountryCode, setVatCountryCode] = useState('')
 
   const [emailFlow, setEmailFlow] = useState<ContactFlow>('idle')
   const [phoneFlow, setPhoneFlow] = useState<ContactFlow>('idle')
@@ -84,28 +121,55 @@ export function AccountSettingsContent() {
   const [emailBusy, setEmailBusy] = useState(false)
   const [phoneBusy, setPhoneBusy] = useState(false)
 
+  const applyBillingDefaults = useCallback((billing: AccountBillingDefaults | null) => {
+    setBuyerType(billing?.buyerType === 'company' ? 'company' : 'individual')
+    setBillingFirstName(billing?.firstName ?? '')
+    setBillingLastName(billing?.lastName ?? '')
+    setBillingCountryCode(billing?.countryCode ?? '')
+    setBillingStreet(billing?.street ?? '')
+    setBillingCity(billing?.city ?? '')
+    setBillingPostalCode(billing?.postalCode ?? '')
+    setCompanyLegalName(billing?.companyLegalName ?? '')
+    setCompanyIco(billing?.companyIco ?? '')
+    setCompanyDic(billing?.companyDic ?? '')
+    setCompanyVatId(billing?.companyVatId ?? '')
+    setVatCountryCode(billing?.vatCountryCode ?? '')
+  }, [])
+
   const loadProfile = useCallback(() => {
     setLoading(true)
     setLoadError(null)
     void Promise.all([fetchAccountProfile(), fetchPublicSiteSettingsFromApiRoute()])
       .then(([data, settings]) => {
         setProfile(data)
-        setMarket(getMarketSettings(settings))
+        const nextMarket = getMarketSettings(settings)
+        setMarket(nextMarket)
+        const cart = getCartCheckoutSettings(settings)
+        const methods = cart.enabledDeliveryMethods
+        setEnabledDeliveryMethods(methods)
         setFirstName(data.firstName ?? '')
         setLastName(data.lastName ?? '')
         setPatronymic(data.patronymic ?? '')
         const d = data.deliveryDefaults
-        setDeliveryMethod(d?.method ?? 'nova-poshta-branch')
+        const savedMethod = d?.method?.trim() ?? ''
+        const method =
+          savedMethod && methods.includes(savedMethod as CheckoutDeliveryMethodSlug)
+            ? savedMethod
+            : (methods[0] ?? '')
+        setDeliveryMethod(method)
         setDeliveryCity(d?.city ?? '')
         setDeliveryBranch(d?.branch ?? '')
         setDeliveryStreet(d?.street ?? '')
         setDeliveryHouseNumber(d?.houseNumber ?? '')
+        setDeliveryPostalCode(d?.postalCode ?? '')
+        setDeliveryCountryCode(d?.countryCode ?? '')
+        applyBillingDefaults(data.billingDefaults)
       })
       .catch((e) => {
-        setLoadError(e instanceof Error ? e.message : t('loadError'))
+        setLoadError(errMsg(e, t('loadError')))
       })
       .finally(() => setLoading(false))
-  }, [t])
+  }, [applyBillingDefaults, errMsg, t])
 
   useEffect(() => {
     loadProfile()
@@ -113,27 +177,67 @@ export function AccountSettingsContent() {
 
   const emailOtpEnabled = market ? isOtpChannelEnabled(market, 'email', 'profile') : false
   const smsOtpEnabled = market ? isOtpChannelEnabled(market, 'sms', 'profile') : false
+  const isSk = market?.region === 'sk'
+  const showPatronymic = market?.region === 'ua'
+  const showCourierAddress = isCourierDeliveryMethod(deliveryMethod)
+  const showBranch = isBranchDeliveryMethod(deliveryMethod)
+  const showSkCourierExtras = needsSkCourierExtras(deliveryMethod, market?.region ?? 'ua')
+
+  const deliveryMethodLabel = useCallback(
+    (slug: string) => {
+      const key = `deliveryMethods.${slug}` as Parameters<typeof tCheckout>[0]
+      return tCheckout.has(key) ? tCheckout(key) : slug
+    },
+    [tCheckout],
+  )
+
+  const preferCountryFirst = useMemo(
+    () => (isSk ? ['sk', 'cz', 'hu', 'at', 'de'] : ['ua']),
+    [isSk],
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     try {
+      const billingDefaults: AccountBillingDefaults = {
+        buyerType,
+        firstName: billingFirstName.trim() || firstName.trim(),
+        lastName: billingLastName.trim() || lastName.trim(),
+        countryCode: billingCountryCode.trim(),
+        street: billingStreet.trim(),
+        city: billingCity.trim(),
+        postalCode: billingPostalCode.trim(),
+        ...(buyerType === 'company'
+          ? {
+              companyLegalName: companyLegalName.trim(),
+              companyIco: companyIco.trim(),
+              companyDic: companyDic.trim(),
+              companyVatId: companyVatId.trim(),
+              vatCountryCode: vatCountryCode.trim(),
+            }
+          : {}),
+      }
       const updated = await updateAccountProfile({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        patronymic: patronymic.trim(),
+        patronymic: showPatronymic ? patronymic.trim() : '',
         deliveryDefaults: {
-          method: deliveryMethod as 'nova-poshta-branch' | 'nova-poshta-address' | 'pickup',
-          city: deliveryCity.trim(),
-          branch: deliveryBranch.trim(),
-          street: deliveryStreet.trim(),
-          houseNumber: deliveryHouseNumber.trim(),
+          method: deliveryMethod,
+          city: isPickupDeliveryMethod(deliveryMethod) ? '' : deliveryCity.trim(),
+          branch: showBranch ? deliveryBranch.trim() : '',
+          street: showCourierAddress ? deliveryStreet.trim() : '',
+          houseNumber: showCourierAddress ? deliveryHouseNumber.trim() : '',
+          postalCode: showSkCourierExtras ? deliveryPostalCode.trim() : '',
+          countryCode: showSkCourierExtras ? deliveryCountryCode.trim() : '',
         },
+        billingDefaults,
       })
       setProfile(updated)
+      applyBillingDefaults(updated.billingDefaults)
       toast.success(tc('profileSaved'))
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : tc('profileSaveFailed'))
+      toast.error(errMsg(e, tc('profileSaveFailed')))
     } finally {
       setSaving(false)
     }
@@ -160,11 +264,10 @@ export function AccountSettingsContent() {
         setEmailFlow('idle')
         return
       }
-      // OTP already sent by start; verify step uses same mailbox.
       setEmailFlow('code')
       toast.success(t('contactOtpSent'))
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('contactStartFailed'))
+      toast.error(errMsg(e, t('contactStartFailed')))
     } finally {
       setEmailBusy(false)
     }
@@ -188,7 +291,7 @@ export function AccountSettingsContent() {
         setEmailFlow('conflict')
         return
       }
-      toast.error(err.message || t('contactConfirmFailed'))
+      toast.error(errMsg(e, t('contactConfirmFailed')))
     } finally {
       setEmailBusy(false)
     }
@@ -212,7 +315,7 @@ export function AccountSettingsContent() {
       setPhoneFlow('code')
       toast.success(t('contactOtpSent'))
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('contactStartFailed'))
+      toast.error(errMsg(e, t('contactStartFailed')))
     } finally {
       setPhoneBusy(false)
     }
@@ -236,13 +339,13 @@ export function AccountSettingsContent() {
         setPhoneFlow('conflict')
         return
       }
-      toast.error(err.message || t('contactConfirmFailed'))
+      toast.error(errMsg(e, t('contactConfirmFailed')))
     } finally {
       setPhoneBusy(false)
     }
   }
 
-  const handleClearPhone = async () => {
+  const submitPhoneClear = async () => {
     setPhoneBusy(true)
     try {
       const updated = await clearPhoneContact()
@@ -250,7 +353,7 @@ export function AccountSettingsContent() {
       setPhoneFlow('idle')
       toast.success(t('contactPhoneCleared'))
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('contactConfirmFailed'))
+      toast.error(errMsg(e, t('contactConfirmFailed')))
     } finally {
       setPhoneBusy(false)
     }
@@ -297,7 +400,7 @@ export function AccountSettingsContent() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="min-h-11 w-full shrink-0 sm:w-auto"
+                className={cn('min-h-11 w-full shrink-0 sm:w-auto', ACCOUNT_ACTION_BUTTON_CLASS)}
                 onClick={beginEmailFlow}
               >
                 {profile?.email ? t('changeEmail') : t('addEmail')}
@@ -317,7 +420,13 @@ export function AccountSettingsContent() {
                 onChange={(e) => setEmailInput(e.target.value)}
               />
               <div className="flex flex-wrap gap-2">
-                <Button type="button" size="sm" disabled={emailBusy} onClick={() => void submitEmailStart()}>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={emailBusy}
+                  className={ACCOUNT_ACTION_BUTTON_CLASS}
+                  onClick={() => void submitEmailStart()}
+                >
                   {emailBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : t('sendContactOtp')}
                 </Button>
                 <Button type="button" size="sm" variant="ghost" onClick={() => setEmailFlow('idle')}>
@@ -342,6 +451,7 @@ export function AccountSettingsContent() {
                   type="button"
                   size="sm"
                   disabled={emailBusy}
+                  className={ACCOUNT_ACTION_BUTTON_CLASS}
                   onClick={() => void submitEmailConfirm()}
                 >
                   {emailBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : t('confirmContact')}
@@ -350,8 +460,11 @@ export function AccountSettingsContent() {
                   type="button"
                   size="sm"
                   variant="ghost"
-                  disabled={emailBusy}
-                  onClick={() => void sendAuthEmailCode(emailInput.trim(), 'profile', locale).then(() => toast.success(t('contactOtpSent'))).catch((e) => toast.error(e instanceof Error ? e.message : t('contactStartFailed')))}
+                  onClick={() =>
+                    void sendAuthEmailCode(emailInput.trim(), 'profile', locale)
+                      .then(() => toast.success(t('contactOtpSent')))
+                      .catch((e) => toast.error(errMsg(e, t('contactStartFailed'))))
+                  }
                 >
                   {t('resendContactOtp')}
                 </Button>
@@ -393,7 +506,7 @@ export function AccountSettingsContent() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="min-h-11 w-full sm:w-auto"
+                  className={cn('min-h-11 w-full sm:w-auto', ACCOUNT_ACTION_BUTTON_CLASS)}
                   onClick={beginPhoneFlow}
                 >
                   {profile?.phone ? t('changePhone') : t('addPhone')}
@@ -406,9 +519,9 @@ export function AccountSettingsContent() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="min-h-11 w-full sm:w-auto"
+                  className={cn('min-h-11 w-full sm:w-auto', ACCOUNT_ACTION_BUTTON_CLASS)}
                   disabled={phoneBusy}
-                  onClick={() => void handleClearPhone()}
+                  onClick={() => void submitPhoneClear()}
                 >
                   {t('clearPhone')}
                 </Button>
@@ -425,43 +538,28 @@ export function AccountSettingsContent() {
                 inputMode="tel"
                 autoComplete="tel"
                 placeholder={
-                  market
-                    ? phonePlaceholderForPolicy(market.authPhonePolicy)
-                    : '+...'
+                  market ? phonePlaceholderForPolicy(market.authPhonePolicy) : undefined
                 }
                 value={phoneInput}
                 onChange={(e) =>
                   setPhoneInput(sanitizeCheckoutPhoneInput(e.target.value))
                 }
-                className={cn(
-                  market &&
-                    phoneInput.trim() &&
-                    !isValidPhoneForPolicy(phoneInput, market.authPhonePolicy, market.region) &&
-                    'border-destructive/80',
-                )}
               />
-              <FieldHint
-                id="newPhone-error"
-                show={Boolean(
-                  market &&
-                    phoneInput.trim() &&
-                    !isValidPhoneForPolicy(phoneInput, market.authPhonePolicy, market.region),
-                )}
-                message={
-                  market
-                    ? fe(phoneErrorForPolicy(phoneInput, market.authPhonePolicy, market.region))
-                    : null
-                }
-              />
+              {market ? (
+                <FieldHint
+                  id="newPhone-error"
+                  show={Boolean(phoneInput.trim())}
+                  message={fe(
+                    phoneErrorForPolicy(phoneInput, market.authPhonePolicy, market.region),
+                  )}
+                />
+              ) : null}
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
                   size="sm"
-                  disabled={
-                    phoneBusy ||
-                    !market ||
-                    !isValidPhoneForPolicy(phoneInput, market.authPhonePolicy, market.region)
-                  }
+                  disabled={phoneBusy}
+                  className={ACCOUNT_ACTION_BUTTON_CLASS}
                   onClick={() => void submitPhoneStart()}
                 >
                   {phoneBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : t('sendContactOtp')}
@@ -488,6 +586,7 @@ export function AccountSettingsContent() {
                   type="button"
                   size="sm"
                   disabled={phoneBusy}
+                  className={ACCOUNT_ACTION_BUTTON_CLASS}
                   onClick={() => void submitPhoneConfirm()}
                 >
                   {phoneBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : t('confirmContact')}
@@ -496,13 +595,10 @@ export function AccountSettingsContent() {
                   type="button"
                   size="sm"
                   variant="ghost"
-                  disabled={phoneBusy}
                   onClick={() =>
                     void sendAuthSmsCode(phoneInput.trim(), 'profile')
                       .then(() => toast.success(t('contactOtpSent')))
-                      .catch((e) =>
-                        toast.error(e instanceof Error ? e.message : t('contactStartFailed')),
-                      )
+                      .catch((e) => toast.error(errMsg(e, t('contactStartFailed'))))
                   }
                 >
                   {t('resendContactOtp')}
@@ -534,14 +630,16 @@ export function AccountSettingsContent() {
               <Label htmlFor="firstName">{tc('firstName')}</Label>
               <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
             </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="patronymic">{tc('patronymic')}</Label>
-              <Input
-                id="patronymic"
-                value={patronymic}
-                onChange={(e) => setPatronymic(e.target.value)}
-              />
-            </div>
+            {showPatronymic ? (
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="patronymic">{tc('patronymic')}</Label>
+                <Input
+                  id="patronymic"
+                  value={patronymic}
+                  onChange={(e) => setPatronymic(e.target.value)}
+                />
+              </div>
+            ) : null}
           </div>
         </section>
 
@@ -556,15 +654,15 @@ export function AccountSettingsContent() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(DELIVERY_METHOD_LABELS).map(([value, label]) => (
+                  {enabledDeliveryMethods.map((value) => (
                     <SelectItem key={value} value={value}>
-                      {label}
+                      {deliveryMethodLabel(value)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            {deliveryMethod !== 'pickup' ? (
+            {!isPickupDeliveryMethod(deliveryMethod) ? (
               <div className="space-y-2">
                 <Label htmlFor="deliveryCity">{t('citySettlement')}</Label>
                 <Input
@@ -574,9 +672,13 @@ export function AccountSettingsContent() {
                 />
               </div>
             ) : null}
-            {deliveryMethod === 'nova-poshta-branch' ? (
+            {showBranch ? (
               <div className="space-y-2">
-                <Label htmlFor="deliveryBranch">{tc('branch')}</Label>
+                <Label htmlFor="deliveryBranch">
+                  {deliveryMethod.startsWith('packeta')
+                    ? tCheckout('packetaPickupPointLabel')
+                    : tc('branch')}
+                </Label>
                 <Input
                   id="deliveryBranch"
                   value={deliveryBranch}
@@ -584,7 +686,7 @@ export function AccountSettingsContent() {
                 />
               </div>
             ) : null}
-            {deliveryMethod === 'nova-poshta-address' ? (
+            {showCourierAddress ? (
               <>
                 <div className="space-y-2">
                   <Label htmlFor="deliveryStreet">{tc('street')}</Label>
@@ -602,12 +704,178 @@ export function AccountSettingsContent() {
                     onChange={(e) => setDeliveryHouseNumber(e.target.value)}
                   />
                 </div>
+                {showSkCourierExtras ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="deliveryPostalCode">{tCheckout('postalCode')}</Label>
+                      <Input
+                        id="deliveryPostalCode"
+                        value={deliveryPostalCode}
+                        onChange={(e) => setDeliveryPostalCode(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{tCheckout('deliveryCountry')}</Label>
+                      <BillingCountryCombobox
+                        value={deliveryCountryCode}
+                        onChange={setDeliveryCountryCode}
+                        preferFirst={preferCountryFirst}
+                      />
+                    </div>
+                  </>
+                ) : null}
               </>
             ) : null}
           </div>
         </section>
 
-        <Button type="submit" disabled={saving} className="min-h-11 w-full sm:w-auto">
+        <section className="space-y-4 rounded-xl border border-border/50 bg-card p-4 shadow-sm sm:p-5">
+          <h2 className="font-serif text-lg font-semibold">{t('billingDefaultsTitle')}</h2>
+          <p className="text-sm text-muted-foreground">{t('billingDefaultsHint')}</p>
+
+          <RadioGroup
+            value={buyerType}
+            onValueChange={(value) => setBuyerType(value as BuyerType)}
+            className="grid gap-3 sm:grid-cols-2"
+          >
+            <Label
+              htmlFor="buyer-individual"
+              className={cn(
+                'flex cursor-pointer items-center gap-3 rounded-lg border p-3',
+                buyerType === 'individual' ? 'border-primary bg-primary/5' : 'border-border/60',
+              )}
+            >
+              <RadioGroupItem id="buyer-individual" value="individual" />
+              <span className="text-sm font-medium">{t('buyerTypeIndividual')}</span>
+            </Label>
+            <Label
+              htmlFor="buyer-company"
+              className={cn(
+                'flex cursor-pointer items-center gap-3 rounded-lg border p-3',
+                buyerType === 'company' ? 'border-primary bg-primary/5' : 'border-border/60',
+              )}
+            >
+              <RadioGroupItem id="buyer-company" value="company" />
+              <span className="text-sm font-medium">{t('buyerTypeCompany')}</span>
+            </Label>
+          </RadioGroup>
+
+          {buyerType === 'company' ? (
+            <div className="space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4">
+              <div className="space-y-2">
+                <Label htmlFor="companyLegalName">{tCheckout('companyLegalName')}</Label>
+                <Input
+                  id="companyLegalName"
+                  value={companyLegalName}
+                  onChange={(e) => setCompanyLegalName(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="companyIco">
+                    {isSk ? tCheckout('ico') : t('companyTaxId')}
+                  </Label>
+                  <Input
+                    id="companyIco"
+                    value={companyIco}
+                    onChange={(e) => setCompanyIco(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="companyDic">
+                    {isSk ? tCheckout('companyDic') : t('companyVatLabel')}
+                  </Label>
+                  <Input
+                    id="companyDic"
+                    value={companyDic}
+                    onChange={(e) => setCompanyDic(e.target.value)}
+                  />
+                </div>
+              </div>
+              {isSk ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="vatCountryCode">{tCheckout('companyCountry')}</Label>
+                    <Input
+                      id="vatCountryCode"
+                      value={vatCountryCode}
+                      onChange={(e) => setVatCountryCode(e.target.value.toUpperCase())}
+                      placeholder="SK"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="companyVatId">{tCheckout('vatIdLabel')}</Label>
+                    <Input
+                      id="companyVatId"
+                      value={companyVatId}
+                      onChange={(e) => setCompanyVatId(e.target.value)}
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="billingLastName">{tc('lastName')}</Label>
+                <Input
+                  id="billingLastName"
+                  value={billingLastName}
+                  onChange={(e) => setBillingLastName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="billingFirstName">{tc('firstName')}</Label>
+                <Input
+                  id="billingFirstName"
+                  value={billingFirstName}
+                  onChange={(e) => setBillingFirstName(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label>{tCheckout(isSk ? 'billingCountry' : 'deliveryCountry')}</Label>
+            <BillingCountryCombobox
+              value={billingCountryCode}
+              onChange={setBillingCountryCode}
+              preferFirst={preferCountryFirst}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="billingStreet">{tc('street')}</Label>
+            <Input
+              id="billingStreet"
+              value={billingStreet}
+              onChange={(e) => setBillingStreet(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="billingCity">{t('citySettlement')}</Label>
+              <Input
+                id="billingCity"
+                value={billingCity}
+                onChange={(e) => setBillingCity(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="billingPostalCode">{tCheckout('postalCode')}</Label>
+              <Input
+                id="billingPostalCode"
+                value={billingPostalCode}
+                onChange={(e) => setBillingPostalCode(e.target.value)}
+              />
+            </div>
+          </div>
+        </section>
+
+        <Button
+          type="submit"
+          disabled={saving}
+          className={cn('min-h-11 w-full sm:w-auto', ACCOUNT_ACTION_BUTTON_CLASS)}
+        >
           {saving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -55,3 +55,24 @@ export function formatReviewDateTime(
     timeZone: businessTimeZoneForMarket(marketRegion),
   }).format(date)
 }
+
+export function getReviewVerificationBadgeKey(
+  verificationType: ReviewListItem['verificationType'],
+): 'verifiedPurchase' | 'verifiedCustomer' | null {
+  if (verificationType === 'VERIFIED_PURCHASE') return 'verifiedPurchase'
+  if (verificationType === 'VERIFIED_CUSTOMER') return 'verifiedCustomer'
+  return null
+}
+
+/** Labels line for product reviews only; empty → hide. */
+export function formatPurchasedVariantLabelsLine(
+  labels: string[] | undefined | null,
+): { mode: 'one' | 'many'; labels: string[]; joined: string } | null {
+  const cleaned = (labels ?? []).map((label) => label.trim()).filter(Boolean)
+  if (!cleaned.length) return null
+  return {
+    mode: cleaned.length === 1 ? 'one' : 'many',
+    labels: cleaned,
+    joined: cleaned.join(', '),
+  }
+}

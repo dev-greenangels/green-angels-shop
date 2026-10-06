@@ -25,6 +25,7 @@ export function ProductPagePurchaseClient({
   initialVariantSku = null,
 }: ProductPagePurchaseClientProps) {
   const tc = useTranslations('cart')
+  const tCommon = useTranslations('common')
   const currency = useDefaultCurrency()
   const cartItems = useCartItems()
   const { addItem, updateQuantity } = useCartActions()
@@ -63,7 +64,13 @@ export function ProductPagePurchaseClient({
         itemName: plant.name,
         itemVariant: variant.label,
       })
-      showAddedToCartToast(tc('addedToCart', { count: addedCount }), plant.name, variant.label)
+      showAddedToCartToast(
+        tc('addedToCart', { count: addedCount }),
+        plant.name,
+        variant.label,
+        tCommon('goToCart'),
+        variant,
+      )
     }
   }
 

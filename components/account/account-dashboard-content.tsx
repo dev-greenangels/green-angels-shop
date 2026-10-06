@@ -10,6 +10,7 @@ import {
   AccountPageLoading,
 } from '@/components/account/account-page-state'
 import { fetchAccountDashboard, type AccountDashboardStats } from '@/lib/account/api'
+import { mapAccountError } from '@/lib/account/map-account-error'
 import { fetchMyReferralSummary } from '@/lib/referrals/api'
 import type { MyReferralSummary } from '@/lib/referrals/types'
 import { Link } from '@/i18n/navigation'
@@ -17,6 +18,7 @@ import { cn } from '@/lib/utils'
 
 export function AccountDashboardContent() {
   const t = useTranslations('account')
+  const tApi = useTranslations('apiErrors')
 
   const cards: Array<{
     key: keyof AccountDashboardStats
@@ -56,7 +58,7 @@ export function AccountDashboardContent() {
         setReferral(ref)
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : t('loadError'))
+        if (!cancelled) setError(mapAccountError(e, tApi) || t('loadError'))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -64,7 +66,7 @@ export function AccountDashboardContent() {
     return () => {
       cancelled = true
     }
-  }, [reloadToken, t])
+  }, [reloadToken, t, tApi])
 
   const retry = () => setReloadToken((n) => n + 1)
 

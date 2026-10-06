@@ -39,7 +39,7 @@ export function NavAccountMenu({
           variant="ghost"
           size="icon"
           aria-label={tc('account')}
-          className={className}
+          className={cn('border border-border/60', className)}
         >
           <User className="h-5 w-5" strokeWidth={2} />
         </Button>
@@ -55,7 +55,10 @@ export function NavAccountMenu({
           variant="ghost"
           size="icon"
           aria-label={tc('account')}
-          className={cn('data-[state=open]:bg-primary/10', className)}
+          className={cn(
+            'border border-border/60 data-[state=open]:bg-primary/10',
+            className,
+          )}
         >
           <User className="h-5 w-5 fill-primary/25 text-primary" strokeWidth={2} />
         </Button>

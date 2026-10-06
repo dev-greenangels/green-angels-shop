@@ -9,12 +9,14 @@ export const ROBOTS_DISALLOW_PATHS = [
   '/search',
   '/favorites',
   '/cart',
+  '/reviews/request',
   '/*/account',
   '/*/auth',
   '/*/checkout',
   '/*/search',
   '/*/favorites',
   '/*/cart',
+  '/*/reviews/request',
 ] as const
 
 export function buildRobotsRules(input: { origin: string; indexingAllowed: boolean }) {

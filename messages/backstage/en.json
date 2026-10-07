@@ -1627,5 +1627,19 @@
     "lastFailedError": "Error",
     "lastFailedUnknown": "Unknown provider error",
     "lastFailedHint": "Automatic retries are exhausted or still failing. Use Send/Resend below for a new attempt."
+  },
+  "orderPacking": {
+    "title": "Packaging",
+    "estimatedBoxes": "Estimated boxes",
+    "estimatedPallets": "Estimated pallets",
+    "packagingAmount": "Packaging fee",
+    "actualBoxes": "Actual boxes",
+    "notPacked": "Not packed",
+    "status": "Packing status",
+    "inProgress": "In progress",
+    "difference": "Difference",
+    "differencePositive": "+{count} vs estimate",
+    "differenceNegative": "−{count} vs estimate",
+    "differenceZero": "Matches estimate"
   }
 }

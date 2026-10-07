@@ -477,5 +477,19 @@
     "lastFailedError": "Chyba",
     "lastFailedUnknown": "Neznámá chyba poskytovatele",
     "lastFailedHint": "Automatické opakování je vyčerpáno nebo stále selhává. Použijte Odeslat níže pro nový pokus."
+  },
+  "orderPacking": {
+    "title": "Balení",
+    "estimatedBoxes": "Vypočítané krabice",
+    "estimatedPallets": "Vypočítané palety",
+    "packagingAmount": "Poplatek za balení",
+    "actualBoxes": "Skutečné krabice",
+    "notPacked": "Nezabaleno",
+    "status": "Stav balení",
+    "inProgress": "Probíhá",
+    "difference": "Rozdíl",
+    "differencePositive": "+{count} oproti výpočtu",
+    "differenceNegative": "−{count} oproti výpočtu",
+    "differenceZero": "Odpovídá výpočtu"
   }
 }

@@ -1627,5 +1627,19 @@
     "lastFailedError": "Помилка",
     "lastFailedUnknown": "Невідома помилка провайдера",
     "lastFailedHint": "Автоматичні повторні спроби вичерпано або ще падають. Використайте «Надіслати» нижче для нової спроби."
+  },
+  "orderPacking": {
+    "title": "Пакування",
+    "estimatedBoxes": "Розраховано коробок",
+    "estimatedPallets": "Розраховано палет",
+    "packagingAmount": "Вартість пакування",
+    "actualBoxes": "Фактично коробок",
+    "notPacked": "Не запаковано",
+    "status": "Статус пакування",
+    "inProgress": "В процесі",
+    "difference": "Різниця",
+    "differencePositive": "+{count} до розрахунку",
+    "differenceNegative": "−{count} від розрахунку",
+    "differenceZero": "Збігається з розрахунком"
   }
 }

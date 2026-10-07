@@ -464,6 +464,7 @@ function CatalogProductVariantRow({
       <Button
         type="button"
         size="sm"
+        data-add-to-cart=""
         className="h-9 shrink-0 gap-1.5 px-2.5 sm:h-9 sm:w-9 sm:px-0"
         disabled={atCartMax}
         aria-label={preorder ? t('preorder') : t('addToCart')}

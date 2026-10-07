@@ -11,14 +11,19 @@ import { cn } from '@/lib/utils'
 
 export const CART_TOAST_ATTR = 'data-cart-toast'
 export const CART_TRIGGER_ATTR = 'data-cart-trigger'
+/** Mark buy controls so outside-dismiss does not steal the add-to-cart click. */
+export const CART_ADD_TRIGGER_ATTR = 'data-add-to-cart'
 export const CART_TOAST_ID = 'added-to-cart'
+/** Fired after the toast fly animation lands on the cart icon. */
+export const CART_TOAST_LANDED_EVENT = 'ga-cart-toast-landed'
 
 const CART_TOAST_DURATION_MS = 5500
 const FLY_DURATION_MS = 480
 
 let autoDismissTimer: ReturnType<typeof setTimeout> | null = null
 let outsideClickBound = false
-let flying = false
+let showGeneration = 0
+let activeToastId: string = CART_TOAST_ID
 
 type AddedToCartToastViewProps = {
   message: string
@@ -65,7 +70,6 @@ function AddedToCartToastView({
         size="sm"
         className="h-8 shrink-0 gap-1 rounded-lg bg-primary-gradient px-2.5 text-xs text-primary-foreground"
         onPointerDown={(event) => {
-          // Capture-phase outside-dismiss must not steal this interaction.
           event.stopPropagation()
         }}
         onClick={(event) => {
@@ -108,12 +112,18 @@ function findCartTriggerElement(): HTMLElement | null {
   return nodes[0] ?? null
 }
 
-function flyCartToastToCartIcon() {
-  const source = findCartToastElement()
-  const target = findCartTriggerElement()
-  if (!source || !target || flying) return
+function pulseCartBadge() {
+  document.dispatchEvent(new CustomEvent(CART_TOAST_LANDED_EVENT))
+}
 
-  flying = true
+/** Clone → fly to cart icon → pulse badge on land. Non-blocking; safe to call repeatedly. */
+function flyElementToCart(source: HTMLElement) {
+  const target = findCartTriggerElement()
+  if (!target) {
+    pulseCartBadge()
+    return
+  }
+
   const from = source.getBoundingClientRect()
   const to = target.getBoundingClientRect()
   const clone = source.cloneNode(true) as HTMLElement
@@ -132,7 +142,6 @@ function flyCartToastToCartIcon() {
     willChange: 'transform, opacity',
   })
   document.body.appendChild(clone)
-  source.style.opacity = '0'
 
   const dx = to.left + to.width / 2 - (from.left + from.width / 2)
   const dy = to.top + to.height / 2 - (from.top + from.height / 2)
@@ -144,7 +153,7 @@ function flyCartToastToCartIcon() {
 
   window.setTimeout(() => {
     clone.remove()
-    flying = false
+    pulseCartBadge()
   }, FLY_DURATION_MS + 40)
 }
 
@@ -154,6 +163,10 @@ function unbindOutsideClick() {
   outsideClickBound = false
 }
 
+function isAddToCartTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && Boolean(target.closest(`[${CART_ADD_TRIGGER_ATTR}]`))
+}
+
 function onOutsidePointerDown(event: PointerEvent) {
   const toastEl = findCartToastElement()
   if (!toastEl) {
@@ -161,6 +174,8 @@ function onOutsidePointerDown(event: PointerEvent) {
     return
   }
   if (event.target instanceof Node && toastEl.contains(event.target)) return
+  // Buy click replaces via showAddedToCartToast (fly + new toast) — don't dismiss here.
+  if (isAddToCartTarget(event.target)) return
   dismissCartToast({ fly: true })
 }
 
@@ -177,18 +192,21 @@ export function dismissCartToast(options?: { fly?: boolean }) {
   clearAutoDismiss()
   unbindOutsideClick()
   if (options?.fly) {
-    flyCartToastToCartIcon()
+    const el = findCartToastElement()
+    if (el) flyElementToCart(el)
   }
-  toast.dismiss(CART_TOAST_ID)
+  toast.dismiss(activeToastId)
 }
 
-export function showAddedToCartToast(
+function mountCartToast(
   message: string,
   plantName: string,
   variantLabel: string,
   actionLabel: string,
-  variant?: Pick<ProductVariant, 'displayAttributes'> | null,
+  variant: Pick<ProductVariant, 'displayAttributes'> | null | undefined,
+  toastId: string,
 ) {
+  activeToastId = toastId
   toast.custom(
     () => (
       <AddedToCartToastView
@@ -204,15 +222,35 @@ export function showAddedToCartToast(
       />
     ),
     {
-      id: CART_TOAST_ID,
+      id: toastId,
       duration: Number.POSITIVE_INFINITY,
-      // Strip Sonner chrome so we don't get a double frame around the custom toast.
       classNames: {
         toast: '!pointer-events-auto !border-0 !bg-transparent !p-0 !shadow-none !ring-0',
       },
     },
   )
-
   scheduleAutoDismiss()
   bindOutsideClick()
+}
+
+export function showAddedToCartToast(
+  message: string,
+  plantName: string,
+  variantLabel: string,
+  actionLabel: string,
+  variant?: Pick<ProductVariant, 'displayAttributes'> | null,
+) {
+  clearAutoDismiss()
+  unbindOutsideClick()
+
+  // Previous toast flies to cart; badge pulses only when that fly lands.
+  const previous = findCartToastElement()
+  if (previous) {
+    flyElementToCart(previous)
+  }
+  toast.dismiss(activeToastId)
+
+  // Unique id every time — avoids Sonner same-id skip on rapid re-show.
+  const toastId = `${CART_TOAST_ID}-${++showGeneration}`
+  mountCartToast(message, plantName, variantLabel, actionLabel, variant, toastId)
 }

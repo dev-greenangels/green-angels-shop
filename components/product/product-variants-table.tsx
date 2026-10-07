@@ -615,6 +615,7 @@ function VariantActions({
     <Button
       type="button"
       size={isMobileLayout ? 'default' : size === 'lg' ? 'lg' : 'default'}
+      data-add-to-cart=""
       className={cn(
         'gap-2',
         isMobileLayout ? 'min-w-0 flex-1 shrink-0 px-3 text-sm' : 'min-w-[7rem] shrink-0 justify-center',

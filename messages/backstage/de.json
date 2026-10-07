@@ -1455,5 +1455,19 @@
     "lastFailedError": "Fehler",
     "lastFailedUnknown": "Unbekannter Anbieterfehler",
     "lastFailedHint": "Automatische Wiederholungen sind erschöpft oder schlagen weiter fehl. Nutzen Sie Senden unten für einen neuen Versuch."
+  },
+  "orderPacking": {
+    "title": "Verpackung",
+    "estimatedBoxes": "Berechnete Kartons",
+    "estimatedPallets": "Berechnete Paletten",
+    "packagingAmount": "Verpackungsgebühr",
+    "actualBoxes": "Tatsächliche Kartons",
+    "notPacked": "Nicht verpackt",
+    "status": "Verpackungsstatus",
+    "inProgress": "In Bearbeitung",
+    "difference": "Differenz",
+    "differencePositive": "+{count} zur Berechnung",
+    "differenceNegative": "−{count} zur Berechnung",
+    "differenceZero": "Entspricht der Berechnung"
   }
 }

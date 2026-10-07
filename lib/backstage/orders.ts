@@ -81,6 +81,20 @@ export type BackstageOrderDetail = BackstageOrderListItem & {
   productsSubtotal?: number | null
   deliveryAmount?: number | null
   packagingAmount?: number | null
+  /** Immutable checkout packaging fee box count snapshot. */
+  packagingBoxCount?: number | null
+  /** Immutable checkout packaging fee pallet count snapshot. */
+  packagingPalletCount?: number | null
+  /** Warehouse packing summary (actual packages + completion). */
+  packing?: {
+    phase: 'not_started' | 'in_progress' | 'completed'
+    estimatedBoxCount: number | null
+    estimatedPalletCount: number | null
+    packagingAmount: number | null
+    actualPackageCount: number
+    boxDifference: number | null
+    packingCompletedAt: string | null
+  }
   taxAmount?: number | null
   codFeeAmount?: number | null
   pointsDiscountAmount?: number | null

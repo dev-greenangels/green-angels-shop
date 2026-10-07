@@ -190,6 +190,36 @@ export function OrderReviewRequestCard({
         setConfirmOpen(status?.sentAt ? 'resend' : 'send')
       } else {
         toast.error(err instanceof Error ? err.message : t('actionError'))
+        // FAILED Communication is now committed server-side — surface it in the order history list.
+        try {
+          const next = await fetchBackstageReviewRequestStatus(orderId)
+          setStatus(next)
+          setEmailLocale(next.locale ?? 'sk')
+          const failed = next.latestFailedCommunication
+          if (failed) {
+            onCommunicationSent?.({
+              id: failed.id,
+              orderId,
+              orderNumber: null,
+              audience: 'CUSTOMER',
+              type: 'CUSTOMER_REVIEW_REQUEST',
+              source: failed.source,
+              status: failed.status,
+              toEmail: next.customerEmail,
+              subjectSnapshot: null,
+              bodySnapshot: null,
+              locale: next.locale,
+              createdByUserId: null,
+              hasAttachment: false,
+              errorMessage: failed.errorMessage,
+              providerMessageId: null,
+              sentAt: failed.sentAt,
+              createdAt: failed.createdAt,
+            })
+          }
+        } catch {
+          /* ignore refresh errors after send failure */
+        }
       }
     } finally {
       setBusy(false)

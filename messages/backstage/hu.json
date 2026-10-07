@@ -1454,5 +1454,19 @@
     "lastFailedError": "Hiba",
     "lastFailedUnknown": "Ismeretlen szolgáltatói hiba",
     "lastFailedHint": "Az automatikus újrapróbálkozások kimerültek vagy továbbra is hibáznak. Új kísérlethez használd a Küldés gombot."
+  },
+  "orderPacking": {
+    "title": "Csomagolás",
+    "estimatedBoxes": "Számított dobozok",
+    "estimatedPallets": "Számított raklapok",
+    "packagingAmount": "Csomagolási díj",
+    "actualBoxes": "Tényleges dobozok",
+    "notPacked": "Nincs becsomagolva",
+    "status": "Csomagolás állapota",
+    "inProgress": "Folyamatban",
+    "difference": "Eltérés",
+    "differencePositive": "+{count} a számításhoz képest",
+    "differenceNegative": "−{count} a számításhoz képest",
+    "differenceZero": "Egyezik a számítással"
   }
 }

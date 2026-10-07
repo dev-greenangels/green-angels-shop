@@ -1627,5 +1627,19 @@
     "lastFailedError": "Chyba",
     "lastFailedUnknown": "Neznáma chyba poskytovateľa",
     "lastFailedHint": "Automatické opakovania sú vyčerpané alebo stále zlyhávajú. Použite Odoslať nižšie pre nový pokus."
+  },
+  "orderPacking": {
+    "title": "Balenie",
+    "estimatedBoxes": "Vypočítané krabice",
+    "estimatedPallets": "Vypočítané palety",
+    "packagingAmount": "Poplatok za balenie",
+    "actualBoxes": "Skutočné krabice",
+    "notPacked": "Nezabalené",
+    "status": "Stav balenia",
+    "inProgress": "Prebieha",
+    "difference": "Rozdiel",
+    "differencePositive": "+{count} oproti výpočtu",
+    "differenceNegative": "−{count} oproti výpočtu",
+    "differenceZero": "Zodpovedá výpočtu"
   }
 }

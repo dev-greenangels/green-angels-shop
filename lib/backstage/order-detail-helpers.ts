@@ -98,3 +98,39 @@ export async function copyText(value: string): Promise<boolean> {
     return false
   }
 }
+
+export type OrderPackingPhase = 'not_started' | 'in_progress' | 'completed'
+
+/** Prefer API `packing`; fall back so older responses still render. */
+export function resolveOrderPackingView(
+  order: Pick<
+    BackstageOrderDetail,
+    'packagingBoxCount' | 'packagingPalletCount' | 'packagingAmount' | 'packing'
+  >,
+): {
+  phase: OrderPackingPhase
+  estimatedBoxCount: number | null
+  estimatedPalletCount: number | null
+  packagingAmount: number | null
+  actualPackageCount: number
+  boxDifference: number | null
+} {
+  if (order.packing) {
+    return {
+      phase: order.packing.phase,
+      estimatedBoxCount: order.packing.estimatedBoxCount,
+      estimatedPalletCount: order.packing.estimatedPalletCount,
+      packagingAmount: order.packing.packagingAmount ?? order.packagingAmount ?? null,
+      actualPackageCount: order.packing.actualPackageCount,
+      boxDifference: order.packing.boxDifference,
+    }
+  }
+  return {
+    phase: 'not_started',
+    estimatedBoxCount: order.packagingBoxCount ?? null,
+    estimatedPalletCount: order.packagingPalletCount ?? null,
+    packagingAmount: order.packagingAmount ?? null,
+    actualPackageCount: 0,
+    boxDifference: null,
+  }
+}

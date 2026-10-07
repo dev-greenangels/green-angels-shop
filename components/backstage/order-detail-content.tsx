@@ -6,7 +6,7 @@ import {
   Copy,
   Loader2,
   MoreHorizontal,
-  Package,
+  Package as PackageIcon,
   RefreshCw,
   Trash2,
 } from 'lucide-react'
@@ -63,6 +63,7 @@ import {
   canManualErpSync,
   copyText,
   formatOrderMoney,
+  resolveOrderPackingView,
   taxRegimeLabel,
 } from '@/lib/backstage/order-detail-helpers'
 import type { BackstageCountryLocale } from '@/lib/backstage/country-display'
@@ -124,6 +125,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
   ) as BackstageCountryLocale
   const tPacketa = useTranslations('packetaOrderSnapshot')
   const tVies = useTranslations('orderVies')
+  const tPacking = useTranslations('orderPacking')
   const store = useStoreSettings()
   const pickupAddress = formatStoreAddress(store)
 
@@ -386,6 +388,19 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
   const timeline = buildOrderTimeline(order)
   const money = (n: number | null | undefined) =>
     n == null ? '—' : formatOrderMoney(n, order.currency)
+  const packing = resolveOrderPackingView(order)
+  const showPackingPallets =
+    packing.estimatedPalletCount != null && packing.estimatedPalletCount > 0
+  const packingDifferenceLabel =
+    packing.boxDifference == null
+      ? null
+      : packing.boxDifference > 0
+        ? tPacking('differencePositive', { count: packing.boxDifference })
+        : packing.boxDifference < 0
+          ? tPacking('differenceNegative', {
+              count: Math.abs(packing.boxDifference),
+            })
+          : tPacking('differenceZero')
 
   return (
     <div className="space-y-6">
@@ -511,7 +526,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <Package className="h-5 w-5 text-muted-foreground" />
+                        <PackageIcon className="h-5 w-5 text-muted-foreground" />
                       )}
                     </div>
                     <div className="min-w-0">
@@ -536,6 +551,40 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                   </p>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">{tPacking('title')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="space-y-2">
+                <MetaRow label={tPacking('estimatedBoxes')}>
+                  {packing.estimatedBoxCount ?? 0}
+                </MetaRow>
+                {showPackingPallets ? (
+                  <MetaRow label={tPacking('estimatedPallets')}>
+                    {packing.estimatedPalletCount}
+                  </MetaRow>
+                ) : null}
+                <MetaRow label={tPacking('packagingAmount')}>
+                  {money(packing.packagingAmount)}
+                </MetaRow>
+                <MetaRow label={tPacking('actualBoxes')}>
+                  {packing.phase === 'not_started'
+                    ? tPacking('notPacked')
+                    : packing.actualPackageCount}
+                </MetaRow>
+                {packing.phase === 'in_progress' ? (
+                  <MetaRow label={tPacking('status')}>{tPacking('inProgress')}</MetaRow>
+                ) : null}
+                {packing.phase === 'completed' && packingDifferenceLabel ? (
+                  <MetaRow label={tPacking('difference')}>
+                    {packingDifferenceLabel}
+                  </MetaRow>
+                ) : null}
+              </dl>
             </CardContent>
           </Card>
 

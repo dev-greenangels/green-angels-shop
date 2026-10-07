@@ -303,6 +303,7 @@ export function FreshPhotoLightbox({ photo, onClose }: FreshPhotoLightboxProps) 
                   <Button
                     type="button"
                     size="sm"
+                    data-add-to-cart=""
                     className="h-8"
                     onClick={handleBuy}
                     disabled={!variant || maxAddable <= 0}

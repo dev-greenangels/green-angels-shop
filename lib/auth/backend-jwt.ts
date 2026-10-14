@@ -6,6 +6,7 @@ export type BackendJwtPayload = {
   userId: string
   role: 'admin' | 'customer'
   v: 1
+  aud?: string
 }
 
 /** Той самий dev-секрет, що в green-angels-backend/.env.example */
@@ -32,7 +33,8 @@ export async function verifyBackendJwt(token: string): Promise<BackendJwtPayload
     const v = payload.v === 1 ? 1 : null
 
     if (!userId || !role || !v) return null
-    return { userId, role, v }
+    const aud = typeof payload.aud === 'string' ? payload.aud : undefined
+    return { userId, role, v, aud }
   } catch {
     return null
   }

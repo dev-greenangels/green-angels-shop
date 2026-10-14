@@ -16,6 +16,7 @@ import { NovaPoshtaSettingsForm } from '@/components/backstage/nova-poshta-setti
 import { PacketaSettingsForm } from '@/components/backstage/packeta-settings-form'
 import { GlsSettingsForm } from '@/components/backstage/gls-settings-form'
 import { FlexiSettingsForm } from '@/components/backstage/flexi-settings-form'
+import { PlantStockSettingsForm } from '@/components/backstage/plant-stock-settings-form'
 import { RecentlyViewedSettingsForm } from '@/components/backstage/recently-viewed-settings-form'
 import { MarketSettingsForm } from '@/components/backstage/market-settings-form'
 import { clearRecentlyViewedSettingsCache } from '@/components/product/recently-viewed-section'
@@ -468,6 +469,9 @@ export default function SettingsPage() {
               </>
             ) : null}
             <TabsTrigger value="flexi">ABRA Flexi</TabsTrigger>
+            {marketRegion === 'sk' ? (
+              <TabsTrigger value="plant-stock">PlantStock</TabsTrigger>
+            ) : null}
             <TabsTrigger value="presta-import">Імпорт Presta</TabsTrigger>
             <TabsTrigger value="withdrawal">{tSettings('withdrawal.tab')}</TabsTrigger>
             <TabsTrigger value="reviews">{tSettings('reviews.tab')}</TabsTrigger>
@@ -561,6 +565,12 @@ export default function SettingsPage() {
           <TabsContent value="flexi" className="mt-6 space-y-6">
             <FlexiSettingsForm />
           </TabsContent>
+
+          {marketRegion === 'sk' ? (
+            <TabsContent value="plant-stock" className="mt-6 space-y-6">
+              <PlantStockSettingsForm />
+            </TabsContent>
+          ) : null}
 
           <TabsContent value="presta-import" className="mt-6 space-y-6">
             {prestaImport ? (

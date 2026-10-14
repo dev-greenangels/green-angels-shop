@@ -5,4 +5,6 @@ export type BackstageSession = {
   firstName: string
   lastName: string
   staffRole?: BackstageStaffRole
+  /** Effective permission keys (ADMIN = full EXISTING set from Nest). */
+  permissions?: string[]
 }

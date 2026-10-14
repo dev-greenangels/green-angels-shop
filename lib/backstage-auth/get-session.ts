@@ -17,6 +17,7 @@ type BackendStaffSessionResponse = {
     lastName?: string | null
     role?: string
     staffRole?: string
+    permissions?: string[]
   } | null
 }
 
@@ -45,10 +46,15 @@ export async function getBackstageSession(request?: Request): Promise<BackstageS
   const payload = await verifyBackendJwt(token)
   if (!payload || payload.role !== 'admin') return null
 
+  // Reject PlantStock-scoped JWTs if somehow stored as cookie.
+  const aud = (payload as { aud?: string }).aud
+  if (aud === 'plant-stock') return null
+
   const res = await fetchBackend('/auth/backstage/session', {
     request: request ?? new Request('http://localhost', { headers: { cookie: cookieHeader } }),
   })
 
+  if (res.status === 401 || res.status === 403) return null
   if (!res.ok) return null
 
   const data = await readBackendJson<BackendStaffSessionResponse>(res)
@@ -63,5 +69,6 @@ export async function getBackstageSession(request?: Request): Promise<BackstageS
     firstName: user.firstName?.trim() || '',
     lastName: user.lastName?.trim() || '',
     staffRole,
+    permissions: Array.isArray(user.permissions) ? user.permissions : [],
   }
 }

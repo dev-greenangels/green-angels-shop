@@ -54,6 +54,10 @@ import {
 import { BrandLogo } from '@/components/brand-logo'
 import { BackstageContentLocaleSwitcher } from '@/components/backstage/backstage-content-locale'
 import { BackstageUiLocaleSwitcher } from '@/components/backstage/backstage-ui-locale'
+import {
+  canAccessBackstagePath,
+  hasAnyPermission,
+} from '@/lib/backstage-auth/permissions'
 import { fetchWholesaleInquiriesNewCount } from '@/lib/backstage/wholesale-inquiries'
 import {
   CONTRACT_WITHDRAWALS_NEW_COUNT_EVENT,
@@ -348,27 +352,48 @@ function Sidebar({
   const [stockPendingCount, setStockPendingCount] = useState(0)
   const [reviewsPendingCount, setReviewsPendingCount] = useState(0)
 
+  const visibleNavGroups = useMemo(() => {
+    return navGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) =>
+          canAccessBackstagePath(
+            item.href,
+            employee?.permissions,
+            employee?.staffRole,
+          ),
+        ),
+      }))
+      .filter((group) => group.items.length > 0)
+  }, [employee?.permissions, employee?.staffRole])
+
+  const showSettings = canAccessBackstagePath(
+    '/backstage/settings',
+    employee?.permissions,
+    employee?.staffRole,
+  )
+
   const initiallyOpen = useMemo(() => {
     const open: Record<string, boolean> = {}
-    for (const group of navGroups) {
+    for (const group of visibleNavGroups) {
       open[group.id] = group.items.some((item) => isNavActive(pathname, item))
     }
     return open
-  }, [pathname])
+  }, [pathname, visibleNavGroups])
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(initiallyOpen)
 
   useEffect(() => {
     setOpenGroups((prev) => {
       const next = { ...prev }
-      for (const group of navGroups) {
+      for (const group of visibleNavGroups) {
         if (group.items.some((item) => isNavActive(pathname, item))) {
           next[group.id] = true
         }
       }
       return next
     })
-  }, [pathname])
+  }, [pathname, visibleNavGroups])
 
   useEffect(() => {
     let cancelled = false
@@ -443,7 +468,7 @@ function Sidebar({
 
       <nav className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
         <NavLink item={topNavItem} pathname={pathname} />
-        {navGroups.map((group) => (
+        {visibleNavGroups.map((group) => (
           <NavGroupSection
             key={group.id}
             group={group}
@@ -455,7 +480,7 @@ function Sidebar({
             badgeByHref={badgeByHref}
           />
         ))}
-        <NavLink item={settingsNavItem} pathname={pathname} />
+        {showSettings ? <NavLink item={settingsNavItem} pathname={pathname} /> : null}
       </nav>
 
       <SidebarFooter employee={employee} onLogout={onLogout} />
@@ -503,9 +528,18 @@ export function AdminLayout({ children, addClassName }: AdminLayoutProps) {
         }
         if (cancelled) return
         if (data.user) {
-          setEmployee(data.user)
-          setAuthState('ok')
-          return
+          if (
+            data.user.staffRole === 'MANAGER' &&
+            !hasAnyPermission(data.user.permissions, data.user.staffRole, [
+              'backoffice.access',
+            ])
+          ) {
+            // no access — fall through to logout
+          } else {
+            setEmployee(data.user)
+            setAuthState('ok')
+            return
+          }
         }
       } catch {
         // Fall through to kick
@@ -539,6 +573,12 @@ export function AdminLayout({ children, addClassName }: AdminLayoutProps) {
       </div>
     )
   }
+
+  const pathAllowed = canAccessBackstagePath(
+    pathname,
+    employee?.permissions,
+    employee?.staffRole,
+  )
 
   const getBreadcrumbs = () => {
     const segments = pathname.split('/').filter(Boolean)
@@ -629,7 +669,13 @@ export function AdminLayout({ children, addClassName }: AdminLayoutProps) {
               addClassName,
             )}
           >
-            {children}
+            {pathAllowed ? (
+              children
+            ) : (
+              <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
+                Недостатньо прав доступу до цього розділу.
+              </div>
+            )}
           </main>
         </div>
       </div>

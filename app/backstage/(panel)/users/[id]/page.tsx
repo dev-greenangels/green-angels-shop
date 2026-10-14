@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2, Trash2 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
+import { StaffPermissionsCard } from '@/components/backstage/staff-permissions-card'
 import { UserCommunicationsPanel } from '@/components/backstage/user-communications-panel'
 import { UserEditCard } from '@/components/backstage/user-edit-card'
 import { UserGroupsCard } from '@/components/backstage/user-groups-card'
@@ -199,6 +200,14 @@ export default function UserDetailPage() {
                 setUser(updated)
               }}
             />
+
+            {staff ? (
+              <StaffPermissionsCard
+                userId={user.id}
+                targetRole={user.role}
+                isAdminViewer={isAdmin}
+              />
+            ) : null}
 
             <UserGroupsCard
               user={user}

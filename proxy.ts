@@ -88,7 +88,10 @@ async function hasBackstageAccess(request: NextRequest): Promise<boolean> {
   if (!token) return false
 
   const payload = await verifyBackendJwt(token)
-  return payload?.role === 'admin'
+  if (!payload || payload.role !== 'admin') return false
+  // PlantStock-scoped JWT must not unlock Backoffice pages.
+  if (payload.aud === 'plant-stock') return false
+  return true
 }
 
 async function handleBackstage(request: NextRequest) {

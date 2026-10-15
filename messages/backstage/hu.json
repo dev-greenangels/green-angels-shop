@@ -1468,5 +1468,10 @@
     "differencePositive": "+{count} a számításhoz képest",
     "differenceNegative": "−{count} a számításhoz képest",
     "differenceZero": "Egyezik a számítással"
+  },
+  "orderPayment": {
+    "unpaid": "Nincs fizetve",
+    "paid": "Fizetve",
+    "label": "Fizetés: {status}"
   }
 }

@@ -1642,6 +1642,11 @@
     "differenceNegative": "−{count} від розрахунку",
     "differenceZero": "Збігається з розрахунком"
   },
+  "orderPayment": {
+    "unpaid": "Не оплачено",
+    "paid": "Оплачено",
+    "label": "Оплата: {status}"
+  },
   "permissions": {
     "title": "Права доступу",
     "description": "Індивідуальні дозволи для менеджера. Відсутність галочки = доступ заборонено.",

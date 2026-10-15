@@ -1642,6 +1642,11 @@
     "differenceNegative": "−{count} oproti výpočtu",
     "differenceZero": "Zodpovedá výpočtu"
   },
+  "orderPayment": {
+    "unpaid": "Nezaplatené",
+    "paid": "Zaplatené",
+    "label": "Platba: {status}"
+  },
   "permissions": {
     "title": "Prístupové práva",
     "description": "Individuálne oprávnenia manažéra. Bez začiarknutia = zákaz.",

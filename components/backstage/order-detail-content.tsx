@@ -66,6 +66,7 @@ import {
   resolveOrderPackingView,
   taxRegimeLabel,
 } from '@/lib/backstage/order-detail-helpers'
+import { backstagePaymentStatusLabel } from '@/lib/backstage/payment-status-label'
 import type { BackstageCountryLocale } from '@/lib/backstage/country-display'
 import {
   DELIVERY_METHOD_LABELS,
@@ -126,6 +127,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
   const tPacketa = useTranslations('packetaOrderSnapshot')
   const tVies = useTranslations('orderVies')
   const tPacking = useTranslations('orderPacking')
+  const tPayment = useTranslations('orderPayment')
   const store = useStoreSettings()
   const pickupAddress = formatStoreAddress(store)
 
@@ -383,6 +385,10 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
     erpBankPaySyncStatus: order.erpBankPaySyncStatus,
   })
   const hasPayment = order.paymentStatus === 'success'
+  const paymentStatusDisplay = backstagePaymentStatusLabel(order.paymentStatus, {
+    unpaid: tPayment('unpaid'),
+    paid: tPayment('paid'),
+  })
   const hasTracking = Boolean(order.trackingNumber?.trim())
   const showErpRetry = canManualErpSync(order)
   const timeline = buildOrderTimeline(order)
@@ -437,11 +443,9 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <OrderStatusBadge status={order.status} label={order.statusLabel} />
-            {order.paymentStatus ? (
-              <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
-                Оплата: {order.paymentStatus}
-              </span>
-            ) : null}
+            <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
+              {tPayment('label', { status: paymentStatusDisplay })}
+            </span>
             <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
               ERP: {erpAggregate}
             </span>
@@ -641,7 +645,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
                     {PAYMENT_METHOD_LABELS[order.paymentMethod] ?? order.paymentMethod}
                   </MetaRow>
                   <MetaRow label="Провайдер">{order.paymentProvider ?? '—'}</MetaRow>
-                  <MetaRow label="Статус">{order.paymentStatus ?? '—'}</MetaRow>
+                  <MetaRow label="Статус">{paymentStatusDisplay}</MetaRow>
                   <MetaRow label="Сума">
                     {formatOrderMoney(order.totalAmount, order.currency)}
                   </MetaRow>

@@ -1469,5 +1469,10 @@
     "differencePositive": "+{count} zur Berechnung",
     "differenceNegative": "−{count} zur Berechnung",
     "differenceZero": "Entspricht der Berechnung"
+  },
+  "orderPayment": {
+    "unpaid": "Nicht bezahlt",
+    "paid": "Bezahlt",
+    "label": "Zahlung: {status}"
   }
 }

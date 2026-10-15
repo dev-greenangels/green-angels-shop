@@ -11,8 +11,18 @@ describe('sales constant symbol helpers', () => {
     assert.equal(EU_SALES_CONSTANT_SYMBOL, '0008')
   })
 
-  it('numericOrderVarSym strips ZY display prefix', () => {
+  it('numericOrderVarSym strips ZY display prefix (legacy)', () => {
     assert.equal(numericOrderVarSym('ZY-00000037'), '37')
     assert.equal(numericOrderVarSym(37), '37')
+  })
+
+  it('numericOrderVarSym keeps yearly YYYYNNNN', () => {
+    assert.equal(numericOrderVarSym('ZY-20260075'), '20260075')
+    assert.equal(numericOrderVarSym(20260075), '20260075')
+  })
+
+  it('does not confuse legacy ZY-00002026 with yearly 2026', () => {
+    assert.equal(numericOrderVarSym('ZY-00002026'), '2026')
+    assert.equal(numericOrderVarSym('ZY-20260001'), '20260001')
   })
 })

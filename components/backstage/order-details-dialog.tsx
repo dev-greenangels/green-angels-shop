@@ -20,6 +20,8 @@ import { formatOrderCustomerName } from '@/lib/backstage/order-display'
 import {
   formatOrderMoney,
 } from '@/lib/backstage/order-detail-helpers'
+import { backstagePaymentStatusLabel } from '@/lib/backstage/payment-status-label'
+import { useTranslations } from 'next-intl'
 import type { BackstageCountryLocale } from '@/lib/backstage/country-display'
 import {
   fetchBackstageOrder,
@@ -38,6 +40,7 @@ export function OrderDetailsDialog({
   onDeleted?: (orderId: string) => void
 }) {
   const { locale } = useBackstageUiLocale()
+  const tPayment = useTranslations('orderPayment')
   const countryLocale = (
     locale === 'uk' || locale === 'sk' ? locale : 'en'
   ) as BackstageCountryLocale
@@ -100,11 +103,14 @@ export function OrderDetailsDialog({
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4 text-sm">
               <div className="flex flex-wrap items-center gap-2">
                 <OrderStatusBadge status={order.status} label={order.statusLabel} />
-                {order.paymentStatus ? (
-                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs">
-                    Оплата: {order.paymentStatus}
-                  </span>
-                ) : null}
+                <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs">
+                  {tPayment('label', {
+                    status: backstagePaymentStatusLabel(order.paymentStatus, {
+                      unpaid: tPayment('unpaid'),
+                      paid: tPayment('paid'),
+                    }),
+                  })}
+                </span>
                 <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs">
                   ERP: {order.erpSyncStatus ?? 'NOT_REQUIRED'}
                 </span>

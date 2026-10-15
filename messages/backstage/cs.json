@@ -491,5 +491,10 @@
     "differencePositive": "+{count} oproti výpočtu",
     "differenceNegative": "−{count} oproti výpočtu",
     "differenceZero": "Odpovídá výpočtu"
+  },
+  "orderPayment": {
+    "unpaid": "Nezaplaceno",
+    "paid": "Zaplaceno",
+    "label": "Platba: {status}"
   }
 }

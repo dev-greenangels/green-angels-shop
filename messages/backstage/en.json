@@ -1642,6 +1642,11 @@
     "differenceNegative": "−{count} vs estimate",
     "differenceZero": "Matches estimate"
   },
+  "orderPayment": {
+    "unpaid": "Unpaid",
+    "paid": "Paid",
+    "label": "Payment: {status}"
+  },
   "permissions": {
     "title": "Access permissions",
     "description": "Per-manager permissions. Unticked = denied.",

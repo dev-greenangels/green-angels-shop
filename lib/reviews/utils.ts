@@ -4,13 +4,25 @@ import {
   businessTimeZoneForMarket,
   type MarketRegion,
 } from '@/lib/settings/market'
+import { resolveThumbUrl } from '@/lib/media/paths'
 import { toPublicMediaUrl } from '@/lib/media/public-url'
 
 export const MAX_REVIEW_IMAGES = 3
 
+/** Full / main URLs for lightbox. */
 export function getReviewImages(review: Pick<ReviewListItem, 'image' | 'images'>): string[] {
   if (review.images?.length) return review.images.map((url) => toPublicMediaUrl(url))
   return review.image ? [toPublicMediaUrl(review.image)] : []
+}
+
+/** Thumbnails for list strips (falls back to main for legacy flat files). */
+export function getReviewImageThumbs(review: Pick<ReviewListItem, 'image' | 'images'>): string[] {
+  const paths = review.images?.length
+    ? review.images
+    : review.image
+      ? [review.image]
+      : []
+  return paths.map((url) => toPublicMediaUrl(resolveThumbUrl(url)))
 }
 
 function parseReviewInstant(value: string): Date | null {

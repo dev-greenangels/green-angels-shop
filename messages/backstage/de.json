@@ -614,7 +614,10 @@
       "approveAll": "Approve all",
       "rejectAll": "Reject all",
       "batchApproved": "Approved reviews: {count}",
-      "batchRejected": "Rejected reviews: {count}"
+      "batchRejected": "Rejected reviews: {count}",
+      "removePhoto": "Foto entfernen",
+      "photoRemoved": "Foto aus der Bewertung entfernt.",
+      "photoRemoveFailed": "Foto konnte nicht entfernt werden."
     },
     "overview": {
       "title": "Overview",

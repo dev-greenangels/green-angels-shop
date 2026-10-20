@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import { ReviewLeaveFlow } from '@/components/reviews/review-leave-flow'
 import { ReviewsList } from '@/components/reviews/reviews-list'
@@ -23,6 +23,7 @@ export function ProductReviewsSection({
   initialPage,
 }: ProductReviewsSectionProps) {
   const t = useTranslations('reviews')
+  const locale = useLocale()
   const [pageResult, setPageResult] = useState(initialPage)
   /** Unfiltered product total — rating filter must not hide the toolbar/CTA logic. */
   const [totalUnfiltered, setTotalUnfiltered] = useState(initialPage.total)
@@ -40,6 +41,7 @@ export function ProductReviewsSection({
         page,
         pageSize: PRODUCT_REVIEWS_PAGE_SIZE,
         sort: 'newest',
+        locale,
       })
       setPageResult(data)
       if (rating == null) {
@@ -48,7 +50,7 @@ export function ProductReviewsSection({
     } finally {
       setLoading(false)
     }
-  }, [productId, rating, page, refreshToken])
+  }, [productId, rating, page, refreshToken, locale])
 
   const skipInitialFetchRef = useRef(true)
 

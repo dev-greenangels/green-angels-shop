@@ -755,7 +755,10 @@
       "approveAll": "Approve all",
       "rejectAll": "Reject all",
       "batchApproved": "Approved reviews: {count}",
-      "batchRejected": "Rejected reviews: {count}"
+      "batchRejected": "Rejected reviews: {count}",
+      "removePhoto": "Remove photo",
+      "photoRemoved": "Photo removed from review.",
+      "photoRemoveFailed": "Could not remove photo."
     },
     "overview": {
       "title": "Overview",

@@ -9,6 +9,7 @@ import { ProductCoverImage } from '@/components/product/product-cover-image'
 import { NotifyAvailabilityButton } from '@/components/product/notify-availability-button'
 import { NotifyWhenAvailableModal } from '@/components/product/notify-when-available-modal'
 import { ProductCardAddToCartDialog } from '@/components/product/product-card-add-to-cart-dialog'
+import { DiscountPercentBadge } from '@/components/pricing/discount-percent-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -19,7 +20,7 @@ import { PRODUCT_CARD_CAROUSEL_WIDTH_CLASS } from '@/lib/catalog/product-card-la
 import { triggerSelectionHaptic } from '@/lib/haptic'
 import { getVisiblePlantVariants } from '@/lib/plant-variants'
 import {
-  getPlantMaxDiscountPercent,
+  getPlantDiscountBadge,
   getSingleUnitSaleTier,
   getVariantPriceRange,
 } from '@/lib/product-pricing'
@@ -51,7 +52,7 @@ export function ProductCard({ plant, layout = 'carousel' }: ProductCardProps) {
   const { min: priceMin, max: priceMax } = getVariantPriceRange(visibleVariants)
   const isOutOfStock = visibleVariants.length === 0
   const hasPriceRange = priceMin !== priceMax && !singleUnitSale
-  const discountPercent = getPlantMaxDiscountPercent(plant)
+  const discountBadge = getPlantDiscountBadge(plant)
   const href = productHrefFromPlant(plant)
   const displayImages = useProductDisplayImages(plant)
 
@@ -105,14 +106,7 @@ export function ProductCard({ plant, layout = 'carousel' }: ProductCardProps) {
           />
 
           <div className="absolute left-0 top-1 z-[2] flex flex-col items-start gap-0.5">
-            {discountPercent ? (
-              <Badge
-                variant="destructive"
-                className="rounded-[2px] px-1 py-0 text-[10px] shadow-sm"
-              >
-                −{discountPercent}%
-              </Badge>
-            ) : null}
+            {discountBadge ? <DiscountPercentBadge badge={discountBadge} /> : null}
             {plant.isNew ? (
               <Badge className="rounded-[2px] bg-primary/95 px-1 py-0 text-[10px] text-primary-foreground shadow-sm">
                 {t('newBadge')}

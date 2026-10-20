@@ -125,3 +125,23 @@ export async function deleteBackstageReview(id: string): Promise<void> {
   }
   notifyReviewsPendingCountChanged()
 }
+
+/** Staff: keep a subset of existing review images (remove unwanted photos). */
+export async function updateBackstageReviewImages(
+  id: string,
+  images: string[],
+): Promise<ReviewListItem> {
+  const res = await fetch(`/api/backstage/reviews/${encodeURIComponent(id)}/images`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ images }),
+    credentials: 'include',
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new Error(
+      typeof data.error === 'string' ? data.error : 'Не вдалося оновити фото відгуку.',
+    )
+  }
+  return data as ReviewListItem
+}

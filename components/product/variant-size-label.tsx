@@ -10,7 +10,10 @@ type VariantSizeLabelProps = {
   iconName?: string | null
   className?: string
   textClassName?: string
-  /** Defaults to 1em so the icon matches text size and does not grow the row. */
+  /**
+   * Icon box size. Prefer explicit rem sizes on review/cart snippets —
+   * `1em` can collapse next to truncated labels and look missing.
+   */
   iconClassName?: string
   as?: 'span' | 'p'
 }
@@ -21,12 +24,14 @@ export function VariantSizeLabel({
   iconName,
   className,
   textClassName,
-  iconClassName = 'h-[1em] w-[1em]',
+  iconClassName,
   as: Tag = 'span',
 }: VariantSizeLabelProps) {
   const Icon = resolveVariantAttributeIcon(iconName ?? getVariantSizeIconName(variant))
   const trimmed = label.trim()
   if (!trimmed) return null
+  const resolvedIconClass =
+    iconClassName ?? (iconName ? 'h-3.5 w-3.5' : 'h-[1em] w-[1em]')
 
   return (
     <Tag
@@ -36,7 +41,10 @@ export function VariantSizeLabel({
       )}
     >
       {Icon ? (
-        <Icon className={cn('shrink-0', iconClassName)} aria-hidden />
+        <Icon
+          className={cn('shrink-0', resolvedIconClass)}
+          aria-hidden
+        />
       ) : null}
       <span className={cn('min-w-0 truncate', textClassName)}>{trimmed}</span>
     </Tag>

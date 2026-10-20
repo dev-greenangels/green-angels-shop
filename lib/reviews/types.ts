@@ -31,6 +31,11 @@ export type ReviewListItem = {
   storeReply?: ReviewStoreReply | null
   /** Shared by reviews from the same order submission (public + backstage). */
   submissionGroupId?: string | null
+  /**
+   * ISO 3166-1 alpha-2 delivery destination from linked Order (public).
+   * Null/omit when unknown — hide country badge.
+   */
+  deliveryCountryCode?: string | null
   /** Backstage / import fields — not returned by public GET /reviews. */
   legacyId?: string | null
   legacySource?: string | null
@@ -49,6 +54,8 @@ export type ReviewsPageResult = {
   totalPages: number
 }
 
+export type ReviewGroupBy = 'submission'
+
 export type ReviewFilters = {
   type?: ReviewTypeFilter
   rating?: number
@@ -57,6 +64,13 @@ export type ReviewFilters = {
   page?: number
   pageSize?: number
   sort?: ReviewSortOrder
+  /** Storefront locale for localized productName. */
+  locale?: string
+  /**
+   * When `submission`, Nest paginates by order submission groups.
+   * `total` / `pageSize` count cards (groups), not raw Review rows.
+   */
+  groupBy?: ReviewGroupBy
 }
 
 export type CreateReviewPayload = {
@@ -95,8 +109,12 @@ export type ReviewRequestResolve = {
 
 export type SubmitOrderReviewByTokenPayload = {
   authorName: string
-  store?: { rating: number; text?: string }
-  products?: Array<{ productId: string; rating: number; text?: string }>
+  store?: { rating: number; text?: string; images?: string[] }
+  products?: Array<{
+    productId: string
+    rating: number
+    text?: string
+  }>
 }
 
 export type SubmitOrderReviewByTokenResult = {

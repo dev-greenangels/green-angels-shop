@@ -9,11 +9,11 @@ import { showAddedToCartToast } from '@/lib/cart-toast'
 
 import { FormattedPrice } from '@/components/commerce/formatted-price'
 import { PriceWithExVatUnder } from '@/components/commerce/shelf-price-block'
+import { DiscountPercentBadge } from '@/components/pricing/discount-percent-badge'
 import { DiscountedUnitPrice } from '@/components/pricing/discounted-price'
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
 import { useDefaultCurrency } from '@/components/providers/commerce-provider'
 import { useVariantDisplayPricing } from '@/components/providers/personalized-shelf-prices-provider'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -28,8 +28,8 @@ import { useCartActions, useCartItems } from '@/lib/cart-store'
 import { getVariantDisplayStock } from '@/lib/plant-variants'
 import {
   getBulkPriceTiers,
-  getMinVariantPrice,
   getSingleUnitSaleTier,
+  getVariantDiscountBadge,
 } from '@/lib/product-pricing'
 import type { CatalogPhotoItem } from '@/lib/variant-photos/types'
 import type { ProductVariant } from '@/lib/types'
@@ -42,14 +42,6 @@ import {
   resolveFreshPhotoDisplayName,
 } from '@/lib/variant-photos/fresh-photo-card'
 import { cn } from '@/lib/utils'
-
-function getPhotoDiscountPercent(variant: ProductVariant | null): number | null {
-  if (!variant || variant.basePrice <= 0) return null
-  const minPrice = getMinVariantPrice(variant)
-  if (minPrice >= variant.basePrice - 0.001) return null
-  const percent = Math.round((1 - minPrice / variant.basePrice) * 100)
-  return percent > 0 ? percent : null
-}
 
 function PhotoDiscountChips({ variant }: { variant: ProductVariant }) {
   const cartT = useTranslations('cart')
@@ -122,7 +114,7 @@ export function FreshPhotoLightbox({ photo, onClose }: FreshPhotoLightboxProps) 
   const selectedShipmentDate = photo?.availableFrom
     ? formatAvailableFromDisplay(photo.availableFrom)
     : null
-  const discountPercent = getPhotoDiscountPercent(
+  const discountBadge = getVariantDiscountBadge(
     variant
       ? { ...variant, basePrice: displayPricing.basePrice, priceTiers: displayPricing.priceTiers }
       : null,
@@ -225,13 +217,11 @@ export function FreshPhotoLightbox({ photo, onClose }: FreshPhotoLightboxProps) 
                     sizes="(max-width: 768px) 90vw, 28rem"
                   />
                 </div>
-                {discountPercent ? (
-                  <Badge
-                    variant="destructive"
-                    className="absolute left-2 top-2 px-1.5 py-0 text-[10px] shadow-sm sm:left-3 sm:top-3"
-                  >
-                    −{discountPercent}%
-                  </Badge>
+                {discountBadge ? (
+                  <DiscountPercentBadge
+                    badge={discountBadge}
+                    className="absolute left-2 top-2 px-1.5 shadow-sm sm:left-3 sm:top-3"
+                  />
                 ) : null}
               </div>
 

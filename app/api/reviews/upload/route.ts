@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { requireCustomerSession } from '@/lib/auth/require-customer-session'
 import { proxyBackendForm } from '@/lib/media/backend-proxy'
-import { validateReviewImageFile } from '@/lib/review-image'
+import { validateReviewImageFileWithGif } from '@/lib/review-image'
 
 export const runtime = 'nodejs'
 
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Оберіть файл зображення.' }, { status: 400 })
   }
 
-  const validationError = validateReviewImageFile(entry)
+  const validationError = validateReviewImageFileWithGif(entry)
   if (validationError) {
     return NextResponse.json({ error: validationError }, { status: 400 })
   }

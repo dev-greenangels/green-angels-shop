@@ -95,15 +95,36 @@ export function getPlantMaxDiscountPercent(plant: {
   variants?: ProductVariant[]
   maxDiscountPercent?: number | null
 }): number | null {
-  if (plant.maxDiscountPercent != null && plant.maxDiscountPercent > 0) {
-    return plant.maxDiscountPercent
-  }
+  return getPlantDiscountBadge(plant)?.percent ?? null
+}
 
-  if (!plant.variants?.length) return null
+export type PlantDiscountBadge = {
+  percent: number
+  /** True when max % is from qty>1 tiers / multiple thresholds → show «до −N%». */
+  upTo: boolean
+}
 
+/** Whether this variant’s discount needs an «up to» badge (bulk / multi-tier). */
+export function variantDiscountBadgeUsesUpTo(variant: ProductVariant): boolean {
+  // Ignore stock cap — same ladder used for max % (badge should say «до» if qty>1 steps exist).
+  return getBulkPriceTiersFrom(variant.basePrice, variant.priceTiers).length > 0
+}
+
+/**
+ * Card badge: max % off Product Card / ladder, plus whether to prefix «до / up to».
+ * `upTo` when any in-stock variant has a discounted step at qty ≥ 2 (one or more thresholds).
+ */
+export function getPlantDiscountBadge(plant: {
+  variants?: ProductVariant[]
+  maxDiscountPercent?: number | null
+}): PlantDiscountBadge | null {
+  const variants = plant.variants ?? []
   let maxPercent = 0
-  for (const variant of plant.variants) {
+  let upTo = false
+
+  for (const variant of variants) {
     if (variant.stock <= 0) continue
+    if (variantDiscountBadgeUsesUpTo(variant)) upTo = true
     const minPrice = getMinVariantPrice(variant)
     if (minPrice < variant.basePrice - 0.001) {
       maxPercent = Math.max(
@@ -113,5 +134,21 @@ export function getPlantMaxDiscountPercent(plant: {
     }
   }
 
-  return maxPercent > 0 ? maxPercent : null
+  if (maxPercent <= 0 && plant.maxDiscountPercent != null && plant.maxDiscountPercent > 0) {
+    // Nest compare-at fallback has no ladder → treat as exact (not «до»).
+    return { percent: plant.maxDiscountPercent, upTo: false }
+  }
+
+  if (maxPercent <= 0) return null
+  return { percent: maxPercent, upTo }
+}
+
+/** Single-variant badge (fresh photos / PDP overlays). */
+export function getVariantDiscountBadge(variant: ProductVariant | null | undefined): PlantDiscountBadge | null {
+  if (!variant || variant.basePrice <= 0) return null
+  const minPrice = getMinVariantPrice(variant)
+  if (minPrice >= variant.basePrice - 0.001) return null
+  const percent = Math.round((1 - minPrice / variant.basePrice) * 100)
+  if (percent <= 0) return null
+  return { percent, upTo: variantDiscountBadgeUsesUpTo(variant) }
 }

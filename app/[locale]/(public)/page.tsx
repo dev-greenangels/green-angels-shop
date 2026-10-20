@@ -99,6 +99,8 @@ export default async function HomePage() {
                 page: 1,
                 pageSize: home.reviews.limit,
                 sort: home.reviews.sort,
+                locale: appLocale,
+                groupBy: 'submission',
               }),
             )
           : Promise.resolve(EMPTY_REVIEWS_PAGE),

@@ -27,11 +27,12 @@ import {
   deleteBackstageReview,
   fetchBackstageReviews,
   updateBackstageOrderReviewsStatus,
+  updateBackstageReviewImages,
   updateBackstageReviewStatus,
 } from '@/lib/backstage/reviews'
 import { groupReviewsForDisplay } from '@/lib/reviews/group'
 import type { ReviewListItem, ReviewStatus, ReviewTypeFilter } from '@/lib/reviews/types'
-import { getReviewImages } from '@/lib/reviews/utils'
+import { toPublicMediaUrl } from '@/lib/media/public-url'
 import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
 import { formatDateTime } from '@/lib/i18n/format-datetime'
 import { cn } from '@/lib/utils'
@@ -48,23 +49,47 @@ function statusVariant(status: ReviewStatus): 'default' | 'secondary' | 'destruc
   }
 }
 
-function BackstageReviewImages({ review }: { review: ReviewListItem }) {
+function BackstageReviewImages({
+  review,
+  removing,
+  onRemove,
+}: {
+  review: ReviewListItem
+  removing?: boolean
+  onRemove?: (path: string) => void
+}) {
   const tAria = useTranslations('aria')
-  const images = getReviewImages(review)
-  if (images.length === 0) return null
+  const tPages = useTranslations('pages.reviews')
+  const stored = review.images ?? []
+  const paths: string[] =
+    stored.length > 0 ? stored : review.image ? [review.image] : []
+  if (paths.length === 0) return null
   return (
     <div className="flex flex-wrap gap-2">
-      {images.map((src, index) => (
+      {paths.map((path, index) => (
         <div
-          key={`${review.id}-${index}`}
+          key={`${review.id}-${path}-${index}`}
           className="relative h-24 w-24 overflow-hidden rounded-lg border"
         >
           <Image
-            src={src}
+            src={toPublicMediaUrl(path)}
             alt={tAria('reviewPhoto', { n: index + 1 })}
             fill
             className="object-cover"
           />
+          {onRemove ? (
+            <Button
+              type="button"
+              size="icon"
+              variant="secondary"
+              className="absolute right-1 top-1 h-7 w-7"
+              disabled={removing}
+              aria-label={tPages('removePhoto')}
+              onClick={() => onRemove(path)}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          ) : null}
         </div>
       ))}
     </div>
@@ -282,6 +307,23 @@ export default function BackstageReviewsPage() {
     }
   }
 
+  const handleRemoveImage = async (review: ReviewListItem, path: string) => {
+    const stored = review.images ?? []
+    const current: string[] =
+      stored.length > 0 ? stored : review.image ? [review.image] : []
+    const next = current.filter((item) => item !== path)
+    setUpdatingId(review.id)
+    try {
+      const updated = await updateBackstageReviewImages(review.id, next)
+      setReviews((prev) => prev.map((row) => (row.id === updated.id ? updated : row)))
+      toast.success(tPages('photoRemoved'))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : tPages('photoRemoveFailed'))
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -350,7 +392,11 @@ export default function BackstageReviewsPage() {
                         onDelete={() => setDeleteTarget(review)}
                       />
                       <ReviewTextPanel review={review} />
-                      <BackstageReviewImages review={review} />
+                      <BackstageReviewImages
+                        review={review}
+                        removing={updatingId === review.id}
+                        onRemove={(path) => void handleRemoveImage(review, path)}
+                      />
                       <ReviewBackstageReplyPanel
                         review={review}
                         onUpdated={(updated) =>
@@ -438,7 +484,11 @@ export default function BackstageReviewsPage() {
                             onDelete={() => setDeleteTarget(review)}
                           />
                           <ReviewTextPanel review={review} />
-                          <BackstageReviewImages review={review} />
+                          <BackstageReviewImages
+                        review={review}
+                        removing={updatingId === review.id}
+                        onRemove={(path) => void handleRemoveImage(review, path)}
+                      />
                           <ReviewBackstageReplyPanel
                             review={review}
                             onUpdated={(updated) =>

@@ -755,7 +755,10 @@
       "approveAll": "Схвалити всі",
       "rejectAll": "Відхилити всі",
       "batchApproved": "Схвалено відгуків: {count}",
-      "batchRejected": "Відхилено відгуків: {count}"
+      "batchRejected": "Відхилено відгуків: {count}",
+      "removePhoto": "Видалити фото",
+      "photoRemoved": "Фото видалено з відгуку.",
+      "photoRemoveFailed": "Не вдалося видалити фото."
     },
     "overview": {
       "title": "Огляд",

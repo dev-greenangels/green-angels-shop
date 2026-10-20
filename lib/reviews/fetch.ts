@@ -19,6 +19,8 @@ function buildReviewQuery(filters?: ReviewFilters): string {
   if (filters.page) params.set('page', String(filters.page))
   if (filters.pageSize) params.set('pageSize', String(filters.pageSize))
   if (filters.sort) params.set('sort', filters.sort)
+  if (filters.locale?.trim()) params.set('locale', filters.locale.trim())
+  if (filters.groupBy === 'submission') params.set('groupBy', 'submission')
   const query = params.toString()
   return query ? `?${query}` : ''
 }
@@ -96,6 +98,50 @@ export async function uploadReviewImage(file: File): Promise<string> {
     throw new Error(data.error ?? 'Не вдалося завантажити зображення.')
   }
   return data.url
+}
+
+export async function uploadOrderReviewImageByToken(
+  token: string,
+  file: File,
+): Promise<string> {
+  const formData = new FormData()
+  formData.set('file', file)
+  const res = await fetch(`/api/reviews/request/${encodeURIComponent(token)}/media`, {
+    method: 'POST',
+    body: formData,
+  })
+  const data = (await res.json().catch(() => ({}))) as {
+    url?: string
+    error?: string
+    message?: string | string[]
+  }
+  if (!res.ok || !data.url) {
+    const message =
+      typeof data.error === 'string'
+        ? data.error
+        : Array.isArray(data.message)
+          ? data.message.join(', ')
+          : typeof data.message === 'string'
+            ? data.message
+            : 'Не вдалося завантажити зображення.'
+    throw new Error(message)
+  }
+  return data.url
+}
+
+export async function removeOrderReviewImageByToken(
+  token: string,
+  url: string,
+): Promise<void> {
+  const res = await fetch(`/api/reviews/request/${encodeURIComponent(token)}/media`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  })
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string }
+    throw new Error(data.error ?? data.message ?? 'Не вдалося видалити фото.')
+  }
 }
 
 export async function submitOrderReviewByToken(

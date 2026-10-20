@@ -755,7 +755,10 @@
       "approveAll": "Schváliť všetky",
       "rejectAll": "Zamietnuť všetky",
       "batchApproved": "Schválené hodnotenia: {count}",
-      "batchRejected": "Zamietnuté hodnotenia: {count}"
+      "batchRejected": "Zamietnuté hodnotenia: {count}",
+      "removePhoto": "Odstrániť fotografiu",
+      "photoRemoved": "Fotografia bola odstránená z hodnotenia.",
+      "photoRemoveFailed": "Nepodarilo sa odstrániť fotografiu."
     },
     "overview": {
       "title": "Prehľad",

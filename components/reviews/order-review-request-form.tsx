@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useRef, useState, type DragEvent, type FormEvent } from 'react'
 import Image from 'next/image'
-import { ChevronDown, Loader2 } from 'lucide-react'
+import { ChevronDown, ImagePlus, Loader2, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { toast } from '@/lib/toast'
 
@@ -14,9 +14,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Link } from '@/i18n/navigation'
+import { validateReviewImageFile } from '@/lib/review-image'
 import { toPublicMediaUrl } from '@/lib/media/public-url'
-import { submitOrderReviewByToken } from '@/lib/reviews/fetch'
+import {
+  removeOrderReviewImageByToken,
+  submitOrderReviewByToken,
+  uploadOrderReviewImageByToken,
+} from '@/lib/reviews/fetch'
 import type { ReviewRequestResolve } from '@/lib/reviews/types'
+import { MAX_REVIEW_IMAGES } from '@/lib/reviews/utils'
 import {
   sanitizeReviewFullName,
   sanitizeReviewText,
@@ -40,21 +46,30 @@ type OrderReviewRequestFormProps = {
   initial: ReviewRequestResolve
 }
 
+function emptyDraft(): DraftLine {
+  return { rating: 0, text: '', noteOpen: false }
+}
+
 export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFormProps) {
   const t = useTranslations('reviews')
   const tr = useTranslations('reviews.request')
   const fe = useFormatFieldError()
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const [authorName, setAuthorName] = useState(initial.authorNameDefault)
   const [storeRating, setStoreRating] = useState(0)
   const [storeText, setStoreText] = useState('')
+  const [storeImages, setStoreImages] = useState<string[]>([])
   const [products, setProducts] = useState<Record<string, DraftLine>>(() => {
     const map: Record<string, DraftLine> = {}
     for (const product of initial.products) {
-      map[product.productId] = { rating: 0, text: '', noteOpen: false }
+      map[product.productId] = emptyDraft()
     }
     return map
   })
+  const [uploadingCount, setUploadingCount] = useState(0)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const [dragOverPhotos, setDragOverPhotos] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [storeDone, setStoreDone] = useState(initial.store.alreadyReviewed)
   const [productDone, setProductDone] = useState(
@@ -68,6 +83,8 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
     () => initial.products.filter((p) => !productDone.has(p.productId)),
     [initial.products, productDone],
   )
+
+  const anyUploading = uploadingCount > 0
 
   const overallOptional = useMemo(() => {
     if (initial.products.length === 0) return false
@@ -130,9 +147,61 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
 
   const hasBlockingError = Object.values(fieldErrors).some(Boolean) || Boolean(selectionError)
 
+  const bumpUpload = (delta: number) => {
+    setUploadingCount((prev) => Math.max(0, prev + delta))
+  }
+
+  const uploadStoreFiles = async (files: FileList | File[]) => {
+    const list = Array.from(files)
+    if (!list.length) return
+    const slots = MAX_REVIEW_IMAGES - storeImages.length
+    if (slots <= 0) {
+      setPhotoError(tr('photosLimit', { max: MAX_REVIEW_IMAGES }))
+      return
+    }
+
+    const accepted = list.slice(0, slots)
+    setPhotoError(null)
+
+    for (const file of accepted) {
+      const clientError = validateReviewImageFile(file)
+      if (clientError) {
+        setPhotoError(clientError)
+        continue
+      }
+      bumpUpload(1)
+      try {
+        const url = await uploadOrderReviewImageByToken(token, file)
+        setStoreImages((prev) => {
+          if (prev.includes(url) || prev.length >= MAX_REVIEW_IMAGES) return prev
+          return [...prev, url]
+        })
+      } catch (err) {
+        const message = err instanceof Error ? err.message : t('imageUploadFailed')
+        setPhotoError(message)
+        toast.error(message)
+      } finally {
+        bumpUpload(-1)
+      }
+    }
+  }
+
+  const removeStoreImage = async (url: string) => {
+    setStoreImages((prev) => prev.filter((item) => item !== url))
+    try {
+      await removeOrderReviewImageByToken(token, url)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('imageUploadFailed'))
+    }
+  }
+
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault()
     setTouched({ authorName: true, store: true, products: true })
+    if (anyUploading) {
+      toast.message(tr('waitForUpload'))
+      return
+    }
     if (hasBlockingError) return
 
     const payload: Parameters<typeof submitOrderReviewByToken>[1] = {
@@ -143,6 +212,7 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
       payload.store = {
         rating: storeRating,
         ...(storeText.trim() ? { text: storeText.trim() } : {}),
+        ...(storeImages.length ? { images: storeImages } : {}),
       }
     }
 
@@ -161,7 +231,11 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
     setSubmitting(true)
     try {
       const result = await submitOrderReviewByToken(token, payload)
-      if (result.createdStore) setStoreDone(true)
+      if (result.createdStore) {
+        setStoreDone(true)
+        setStoreImages([])
+        setPhotoError(null)
+      }
       if (result.createdProductIds.length) {
         setProductDone((prev) => {
           const next = new Set(prev)
@@ -179,14 +253,13 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
       if (created > 0) {
         toast.success(tr('submitSuccess'))
         setPartialThanks(true)
-        // Clear submit-attempt flags so we don't show "pick a rating" after success.
         setTouched({})
         setStoreRating(0)
         setStoreText('')
         setProducts((prev) => {
           const next = { ...prev }
           for (const id of result.createdProductIds) {
-            next[id] = { rating: 0, text: '', noteOpen: false }
+            next[id] = emptyDraft()
           }
           return next
         })
@@ -203,6 +276,105 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const renderStorePhotoBlock = () => {
+    const canAdd = storeImages.length < MAX_REVIEW_IMAGES
+
+    const onDrop = (event: DragEvent) => {
+      event.preventDefault()
+      setDragOverPhotos(false)
+      if (!canAdd || anyUploading || submitting) return
+      void uploadStoreFiles(event.dataTransfer.files)
+    }
+
+    return (
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-medium text-foreground">{tr('addPhotos')}</p>
+          <p className="text-xs text-muted-foreground">
+            {tr('photoCount', { current: storeImages.length, max: MAX_REVIEW_IMAGES })}
+          </p>
+        </div>
+        <p className="text-xs text-muted-foreground">{tr('photosHint')}</p>
+        <div
+          className={cn(
+            'flex flex-wrap gap-2 rounded-lg border border-dashed border-border/60 bg-muted/20 p-2 transition-colors',
+            dragOverPhotos && 'border-primary/50 bg-primary/5',
+          )}
+          onDragOver={(event) => {
+            event.preventDefault()
+            if (canAdd) setDragOverPhotos(true)
+          }}
+          onDragLeave={() => setDragOverPhotos(false)}
+          onDrop={onDrop}
+        >
+          {storeImages.map((url, index) => (
+            <div
+              key={url}
+              className="relative h-16 w-16 overflow-hidden rounded-md border border-border/70 bg-background"
+            >
+              <Image
+                src={toPublicMediaUrl(url)}
+                alt={t('photoN', { n: index + 1 })}
+                fill
+                className="object-cover"
+                sizes="64px"
+                unoptimized
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="secondary"
+                className="absolute right-0.5 top-0.5 h-6 w-6"
+                aria-label={tr('removePhoto')}
+                disabled={submitting}
+                onClick={() => void removeStoreImage(url)}
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
+
+          {canAdd ? (
+            <label
+              className={cn(
+                'flex h-16 w-16 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-md border border-dashed border-border/80 text-[10px] text-muted-foreground transition-colors hover:bg-background/80',
+                (anyUploading || submitting) && 'pointer-events-none opacity-60',
+              )}
+            >
+              {anyUploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ImagePlus className="h-4 w-4" />
+              )}
+              <span className="px-1 text-center leading-tight">{tr('addPhotosShort')}</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                capture="environment"
+                multiple
+                className="sr-only"
+                disabled={anyUploading || submitting}
+                onChange={(event) => {
+                  const files = event.target.files
+                  if (files?.length) void uploadStoreFiles(files)
+                  event.target.value = ''
+                }}
+              />
+            </label>
+          ) : null}
+        </div>
+        {anyUploading ? (
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            {tr('photoUploading')}
+          </p>
+        ) : null}
+        {photoError ? <p className="text-sm text-destructive">{photoError}</p> : null}
+      </div>
+    )
   }
 
   if (fullyDone) {
@@ -289,6 +461,7 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
                 <p className="text-sm text-destructive">{fe(fieldErrors.storeText)}</p>
               ) : null}
             </div>
+            {renderStorePhotoBlock()}
           </div>
         )}
       </section>
@@ -306,7 +479,7 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
         ) : (
           <div className="space-y-3">
             {initial.products.map((product) => {
-              const draft = products[product.productId]
+              const draft = products[product.productId] ?? emptyDraft()
               const reviewed = productDone.has(product.productId)
               const imageSrc = product.imageUrl ? toPublicMediaUrl(product.imageUrl) : null
 
@@ -342,6 +515,7 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
                           key={label}
                           label={label}
                           iconName="Container"
+                          iconClassName="h-4 w-4"
                           className="text-sm font-medium text-muted-foreground"
                         />
                       ))}
@@ -352,7 +526,7 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
                     <div className="flex flex-wrap items-center gap-3">
                       <p className="text-sm font-medium">{tr('alreadyReviewed')}</p>
                       <StarRating
-                        rating={product.existingRating ?? draft?.rating ?? 0}
+                        rating={product.existingRating ?? draft.rating}
                         size="md"
                         showValue
                       />
@@ -361,7 +535,7 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                         <StarRating
-                          rating={draft?.rating ?? 0}
+                          rating={draft.rating}
                           size="md"
                           interactive
                           showValue
@@ -369,14 +543,13 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
                             setProducts((prev) => ({
                               ...prev,
                               [product.productId]: {
+                                ...(prev[product.productId] ?? emptyDraft()),
                                 rating,
-                                text: prev[product.productId]?.text ?? '',
-                                noteOpen: prev[product.productId]?.noteOpen ?? false,
                               },
                             }))
                           }
                         />
-                        {!draft?.noteOpen ? (
+                        {!draft.noteOpen ? (
                           <Button
                             type="button"
                             variant="ghost"
@@ -386,8 +559,7 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
                               setProducts((prev) => ({
                                 ...prev,
                                 [product.productId]: {
-                                  rating: prev[product.productId]?.rating ?? 0,
-                                  text: prev[product.productId]?.text ?? '',
+                                  ...(prev[product.productId] ?? emptyDraft()),
                                   noteOpen: true,
                                 },
                               }))
@@ -398,7 +570,7 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
                           </Button>
                         ) : null}
                       </div>
-                      {draft?.noteOpen ? (
+                      {draft.noteOpen ? (
                         <div className="space-y-2">
                           <Textarea
                             id={`order-review-product-${product.productId}`}
@@ -407,7 +579,7 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
                               setProducts((prev) => ({
                                 ...prev,
                                 [product.productId]: {
-                                  rating: prev[product.productId]?.rating ?? 0,
+                                  ...(prev[product.productId] ?? emptyDraft()),
                                   noteOpen: true,
                                   text: sanitizeReviewText(event.target.value),
                                 },
@@ -446,7 +618,12 @@ export function OrderReviewRequestForm({ token, initial }: OrderReviewRequestFor
         <p className="text-sm text-destructive">{tr(selectionError)}</p>
       ) : null}
 
-      <Button type="submit" size="lg" disabled={submitting} className="w-full sm:w-auto">
+      <Button
+        type="submit"
+        size="lg"
+        disabled={submitting || anyUploading}
+        className="w-full sm:w-auto"
+      >
         {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
         {partialThanks ? tr('submitMore') : tr('submit')}
       </Button>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import { ReviewLeaveFlow } from '@/components/reviews/review-leave-flow'
 import { ReviewsList } from '@/components/reviews/reviews-list'
@@ -17,6 +17,7 @@ type ReviewsPageContentProps = {
 
 export function ReviewsPageContent({ initialPage }: ReviewsPageContentProps) {
   const t = useTranslations('reviews')
+  const locale = useLocale()
   const [pageResult, setPageResult] = useState(initialPage)
   const [type, setType] = useState<ReviewTypeFilter>('all')
   const [rating, setRating] = useState<number | null>(null)
@@ -33,12 +34,16 @@ export function ReviewsPageContent({ initialPage }: ReviewsPageContentProps) {
         sort,
         page,
         pageSize: REVIEWS_PAGE_SIZE,
+        locale,
+        // ALL: page by submission groups so cards never split across pages.
+        // STORE / PRODUCT: row pagination (one card per matching review).
+        groupBy: type === 'all' ? 'submission' : undefined,
       })
       setPageResult(data)
     } finally {
       setLoading(false)
     }
-  }, [type, rating, sort, page])
+  }, [type, rating, sort, page, locale])
 
   useEffect(() => {
     void reload()
@@ -59,6 +64,9 @@ export function ReviewsPageContent({ initialPage }: ReviewsPageContentProps) {
     setPage(1)
   }
 
+  const groupByOrder = type === 'all'
+  const showProductLink = type !== 'store'
+
   return (
     <div className="space-y-4">
       <ReviewsStickyToolbar
@@ -77,7 +85,11 @@ export function ReviewsPageContent({ initialPage }: ReviewsPageContentProps) {
         <p className="text-sm text-muted-foreground">{t('loading')}</p>
       ) : null}
 
-      <ReviewsList reviews={pageResult.items} />
+      <ReviewsList
+        reviews={pageResult.items}
+        groupByOrder={groupByOrder}
+        showProductLink={showProductLink}
+      />
 
       <ReviewsPagination
         page={pageResult.page}

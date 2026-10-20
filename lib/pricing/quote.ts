@@ -82,6 +82,8 @@ export type PricingGiftLine = {
   productSlug: string
   quantity: number
   label: string
+  /** Catalog retail unit; used by API for Flexi 100% gift export. */
+  baseUnitPrice?: number
 }
 
 export type AppliedPromoSummary = {

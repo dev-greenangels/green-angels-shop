@@ -82,7 +82,7 @@ export function buildProductPendingUrl(pendingId: string, imageId: string): stri
   return `/uploads/products/pending/${pendingId}/${imageId}/${PRODUCT_MAIN}`
 }
 
-/** Для карток каталогу — менший файл. Product / category / blog / Fresh Photo `main.webp`. */
+/** Для карток каталогу — менший файл. Product / category / blog / Fresh Photo / review `main.webp`. */
 export function resolveThumbUrl(url: string): string {
   if (url.includes(`/${PRODUCT_MAIN}`)) {
     return url.replace(`/${PRODUCT_MAIN}`, `/${PRODUCT_THUMB}`)
@@ -92,6 +92,9 @@ export function resolveThumbUrl(url: string): string {
   }
   if (url.endsWith(`/${BLOG_COVER}`)) {
     return url.replace(`/${BLOG_COVER}`, `/${BLOG_THUMB}`)
+  }
+  if (/\/uploads\/reviews\/[a-f0-9-]+\/main\.webp$/i.test(url)) {
+    return url.replace(/\/main\.webp$/i, '/thumb.webp')
   }
   return url
 }

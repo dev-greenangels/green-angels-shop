@@ -6,15 +6,15 @@ import { Camera, ShoppingCart } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { FormattedPrice } from '@/components/commerce/formatted-price'
+import { DiscountPercentBadge } from '@/components/pricing/discount-percent-badge'
 import { ProductCardAddToCartDialog } from '@/components/product/product-card-add-to-cart-dialog'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import { resolveThumbUrl } from '@/lib/media/paths'
 import { toPublicMediaUrl } from '@/lib/media/public-url'
 import { resolveFreshPhotoThumbUrl } from '@/lib/variant-photos/fresh-photo-urls'
 import { PRODUCT_PLACEHOLDER_IMAGE } from '@/lib/product-image'
-import { getMinVariantPrice } from '@/lib/product-pricing'
+import { getMinVariantPrice, getVariantDiscountBadge } from '@/lib/product-pricing'
 import { cn } from '@/lib/utils'
 import type { CatalogPhotoItem } from '@/lib/variant-photos/types'
 import {
@@ -58,10 +58,7 @@ export function FreshPhotoCard({
   })
   const displayPrice =
     variant && variant.basePrice > 0 ? getMinVariantPrice(variant) : photo.price
-  const discountPercent =
-    variant && variant.basePrice > 0 && displayPrice != null && displayPrice < variant.basePrice - 0.001
-      ? Math.round((1 - displayPrice / variant.basePrice) * 100)
-      : null
+  const discountBadge = getVariantDiscountBadge(variant)
 
   const productThumbSrc = photo.productImageUrl
     ? toPublicMediaUrl(resolveThumbUrl(photo.productImageUrl))
@@ -71,13 +68,11 @@ export function FreshPhotoCard({
 
   const mediaOverlays = (
     <>
-      {discountPercent ? (
-        <Badge
-          variant="destructive"
-          className="absolute left-2 top-2 z-[1] px-1.5 py-0 text-[10px] shadow-sm"
-        >
-          −{discountPercent}%
-        </Badge>
+      {discountBadge ? (
+        <DiscountPercentBadge
+          badge={discountBadge}
+          className="absolute left-2 top-2 z-[1] px-1.5"
+        />
       ) : null}
 
       {displayPrice != null && displayPrice > 0 ? (

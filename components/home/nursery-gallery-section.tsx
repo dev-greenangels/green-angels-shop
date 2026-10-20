@@ -53,9 +53,9 @@ export async function NurseryGallerySection({ settings }: NurseryGallerySectionP
             </figure>
           ) : null}
 
-          {rest.map((image) => (
+          {rest.map((image, index) => (
             <figure
-              key={`${image.url}-${image.caption}`}
+              key={`nursery-gallery-${index}-${image.url || 'placeholder'}-${image.caption || 'caption'}`}
               className="group relative aspect-[4/5] overflow-hidden rounded-2xl bg-muted shadow-md ring-1 ring-border/40 transition-all hover:-translate-y-1 hover:shadow-xl lg:aspect-auto lg:min-h-[200px]"
             >
               <NurseryGalleryImage

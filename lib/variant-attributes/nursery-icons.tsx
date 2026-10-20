@@ -1,5 +1,3 @@
-import Image from 'next/image'
-
 import { cn } from '@/lib/utils'
 
 type IconProps = {
@@ -7,9 +5,14 @@ type IconProps = {
 }
 
 /**
- * Decorative nursery attribute icons. Adjacent visible labels communicate meaning;
- * empty alt avoids leaking hardcoded Ukrainian into EU DOM while staying accessible
- * when the parent marks the icon aria-hidden.
+ * Decorative nursery attribute icons (static PNGs under /public/images/attribute-icons).
+ *
+ * Use a plain <img> — not next/image. These are tiny UI marks; the optimizer
+ * (Content-Disposition: attachment, AVIF pipeline) made them disappear or look
+ * blank at 14–40px in product/cart/review/backstage surfaces.
+ *
+ * Adjacent visible labels communicate meaning; empty alt + parent aria-hidden
+ * keeps them decorative without leaking hardcoded copy into the DOM.
  */
 function NurseryIcon({
   src,
@@ -18,12 +21,15 @@ function NurseryIcon({
   src: string
 }) {
   return (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element -- static UI glyph; next/image breaks these marks
+    <img
       src={src}
       alt=""
       width={208}
       height={208}
-      className={cn('object-contain', className)}
+      decoding="async"
+      draggable={false}
+      className={cn('block object-contain', className)}
     />
   )
 }

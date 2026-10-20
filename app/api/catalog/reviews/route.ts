@@ -42,6 +42,16 @@ export async function GET(request: Request) {
     params.set('sort', sort as ReviewSortOrder)
   }
 
+  const locale = url.searchParams.get('locale')?.trim().toLowerCase()
+  if (locale && /^(uk|en|sk|cs|hu|de)$/.test(locale)) {
+    params.set('locale', locale)
+  }
+
+  const groupBy = url.searchParams.get('groupBy')?.trim()
+  if (groupBy === 'submission') {
+    params.set('groupBy', 'submission')
+  }
+
   const query = params.toString()
   const path = query ? `/reviews?${query}` : '/reviews'
 

@@ -8,6 +8,7 @@ import { showAddedToCartToast } from '@/lib/cart-toast'
 import { FavoriteButton } from '@/components/favorites/favorite-button'
 import { FormattedPrice } from '@/components/commerce/formatted-price'
 import { PriceWithExVatUnder } from '@/components/commerce/shelf-price-block'
+import { DiscountPercentBadge } from '@/components/pricing/discount-percent-badge'
 import { DiscountedUnitPrice } from '@/components/pricing/discounted-price'
 import { ProductCoverImage } from '@/components/product/product-cover-image'
 import { VariantPhotoGalleryDialog } from '@/components/product/variant-photo-gallery-dialog'
@@ -35,9 +36,10 @@ import {
   variantHasAvailableFrom,
 } from '@/lib/plant-variants'
 import {
-  getPlantMaxDiscountPercent,
+  getPlantDiscountBadge,
   getSingleUnitSaleTier,
   getUnitPriceForQuantity,
+  type PlantDiscountBadge,
 } from '@/lib/product-pricing'
 import { cn } from '@/lib/utils'
 import { useVariantPhotos } from '@/lib/variant-photos/use-variant-photos'
@@ -137,12 +139,12 @@ function CatalogVariantDiscountChips({
 function CatalogListProductImage({
   plant,
   variant,
-  discountPercent,
+  discountBadge,
   showBadges,
 }: {
   plant: Plant
   variant?: ProductVariant
-  discountPercent: number | null
+  discountBadge: PlantDiscountBadge | null
   showBadges: boolean
 }) {
   const t = useTranslations('product')
@@ -202,13 +204,8 @@ function CatalogListProductImage({
         ) : null}
         {showBadges ? (
           <div className="absolute inset-x-0 bottom-0 z-[1] flex flex-wrap items-end gap-0.5 p-1">
-            {discountPercent ? (
-              <Badge
-                variant="destructive"
-                className="rounded-[2px] px-[3px] py-0 text-[10px] shadow-sm"
-              >
-                −{discountPercent}%
-              </Badge>
+            {discountBadge ? (
+              <DiscountPercentBadge badge={discountBadge} className="px-[3px]" />
             ) : null}
             {plant.isNew ? (
               <Badge className="rounded-[2px] bg-primary/95 px-[3px] py-0 text-[10px] text-primary-foreground shadow-sm">
@@ -284,7 +281,7 @@ function CatalogProductVariantRow({
   const onBuy = useVariantBuyHandler(plant)
 
   const href = productHrefFromPlant(plant)
-  const discountPercent = getPlantMaxDiscountPercent(plant)
+  const discountBadge = getPlantDiscountBadge(plant)
   const { packaging, sizeLabel } = splitVariantLabel(variant.label)
   const canOrder = canOrderVariant(variant)
   const preorder = isVariantPreorder(variant)
@@ -502,8 +499,8 @@ function CatalogProductVariantRow({
         <CatalogListProductImage
           plant={plant}
           variant={variant}
-          discountPercent={discountPercent}
-          showBadges={Boolean(discountPercent || plant.isNew)}
+          discountBadge={discountBadge}
+          showBadges={Boolean(discountBadge || plant.isNew)}
         />
       </div>
 
@@ -649,7 +646,7 @@ function CatalogProductUnavailableRow({ plant }: { plant: Plant }) {
   const tc = useTranslations('common')
   const [notifyOpen, setNotifyOpen] = useState(false)
   const href = productHrefFromPlant(plant)
-  const discountPercent = getPlantMaxDiscountPercent(plant)
+  const discountBadge = getPlantDiscountBadge(plant)
 
   return (
     <>
@@ -657,8 +654,8 @@ function CatalogProductUnavailableRow({ plant }: { plant: Plant }) {
         <div className="max-sm:row-span-2 sm:shrink-0">
           <CatalogListProductImage
             plant={plant}
-            discountPercent={discountPercent}
-            showBadges={Boolean(discountPercent || plant.isNew)}
+            discountBadge={discountBadge}
+            showBadges={Boolean(discountBadge || plant.isNew)}
           />
         </div>
 

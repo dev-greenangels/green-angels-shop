@@ -613,7 +613,10 @@
       "approveAll": "Approve all",
       "rejectAll": "Reject all",
       "batchApproved": "Approved reviews: {count}",
-      "batchRejected": "Rejected reviews: {count}"
+      "batchRejected": "Rejected reviews: {count}",
+      "removePhoto": "Fotó eltávolítása",
+      "photoRemoved": "Fotó eltávolítva az értékelésből.",
+      "photoRemoveFailed": "Nem sikerült eltávolítani a fotót."
     },
     "overview": {
       "title": "Overview",

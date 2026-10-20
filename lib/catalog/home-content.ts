@@ -14,6 +14,8 @@ function buildReviewQuery(filters?: ReviewFilters): string {
   if (filters.page) params.set('page', String(filters.page))
   if (filters.pageSize) params.set('pageSize', String(filters.pageSize))
   if (filters.sort) params.set('sort', filters.sort)
+  if (filters.locale?.trim()) params.set('locale', filters.locale.trim())
+  if (filters.groupBy === 'submission') params.set('groupBy', 'submission')
   const query = params.toString()
   return query ? `?${query}` : ''
 }

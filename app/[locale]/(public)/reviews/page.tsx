@@ -29,12 +29,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   })
 }
 
-async function loadPublishedReviewsPage(): Promise<ReviewsPageResult> {
+async function loadPublishedReviewsPage(locale: string): Promise<ReviewsPageResult> {
   try {
-    const res = await fetchBackend(
-      `/reviews?page=1&pageSize=${REVIEWS_PAGE_SIZE}&sort=newest`,
-      { cache: 'no-store' },
-    )
+    const params = new URLSearchParams({
+      page: '1',
+      pageSize: String(REVIEWS_PAGE_SIZE),
+      sort: 'newest',
+      locale,
+      groupBy: 'submission',
+    })
+    const res = await fetchBackend(`/reviews?${params.toString()}`, { cache: 'no-store' })
     if (!res.ok) return parseReviewsPage([])
     const data = await readBackendJson(res)
     return parseReviewsPage(data)
@@ -47,7 +51,7 @@ export default async function ReviewsPage({ params }: PageProps) {
   const { locale } = await params
   const tNav = await getTranslations({ locale, namespace: 'nav' })
   const tReviews = await getTranslations({ locale, namespace: 'reviews' })
-  const initialPage = await loadPublishedReviewsPage()
+  const initialPage = await loadPublishedReviewsPage(locale)
 
   return (
     <>

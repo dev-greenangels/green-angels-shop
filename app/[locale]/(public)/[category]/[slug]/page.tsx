@@ -33,12 +33,19 @@ type PageProps = {
   searchParams: Promise<{ variant?: string | string[] }>
 }
 
-async function loadProductReviewsPage(productId: string): Promise<ReviewsPageResult> {
+async function loadProductReviewsPage(
+  productId: string,
+  locale: string,
+): Promise<ReviewsPageResult> {
   try {
-    const res = await fetchBackend(
-      `/reviews?productId=${encodeURIComponent(productId)}&page=1&pageSize=${PRODUCT_REVIEWS_PAGE_SIZE}&sort=newest`,
-      { cache: 'no-store' },
-    )
+    const params = new URLSearchParams({
+      productId,
+      page: '1',
+      pageSize: String(PRODUCT_REVIEWS_PAGE_SIZE),
+      sort: 'newest',
+      locale,
+    })
+    const res = await fetchBackend(`/reviews?${params.toString()}`, { cache: 'no-store' })
     if (!res.ok) return parseReviewsPage([])
     const data = await readBackendJson(res)
     return parseReviewsPage(data)
@@ -90,7 +97,7 @@ export default async function ProductInCategoryPage({ params, searchParams }: Pa
         limit: RELATED_PRODUCTS_LIMIT,
         locale,
       }),
-      loadProductReviewsPage(plant.id),
+      loadProductReviewsPage(plant.id, locale),
       fetchCategoryTree(locale),
       resolvePublicOriginFromRequest(),
       resolveSeoRequestContext(locale),

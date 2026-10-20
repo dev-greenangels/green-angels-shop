@@ -1,39 +1,3 @@
-export type QuantityDiscountType = 'fixed_price' | 'percent'
-
-export type VariantQuantityPriceDraft = {
-  clientId: string
-  minQuantity: string
-  discountType: QuantityDiscountType
-  value: string
-  validFrom: string
-  validTo: string
-}
-
-export function createQuantityPriceDraft(
-  partial?: Partial<VariantQuantityPriceDraft>,
-): VariantQuantityPriceDraft {
-  return {
-    clientId: crypto.randomUUID(),
-    minQuantity: '',
-    discountType: 'fixed_price',
-    value: '',
-    validFrom: '',
-    validTo: '',
-    ...partial,
-  }
-}
-
-export function resolveDiscountUnitPrice(
-  basePrice: number,
-  discountType: QuantityDiscountType,
-  value: number,
-): number {
-  if (discountType === 'percent') {
-    return Math.round(basePrice * (1 - value / 100) * 100) / 100
-  }
-  return value
-}
-
 export function isoToDateInput(iso: string | null | undefined): string {
   if (!iso?.trim()) return ''
   const date = new Date(iso)

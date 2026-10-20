@@ -61,7 +61,8 @@ export async function GET(
     const ext = path.extname(normalized).slice(1).toLowerCase()
     const stream = handle.readableWebStream({ autoClose: true })
 
-    return new NextResponse(stream, {
+    // Node ReadableStream vs DOM BodyInit — bridge without buffering the file.
+    return new NextResponse(stream as unknown as ReadableStream, {
       headers: {
         'Content-Type': MIME[ext] || 'application/octet-stream',
         'Content-Length': String(info.size),

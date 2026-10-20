@@ -142,7 +142,7 @@ export default function CharacteristicsPage() {
           ? options.map((row) => ({
               label: row.label.trim(),
               slug: row.slug.trim() || undefined,
-              colorHex: row.colorHex.trim() || null,
+              colorHex: (row.colorHex ?? '').trim() || null,
             }))
           : undefined,
       }, contentLocale)

@@ -155,6 +155,7 @@ export function NotifyWhenAvailableModal({
         },
         {
           submitFailed: t('notifySubmitFailed'),
+          success: t('notifySuccess'),
         },
       )
       setSuccessMessage(

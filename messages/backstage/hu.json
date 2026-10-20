@@ -534,6 +534,8 @@
       "anyStock": "Any availability",
       "inStock": "In stock",
       "outOfStock": "Out of stock",
+      "containerFilter": "Konténer",
+      "allContainers": "Minden konténer",
       "resetFilters": "Reset filters",
       "publish": "Publish",
       "changeStock": "Change stock",

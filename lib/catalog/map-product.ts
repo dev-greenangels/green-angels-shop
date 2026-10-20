@@ -1,7 +1,4 @@
-import {
-  formatAvailableFromDisplay,
-  resolveDiscountUnitPrice,
-} from '@/lib/backstage/variant-pricing'
+import { formatAvailableFromDisplay } from '@/lib/backstage/variant-pricing'
 import { stripHtmlToPlainText } from '@/lib/html/plain-text'
 import { resolveThumbUrl } from '@/lib/media/paths'
 import { toPublicMediaUrl } from '@/lib/media/public-url'
@@ -11,43 +8,21 @@ import type { Plant, PriceTier, ProductVariant } from '@/lib/types'
 import type {
   CatalogProductDetail,
   CatalogProductListItem,
-  CatalogVariantQuantityPrice,
+  CatalogVariantPriceTier,
 } from './types'
 import { parseSearchSynonyms } from './search-synonyms'
 
 const PLACEHOLDER_IMAGE = '/images/category-placeholder.svg'
 
-function isQuantityPriceActive(row: CatalogVariantQuantityPrice, now = new Date()) {
-  if (row.validFrom) {
-    const from = new Date(row.validFrom)
-    if (!Number.isNaN(from.getTime()) && now < from) return false
-  }
-  if (row.validTo) {
-    const to = new Date(row.validTo)
-    if (!Number.isNaN(to.getTime())) {
-      to.setHours(23, 59, 59, 999)
-      if (now > to) return false
-    }
-  }
-  return true
-}
-
-function mapPriceTiers(
-  basePrice: number,
-  quantityPrices: CatalogVariantQuantityPrice[],
-): PriceTier[] {
-  return quantityPrices
-    .filter((row) => isQuantityPriceActive(row))
-    .sort((a, b) => a.minQuantity - b.minQuantity)
+/** Map server-resolved absolute unit prices → storefront PriceTier. */
+function mapPriceTiers(rows: CatalogVariantPriceTier[] | undefined): PriceTier[] {
+  return (rows ?? [])
+    .filter((row) => row.minQuantity > 0 && row.unitPrice > 0)
     .map((row) => ({
       minQuantity: row.minQuantity,
-      pricePerUnit: resolveDiscountUnitPrice(
-        basePrice,
-        row.discountType ?? 'fixed_price',
-        row.value,
-      ),
+      pricePerUnit: row.unitPrice,
     }))
-    .filter((tier) => tier.pricePerUnit > 0 && tier.pricePerUnit < basePrice)
+    .sort((a, b) => a.minQuantity - b.minQuantity)
 }
 
 function isNewProduct(createdAt: string) {
@@ -77,7 +52,7 @@ function mapListVariants(item: CatalogProductListItem): ProductVariant[] {
     basePrice: variant.price,
     availableFrom: formatAvailableFromDisplay(variant.availableFrom),
     salesUnitSymbol: variant.salesUnitSymbol ?? null,
-    priceTiers: mapPriceTiers(variant.price, variant.quantityPrices ?? []),
+    priceTiers: mapPriceTiers(variant.priceTiers),
     displayAttributes: variant.displayAttributes ?? [],
   }))
 }
@@ -92,7 +67,7 @@ function mapVariants(item: CatalogProductDetail): ProductVariant[] {
     basePrice: variant.price,
     availableFrom: formatAvailableFromDisplay(variant.availableFrom),
     salesUnitSymbol: variant.salesUnitSymbol ?? null,
-    priceTiers: mapPriceTiers(variant.price, variant.quantityPrices ?? []),
+    priceTiers: mapPriceTiers(variant.priceTiers),
     displayAttributes: variant.displayAttributes ?? [],
   }))
 }

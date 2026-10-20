@@ -118,7 +118,7 @@ export function ProductImageGallery({
   const useServerHero =
     Boolean(heroSlot) &&
     Boolean(heroImageSrc) &&
-    selectedImageUrl?.trim() === heroImageSrc.trim()
+    selectedImageUrl?.trim() === heroImageSrc?.trim()
 
   if (images.length === 0) {
     return (

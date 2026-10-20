@@ -3,7 +3,6 @@ export type FlexiDocumentSendMode = 'site' | 'abra' | 'both' | 'none'
 export type FlexiImportUpdateFields = {
   stock: boolean
   prices: boolean
-  quantityPrices: boolean
   weight: boolean
   cnCode: boolean
   sizeAttributes: boolean
@@ -22,7 +21,6 @@ export type FlexiImportUpdateFields = {
 export const DEFAULT_FLEXI_IMPORT_UPDATE_FIELDS: FlexiImportUpdateFields = {
   stock: true,
   prices: true,
-  quantityPrices: true,
   weight: true,
   cnCode: true,
   sizeAttributes: true,
@@ -287,6 +285,91 @@ export async function runFlexiFullSync(): Promise<FlexiSyncResult> {
   const res = await fetch('/api/backstage/flexi/full-sync/run', {
     method: 'POST',
     credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export type FlexiSalesPricesSyncResult = {
+  ok: boolean
+  groupsUpserted: number
+  upserted: number
+  deleted: number
+  skippedUnmatchedSku: number
+  skippedInvalid: number
+  fetched: number
+  message: string
+}
+
+export async function runFlexiSalesPricesSync(): Promise<FlexiSalesPricesSyncResult> {
+  const res = await fetch('/api/backstage/flexi/sync-sales-prices/run', {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export type SalesPricesCoverage = {
+  currency: string
+  publishedVariantCount: number
+  withGeneralSalesPrice: number
+  missingGeneralSalesPrice: number
+  onlySpecialSalesPrice: number
+  lastSync: {
+    lastSuccessAt: string | null
+    lastAttemptAt: string | null
+    lastStatus: string | null
+    lastMessage: string | null
+    lastCounts?: Record<string, number> | null
+  }
+}
+
+export async function fetchSalesPricesCoverage(): Promise<SalesPricesCoverage> {
+  const res = await fetch('/api/backstage/sales-prices/coverage', {
+    credentials: 'include',
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
+export type SalesPricesMissingPage = {
+  items: Array<{
+    variantId: string
+    sku: string | null
+    ean: string | null
+    productId: string
+    productSlug: string
+    productNames: Array<{ locale: string; name: string }>
+    categorySlug: string | null
+    categoryNames: Array<{ locale: string; name: string }>
+    sizeLabel: string | null
+    reason: 'ONLY_SPECIAL' | 'MISSING_ALL'
+    specialScopes: Array<{
+      scope: string
+      priceGroupCode: string | null
+      flexiFirmaKod: string | null
+    }>
+  }>
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+export async function fetchSalesPricesMissing(params?: {
+  search?: string
+  page?: number
+  pageSize?: number
+}): Promise<SalesPricesMissingPage> {
+  const qs = new URLSearchParams()
+  if (params?.search) qs.set('search', params.search)
+  if (params?.page != null) qs.set('page', String(params.page))
+  if (params?.pageSize != null) qs.set('pageSize', String(params.pageSize))
+  const res = await fetch(`/api/backstage/sales-prices/missing?${qs}`, {
+    credentials: 'include',
+    cache: 'no-store',
   })
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()

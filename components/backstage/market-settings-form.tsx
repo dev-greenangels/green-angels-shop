@@ -338,6 +338,51 @@ export function MarketSettingsForm({
               }
             />
           </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label>Джерело базової ціни для гурту (WHOLESALER)</Label>
+            <Select
+              value={market.priceSource ?? 'PRODUCT_CARD'}
+              onValueChange={(value) =>
+                patch({ priceSource: value as MarketSettings['priceSource'] })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PRODUCT_CARD">
+                  Product Card — як у роздробу (default)
+                </SelectItem>
+                <SelectItem value="SALES_PRICES">
+                  ABRA Sales Prices — COMPANY / GROUP / ALL
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Впливає лише на користувачів із роллю WHOLESALER. Гості та роздріб завжди бачать
+              Product Card. Перемикання не запускає sync і не змінює вже створені замовлення. У
+              режимі Sales Prices, якщо немає applicable ціни — fallback на Product Card (з
+              кількісними знижками сайту).
+            </p>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label>Група цін для ролі WHOLESALER (Flexi kod)</Label>
+            <Input
+              value={market.salesPricesWholesalerGroupKod ?? ''}
+              onChange={(e) =>
+                patch({
+                  salesPricesWholesalerGroupKod: e.target.value.trim()
+                    ? e.target.value.trim()
+                    : null,
+                })
+              }
+              placeholder="WHOLESALE"
+            />
+            <p className="text-xs text-muted-foreground">
+              Застосовується лише якщо в ContractorProfile немає `flexiSkupCenKod`. Порожнє =
+              без role→group mapping. Список груп синхронізується з ABRA (не hardcode в engine).
+            </p>
+          </div>
         </CardContent>
       </Card>
 

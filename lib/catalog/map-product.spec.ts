@@ -26,7 +26,7 @@ function listItem(overrides: Partial<CatalogProductListItem> = {}): CatalogProdu
         price: 199,
         label: 'C2',
         availableFrom: null,
-        quantityPrices: [],
+        priceTiers: [],
       },
     ],
     characteristics: {},
@@ -42,8 +42,36 @@ describe('mapListItemToPlant — homepage card payload', () => {
     assert.equal(plant.price, 199)
     assert.equal(plant.stock, 7)
     assert.equal(plant.maxDiscountPercent, 33)
-    assert.equal(plant.variants[0]?.basePrice, 199)
-    assert.equal(plant.variants[0]?.stock, 7)
+    assert.equal(plant.variants?.[0]?.basePrice, 199)
+    assert.equal(plant.variants?.[0]?.stock, 7)
     assert.equal(plant.images[0], '/uploads/alpha/thumb.webp')
+  })
+
+  it('maps server priceTiers unitPrice → pricePerUnit (no client discount math)', () => {
+    const plant = mapListItemToPlant(
+      listItem({
+        variants: [
+          {
+            id: 'v-alpha',
+            sku: 'sku-alpha',
+            ean: null,
+            stock: 7,
+            price: 100,
+            label: 'C2',
+            availableFrom: null,
+            priceTiers: [
+              { minQuantity: 1, unitPrice: 100 },
+              { minQuantity: 10, unitPrice: 85 },
+              { minQuantity: 50, unitPrice: 70 },
+            ],
+          },
+        ],
+      }),
+    )
+    assert.deepEqual(plant.variants?.[0]?.priceTiers, [
+      { minQuantity: 1, pricePerUnit: 100 },
+      { minQuantity: 10, pricePerUnit: 85 },
+      { minQuantity: 50, pricePerUnit: 70 },
+    ])
   })
 })

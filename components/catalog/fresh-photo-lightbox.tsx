@@ -12,6 +12,7 @@ import { PriceWithExVatUnder } from '@/components/commerce/shelf-price-block'
 import { DiscountedUnitPrice } from '@/components/pricing/discounted-price'
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
 import { useDefaultCurrency } from '@/components/providers/commerce-provider'
+import { useVariantDisplayPricing } from '@/components/providers/personalized-shelf-prices-provider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,9 +30,9 @@ import {
   getBulkPriceTiers,
   getMinVariantPrice,
   getSingleUnitSaleTier,
-  getUnitPriceForQuantity,
 } from '@/lib/product-pricing'
 import type { CatalogPhotoItem } from '@/lib/variant-photos/types'
+import type { ProductVariant } from '@/lib/types'
 import { resolveFreshPhotoMainUrl } from '@/lib/variant-photos/fresh-photo-urls'
 import {
   catalogPhotoToPlant,
@@ -40,7 +41,6 @@ import {
   getPhotoTakenAt,
   resolveFreshPhotoDisplayName,
 } from '@/lib/variant-photos/fresh-photo-card'
-import type { ProductVariant } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 function getPhotoDiscountPercent(variant: ProductVariant | null): number | null {
@@ -108,13 +108,25 @@ export function FreshPhotoLightbox({ photo, onClose }: FreshPhotoLightboxProps) 
     [photo, locale, fallbackName],
   )
   const variant = useMemo(() => (photo ? catalogPhotoToVariant(photo) : null), [photo])
+  const pricingVariant: ProductVariant = variant ?? {
+    id: '',
+    label: '',
+    stock: 0,
+    basePrice: 0,
+    priceTiers: [],
+  }
+  const displayPricing = useVariantDisplayPricing(pricingVariant)
   const displayName = photo
     ? resolveFreshPhotoDisplayName(photo, locale, fallbackName)
     : ''
   const selectedShipmentDate = photo?.availableFrom
     ? formatAvailableFromDisplay(photo.availableFrom)
     : null
-  const discountPercent = getPhotoDiscountPercent(variant)
+  const discountPercent = getPhotoDiscountPercent(
+    variant
+      ? { ...variant, basePrice: displayPricing.basePrice, priceTiers: displayPricing.priceTiers }
+      : null,
+  )
   const inCart = useMemo(() => {
     if (!plant || !variant) return 0
     return getCartLineQuantity(cartItems, plant.id, variant.id)
@@ -123,8 +135,12 @@ export function FreshPhotoLightbox({ photo, onClose }: FreshPhotoLightboxProps) 
     if (!plant || !variant) return 0
     return getMaxAddableQuantity(variant, cartItems, plant.id)
   }, [cartItems, plant, variant])
-  const singleUnitSale = variant ? getSingleUnitSaleTier(variant) : null
-  const salePrice = singleUnitSale?.pricePerUnit ?? variant?.basePrice ?? 0
+  const singleUnitSale = getSingleUnitSaleTier({
+    ...pricingVariant,
+    basePrice: displayPricing.basePrice,
+    priceTiers: displayPricing.priceTiers,
+  })
+  const salePrice = singleUnitSale?.pricePerUnit ?? displayPricing.basePrice
   const sizeLabel = photo?.variantLabel || photo?.appProperties.plantSize || '—'
 
   const handleBuy = () => {
@@ -137,7 +153,7 @@ export function FreshPhotoLightbox({ photo, onClose }: FreshPhotoLightboxProps) 
       toast.error(cartT('inStockOnly', { count: variant.stock }))
       return
     }
-    const unitPrice = getUnitPriceForQuantity(variant, inCart + addQty)
+    const unitPrice = displayPricing.getUnitPrice(inCart + addQty)
     const result = addItem(plant, addQty, {
       variant,
       unitPrice,

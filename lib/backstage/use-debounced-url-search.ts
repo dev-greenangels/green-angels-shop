@@ -33,7 +33,11 @@ export function useDebouncedUrlSearch({
   const writeUrl = useCallback(
     (committed: string, mutateParams?: (params: URLSearchParams) => void) => {
       skipUrlSyncRef.current = true
-      const params = new URLSearchParams(searchParams.toString())
+      // Prefer the live browser query over React's searchParams snapshot so
+      // rapid filter writes (category → container) cannot wipe each other.
+      const liveSearch =
+        typeof window !== 'undefined' ? window.location.search : searchParams.toString()
+      const params = new URLSearchParams(liveSearch)
       const trimmed = committed.trim()
       if (trimmed) params.set(param, trimmed)
       else params.delete(param)

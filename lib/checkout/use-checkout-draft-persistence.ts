@@ -123,13 +123,13 @@ export function useCheckoutDraftPersistence({
       (payload.paymentMethod ?? '') !== lastMethodsRef.current.payment
 
     const delay = methodsChanged ? 150 : CHECKOUT_DRAFT_DEBOUNCE_MS
-    scheduleCheckoutDraftPersist(delay, () => {
+    scheduleCheckoutDraftPersist(delay, async () => {
       if (suppressAfterOrderRef.current) return
       lastMethodsRef.current = {
         delivery: payload.deliveryMethod ?? '',
         payment: payload.paymentMethod ?? '',
       }
-      return patchCheckoutDraft(payload, { locale })
+      await patchCheckoutDraft(payload, { locale })
     })
 
     return () => cancelPendingCheckoutDraftPersist()

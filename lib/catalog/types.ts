@@ -22,13 +22,10 @@ export type CatalogProductListItem = {
   maxDiscountPercent?: number | null
 }
 
-export type CatalogVariantQuantityPrice = {
-  id: string
+/** Server-resolved absolute unit prices (commercial ladder). */
+export type CatalogVariantPriceTier = {
   minQuantity: number
-  discountType: 'fixed_price' | 'percent'
-  value: number
-  validFrom: string | null
-  validTo: string | null
+  unitPrice: number
 }
 
 export type CatalogProductVariant = {
@@ -39,7 +36,7 @@ export type CatalogProductVariant = {
   price: number
   label: string | null
   availableFrom: string | null
-  quantityPrices?: CatalogVariantQuantityPrice[]
+  priceTiers?: CatalogVariantPriceTier[]
   salesUnitId?: string | null
   salesUnitSymbol?: string | null
   displayAttributes?: Array<{

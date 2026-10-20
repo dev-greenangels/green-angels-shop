@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Loader2, Save } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import { RequiredLabel } from '@/components/auth/auth-form-ui'
 import { Button } from '@/components/ui/button'
@@ -22,8 +23,15 @@ import {
   customerRoleLabel,
   isStaffRole,
 } from '@/lib/backstage/user-roles'
-import type { BackstageUserDetail, UpdateUserPayload } from '@/lib/backstage/users'
+import {
+  fetchFlexiPriceDictionaries,
+  type BackstageUserDetail,
+  type FlexiPriceDictionaries,
+  type UpdateUserPayload,
+} from '@/lib/backstage/users'
 import { isValidEmail } from '@/lib/validation/register-form'
+
+const GROUP_NONE = '__none__'
 
 type FormState = {
   firstName: string
@@ -33,6 +41,8 @@ type FormState = {
   phone: string
   password: string
   role: string
+  flexiFirmaKod: string
+  flexiSkupCenKod: string
 }
 
 function toFormState(user: BackstageUserDetail): FormState {
@@ -44,6 +54,8 @@ function toFormState(user: BackstageUserDetail): FormState {
     phone: user.phone ?? '',
     password: '',
     role: user.role,
+    flexiFirmaKod: user.flexiFirmaKod ?? '',
+    flexiSkupCenKod: user.flexiSkupCenKod ?? '',
   }
 }
 
@@ -58,11 +70,14 @@ export function UserEditCard({
   canChangeStaffPassword: boolean
   onSave: (payload: UpdateUserPayload) => Promise<void>
 }) {
+  const t = useTranslations('userFlexiPricing')
   const staff = isStaffRole(user.role)
   const [form, setForm] = useState<FormState>(() => toFormState(user))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [dicts, setDicts] = useState<FlexiPriceDictionaries | null>(null)
+  const [dictsLoading, setDictsLoading] = useState(false)
 
   useEffect(() => {
     const next = toFormState(user)
@@ -74,7 +89,47 @@ export function UserEditCard({
     setSuccess(false)
   }, [user, staff, canChangeRole])
 
+  const showWholesalerFlexi = !staff && (form.role === 'WHOLESALER' || user.role === 'WHOLESALER')
+
+  useEffect(() => {
+    if (!showWholesalerFlexi) return
+    let cancelled = false
+    setDictsLoading(true)
+    fetchFlexiPriceDictionaries()
+      .then((data) => {
+        if (!cancelled) setDicts(data)
+      })
+      .catch(() => {
+        if (!cancelled) setDicts(null)
+      })
+      .finally(() => {
+        if (!cancelled) setDictsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [showWholesalerFlexi])
+
   const showPasswordField = !staff || canChangeStaffPassword
+
+  const accessPreview = useMemo(() => {
+    if (form.role !== 'WHOLESALER') {
+      return { kind: 'retail' as const }
+    }
+    const firma = form.flexiFirmaKod.trim()
+    const groupOverride = form.flexiSkupCenKod.trim()
+    const marketDefault =
+      dicts?.salesPricesWholesalerGroupKod?.trim() ||
+      user.salesPricesWholesalerGroupKod?.trim() ||
+      null
+    const groupKod = groupOverride || marketDefault
+    return {
+      kind: 'wholesale' as const,
+      company: Boolean(firma),
+      groupKod,
+      groupFromMarketDefault: Boolean(!groupOverride && marketDefault),
+    }
+  }, [form.role, form.flexiFirmaKod, form.flexiSkupCenKod, dicts, user.salesPricesWholesalerGroupKod])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -109,6 +164,11 @@ export function UserEditCard({
 
     if (canChangeRole && form.role !== user.role) {
       payload.role = form.role as UpdateUserPayload['role']
+    }
+
+    if (showWholesalerFlexi && form.role === 'WHOLESALER') {
+      payload.flexiFirmaKod = form.flexiFirmaKod.trim() || null
+      payload.flexiSkupCenKod = form.flexiSkupCenKod.trim() || null
     }
 
     setSaving(true)
@@ -229,6 +289,119 @@ export function UserEditCard({
               </div>
             ) : null}
           </div>
+
+          {showWholesalerFlexi ? (
+            <section className="space-y-3 rounded-md border border-border/70 bg-muted/20 p-3">
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold">{t('title')}</h3>
+                <p className="text-xs text-muted-foreground">{t('hint')}</p>
+                <p className="text-xs text-muted-foreground">{t('wholesalerOnly')}</p>
+              </div>
+
+              {dictsLoading ? (
+                <p className="text-xs text-muted-foreground">{t('dictLoading')}</p>
+              ) : null}
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-flexi-firma">{t('firmaLabel')}</Label>
+                  <InputWithClear
+                    id="edit-flexi-firma"
+                    list="flexi-firma-kod-options"
+                    value={form.flexiFirmaKod}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, flexiFirmaKod: e.target.value }))
+                    }
+                    onClear={() => setForm((prev) => ({ ...prev, flexiFirmaKod: '' }))}
+                    placeholder={t('firmaPlaceholder')}
+                    autoComplete="off"
+                  />
+                  <datalist id="flexi-firma-kod-options">
+                    {(dicts?.firmaKods ?? []).map((kod) => (
+                      <option key={kod} value={kod} />
+                    ))}
+                  </datalist>
+                  <p className="text-xs text-muted-foreground">{t('firmaHelp')}</p>
+                  {dicts && dicts.firmaKods.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">{t('dictEmptyFirma')}</p>
+                  ) : null}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-flexi-group">{t('groupLabel')}</Label>
+                  <Select
+                    value={form.flexiSkupCenKod.trim() || GROUP_NONE}
+                    onValueChange={(value) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        flexiSkupCenKod: value === GROUP_NONE ? '' : value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger id="edit-flexi-group">
+                      <SelectValue placeholder={t('groupPlaceholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={GROUP_NONE}>{t('groupEmpty')}</SelectItem>
+                      {(dicts?.priceGroups ?? []).map((group) => (
+                        <SelectItem key={group.code} value={group.code}>
+                          {group.code}
+                          {group.name ? ` — ${group.name}` : ''}
+                        </SelectItem>
+                      ))}
+                      {form.flexiSkupCenKod.trim() &&
+                      !(dicts?.priceGroups ?? []).some(
+                        (g) => g.code === form.flexiSkupCenKod.trim(),
+                      ) ? (
+                        <SelectItem value={form.flexiSkupCenKod.trim()}>
+                          {form.flexiSkupCenKod.trim()}
+                        </SelectItem>
+                      ) : null}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">{t('groupHelp')}</p>
+                  {(dicts?.salesPricesWholesalerGroupKod ||
+                    user.salesPricesWholesalerGroupKod) &&
+                  !form.flexiSkupCenKod.trim() ? (
+                    <p className="text-xs text-muted-foreground">
+                      {t('groupMarketDefault', {
+                        kod:
+                          dicts?.salesPricesWholesalerGroupKod ||
+                          user.salesPricesWholesalerGroupKod ||
+                          '',
+                      })}
+                    </p>
+                  ) : null}
+                  {dicts && dicts.priceGroups.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">{t('dictEmptyGroup')}</p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="space-y-1 rounded-md border border-border/50 bg-background/60 px-3 py-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t('accessTitle')}
+                </p>
+                {accessPreview.kind === 'retail' ? (
+                  <p className="text-sm">{t('accessRetailOnly')}</p>
+                ) : (
+                  <ul className="list-disc space-y-1 pl-4 text-sm">
+                    {accessPreview.company ? <li>{t('accessCompany')}</li> : null}
+                    {accessPreview.groupKod ? (
+                      <li>
+                        {accessPreview.groupFromMarketDefault
+                          ? t('accessGroupDefault', { kod: accessPreview.groupKod })
+                          : t('accessGroup', { kod: accessPreview.groupKod })}
+                      </li>
+                    ) : (
+                      <li>{t('accessNoGroup')}</li>
+                    )}
+                    <li>{t('accessAll')}</li>
+                  </ul>
+                )}
+              </div>
+            </section>
+          ) : null}
 
           {error ? (
             <p className="text-sm text-destructive" role="alert">

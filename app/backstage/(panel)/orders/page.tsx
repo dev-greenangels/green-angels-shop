@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, RefreshCw, Search } from 'lucide-react'
 
 import { AdminLayout } from '@/components/admin/admin-layout'
+import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
+import { CountryDisplay } from '@/components/backstage/country-display'
 import { OrderDetailsDialog } from '@/components/backstage/order-details-dialog'
+import { OrderPaymentMethodIcon } from '@/components/backstage/order-payment-method-icon'
 import { OrderRowStatusCell } from '@/components/backstage/order-row-status-cell'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,7 +28,7 @@ import {
   fetchOrderStatuses,
   type OrderStatusDefinition,
 } from '@/lib/backstage/order-statuses'
-import { useBackstageUiLocale } from '@/components/backstage/backstage-ui-locale'
+import type { BackstageCountryLocale } from '@/lib/backstage/country-display'
 import { formatDateTime } from '@/lib/i18n/format-datetime'
 import { getVisiblePageNumbers } from '@/lib/catalog/pagination'
 import { cn } from '@/lib/utils'
@@ -43,6 +46,9 @@ function orderDetailHref(orderId: string) {
 
 export default function OrdersPage() {
   const { locale } = useBackstageUiLocale()
+  const countryLocale = (
+    locale === 'uk' || locale === 'sk' ? locale : 'en'
+  ) as BackstageCountryLocale
   const [orders, setOrders] = useState<BackstageOrderListItem[]>([])
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
@@ -188,7 +194,13 @@ export default function OrdersPage() {
                         Сума
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">
+                        Оплата
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">
                         Статус
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">
+                        Країна
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-muted-foreground">
                         Дата
@@ -234,11 +246,22 @@ export default function OrdersPage() {
                             </a>
                           </td>
                           <td className="px-4 py-3">
+                            <OrderPaymentMethodIcon method={order.paymentMethod} />
+                          </td>
+                          <td className="px-4 py-3">
                             <OrderRowStatusCell order={order} onUpdated={handleStatusUpdated} />
                           </td>
+                          <td className="px-4 py-3">
+                            <CountryDisplay
+                              code={order.deliveryCountryCode}
+                              locale={countryLocale}
+                              variant="compact"
+                              showName={false}
+                            />
+                          </td>
                           <td className="p-0 text-sm text-muted-foreground">
-                            <a href={href} className="block px-4 py-3">
-                              {formatDateTime(order.createdAt, locale, 'date')}
+                            <a href={href} className="block px-4 py-3 whitespace-nowrap">
+                              {formatDateTime(order.createdAt, locale, 'datetime')}
                             </a>
                           </td>
                           <td className="px-4 py-3 text-right">

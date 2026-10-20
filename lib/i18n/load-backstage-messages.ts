@@ -18,8 +18,15 @@ const BASE_MESSAGES: Record<AppLocale, Record<string, unknown>> = {
   uk: backstageUk as Record<string, unknown>,
   en: backstageEn as Record<string, unknown>,
   sk: backstageSk as Record<string, unknown>,
-  hu: backstageHu as Record<string, unknown>,
-  de: backstageDe as Record<string, unknown>,
+  // Incomplete backstage locales inherit English for missing namespaces (promotions, pricing, …).
+  hu: deepMergeMessages(
+    backstageEn as Record<string, unknown>,
+    backstageHu as Record<string, unknown>,
+  ),
+  de: deepMergeMessages(
+    backstageEn as Record<string, unknown>,
+    backstageDe as Record<string, unknown>,
+  ),
   // CS chrome still falls back to English except Packeta-specific namespaces.
   cs: deepMergeMessages(backstageEn as Record<string, unknown>, {
     packetaCod: (backstageCs as Record<string, unknown>).packetaCod,

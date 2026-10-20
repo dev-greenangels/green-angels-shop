@@ -32,10 +32,7 @@ export function formatDeliveryMethodButtonPrice(
     Math.max(0, snapshot.deliveryAmount) + Math.max(0, snapshot.packagingAmount ?? 0),
   )
   const reverseCharge = isReverseChargeCheckout(
-    {
-      taxRegime: snapshot.taxRegime,
-      taxRatePercent: snapshot.taxRatePercent,
-    },
+    { taxRegime: snapshot.taxRegime },
     { taxRegime: snapshot.taxRegime },
   )
   const taxRate = resolveCheckoutTaxRatePercent(

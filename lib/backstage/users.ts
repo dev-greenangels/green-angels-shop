@@ -54,6 +54,10 @@ export type UpdateUserPayload = {
   phone?: string | null
   password?: string
   role?: BackstageUserRole
+  /** Flexi adresar.kod — COMPANY Sales Prices. Null/'' clears. */
+  flexiFirmaKod?: string | null
+  /** Flexi cenikova-skupina.kod — GROUP Sales Prices. Null/'' clears. */
+  flexiSkupCenKod?: string | null
 }
 
 export type BackstageUserOrderItem = {
@@ -86,11 +90,35 @@ export type BackstageUserOrderSummary = {
   items: BackstageUserOrderItem[]
 }
 
+export type BackstageUserSalesPriceAccess = {
+  company: boolean
+  group: boolean
+  groupKod: string | null
+  groupFromMarketDefault: boolean
+  allFallback: boolean
+}
+
 export type BackstageUserDetail = BackstageUserListItem & {
   orders: BackstageUserOrderSummary[]
   groupIds: string[]
   marketingSource: string | null
   marketingUnsubscribedAt: string | null
+  flexiFirmaKod: string | null
+  flexiSkupCenKod: string | null
+  salesPricesWholesalerGroupKod: string | null
+  salesPriceAccess: BackstageUserSalesPriceAccess
+}
+
+export type FlexiPriceDictionaries = {
+  priceGroups: Array<{ code: string; name: string; flexiId: string }>
+  firmaKods: string[]
+  salesPricesWholesalerGroupKod: string | null
+}
+
+export async function fetchFlexiPriceDictionaries(): Promise<FlexiPriceDictionaries> {
+  const res = await fetch('/api/backstage/sales-prices/dictionaries', { cache: 'no-store' })
+  if (!res.ok) throw new Error(await parseError(res))
+  return (await res.json()) as FlexiPriceDictionaries
 }
 
 export async function createBackstageStaffMember(

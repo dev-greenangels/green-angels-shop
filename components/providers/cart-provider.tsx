@@ -28,7 +28,7 @@ import { useEffect, useRef, useState } from 'react'
 async function resolveAuthenticatedCart(
   setMergePreview: (preview: CartMergePreview) => void,
   setMergeOpen: (open: boolean) => void,
-  locale: string,
+  locale: string | null,
 ) {
   const preview = await fetchCartMergePreview()
   if (!preview) {

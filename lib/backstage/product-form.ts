@@ -2,10 +2,6 @@ import {
   emptyCharacteristicsForm,
   type ProductCharacteristicsFormState,
 } from '@/lib/backstage/characteristics'
-import {
-  createQuantityPriceDraft,
-  type VariantQuantityPriceDraft,
-} from '@/lib/backstage/variant-pricing'
 
 export type PricingMode = 'simple' | 'variants'
 
@@ -32,7 +28,6 @@ export type ProductVariantDraft = {
   lengthCm: string
   widthCm: string
   heightCm: string
-  quantityPrices: VariantQuantityPriceDraft[]
 }
 
 export type ProductFormState = {
@@ -74,12 +69,9 @@ export function createVariantDraft(partial?: Partial<ProductVariantDraft>): Prod
     lengthCm: '',
     widthCm: '',
     heightCm: '',
-    quantityPrices: [],
     ...partial,
   }
 }
-
-export { createQuantityPriceDraft }
 
 export const emptyProductForm = (): ProductFormState => ({
   name: '',

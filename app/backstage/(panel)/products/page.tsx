@@ -48,10 +48,17 @@ import {
   type BackstageProductListItem,
 } from '@/lib/backstage/products'
 import { useDebouncedUrlSearch } from '@/lib/backstage/use-debounced-url-search'
+import {
+  fetchVariantAttributes,
+  type VariantAttribute,
+  type VariantAttributeValue,
+} from '@/lib/backstage/variant-attributes'
+
 const PAGE_SIZE = 100
 
 type PublishedFilter = 'all' | 'true' | 'false'
 type StockFilter = 'all' | 'in_stock' | 'out_of_stock'
+type ContainerOption = VariantAttributeValue & { attributeSlug: string }
 
 function flattenCategories(nodes: CategoryTreeNode[]): Array<{ id: string; name: string }> {
   const result: Array<{ id: string; name: string }> = []
@@ -60,6 +67,19 @@ function flattenCategories(nodes: CategoryTreeNode[]): Array<{ id: string; name:
     result.push(...flattenCategories(node.children))
   }
   return result
+}
+
+function isContainerAttribute(attr: VariantAttribute): boolean {
+  return attr.valueType === 'CONTAINER' || attr.slug === 'konteyner'
+}
+
+function serializeContainerFilter(
+  containerValueId: string,
+  options: ContainerOption[],
+): string | undefined {
+  if (!containerValueId || containerValueId === 'all') return undefined
+  const opt = options.find((row) => row.id === containerValueId)
+  return opt ? `${opt.attributeSlug}=${opt.slug}` : undefined
 }
 
 function parsePublished(value: string | null): PublishedFilter {
@@ -77,6 +97,7 @@ function buildProductsListQuery(opts: {
   category: string
   published: PublishedFilter
   stock: StockFilter
+  container: string
   page: number
 }): string {
   const params = new URLSearchParams()
@@ -84,6 +105,7 @@ function buildProductsListQuery(opts: {
   if (opts.category !== 'all') params.set('category', opts.category)
   if (opts.published !== 'all') params.set('published', opts.published)
   if (opts.stock !== 'all') params.set('stock', opts.stock)
+  if (opts.container !== 'all') params.set('container', opts.container)
   if (opts.page > 1) params.set('page', String(opts.page))
   return params.toString()
 }
@@ -116,6 +138,7 @@ function ProductsPageContent() {
   const categoryFilter = searchParams.get('category') ?? 'all'
   const publishedFilter = parsePublished(searchParams.get('published'))
   const stockFilter = parseStock(searchParams.get('stock'))
+  const containerFromUrl = searchParams.get('container') ?? 'all'
   const page = Math.max(1, Number(searchParams.get('page') || '1') || 1)
 
   const { searchInput, setSearchInput, search, writeUrl, reset: resetSearch } =
@@ -139,10 +162,43 @@ function ProductsPageContent() {
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
+  const [containerOptions, setContainerOptions] = useState<ContainerOption[]>([])
+  const [containerOptionsReady, setContainerOptionsReady] = useState(false)
+  /** Optimistic Select value — URL alone races with debounced search writes. */
+  const [containerFilter, setContainerFilter] = useState(containerFromUrl)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [stockDialogOpen, setStockDialogOpen] = useState(false)
   const [stockValue, setStockValue] = useState('0')
+
+  useEffect(() => {
+    setContainerFilter(containerFromUrl)
+  }, [containerFromUrl])
+
+  const resolvedContainerFilter = useMemo(() => {
+    if (containerFilter === 'all') return 'all'
+    if (!containerOptionsReady) return containerFilter
+    if (containerOptions.some((opt) => opt.id === containerFilter)) return containerFilter
+    // Legacy URL used value slug (e.g. ?container=p9).
+    const bySlug = containerOptions.find((opt) => opt.slug === containerFilter)
+    return bySlug?.id ?? 'all'
+  }, [containerFilter, containerOptions, containerOptionsReady])
+
+  const variantAttributesParam = useMemo(
+    () => serializeContainerFilter(resolvedContainerFilter, containerOptions),
+    [resolvedContainerFilter, containerOptions],
+  )
+
+  // Keep URL on value id once options are known (slug bookmarks still work).
+  useEffect(() => {
+    if (!containerOptionsReady) return
+    if (containerFromUrl === 'all' || resolvedContainerFilter === 'all') return
+    if (containerFromUrl === resolvedContainerFilter) return
+    writeUrl(search, (params) => {
+      params.set('container', resolvedContainerFilter)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only normalize container param
+  }, [containerOptionsReady, containerFromUrl, resolvedContainerFilter])
 
   const syncUrl = useCallback(
     (next: {
@@ -150,6 +206,7 @@ function ProductsPageContent() {
       category: string
       published: PublishedFilter
       stock: StockFilter
+      container: string
       page: number
     }) => {
       writeUrl(next.search, (params) => {
@@ -159,6 +216,8 @@ function ProductsPageContent() {
         else params.delete('published')
         if (next.stock !== 'all') params.set('stock', next.stock)
         else params.delete('stock')
+        if (next.container !== 'all') params.set('container', next.container)
+        else params.delete('container')
         if (next.page > 1) params.set('page', String(next.page))
         else params.delete('page')
       })
@@ -173,9 +232,10 @@ function ProductsPageContent() {
         category: categoryFilter,
         published: publishedFilter,
         stock: stockFilter,
+        container: containerFilter,
         page,
       }),
-    [search, categoryFilter, publishedFilter, stockFilter, page],
+    [search, categoryFilter, publishedFilter, stockFilter, containerFilter, page],
   )
 
   const listHref = listQueryString ? `${pathname}?${listQueryString}` : pathname
@@ -183,6 +243,10 @@ function ProductsPageContent() {
 
   const loadProducts = useCallback(async () => {
     if (!contentLocaleReady) return
+    // Wait until container options resolve so a deep-linked filter is applied.
+    if (resolvedContainerFilter !== 'all' && !variantAttributesParam) {
+      if (!containerOptionsReady) return
+    }
     setLoading(true)
     try {
       const data = await fetchBackstageProductsPage({
@@ -190,6 +254,7 @@ function ProductsPageContent() {
         categoryId: categoryFilter === 'all' ? undefined : categoryFilter,
         published: publishedFilter,
         stock: stockFilter,
+        variantAttributes: variantAttributesParam,
         page,
         pageSize: PAGE_SIZE,
         locale: contentLocale,
@@ -209,13 +274,53 @@ function ProductsPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [search, categoryFilter, publishedFilter, stockFilter, page, tt, contentLocale, contentLocaleReady])
+  }, [
+    search,
+    categoryFilter,
+    publishedFilter,
+    stockFilter,
+    resolvedContainerFilter,
+    containerOptionsReady,
+    variantAttributesParam,
+    page,
+    tt,
+    contentLocale,
+    contentLocaleReady,
+  ])
 
   useEffect(() => {
     if (!contentLocaleReady) return
     void fetchCategoryTree(contentLocale, { edit: false })
       .then((tree) => setCategories(flattenCategories(tree)))
       .catch(() => {})
+  }, [contentLocale, contentLocaleReady])
+
+  useEffect(() => {
+    if (!contentLocaleReady) return
+    let cancelled = false
+    void fetchVariantAttributes({ locale: contentLocale, edit: false })
+      .then((attrs) => {
+        if (cancelled) return
+        const options = attrs
+          .filter(isContainerAttribute)
+          .flatMap((attr) =>
+            attr.values.map((value) => ({
+              ...value,
+              attributeSlug: attr.slug,
+            })),
+          )
+          .sort((a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label))
+        setContainerOptions(options)
+        setContainerOptionsReady(true)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setContainerOptions([])
+        setContainerOptionsReady(true)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [contentLocale, contentLocaleReady])
 
   useEffect(() => {
@@ -226,24 +331,31 @@ function ProductsPageContent() {
     category?: string
     published?: PublishedFilter
     stock?: StockFilter
+    container?: string
     page?: number
   }) => {
+    if (patch.container !== undefined) {
+      setContainerFilter(patch.container)
+    }
     syncUrl({
       search: search.trim(),
       category: patch.category ?? categoryFilter,
       published: patch.published ?? publishedFilter,
       stock: patch.stock ?? stockFilter,
+      container: patch.container ?? containerFilter,
       page: patch.page ?? 1,
     })
   }
 
   const resetFilters = () => {
     resetSearch()
+    setContainerFilter('all')
     syncUrl({
       search: '',
       category: 'all',
       published: 'all',
       stock: 'all',
+      container: 'all',
       page: 1,
     })
   }
@@ -253,8 +365,9 @@ function ProductsPageContent() {
       Boolean(search.trim()) ||
       categoryFilter !== 'all' ||
       publishedFilter !== 'all' ||
-      stockFilter !== 'all',
-    [search, categoryFilter, publishedFilter, stockFilter],
+      stockFilter !== 'all' ||
+      resolvedContainerFilter !== 'all',
+    [search, categoryFilter, publishedFilter, stockFilter, resolvedContainerFilter],
   )
 
   const emptyMessage = useMemo(() => {
@@ -444,6 +557,24 @@ function ProductsPageContent() {
                     <SelectItem value="out_of_stock">{tp('outOfStock')}</SelectItem>
                   </SelectContent>
                 </Select>
+                {containerOptions.length > 0 ? (
+                  <Select
+                    value={resolvedContainerFilter}
+                    onValueChange={(value) => updateFilters({ container: value })}
+                  >
+                    <SelectTrigger className="w-full sm:w-40">
+                      <SelectValue placeholder={tp('containerFilter')} />
+                    </SelectTrigger>
+                    <SelectContent className="z-[80]">
+                      <SelectItem value="all">{tp('allContainers')}</SelectItem>
+                      {containerOptions.map((opt) => (
+                        <SelectItem key={opt.id} value={opt.id}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : null}
                 {hasActiveFilters ? (
                   <Button
                     type="button"

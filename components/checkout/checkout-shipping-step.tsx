@@ -115,10 +115,13 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
     }
   }, [needsNameEntry])
 
+  // Boolean flag avoids TS control-flow narrowing of marketRegion to '"ua"' only.
+  const isSkMarket = marketRegion === 'sk'
+
   // SK market already collects name on the contact step (step 1) for authenticated users,
   // so only show the name panel here for UA/other markets (e.g. Google OAuth flow).
   const showGoogleNameFields =
-    identification.returningVerified && showNameEntryPanel && marketRegion !== 'sk'
+    identification.returningVerified && showNameEntryPanel && !isSkMarket
 
   return (
     <div className={checkoutPanelClassName}>
@@ -142,7 +145,7 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">{t('completeNameTitle')}</p>
             <p className="text-sm text-muted-foreground">
-              {t(marketRegion === 'sk' ? 'completeNameHintLatin' : 'completeNameHint')}
+              {t(isSkMarket ? 'completeNameHintLatin' : 'completeNameHint')}
             </p>
           </div>
 
@@ -153,7 +156,7 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
                   id="google-checkout-firstName"
                   autoComplete="given-name"
                   placeholder={
-                    marketRegion === 'sk' ? tc('firstName') : t('firstNameUaPlaceholder')
+                    isSkMarket ? tc('firstName') : t('firstNameUaPlaceholder')
                   }
                   className={cn(
                     checkoutInputClassName,
@@ -183,7 +186,7 @@ export const CheckoutShippingStep = memo(function CheckoutShippingStep({
                   id="google-checkout-lastName"
                   autoComplete="family-name"
                   placeholder={
-                    marketRegion === 'sk' ? tc('lastName') : t('lastNameUaPlaceholder')
+                    isSkMarket ? tc('lastName') : t('lastNameUaPlaceholder')
                   }
                   className={cn(
                     checkoutInputClassName,

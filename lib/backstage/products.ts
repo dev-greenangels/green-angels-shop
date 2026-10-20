@@ -5,11 +5,7 @@ import {
   fetchCharacteristicDefinitions,
   type CharacteristicDefinition,
 } from '@/lib/backstage/characteristics'
-import {
-  createQuantityPriceDraft,
-  createVariantDraft,
-  type ProductFormState,
-} from '@/lib/backstage/product-form'
+import { createVariantDraft, type ProductFormState } from '@/lib/backstage/product-form'
 import { isoToDateInput } from '@/lib/backstage/variant-pricing'
 import type { VariantAttribute } from '@/lib/backstage/variant-attributes'
 import {
@@ -66,15 +62,6 @@ export type BackstageProductListItem = {
   maxDiscountPercent?: number | null
 }
 
-export type BackstageVariantQuantityPrice = {
-  id: string
-  minQuantity: number
-  discountType: 'fixed_price' | 'percent'
-  value: number
-  validFrom: string | null
-  validTo: string | null
-}
-
 export type BackstageProductVariant = {
   id: string
   sku: string | null
@@ -85,7 +72,6 @@ export type BackstageProductVariant = {
   label: string | null
   attributeValueIds: string[]
   availableFrom: string | null
-  quantityPrices: BackstageVariantQuantityPrice[]
   salesUnitId: string | null
   salesUnitSymbol: string | null
   weight: number | null
@@ -164,13 +150,6 @@ export type ProductPayload = {
     lengthCm?: number
     widthCm?: number
     heightCm?: number
-    quantityPrices?: Array<{
-      minQuantity: number
-      discountType?: 'fixed_price' | 'percent'
-      value: number
-      validFrom?: string
-      validTo?: string
-    }>
   }
   variants?: Array<{
     id?: string
@@ -187,35 +166,15 @@ export type ProductPayload = {
     lengthCm?: number
     widthCm?: number
     heightCm?: number
-    quantityPrices?: Array<{
-      minQuantity: number
-      discountType?: 'fixed_price' | 'percent'
-      value: number
-      validFrom?: string
-      validTo?: string
-    }>
   }>
   images?: Array<{ url: string; isMain?: boolean }>
-}
-
-function buildQuantityPricesPayload(variant: ProductFormState['variants'][number]) {
-  return variant.quantityPrices
-    .filter((row) => row.minQuantity.trim() && row.value.trim())
-    .map((row) => ({
-      minQuantity: Number(row.minQuantity),
-      discountType: row.discountType,
-      value: Number(row.value),
-      validFrom: row.validFrom.trim() || undefined,
-      validTo: row.validTo.trim() || undefined,
-    }))
 }
 
 function buildVariantPayload(
   variant: ProductFormState['variants'][number],
   _attributes: VariantAttribute[],
 ) {
-  const quantityPrices = buildQuantityPricesPayload(variant)
-
+  // Quantity discounts edit via DiscountRule — not on the product save payload.
   return {
     id: variant.id,
     sku: variant.sku.trim() || undefined,
@@ -230,7 +189,6 @@ function buildVariantPayload(
     lengthCm: variant.lengthCm.trim() ? Number(variant.lengthCm) : undefined,
     widthCm: variant.widthCm.trim() ? Number(variant.widthCm) : undefined,
     heightCm: variant.heightCm.trim() ? Number(variant.heightCm) : undefined,
-    quantityPrices: quantityPrices.length ? quantityPrices : undefined,
   }
 }
 
@@ -251,15 +209,6 @@ function mapVariantToDraft(
     lengthCm: variant.lengthCm != null ? String(variant.lengthCm) : '',
     widthCm: variant.widthCm != null ? String(variant.widthCm) : '',
     heightCm: variant.heightCm != null ? String(variant.heightCm) : '',
-    quantityPrices: (variant.quantityPrices ?? []).map((row) =>
-      createQuantityPriceDraft({
-        minQuantity: String(row.minQuantity),
-        discountType: row.discountType ?? 'fixed_price',
-        value: String(row.value),
-        validFrom: isoToDateInput(row.validFrom),
-        validTo: isoToDateInput(row.validTo),
-      }),
-    ),
     ...partial,
   })
 }
@@ -310,7 +259,6 @@ export function buildProductPayload(
 
   if (form.pricingMode === 'simple') {
     const variant = form.variants[0]
-    const quantityPrices = variant ? buildQuantityPricesPayload(variant) : []
     base.variant = {
       id: variant?.id,
       sku: form.simpleSku.trim() || undefined,
@@ -324,7 +272,6 @@ export function buildProductPayload(
       lengthCm: variant?.lengthCm.trim() ? Number(variant.lengthCm) : undefined,
       widthCm: variant?.widthCm.trim() ? Number(variant.widthCm) : undefined,
       heightCm: variant?.heightCm.trim() ? Number(variant.heightCm) : undefined,
-      quantityPrices: quantityPrices.length ? quantityPrices : undefined,
     }
     return base
   }
@@ -353,6 +300,8 @@ export type BackstageProductsFilters = {
   published?: 'all' | 'true' | 'false'
   stock?: 'all' | 'in_stock' | 'out_of_stock'
   lowStockThreshold?: number
+  /** Serialized `attrSlug=valueSlug` pairs (OR within attr, AND across attrs). */
+  variantAttributes?: string
   sort?: string
   page?: number
   pageSize?: number
@@ -383,6 +332,7 @@ function buildProductsQuery(params?: BackstageProductsFilters) {
   if (params?.lowStockThreshold != null) {
     query.set('lowStockThreshold', String(params.lowStockThreshold))
   }
+  if (params?.variantAttributes) query.set('variantAttributes', params.variantAttributes)
   if (params?.sort) query.set('sort', params.sort)
   if (params?.page != null) query.set('page', String(params.page))
   if (params?.pageSize != null) query.set('pageSize', String(params.pageSize))

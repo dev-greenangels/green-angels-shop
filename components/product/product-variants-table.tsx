@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Minus, Plus, ShoppingCart } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 
+import { useVariantDisplayPricing } from '@/components/providers/personalized-shelf-prices-provider'
 import { DiscountedUnitPrice } from '@/components/pricing/discounted-price'
 import { FormattedPrice } from '@/components/commerce/formatted-price'
 import { PriceWithExVatUnder } from '@/components/commerce/shelf-price-block'
@@ -16,9 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import {
-  getBulkPriceTiers,
   getSingleUnitSaleTier,
-  getUnitPriceForQuantity,
   getVariantDiscountLayout,
 } from '@/lib/product-pricing'
 import {
@@ -173,8 +172,16 @@ function VariantBasePrice({
   stackedDiscount?: boolean
   priceAlign?: 'start' | 'end'
 }) {
-  const singleUnitSale = getSingleUnitSaleTier(variant)
-  const salePrice = singleUnitSale?.pricePerUnit ?? variant.basePrice
+  const pricing = useVariantDisplayPricing(variant)
+  const displayBase = pricing.basePrice
+  const singleUnitSale = getSingleUnitSaleTier({
+    ...variant,
+    basePrice: pricing.basePrice,
+    priceTiers: pricing.priceTiers,
+  })
+  const salePrice = singleUnitSale?.pricePerUnit ?? displayBase
+  const originalPrice =
+    salePrice < variant.basePrice - 0.001 ? variant.basePrice : displayBase
 
   return (
     <PriceWithExVatUnder
@@ -184,7 +191,7 @@ function VariantBasePrice({
     >
       <span className="inline-flex items-baseline">
         <DiscountedUnitPrice
-          originalPrice={variant.basePrice}
+          originalPrice={originalPrice}
           salePrice={salePrice}
           perUnit="sale-only"
           unitSymbol={variant.salesUnitSymbol}
@@ -227,7 +234,8 @@ function VariantTierPrices({
   alignEnd?: boolean
 }) {
   const cart = useTranslations('cart')
-  const tiers = useMemo(() => getBulkPriceTiers(variant), [variant])
+  const pricing = useVariantDisplayPricing(variant)
+  const tiers = pricing.bulkTiers
   if (!tiers.length) return null
 
   return (
@@ -243,7 +251,7 @@ function VariantTierPrices({
         >
           <span className="text-muted-foreground">{cart('fromQty', { count: tier.minQuantity })}</span>
           <DiscountedUnitPrice
-            originalPrice={variant.basePrice}
+            originalPrice={pricing.basePrice}
             salePrice={tier.pricePerUnit}
             perUnit="sale-only"
             unitSymbol={variant.salesUnitSymbol}
@@ -337,7 +345,8 @@ function VariantTierDiscountChips({
   onTierClick?: (minQuantity: number) => void
 }) {
   const cart = useTranslations('cart')
-  const tiers = useMemo(() => getBulkPriceTiers(variant), [variant])
+  const pricing = useVariantDisplayPricing(variant)
+  const tiers = pricing.bulkTiers
   if (!tiers.length) return null
 
   return (
@@ -379,8 +388,8 @@ function VariantTierDiscounts({
   alignEnd?: boolean
 }) {
   const tc = useTranslations('common')
-  const tiers = getBulkPriceTiers(variant)
-  if (!tiers.length) return null
+  const pricing = useVariantDisplayPricing(variant)
+  if (!pricing.bulkTiers.length) return null
 
   return (
     <div className={className}>
@@ -501,7 +510,8 @@ function VariantActions({
   }
 
   const targetQuantity = inCart + quantity
-  const unitPrice = getUnitPriceForQuantity(variant, targetQuantity)
+  const displayPricing = useVariantDisplayPricing(variant)
+  const unitPrice = displayPricing.getUnitPrice(targetQuantity)
   const isCompact = useThumbnailLayout
   const controlHeight = isCompact ? 'h-9' : size === 'lg' ? 'h-10' : 'h-9'
   const iconSize = isCompact ? 'h-8 w-8 shrink-0' : size === 'lg' ? 'h-10 w-10' : 'h-9 w-9'
@@ -651,10 +661,23 @@ function VariantActions({
     )
   }
 
+  const liveUnitHint =
+    targetQuantity > 1 || Math.abs(unitPrice - displayPricing.basePrice) > 0.001 ? (
+      <p className="text-xs tabular-nums text-muted-foreground">
+        <FormattedPrice
+          amount={unitPrice}
+          perUnit
+          unitSymbol={variant.salesUnitSymbol}
+          className="text-xs font-medium text-foreground"
+        />
+      </p>
+    ) : null
+
   if (useThumbnailLayout) {
     return (
       <div className="flex flex-col gap-2.5">
         {cartHints}
+        {liveUnitHint}
         {thumbnailActionsRow}
       </div>
     )
@@ -663,6 +686,7 @@ function VariantActions({
   return (
     <div className="flex flex-col items-end gap-2">
       {cartHints}
+      {liveUnitHint}
       <div className="flex flex-wrap items-center justify-end gap-2">
         {quantityControl}
         {buyButton}
@@ -689,7 +713,12 @@ function VariantMobileCard({
   onSelect?: () => void
 }) {
   const hasShipment = variantHasAvailableFrom(variant) && Boolean(variant.availableFrom)
-  const discountLayout = getVariantDiscountLayout(variant)
+  const displayPricing = useVariantDisplayPricing(variant)
+  const discountLayout = getVariantDiscountLayout({
+    ...variant,
+    basePrice: displayPricing.basePrice,
+    priceTiers: displayPricing.priceTiers,
+  })
   const tierQuantityApplyRef = useRef<(tierMinQuantity: number) => void>(() => {})
 
   const embeddedDesktopMainRow = (

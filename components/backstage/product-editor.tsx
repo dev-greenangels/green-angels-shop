@@ -748,6 +748,7 @@ export function ProductEditor({
                       onVariantsChange={(variants) => patch({ variants })}
                       attributes={attributes}
                       attributesLoading={attributesLoading}
+                      productId={form.id}
                     />
                   </CardContent>
                 </Card>

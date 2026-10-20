@@ -12,6 +12,7 @@ import { buildProductPageMetadata } from '@/lib/catalog/product-metadata'
 import { parseVariantSkuQueryParam } from '@/lib/catalog/variant-query'
 import { fetchCommerceSettings } from '@/lib/commerce/fetch'
 import { applyCountrySiteOverlay } from '@/lib/country-sites/apply-overlay'
+import { isAppLocale } from '@/i18n/routing'
 import { localePath } from '@/lib/locale-path'
 import { buildPageAlternates } from '@/lib/seo/page-alternates'
 import { absoluteCatalogImages } from '@/lib/seo/product-json-ld'
@@ -55,7 +56,8 @@ export default async function ProductInCategoryPage({ params, searchParams }: Pa
   const { category: categorySlug, slug } = await params
   const query = await searchParams
   const initialVariantSku = parseVariantSkuQueryParam(query.variant)
-  const locale = await getLocale()
+  const rawLocale = await getLocale()
+  const locale = isAppLocale(rawLocale) ? rawLocale : 'uk'
 
   const productResult = await fetchCatalogProductBySlug(slug, locale)
   if (productResult.unavailable) {

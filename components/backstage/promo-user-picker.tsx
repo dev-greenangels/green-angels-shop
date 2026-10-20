@@ -43,10 +43,18 @@ export function PromoUserPicker({
   selectedIds,
   selectedUsers,
   onChange,
+  roleFilter,
+  maxSelected,
+  label,
 }: {
   selectedIds: string[]
   selectedUsers: PromoUserSummary[]
   onChange: (ids: string[], users: PromoUserSummary[]) => void
+  /** When set, only users with this role appear in search results. */
+  roleFilter?: BackstageUserListItem['role']
+  /** Cap selection count (e.g. 1 for preview client). */
+  maxSelected?: number
+  label?: string
 }) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -78,7 +86,10 @@ export function PromoUserPicker({
       if (requestIdRef.current !== requestId) return
 
       const filtered = Array.isArray(users)
-        ? users.filter((u) => !selectedIdsRef.current.includes(u.id)).slice(0, 12)
+        ? users
+            .filter((u) => !selectedIdsRef.current.includes(u.id))
+            .filter((u) => (roleFilter ? u.role === roleFilter : true))
+            .slice(0, 12)
         : []
 
       setResults(filtered)
@@ -96,7 +107,7 @@ export function PromoUserPicker({
         setLoading(false)
       }
     }
-  }, [])
+  }, [roleFilter])
 
   useEffect(() => {
     if (!open) return
@@ -108,16 +119,31 @@ export function PromoUserPicker({
 
   const addUser = (user: BackstageUserListItem) => {
     if (selectedIdsRef.current.includes(user.id)) return
-    onChange([...selectedIdsRef.current, user.id], [
-      ...selectedUsers,
-      {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        phone: user.phone,
-        email: user.email,
-      },
-    ])
+    const nextIds =
+      maxSelected === 1 ? [user.id] : [...selectedIdsRef.current, user.id]
+    const nextUsers =
+      maxSelected === 1
+        ? [
+            {
+              id: user.id,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              phone: user.phone,
+              email: user.email,
+            },
+          ]
+        : [
+            ...selectedUsers,
+            {
+              id: user.id,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              phone: user.phone,
+              email: user.email,
+            },
+          ]
+    if (maxSelected != null && maxSelected > 1 && nextIds.length > maxSelected) return
+    onChange(nextIds, nextUsers)
     setSearch('')
     setResults([])
     setSearchError(null)
@@ -141,7 +167,9 @@ export function PromoUserPicker({
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs">Конкретні користувачі (порожньо = за групами / усі)</Label>
+      <Label className="text-xs">
+        {label ?? 'Конкретні користувачі (порожньо = за групами / усі)'}
+      </Label>
 
       <Popover open={open} onOpenChange={handleOpenChange} modal={false}>
         <PopoverAnchor asChild>

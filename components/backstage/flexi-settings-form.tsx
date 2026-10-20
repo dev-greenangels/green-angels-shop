@@ -5,6 +5,7 @@ import { Loader2, RefreshCw } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
 import { FlexiAutoSyncCard } from '@/components/backstage/flexi-auto-sync-card'
+import { SalesPricesCoverageCard } from '@/components/backstage/sales-prices-coverage-card'
 import { FormSaveBar } from '@/components/backstage/form-save-bar'
 
 import { Button } from '@/components/ui/button'
@@ -752,7 +753,6 @@ export function FlexiSettingsForm() {
                   [
                     ['stock', 'Кількість на складі'],
                     ['prices', 'Роздрібна ціна'],
-                    ['quantityPrices', 'Оптові знижки за кількістю'],
                     ['weight', 'Вага'],
                     ['cnCode', 'CN / nomen код'],
                   ] as const
@@ -1106,6 +1106,8 @@ export function FlexiSettingsForm() {
           </div>
         </CardContent>
       </Card>
+
+      <SalesPricesCoverageCard />
 
       <Card>
         <CardHeader>

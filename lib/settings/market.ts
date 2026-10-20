@@ -143,6 +143,10 @@ export type MarketSettings = {
   storefrontPrimaryPrice: StorefrontPrimaryPrice
   /** Smaller secondary “without VAT” under the primary shelf price. */
   storefrontShowExVatSecondary: boolean
+  /** WHOLESALER base price source — PRODUCT_CARD (default) or ABRA Sales Prices. Retail ignores. */
+  priceSource: 'PRODUCT_CARD' | 'SALES_PRICES'
+  /** Flexi price-group kod for WHOLESALER when contractor has no override. */
+  salesPricesWholesalerGroupKod: string | null
 }
 
 export const DEFAULT_AUTH_CONSENT_TEXT =
@@ -269,6 +273,8 @@ export const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   priceBasis: 'inc_vat',
   storefrontPrimaryPrice: 'inc_vat',
   storefrontShowExVatSecondary: false,
+  priceSource: 'PRODUCT_CARD',
+  salesPricesWholesalerGroupKod: 'WHOLESALE',
 }
 
 const MARKET_REGIONS: MarketRegion[] = ['ua', 'sk']
@@ -279,7 +285,12 @@ const COUNTRY_SITE_CODES: CountrySiteCode[] = ['sk', 'hu', 'at']
 const COUNTRY_CURRENCIES: CountrySiteCurrency[] = ['EUR', 'HUF']
 const PRICE_BASES: PriceBasis[] = ['ex_vat', 'inc_vat']
 const STOREFRONT_PRIMARY_PRICES: StorefrontPrimaryPrice[] = ['inc_vat', 'ex_vat']
+const PRICE_SOURCES = ['PRODUCT_CARD', 'SALES_PRICES'] as const
 const SITE_LOCALES: AppLocale[] = ['uk', 'en', 'sk', 'hu', 'de', 'cs']
+
+function isPriceSource(value: unknown): value is 'PRODUCT_CARD' | 'SALES_PRICES' {
+  return typeof value === 'string' && (PRICE_SOURCES as readonly string[]).includes(value)
+}
 
 export function defaultPriceBasisForRegion(_region: MarketRegion): PriceBasis {
   // SK Flexi: Selling price including VAT → catalog stores gross.
@@ -788,5 +799,16 @@ export function normalizeMarketSettings(
       typeof raw?.storefrontShowExVatSecondary === 'boolean'
         ? raw.storefrontShowExVatSecondary
         : defaultStorefrontShowExVatSecondary(region),
+    priceSource: isPriceSource(raw?.priceSource)
+      ? raw.priceSource
+      : DEFAULT_MARKET_SETTINGS.priceSource,
+    salesPricesWholesalerGroupKod: (() => {
+      if (raw?.salesPricesWholesalerGroupKod === null) return null
+      if (typeof raw?.salesPricesWholesalerGroupKod === 'string') {
+        const trimmed = raw.salesPricesWholesalerGroupKod.trim()
+        return trimmed ? trimmed : null
+      }
+      return DEFAULT_MARKET_SETTINGS.salesPricesWholesalerGroupKod
+    })(),
   }
 }

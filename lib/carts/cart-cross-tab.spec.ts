@@ -70,18 +70,23 @@ describe('parseCartCrossTabEvent', () => {
 describe('publishCartCrossTabInvalidate', () => {
   beforeEach(() => {
     const store = new Map<string, string>()
-    // @ts-expect-error test double
-    globalThis.window = {
-      localStorage: {
-        removeItem: (key: string) => {
-          store.delete(key)
-        },
-        setItem: (key: string, value: string) => {
-          store.set(key, value)
-        },
-        getItem: (key: string) => store.get(key) ?? null,
+    const localStorage: Storage = {
+      get length() {
+        return store.size
       },
+      clear: () => {
+        store.clear()
+      },
+      key: (index: number) => [...store.keys()][index] ?? null,
+      removeItem: (key: string) => {
+        store.delete(key)
+      },
+      setItem: (key: string, value: string) => {
+        store.set(key, value)
+      },
+      getItem: (key: string) => store.get(key) ?? null,
     }
+    globalThis.window = { localStorage } as Window & typeof globalThis
   })
 
   it('writes only minimal invalidate payload (no cart items)', () => {

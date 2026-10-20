@@ -1,11 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import {
-  formatFreshPhotoDate,
-  formatFreshPhotoDateCompact,
-  isFreshPhotoQuantityPriceActive,
-} from './fresh-photo-card'
+import { formatFreshPhotoDate, formatFreshPhotoDateCompact } from './fresh-photo-card'
 
 /** Instant that is calendar 24 Aug UTC but already 25 Aug in Europe/Kyiv. */
 const PHOTO_TAKEN_AT = '2026-08-24T21:33:28.028Z'
@@ -74,25 +70,5 @@ describe('formatFreshPhotoDate — UTC calendar day (hydration-safe)', () => {
     }).format(new Date(PHOTO_TAKEN_AT))
     assert.equal(kyiv, '25. 8.')
     assert.notEqual(formatFreshPhotoDateCompact(PHOTO_TAKEN_AT, 'sk'), kyiv)
-  })
-})
-
-describe('isFreshPhotoQuantityPriceActive — UTC validTo day boundary', () => {
-  it('treats validTo as inclusive through end of UTC calendar day', () => {
-    const row = {
-      minQuantity: 3,
-      discountType: 'PERCENT' as const,
-      value: 10,
-      validFrom: null,
-      validTo: '2026-08-24T00:00:00.000Z',
-    }
-    assert.equal(
-      isFreshPhotoQuantityPriceActive(row, new Date('2026-08-24T21:33:28.028Z')),
-      true,
-    )
-    assert.equal(
-      isFreshPhotoQuantityPriceActive(row, new Date('2026-08-25T00:00:00.000Z')),
-      false,
-    )
   })
 })

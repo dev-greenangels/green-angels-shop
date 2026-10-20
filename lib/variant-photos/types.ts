@@ -39,12 +39,10 @@ export type CatalogPhotoItem = {
   stock?: number | null
   availableFrom?: string | null
   variantLabel?: string | null
-  quantityPrices?: Array<{
+  /** Server-resolved absolute unit prices when present (commercial ladder). */
+  priceTiers?: Array<{
     minQuantity: number
-    discountType: string
-    value: number
-    validFrom: string | null
-    validTo: string | null
+    unitPrice: number
   }>
 }
 

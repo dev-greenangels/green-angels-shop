@@ -44,7 +44,7 @@ describe('EU About bootstrap', () => {
     const result = decideEuAboutBootstrap('sk', {
       schemaVersion: ABOUT_SCHEMA_VERSION,
       euApprovedContentVersion: EU_APPROVED_ABOUT_CONTENT_VERSION,
-      byLocale: { sk: custom, ...approved },
+      byLocale: { ...approved, sk: custom },
     })
     assert.equal(result.action, 'noop')
   })

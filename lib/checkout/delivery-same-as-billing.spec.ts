@@ -78,8 +78,8 @@ function skPayload(form: CheckoutFormValues, slice = extractShipmentSlice(form))
     buyerType: 'individual',
     countryCode: 'sk',
     shipmentSlice: slice,
-    authPhonePolicy: 'e164_intl',
-    deliveryPhonePolicy: 'e164_intl',
+    authPhonePolicy: 'intl',
+    deliveryPhonePolicy: 'intl',
   })
 }
 

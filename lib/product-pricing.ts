@@ -13,11 +13,28 @@ export function getSingleUnitSaleTier(variant: ProductVariant): PriceTier | null
   return tier
 }
 
+/** Оптові пороги (від 2+ шт.) відносно basePrice. */
+export function getBulkPriceTiersFrom(
+  basePrice: number,
+  priceTiers: PriceTier[],
+  options?: { maxPurchasableQty?: number | null },
+): PriceTier[] {
+  const maxQty = options?.maxPurchasableQty
+  return [...priceTiers]
+    .filter((t) => t.minQuantity > 1 && t.pricePerUnit < basePrice - 0.001)
+    .filter((t) => {
+      if (maxQty == null || !Number.isFinite(maxQty)) return true
+      if (maxQty <= 0) return false
+      return t.minQuantity <= maxQty
+    })
+    .sort((a, b) => a.minQuantity - b.minQuantity)
+}
+
 /** Оптові пороги (від 2+ шт.) — список під основною ціною. */
 export function getBulkPriceTiers(variant: ProductVariant): PriceTier[] {
-  return [...variant.priceTiers]
-    .filter((t) => t.minQuantity > 1 && t.pricePerUnit < variant.basePrice)
-    .sort((a, b) => a.minQuantity - b.minQuantity)
+  return getBulkPriceTiersFrom(variant.basePrice, variant.priceTiers, {
+    maxPurchasableQty: variant.stock,
+  })
 }
 
 export type VariantDiscountLayout = 'none' | 'single-unit' | 'bulk'
@@ -28,13 +45,21 @@ export function getVariantDiscountLayout(variant: ProductVariant): VariantDiscou
   return 'none'
 }
 
+/** Ціна за одиницю з готової драбини (серверний ladder або Product Card tiers). */
+export function getUnitPriceForQuantityFrom(
+  basePrice: number,
+  priceTiers: PriceTier[],
+  quantity: number,
+): number {
+  if (quantity <= 0) return basePrice
+  const tiers = [...priceTiers].sort((a, b) => b.minQuantity - a.minQuantity)
+  const tier = tiers.find((t) => quantity >= t.minQuantity)
+  return tier?.pricePerUnit ?? basePrice
+}
+
 /** Ціна за одиницю для заданої кількості з урахуванням градації */
 export function getUnitPriceForQuantity(variant: ProductVariant, quantity: number): number {
-  if (quantity <= 0) return variant.basePrice
-
-  const tiers = [...variant.priceTiers].sort((a, b) => b.minQuantity - a.minQuantity)
-  const tier = tiers.find((t) => quantity >= t.minQuantity)
-  return tier?.pricePerUnit ?? variant.basePrice
+  return getUnitPriceForQuantityFrom(variant.basePrice, variant.priceTiers, quantity)
 }
 
 export function getLineTotal(variant: ProductVariant, quantity: number): number {

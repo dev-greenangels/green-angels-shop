@@ -28,7 +28,8 @@ export type CharacteristicOptionDraft = {
   label: string
   labelHint?: { locale: string; text: string } | null
   slug: string
-  colorHex: string
+  /** Empty string in the editor; null when persisting “no color”. */
+  colorHex: string | null
 }
 
 function useValueTypeLabel(valueType: CharacteristicDefinition['valueType']) {
@@ -133,7 +134,7 @@ export function CharacteristicEditor({
       return (
         row.label.trim() !== base.label.trim() ||
         row.slug.trim() !== base.slug.trim() ||
-        row.colorHex.trim() !== base.colorHex.trim() ||
+        (row.colorHex ?? '').trim() !== (base.colorHex ?? '').trim() ||
         row.id !== base.id
       )
     })
@@ -163,7 +164,7 @@ export function CharacteristicEditor({
           id: row.id,
           label: row.label,
           slug: row.slug,
-          colorHex: row.colorHex.trim() || null,
+          colorHex: (row.colorHex ?? '').trim() || null,
         })),
     })
   }
@@ -369,7 +370,7 @@ export function CharacteristicEditor({
                         />
                         {isColorType ? (
                           <ColorHexField
-                            value={row.colorHex}
+                            value={row.colorHex ?? ''}
                             onChange={(colorHex) => patchOption(row.key, { colorHex })}
                             compact
                           />
@@ -499,7 +500,7 @@ export function CreateCharacteristicOptionsList({
                 />
                 {isColorType ? (
                   <ColorHexField
-                    value={row.colorHex}
+                    value={row.colorHex ?? ''}
                     onChange={(colorHex) => patchOption(row.key, { colorHex })}
                     compact
                   />

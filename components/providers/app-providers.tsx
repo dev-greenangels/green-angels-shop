@@ -13,6 +13,7 @@ import { CartProvider } from './cart-provider'
 import { CommerceProvider } from './commerce-provider'
 import { CountrySiteProvider } from './country-site-provider'
 import { FavoritesProvider } from './favorites-provider'
+import { PersonalizedShelfPricesProvider } from './personalized-shelf-prices-provider'
 import { SessionProvider } from './session-provider'
 import { CatalogSettingsProvider } from './catalog-settings-provider'
 import { CatalogPathsProvider } from './catalog-paths-provider'
@@ -73,9 +74,11 @@ export function AppProviders({
         <CatalogPathsProvider catalogRootSlug={catalogRootSlug}>
         <CatalogSettingsProvider catalog={initialCatalogSettings}>
           <SessionProvider initialSession={initialSession}>
-            <CartProvider>
-              <FavoritesProvider>{children}</FavoritesProvider>
-            </CartProvider>
+            <PersonalizedShelfPricesProvider>
+              <CartProvider>
+                <FavoritesProvider>{children}</FavoritesProvider>
+              </CartProvider>
+            </PersonalizedShelfPricesProvider>
           </SessionProvider>
         </CatalogSettingsProvider>
         </CatalogPathsProvider>

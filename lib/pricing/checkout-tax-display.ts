@@ -5,7 +5,7 @@ export type CheckoutTaxRegime = 'seller' | 'destination' | 'reverse_charge'
 
 /** EU B2B reverse charge: company + valid VIES + non-SK VAT country. */
 export function isReverseChargeCheckout(
-  checkout?: CheckoutTotalsBreakdown | null,
+  checkout?: Pick<CheckoutTotalsBreakdown, 'taxRegime'> | null,
   quote?: Pick<PricingQuote, 'taxRegime'> | null,
 ): boolean {
   const regime = checkout?.taxRegime ?? quote?.taxRegime
@@ -18,7 +18,7 @@ export function isReverseChargeCheckout(
  * to B2C shelf rate when the API already resolved tax.
  */
 export function resolveCheckoutTaxRatePercent(
-  checkout: CheckoutTotalsBreakdown | null | undefined,
+  checkout: Pick<CheckoutTotalsBreakdown, 'taxRatePercent'> | null | undefined,
   quote: Pick<PricingQuote, 'taxRatePercent'> | null | undefined,
   fallbackShelfRate: number,
 ): number {

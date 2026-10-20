@@ -1,62 +1,21 @@
-import {
-  formatAvailableFromDisplay,
-  resolveDiscountUnitPrice,
-} from '@/lib/backstage/variant-pricing'
+import { formatAvailableFromDisplay } from '@/lib/backstage/variant-pricing'
 import { productHref } from '@/lib/catalog/paths'
 import { intlLocaleForApp } from '@/lib/i18n/intl-locale'
 import type { Plant, PriceTier, ProductVariant } from '@/lib/types'
 import type { CatalogPhotoItem } from '@/lib/variant-photos/types'
 import { resolveFreshPhotoThumbUrl } from '@/lib/variant-photos/fresh-photo-urls'
 
-type QuantityPriceRow = NonNullable<CatalogPhotoItem['quantityPrices']>[number]
-
-/** End of the UTC calendar day for a timestamp (inclusive validity window). */
-function endOfUtcCalendarDayMs(date: Date): number {
-  return Date.UTC(
-    date.getUTCFullYear(),
-    date.getUTCMonth(),
-    date.getUTCDate(),
-    23,
-    59,
-    59,
-    999,
-  )
-}
-
-/**
- * Quantity-price window check. Uses UTC calendar days for `validTo` so SSR (UTC)
- * and the browser cannot disagree on whether a tier is active at first paint.
- */
-export function isFreshPhotoQuantityPriceActive(
-  row: QuantityPriceRow,
-  now = new Date(),
-): boolean {
-  if (row.validFrom) {
-    const from = new Date(row.validFrom)
-    if (!Number.isNaN(from.getTime()) && now.getTime() < from.getTime()) return false
-  }
-  if (row.validTo) {
-    const to = new Date(row.validTo)
-    if (!Number.isNaN(to.getTime()) && now.getTime() > endOfUtcCalendarDayMs(to)) {
-      return false
-    }
-  }
-  return true
-}
-
-function mapPhotoPriceTiers(basePrice: number, quantityPrices: QuantityPriceRow[]): PriceTier[] {
-  return quantityPrices
-    .filter((row) => isFreshPhotoQuantityPriceActive(row))
-    .sort((a, b) => a.minQuantity - b.minQuantity)
+/** Map server priceTiers when present; otherwise empty (shelf provider overlays wholesale). */
+function mapPhotoPriceTiers(
+  rows: CatalogPhotoItem['priceTiers'] | undefined,
+): PriceTier[] {
+  return (rows ?? [])
+    .filter((row) => row.minQuantity > 0 && row.unitPrice > 0)
     .map((row) => ({
       minQuantity: row.minQuantity,
-      pricePerUnit: resolveDiscountUnitPrice(
-        basePrice,
-        row.discountType === 'PERCENT' ? 'percent' : 'fixed_price',
-        row.value,
-      ),
+      pricePerUnit: row.unitPrice,
     }))
-    .filter((tier) => tier.pricePerUnit > 0 && tier.pricePerUnit < basePrice)
+    .sort((a, b) => a.minQuantity - b.minQuantity)
 }
 
 export function getPhotoTakenAt(photo: Pick<CatalogPhotoItem, 'appProperties' | 'createdAt'>): string | null {
@@ -113,7 +72,7 @@ export function catalogPhotoToVariant(photo: CatalogPhotoItem): ProductVariant |
     label: photo.variantLabel || photo.appProperties.plantSize || '',
     stock: photo.stock ?? 0,
     basePrice,
-    priceTiers: mapPhotoPriceTiers(basePrice, photo.quantityPrices ?? []),
+    priceTiers: mapPhotoPriceTiers(photo.priceTiers),
     availableFrom: formatAvailableFromDisplay(photo.availableFrom),
   }
 }

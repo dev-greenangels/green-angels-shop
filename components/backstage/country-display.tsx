@@ -11,6 +11,8 @@ type CountryDisplayProps = {
   locale?: BackstageCountryLocale
   /** compact = table cells; normal = detail views */
   variant?: 'compact' | 'normal'
+  /** When false, show only flag + ISO code (full name stays in title/aria). */
+  showName?: boolean
   className?: string
   emptyLabel?: string
 }
@@ -19,6 +21,7 @@ export function CountryDisplay({
   code,
   locale = 'en',
   variant = 'normal',
+  showName = true,
   className,
   emptyLabel = '—',
 }: CountryDisplayProps) {
@@ -43,7 +46,9 @@ export function CountryDisplay({
         </span>
       ) : null}
       <span className="font-medium tracking-wide">{formatted.code}</span>
-      <span className="text-muted-foreground">· {formatted.name}</span>
+      {showName ? (
+        <span className="text-muted-foreground">· {formatted.name}</span>
+      ) : null}
     </span>
   )
 }

@@ -16,6 +16,7 @@ import { NotifyAvailabilityButton } from '@/components/product/notify-availabili
 import { NotifyWhenAvailableModal } from '@/components/product/notify-when-available-modal'
 import { ShipmentDateBadge } from '@/components/product/shipment-date-badge'
 import { useDefaultCurrency } from '@/components/providers/commerce-provider'
+import { useVariantDisplayPricing } from '@/components/providers/personalized-shelf-prices-provider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,10 +35,8 @@ import {
   variantHasAvailableFrom,
 } from '@/lib/plant-variants'
 import {
-  getBulkPriceTiers,
   getPlantMaxDiscountPercent,
   getSingleUnitSaleTier,
-  getUnitPriceForQuantity,
 } from '@/lib/product-pricing'
 import { cn } from '@/lib/utils'
 import { useVariantPhotos } from '@/lib/variant-photos/use-variant-photos'
@@ -98,7 +97,8 @@ function CatalogVariantDiscountChips({
   onTierClick?: (minQuantity: number) => void
 }) {
   const cart = useTranslations('cart')
-  const tiers = useMemo(() => getBulkPriceTiers(variant), [variant])
+  const pricing = useVariantDisplayPricing(variant)
+  const tiers = pricing.bulkTiers
   if (!tiers.length) return null
 
   return (
@@ -144,7 +144,7 @@ function CatalogListProductImage({
 }: {
   plant: Plant
   variant?: ProductVariant
-  discountPercent: number
+  discountPercent: number | null
   showBadges: boolean
 }) {
   const t = useTranslations('product')
@@ -291,8 +291,16 @@ function CatalogProductVariantRow({
   const canOrder = canOrderVariant(variant)
   const preorder = isVariantPreorder(variant)
   const hasShipment = variantHasAvailableFrom(variant) && Boolean(variant.availableFrom)
-  const singleUnitSale = getSingleUnitSaleTier(variant)
-  const salePrice = singleUnitSale?.pricePerUnit ?? variant.basePrice
+  const displayPricing = useVariantDisplayPricing(variant)
+  const displayBase = displayPricing.basePrice
+  const singleUnitSale = getSingleUnitSaleTier({
+    ...variant,
+    basePrice: displayPricing.basePrice,
+    priceTiers: displayPricing.priceTiers,
+  })
+  const salePrice = singleUnitSale?.pricePerUnit ?? displayBase
+  // Retail SSR base as "was" only when personalized/sale is strictly lower.
+  const originalPrice = salePrice < variant.basePrice - 0.001 ? variant.basePrice : displayBase
 
   const inCart = useMemo(
     () => cartItems.find((item) => item.plant.id === plant.id && item.variantId === variant.id)?.quantity ?? 0,
@@ -364,7 +372,8 @@ function CatalogProductVariantRow({
   }
 
   const targetQuantity = inCart + quantity
-  const unitPrice = getUnitPriceForQuantity(variant, targetQuantity)
+  // Server ladder when Sales Prices active; else Product Card tiers. Cart/checkout re-quote.
+  const unitPrice = displayPricing.getUnitPrice(targetQuantity)
   const atCartMax = maxAddable <= 0 && inCart > 0
   const hasPartialInCart = inCart > 0 && !atCartMax
 
@@ -553,7 +562,7 @@ function CatalogProductVariantRow({
             <div className="flex shrink-0 flex-col items-end justify-center gap-1.5">
               <PriceWithExVatUnder storedAmount={salePrice} align="end" className="gap-0 leading-none">
                 <DiscountedUnitPrice
-                  originalPrice={variant.basePrice}
+                  originalPrice={originalPrice}
                   salePrice={salePrice}
                   perUnit="sale-only"
                   unitSymbol={variant.salesUnitSymbol}
@@ -603,7 +612,7 @@ function CatalogProductVariantRow({
           className="shrink-0 gap-0 leading-none"
         >
           <DiscountedUnitPrice
-            originalPrice={variant.basePrice}
+            originalPrice={originalPrice}
             salePrice={salePrice}
             perUnit="sale-only"
             unitSymbol={variant.salesUnitSymbol}

@@ -25,6 +25,9 @@ export type BackstageOrderListItem = {
   customerEmail: string | null
   itemCount: number
   trackingNumber?: string | null
+  /** ISO 3166-1 alpha-2 delivery country snapshot. */
+  deliveryCountryCode?: string | null
+  paymentMethod?: string | null
   createdAt: string
 }
 

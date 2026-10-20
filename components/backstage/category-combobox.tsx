@@ -21,6 +21,8 @@ export type CategoryOption = {
   id: string
   name: string
   depth: number
+  /** Present when flattened from a tree — used by mass category pickers to prune descendants. */
+  parentId?: string | null
 }
 
 export function CategoryCombobox({

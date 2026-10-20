@@ -33,7 +33,8 @@ type ProductCardAddToCartDialogProps = {
   onOpenChange: (open: boolean) => void
 }
 
-function plantHasVisibleVariants(value: Plant | null | undefined): value is Plant {
+/** Not a type predicate — must not narrow `Plant` props to `never` when false. */
+function plantHasVisibleVariants(value: Plant | null | undefined): boolean {
   return Boolean(value && getVisiblePlantVariants(value).length > 0)
 }
 

@@ -28,11 +28,13 @@ import {
 } from '@/lib/backstage/variant-attributes'
 import { VariantPricingExtras } from '@/components/backstage/variant-pricing-extras'
 import { SalesUnitSelect } from '@/components/backstage/sales-unit-select'
+import { useDefaultCurrency } from '@/components/providers/commerce-provider'
 import {
   createVariantDraft,
   type PricingMode,
   type ProductVariantDraft,
 } from '@/lib/backstage/product-form'
+import { formatBasePriceLabel } from '@/lib/backstage/product-variant-pricing'
 import { cn } from '@/lib/utils'
 
 const pricingModeOptionClassName = cn(
@@ -233,6 +235,7 @@ function VariantAccordionItem({
   attributes,
   expanded,
   canRemove,
+  productId,
   onToggle,
   onChange,
   onRemove,
@@ -242,12 +245,17 @@ function VariantAccordionItem({
   attributes: VariantAttribute[]
   expanded: boolean
   canRemove: boolean
+  productId?: string | null
   onToggle: () => void
   onChange: (patch: Partial<ProductVariantDraft>) => void
   onRemove: () => void
 }) {
   const tp = useTranslations('pricing')
   const th = useTranslations('hints')
+  const currency = useDefaultCurrency()
+  const priceLabel = tp('basePriceWithCurrency', {
+    currency: formatBasePriceLabel(currency.code, currency.symbol),
+  })
   const label = buildVariantLabel(attributes, variant.selections)
   const displayLabel = label || tp('variantSelectSizes', { n: index + 1 })
   const stockCount =
@@ -329,7 +337,7 @@ function VariantAccordionItem({
           {expanded ? (
           <div
             className="space-y-4 overflow-y-auto overscroll-contain border-t border-border/60 px-4 py-4 [overflow-anchor:none]"
-            style={{ maxHeight: '28rem' }}
+            style={{ maxHeight: '40rem' }}
           >
           {attributes.length === 0 ? (
             <p className="text-sm text-muted-foreground">
@@ -368,7 +376,7 @@ function VariantAccordionItem({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`variant-price-${variant.clientId}`}>{tp('basePrice')}</Label>
+              <Label htmlFor={`variant-price-${variant.clientId}`}>{priceLabel}</Label>
               <Input
                 id={`variant-price-${variant.clientId}`}
                 type="number"
@@ -377,6 +385,7 @@ function VariantAccordionItem({
                 value={variant.price}
                 onChange={(e) => onChange({ price: e.target.value })}
               />
+              <p className="text-[11px] text-muted-foreground">{tp('basePriceHint')}</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor={`variant-stock-${variant.clientId}`}>{tp('inStock')}</Label>
@@ -464,9 +473,10 @@ function VariantAccordionItem({
           <VariantPricingExtras
             idPrefix={`variant-${variant.clientId}`}
             availableFrom={variant.availableFrom}
-            quantityPrices={variant.quantityPrices}
             onAvailableFromChange={(availableFrom) => onChange({ availableFrom })}
-            onQuantityPricesChange={(quantityPrices) => onChange({ quantityPrices })}
+            productId={productId}
+            variantId={variant.id}
+            variantLabel={buildVariantLabel(attributes, variant.selections) || variant.sku || '—'}
           />
           </div>
           ) : null}
@@ -480,11 +490,13 @@ function VariantAccordionList({
   variants,
   attributes,
   attributesLoading,
+  productId,
   onVariantsChange,
 }: {
   variants: ProductVariantDraft[]
   attributes: VariantAttribute[]
   attributesLoading?: boolean
+  productId?: string | null
   onVariantsChange: (variants: ProductVariantDraft[]) => void
 }) {
   const tp = useTranslations('pricing')
@@ -528,6 +540,7 @@ function VariantAccordionList({
             attributes={attributes}
             expanded={expandedId === variant.clientId}
             canRemove={variants.length > 1}
+            productId={productId}
             onToggle={() =>
               setExpandedId((prev) => (prev === variant.clientId ? null : variant.clientId))
             }
@@ -555,6 +568,7 @@ export function ProductPricingSection({
   onVariantsChange,
   attributes,
   attributesLoading,
+  productId,
 }: {
   pricingMode: PricingMode
   simpleSku: string
@@ -569,8 +583,13 @@ export function ProductPricingSection({
   onVariantsChange: (variants: ProductVariantDraft[]) => void
   attributes: VariantAttribute[]
   attributesLoading?: boolean
+  productId?: string | null
 }) {
   const tp = useTranslations('pricing')
+  const currency = useDefaultCurrency()
+  const priceLabel = tp('basePriceWithCurrency', {
+    currency: formatBasePriceLabel(currency.code, currency.symbol),
+  })
   const simpleVariant = variants[0] ?? createVariantDraft()
 
   const patchSimpleVariant = (patch: Partial<ProductVariantDraft>) => {
@@ -600,7 +619,7 @@ export function ProductPricingSection({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="simple-price">{tp('basePrice')}</Label>
+            <Label htmlFor="simple-price">{priceLabel}</Label>
             <Input
               id="simple-price"
               type="number"
@@ -610,6 +629,7 @@ export function ProductPricingSection({
               onChange={(e) => onSimpleChange('simplePrice', e.target.value)}
               placeholder="0.00"
             />
+            <p className="text-[11px] text-muted-foreground">{tp('basePriceHint')}</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="simple-stock">{tp('inStock')}</Label>
@@ -688,9 +708,10 @@ export function ProductPricingSection({
             <VariantPricingExtras
               idPrefix="simple"
               availableFrom={simpleVariant.availableFrom}
-              quantityPrices={simpleVariant.quantityPrices}
               onAvailableFromChange={(availableFrom) => patchSimpleVariant({ availableFrom })}
-              onQuantityPricesChange={(quantityPrices) => patchSimpleVariant({ quantityPrices })}
+              productId={productId}
+              variantId={simpleVariant.id}
+              variantLabel={tp('simpleProduct')}
             />
           </div>
         </div>
@@ -699,6 +720,7 @@ export function ProductPricingSection({
           variants={variants}
           attributes={attributes}
           attributesLoading={attributesLoading}
+          productId={productId}
           onVariantsChange={onVariantsChange}
         />
       )}

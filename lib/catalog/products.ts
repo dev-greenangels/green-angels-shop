@@ -44,6 +44,8 @@ export type CatalogProductsPageMeta = {
   page: number
   pageSize: number
   totalPages: number
+  /** Stable «Акції» qty chips from Nest (independent of current page). */
+  discountQuantityBreakpoints?: number[]
 }
 
 export type CatalogProductsPageResult = {
@@ -57,6 +59,7 @@ type PaginatedCatalogResponse = {
   page: number
   pageSize: number
   totalPages: number
+  discountQuantityBreakpoints?: number[]
 }
 
 const EMPTY_PAGE_RESULT: CatalogProductsPageResult = {
@@ -129,6 +132,11 @@ function toPageResult(
   requestedPage: number,
   pageSize: number,
 ): CatalogProductsPageResult {
+  const breakpoints = Array.isArray(data.discountQuantityBreakpoints)
+    ? data.discountQuantityBreakpoints
+        .map((value) => Math.max(1, Math.floor(Number(value))))
+        .filter((value) => Number.isFinite(value))
+    : undefined
   return {
     plants: data.items.map(mapListItemToPlant),
     meta: {
@@ -136,6 +144,7 @@ function toPageResult(
       page: data.page ?? requestedPage,
       pageSize: data.pageSize ?? pageSize,
       totalPages: data.totalPages ?? Math.max(1, Math.ceil(data.total / pageSize)),
+      ...(breakpoints ? { discountQuantityBreakpoints: breakpoints } : {}),
     },
   }
 }

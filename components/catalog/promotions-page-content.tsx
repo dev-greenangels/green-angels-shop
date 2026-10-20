@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Sparkles, Tags } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { CatalogSortControl } from '@/components/catalog/catalog-sort-control'
 import {
@@ -24,6 +25,10 @@ import {
 } from '@/components/layout/sticky-toolbar-shell'
 import { LISTING_PRODUCT_GRID_CLASS_NAME } from '@/lib/catalog/grid-columns'
 import type { CatalogProductsPageMeta } from '@/lib/catalog/products'
+import {
+  buildPromotionsSearchParams,
+  parsePromotionsQtyParam,
+} from '@/lib/catalog/promotions-url'
 import { useCatalogViewMode } from '@/lib/catalog/view-mode'
 import {
   siteContentShellClassName,
@@ -32,7 +37,6 @@ import {
   siteStickyToolbarOuterClassName,
 } from '@/lib/layout/site-shell'
 import { formatNumberForLocale } from '@/lib/i18n/intl-locale'
-import { getVisiblePlantVariants } from '@/lib/plant-variants'
 import { cn } from '@/lib/utils'
 
 export function PromotionsPageContent() {
@@ -41,19 +45,97 @@ export function PromotionsPageContent() {
   const tNav = useTranslations('nav')
   const cart = useTranslations('cart')
   const catalogHref = useCatalogHref()
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const selectedQty = useMemo(
+    () => parsePromotionsQtyParam(searchParams.get('qty')),
+    [searchParams],
+  )
+
   const [meta, setMeta] = useState<CatalogProductsPageMeta | null>(null)
-  const [selectedDiscountTier, setSelectedDiscountTier] = useState<number | null>(null)
-  const [tierOptions, setTierOptions] = useState<number[]>([])
   const [sortBy, setSortBy] = useState('name')
   const { viewMode, setViewMode } = useCatalogViewMode()
+
+  const tierOptions = meta?.discountQuantityBreakpoints ?? []
+
+  const setSelectedQty = useCallback(
+    (nextQty: number | null) => {
+      const query = buildPromotionsSearchParams(searchParams, nextQty)
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+    },
+    [pathname, router, searchParams],
+  )
+
+  const handleMetaChange = useCallback((next: CatalogProductsPageMeta) => {
+    setMeta((prev) => {
+      const prevBreakpoints = prev?.discountQuantityBreakpoints ?? []
+      const nextBreakpoints = next.discountQuantityBreakpoints ?? prevBreakpoints
+      const breakpointsUnchanged =
+        prevBreakpoints.length === nextBreakpoints.length &&
+        prevBreakpoints.every((value, index) => value === nextBreakpoints[index])
+      if (
+        prev &&
+        prev.total === next.total &&
+        prev.page === next.page &&
+        prev.pageSize === next.pageSize &&
+        prev.totalPages === next.totalPages &&
+        breakpointsUnchanged
+      ) {
+        return prev
+      }
+      return {
+        ...next,
+        discountQuantityBreakpoints: nextBreakpoints,
+      }
+    })
+  }, [])
 
   const queryParams = useMemo(
     () => ({
       hasDiscount: true,
-      ...(selectedDiscountTier ? { discountMinQuantity: selectedDiscountTier } : {}),
-      ...(selectedDiscountTier ? { discountQuantityMode: 'exact' as const } : {}),
+      ...(selectedQty != null ? { discountMinQuantity: selectedQty } : {}),
     }),
-    [selectedDiscountTier],
+    [selectedQty],
+  )
+
+  const chipRow = (
+    <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <Button
+        type="button"
+        size="sm"
+        className={cn(
+          'h-8 shrink-0 gap-1 rounded-full px-2.5 text-[11px] leading-none border-primary/30',
+          selectedQty == null
+            ? 'bg-primary-gradient text-primary-foreground'
+            : 'bg-background text-foreground hover:bg-primary/10',
+        )}
+        variant="outline"
+        onClick={() => setSelectedQty(null)}
+      >
+        <Sparkles className="h-3 w-3" />
+        {t('promotionsFilterAll')}
+      </Button>
+      {tierOptions.map((tier) => (
+        <Button
+          key={tier}
+          type="button"
+          size="sm"
+          className={cn(
+            'h-8 shrink-0 gap-1 rounded-full px-2.5 text-[11px] leading-none border-primary/30',
+            selectedQty === tier
+              ? 'bg-primary-gradient text-primary-foreground'
+              : 'bg-background text-foreground hover:bg-primary/10',
+          )}
+          variant="outline"
+          onClick={() => setSelectedQty(tier)}
+        >
+          <Tags className="h-3 w-3" />
+          {cart('fromQty', { count: tier })}
+        </Button>
+      ))}
+    </div>
   )
 
   return (
@@ -85,41 +167,7 @@ export function PromotionsPageContent() {
           <div className={cn(siteStickyToolbarOuterClassName, 'hidden lg:block')}>
             <div className={siteStickyToolbarInnerClassName}>
               <CatalogViewModeToggle value={viewMode} onChange={setViewMode} />
-              <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <Button
-                  type="button"
-                  size="sm"
-                  className={cn(
-                    'h-8 shrink-0 gap-1 rounded-full px-2.5 text-[11px] leading-none border-primary/30',
-                    selectedDiscountTier == null
-                      ? 'bg-primary-gradient text-primary-foreground'
-                      : 'bg-background text-foreground hover:bg-primary/10',
-                  )}
-                  variant="outline"
-                  onClick={() => setSelectedDiscountTier(null)}
-                >
-                  <Sparkles className="h-3 w-3" />
-                  {t('promotionsFilterAll')}
-                </Button>
-                {tierOptions.map((tier) => (
-                  <Button
-                    key={tier}
-                    type="button"
-                    size="sm"
-                    className={cn(
-                      'h-8 shrink-0 gap-1 rounded-full px-2.5 text-[11px] leading-none border-primary/30',
-                      selectedDiscountTier === tier
-                        ? 'bg-primary-gradient text-primary-foreground'
-                        : 'bg-background text-foreground hover:bg-primary/10',
-                    )}
-                    variant="outline"
-                    onClick={() => setSelectedDiscountTier(tier)}
-                  >
-                    <Tags className="h-3 w-3" />
-                    {cart('fromQty', { count: tier })}
-                  </Button>
-                ))}
-              </div>
+              {chipRow}
               <div className={siteStickyToolbarControlsClusterClassName}>
                 <CatalogSortControl sortBy={sortBy} onSortChange={setSortBy} withShell={false} />
               </div>
@@ -129,41 +177,7 @@ export function PromotionsPageContent() {
           <StickyToolbarShell className="lg:hidden">
             <StickyToolbarRow>
               <CatalogViewModeToggle value={viewMode} onChange={setViewMode} />
-              <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <Button
-                  type="button"
-                  size="sm"
-                  className={cn(
-                    'h-8 shrink-0 gap-1 rounded-full px-2.5 text-[11px] leading-none border-primary/30',
-                    selectedDiscountTier == null
-                      ? 'bg-primary-gradient text-primary-foreground'
-                      : 'bg-background text-foreground hover:bg-primary/10',
-                  )}
-                  variant="outline"
-                  onClick={() => setSelectedDiscountTier(null)}
-                >
-                  <Sparkles className="h-3 w-3" />
-                  {t('promotionsFilterAll')}
-                </Button>
-                {tierOptions.map((tier) => (
-                  <Button
-                    key={tier}
-                    type="button"
-                    size="sm"
-                    className={cn(
-                      'h-8 shrink-0 gap-1 rounded-full px-2.5 text-[11px] leading-none border-primary/30',
-                      selectedDiscountTier === tier
-                        ? 'bg-primary-gradient text-primary-foreground'
-                        : 'bg-background text-foreground hover:bg-primary/10',
-                    )}
-                    variant="outline"
-                    onClick={() => setSelectedDiscountTier(tier)}
-                  >
-                    <Tags className="h-3 w-3" />
-                    {cart('fromQty', { count: tier })}
-                  </Button>
-                ))}
-              </div>
+              {chipRow}
               <div className={cn(siteStickyToolbarControlsClusterClassName, 'pl-1.5')}>
                 <CatalogSortSheet sortBy={sortBy} onSortChange={setSortBy} variant="icon" />
               </div>
@@ -179,34 +193,10 @@ export function PromotionsPageContent() {
             syncPageToUrl
             gridClassName={LISTING_PRODUCT_GRID_CLASS_NAME}
             viewMode={viewMode}
-            onMetaChange={setMeta}
-            onProductsChange={(plants) => {
-              const nextOptions = new Set<number>()
-              for (const plant of plants) {
-                for (const variant of getVisiblePlantVariants(plant)) {
-                  for (const tier of variant.priceTiers) {
-                    if (tier.pricePerUnit < variant.basePrice) {
-                      nextOptions.add(Math.max(1, Math.floor(tier.minQuantity)))
-                    }
-                  }
-                }
-              }
-              const sorted = [...nextOptions].sort((a, b) => a - b)
-              setTierOptions((prev) =>
-                prev.length === sorted.length && prev.every((value, index) => value === sorted[index])
-                  ? prev
-                  : sorted,
-              )
-              if (
-                selectedDiscountTier != null &&
-                !nextOptions.has(selectedDiscountTier)
-              ) {
-                setSelectedDiscountTier(null)
-              }
-            }}
+            onMetaChange={handleMetaChange}
             listDiscountFilter={
-              selectedDiscountTier
-                ? { minQuantity: selectedDiscountTier, mode: 'exact' }
+              selectedQty != null
+                ? { minQuantity: selectedQty, mode: 'gte' }
                 : undefined
             }
             emptyMessage={t('promotionsEmpty')}

@@ -37,6 +37,7 @@ import {
 import {
   getPlantMaxDiscountPercent,
   getSingleUnitSaleTier,
+  getUnitPriceForQuantity,
 } from '@/lib/product-pricing'
 import { cn } from '@/lib/utils'
 import { useVariantPhotos } from '@/lib/variant-photos/use-variant-photos'
@@ -52,11 +53,8 @@ function variantMatchesDiscountFilter(
   discountFilter?: CatalogDiscountQuantityFilter,
 ): boolean {
   if (!discountFilter) return true
-  return variant.priceTiers.some((tier) => {
-    if (tier.pricePerUnit >= variant.basePrice) return false
-    if (discountFilter.mode === 'exact') return tier.minQuantity === discountFilter.minQuantity
-    return tier.minQuantity >= discountFilter.minQuantity
-  })
+  // «at qty N» — unit price at N below base (tier-from-5 counts at qty 10).
+  return getUnitPriceForQuantity(variant, discountFilter.minQuantity) < variant.basePrice - 0.001
 }
 
 

@@ -207,6 +207,8 @@ describe('merchant item mapping', () => {
     storefrontPrimaryPrice: 'inc_vat',
     applyDestinationVatB2c: false,
     eurToHufRate: 400,
+    // Production gate off by default; enable for HUF feed assertions.
+    huHufPaymentsEnabled: true,
   })
 
   it('emits SKU id/mpn, brand, no gtin, shared group, variant links', () => {

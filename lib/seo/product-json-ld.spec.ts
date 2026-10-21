@@ -275,7 +275,7 @@ describe('ProductGroup JSON-LD — multi-variant', () => {
     const json = buildProductStructuredData({
       plant: basePlant,
       productUrl: 'https://green-angels.sk/sk/thuja/thuja-smaragd',
-      locale: 'sk',
+      locale: 'uk',
       brand: 'Green Angels',
       images,
       ctx: uaCtx,
@@ -285,5 +285,30 @@ describe('ProductGroup JSON-LD — multi-variant', () => {
     for (const variant of variants) {
       assert.deepEqual(variant.image, images)
     }
+  })
+
+  it('Offer.price uses qty=1 basePrice, not bulk-tier minimum', () => {
+    const plant = {
+      ...basePlant,
+      variants: [
+        {
+          ...basePlant.variants![0],
+          basePrice: 10,
+          priceTiers: [
+            { minQuantity: 5, pricePerUnit: 8 },
+            { minQuantity: 20, pricePerUnit: 6 },
+          ],
+        },
+      ],
+    }
+    const json = buildProductStructuredData({
+      plant,
+      productUrl: 'https://landshaft.info/uk/thuja/slug',
+      locale: 'uk',
+      brand: 'Green Angels',
+      ctx: uaCtx,
+    })
+    const offers = json!.offers as Record<string, unknown>
+    assert.equal(offers.price, 10)
   })
 })

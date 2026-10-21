@@ -131,6 +131,16 @@ export async function updateBackstageMarketSettings(
   return res.json()
 }
 
+/** Informational NBS/ECB HUF reference — does not change the manual commercial rate. */
+export async function checkBackstageNbsEurHufRate(): Promise<MarketSettings> {
+  const res = await fetch('/api/backstage/settings/market/check-nbs-eur-huf', {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json()
+}
+
 export async function updateBackstageWholesalePageSettings(
   payload: Partial<import('@/lib/settings/wholesale').WholesalePageSettings>,
 ): Promise<import('@/lib/settings/wholesale').WholesalePageSettings> {

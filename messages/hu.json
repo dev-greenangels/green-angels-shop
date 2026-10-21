@@ -499,8 +499,8 @@
     "checkout": "Pénztár",
     "checkoutGdpr": "Rendelés leadása",
     "createAccount": "Hozzon létre fiókot a gyorsabb következő pénztárhoz",
-    "privacyConsent": "Elfogadom az <privacy>adatvédelmi irányelveket</privacy> és a <terms>felhasználási feltételeket</terms>.",
-    "privacyConsentRequired": "A rendelés leadásához el kell fogadnia a feltételeket és az adatkezelést.",
+    "privacyConsent": "Elfogadom az <terms>Általános Szerződési Feltételeket (ÁSZF)</terms>, és megismertem az <privacy>Adatvédelmi tájékoztatót</privacy>.",
+    "privacyConsentRequired": "A rendelés leadásához el kell fogadnia az ÁSZF-et, és meg kell ismernie az Adatvédelmi tájékoztatót.",
     "inStock": "Raktáron: {count} db",
     "maxQty": "Max. {count} db",
     "inStockOnly": "Csak {count} db van raktáron",
@@ -543,7 +543,7 @@
       "withoutVat": "ÁFA nélkül",
       "codFee": "Utánvét díj",
       "withoutDelivery": "Részösszeg szállítás nélkül",
-      "vatOfWhich": "ebből ÁFA ({rate}%)",
+      "vatOfWhich": "Ebből ÁFA",
       "paidWithoutVat": "Összesen ÁFA nélkül",
       "deliveryUnavailable": "A szállítást nem lehet kiszámítani",
       "deliveryUnavailableMissingWeight": "A kosárban van súly nélküli tétel — válasszon személyes átvételt, vagy lépjen kapcsolatba a bolttal.",
@@ -1552,7 +1552,7 @@
   },
   "returnsPage": {
     "title": "Visszaküldés és elállás a szerződéstől",
-    "intro": "Tájékoztató a termék visszaküldéséről, a 14 napos elállási jogról és a reklamációs eljárásról a 108/2024 Z. z. törvény szerint.",
+    "intro": "Tájékoztató a 14 napos elállási jogról, a termék visszaküldéséről, a szállítási sérülésről és a reklamációról. Az elállás, a szállítási kár és a hibás teljesítés miatti reklamáció nem ugyanaz: azokat az alábbiakban és az ÁSZF-ben külön ismertetjük.",
     "section2Title": "Online elállás a szerződéstől",
     "section2Intro": "Bejelentkezés nélkül elektronikusan benyújthatja elállási nyilatkozatát. A beküldés a nyilatkozat rögzítését jelenti — nem automatikus jóváhagyást vagy visszatérítést.",
     "section3Title": "Mintanyomtatvány elálláshoz",
@@ -1624,7 +1624,7 @@
     "payments": {
       "card-online": {
         "title": "Online bankkártyás fizetés",
-        "description": "Rendelését biztonságosan kifizetheti online bankkártyával. A bankkártyás fizetés elérhetősége és a fizetés pénzneme a rendelési folyamat során jelenik meg."
+        "description": "Rendelését biztonságosan kifizetheti online bankkártyával a Stripe rendszerén keresztül. A fizetés pénzneme és a fizetendő végösszeg a pénztárban, a megrendelés megerősítése előtt jelenik meg."
       },
       "bank-transfer": {
         "title": "Banki átutalás",
@@ -1857,7 +1857,7 @@
       "footnote": "(*) A nem megfelelő részeket húzza ki.",
       "print": "Nyomtatás",
       "nonSkTitle": "Tájékoztató fordítás",
-      "nonSkBody": "A 108/2024 Z. z. törvény 2. melléklete szerinti hivatalos szlovák minta a szlovák jog szerinti szerződésekre vonatkozik. Más jogrend esetén használja a fenti online nyilatkozatot."
+      "nonSkBody": "Az online elállási nyilatkozat és a mintanyomtatvány a fogyasztói elállás bejelentésére szolgál. A visszatérítésre, a termék visszaküldésére és az elállás további jogkövetkezményeire a hatályos fogyasztóvédelmi szabályok, valamint az ÁSZF vonatkozó rendelkezései irányadók."
     }
   },
   "faq": {

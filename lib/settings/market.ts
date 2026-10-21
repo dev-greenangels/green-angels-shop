@@ -128,6 +128,16 @@ export type MarketSettings = {
   /** EUR → HUF multiplier for HU domain display/checkout */
   eurToHufRate: number
   /**
+   * When false, HU cannot use HUF for payable/checkout/Stripe/feed presentment.
+   * Default false until Stripe HUF path is verified in production.
+   */
+  huHufPaymentsEnabled: boolean
+  eurToHufReferenceRate: number | null
+  eurToHufReferenceRateDate: string | null
+  eurToHufReferenceCheckedAt: string | null
+  eurToHufReferenceSource: 'nbs_ecb' | null
+  eurToHufReferenceLastError: string | null
+  /**
    * OSS: when true, B2C uses destination-country VAT; when false — seller (SK) rate.
    * Enable after EU €10k distance-sales threshold.
    */
@@ -268,6 +278,12 @@ export const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   deliveryCountryCatalog: [],
   domainDeliveryCountries: { sk: [], hu: [], at: [] },
   eurToHufRate: 400,
+  huHufPaymentsEnabled: false,
+  eurToHufReferenceRate: null,
+  eurToHufReferenceRateDate: null,
+  eurToHufReferenceCheckedAt: null,
+  eurToHufReferenceSource: null,
+  eurToHufReferenceLastError: null,
   applyDestinationVatB2c: false,
   sellerTaxRatePercent: 23,
   priceBasis: 'inc_vat',
@@ -398,11 +414,12 @@ function normalizeCountrySiteProfile(
       : locales[0]!
     : defaultFromCode.defaultLocale
 
-  const currency =
+  let currency =
     typeof obj.currency === 'string' &&
     COUNTRY_CURRENCIES.includes(obj.currency as CountrySiteCurrency)
       ? (obj.currency as CountrySiteCurrency)
       : defaultFromCode.currency
+  if (code === 'sk' || code === 'at') currency = 'EUR'
 
   return {
     code,
@@ -435,6 +452,16 @@ function normalizeCountrySites(raw: unknown, region: MarketRegion): CountrySiteP
 
   return DEFAULT_COUNTRY_SITES.map((fallback) =>
     normalizeCountrySiteProfile(byCode.get(fallback.code), fallback),
+  )
+}
+
+function applyHuHufPaymentsGate(
+  countrySites: CountrySiteProfile[],
+  huHufPaymentsEnabled: boolean,
+): CountrySiteProfile[] {
+  if (huHufPaymentsEnabled) return countrySites
+  return countrySites.map((site) =>
+    site.code === 'hu' && site.currency === 'HUF' ? { ...site, currency: 'EUR' } : site,
   )
 }
 
@@ -733,7 +760,7 @@ export function normalizeMarketSettings(
   const authPhonePolicy = resolveAuthPhonePolicy(raw, region)
   const deliveryPhonePolicy = resolveDeliveryPhonePolicy(raw, region)
 
-  return {
+  const result: MarketSettings = {
     region,
     defaultCurrency:
       typeof base.defaultCurrency === 'string' && base.defaultCurrency.trim()
@@ -781,6 +808,31 @@ export function normalizeMarketSettings(
       deliveryCountryCatalog,
     ),
     eurToHufRate: asPositiveNumber(base.eurToHufRate, DEFAULT_MARKET_SETTINGS.eurToHufRate),
+    huHufPaymentsEnabled: asBool(
+      base.huHufPaymentsEnabled,
+      DEFAULT_MARKET_SETTINGS.huHufPaymentsEnabled,
+    ),
+    eurToHufReferenceRate: (() => {
+      if (base.eurToHufReferenceRate == null) return null
+      const n = Number(base.eurToHufReferenceRate)
+      return Number.isFinite(n) && n > 0 ? n : null
+    })(),
+    eurToHufReferenceRateDate:
+      typeof base.eurToHufReferenceRateDate === 'string' && base.eurToHufReferenceRateDate.trim()
+        ? base.eurToHufReferenceRateDate.trim()
+        : null,
+    eurToHufReferenceCheckedAt:
+      typeof base.eurToHufReferenceCheckedAt === 'string' &&
+      base.eurToHufReferenceCheckedAt.trim()
+        ? base.eurToHufReferenceCheckedAt.trim()
+        : null,
+    eurToHufReferenceSource:
+      base.eurToHufReferenceSource === 'nbs_ecb' ? 'nbs_ecb' : null,
+    eurToHufReferenceLastError:
+      typeof base.eurToHufReferenceLastError === 'string' &&
+      base.eurToHufReferenceLastError.trim()
+        ? base.eurToHufReferenceLastError.trim()
+        : null,
     applyDestinationVatB2c:
       region === 'sk'
         ? asBool(base.applyDestinationVatB2c, DEFAULT_MARKET_SETTINGS.applyDestinationVatB2c)
@@ -810,5 +862,10 @@ export function normalizeMarketSettings(
       }
       return DEFAULT_MARKET_SETTINGS.salesPricesWholesalerGroupKod
     })(),
+  }
+
+  return {
+    ...result,
+    countrySites: applyHuHufPaymentsGate(result.countrySites, result.huHufPaymentsEnabled),
   }
 }

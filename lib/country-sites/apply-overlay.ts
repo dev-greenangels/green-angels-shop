@@ -43,12 +43,19 @@ export function applyCountrySiteOverlay(
   const fallback = market.sellerTaxRatePercent || profile.taxRatePercent
   const rateCountry = market.applyDestinationVatB2c ? countryCode : 'sk'
 
+  // SK/AT always EUR; HU HUF only when payments flag is enabled.
+  let currency: 'EUR' | 'HUF' = profile.currency
+  if (countryCode === 'sk' || countryCode === 'at') currency = 'EUR'
+  else if (countryCode === 'hu' && currency === 'HUF' && !market.huHufPaymentsEnabled) {
+    currency = 'EUR'
+  }
+
   return {
     countryCode,
     profile,
     availableLocales: profile.availableLocales,
     defaultLocale: profile.defaultLocale,
-    currency: profile.currency,
+    currency,
     taxRatePercent: resolveCatalogTaxRatePercent(
       market.deliveryCountryCatalog,
       rateCountry,

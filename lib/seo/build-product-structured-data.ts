@@ -1,5 +1,5 @@
 import { stripHtmlToPlainText } from '@/lib/html/plain-text'
-import { getMinVariantPrice } from '@/lib/product-pricing'
+/** JSON-LD Offer.price must be qty=1 (base), not bulk-tier minimum. */
 import type { Plant, ProductVariant } from '@/lib/types'
 
 import type { PublicCommerceSettings } from '@/lib/commerce/types'
@@ -42,7 +42,7 @@ function buildVariantOfferNode(
   productUrl: string,
   ctx: ProductStructuredDataContext,
 ): Record<string, unknown> | null {
-  const stored = getMinVariantPrice(variant)
+  const stored = variant.basePrice > 0 ? variant.basePrice : 0
   const shelf = resolveSeoOffer(stored, ctx)
   if (!shelf || shelf.price <= 0) return null
 
@@ -194,7 +194,9 @@ export function buildProductStructuredData(input: {
 
   let offer: ProductJsonLdOfferInput | null = null
   if (singleVariant) {
-    const shelf = resolveSeoOffer(getMinVariantPrice(singleVariant), input.ctx)
+    const unitOne =
+      singleVariant.basePrice > 0 ? singleVariant.basePrice : 0
+    const shelf = resolveSeoOffer(unitOne, input.ctx)
     if (shelf && shelf.price > 0) {
       offer = {
         lowPrice: shelf.price,

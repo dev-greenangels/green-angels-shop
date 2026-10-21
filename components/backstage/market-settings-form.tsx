@@ -1,6 +1,9 @@
 'use client'
 
+import { useState } from 'react'
+
 import { FormSaveBar } from '@/components/backstage/form-save-bar'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,6 +16,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { checkBackstageNbsEurHufRate } from '@/lib/backstage/settings'
 import type { CurrencyInfo } from '@/lib/commerce/types'
 import { LOCALE_LABELS, SUPPORTED_LOCALES, type AppLocale } from '@/lib/i18n/locales'
 import type { CountrySiteProfile, MarketSettings } from '@/lib/settings/market'
@@ -76,6 +80,8 @@ export function MarketSettingsForm({
   saving,
   isDirty = false,
 }: MarketSettingsFormProps) {
+  const [nbsChecking, setNbsChecking] = useState(false)
+  const [nbsMessage, setNbsMessage] = useState<string | null>(null)
   const patch = (partial: Partial<MarketSettings>) => onChange({ ...market, ...partial })
   const activeCurrencies = currencies.filter((c) => c.isActive)
   const currencyValue =
@@ -88,6 +94,58 @@ export function MarketSettingsForm({
       site.code === code ? { ...site, ...partial } : site,
     )
     patch({ countrySites: next })
+  }
+
+  const setHuCurrency = (value: CountrySiteProfile['currency']) => {
+    if (value === 'HUF' && !market.huHufPaymentsEnabled) {
+      window.alert(
+        'HUF mode ще не активовано для production (huHufPaymentsEnabled=false). Увімкніть прапорець нижче лише після проходження Stripe HUF тестів.',
+      )
+      return
+    }
+    if (value === 'HUF') {
+      const ok = window.confirm(
+        'Перемикання HU на HUF змінює каталог, checkout, Stripe і Google Merchant feed. Збережіть налаштування (Save), щоб застосувати. Продовжити?',
+      )
+      if (!ok) return
+    } else {
+      const ok = window.confirm(
+        'Перемикання HU на EUR змінює каталог, checkout, Stripe і Google Merchant feed. Збережіть налаштування (Save), щоб застосувати. Продовжити?',
+      )
+      if (!ok) return
+    }
+    patchCountrySite('hu', { currency: value })
+  }
+
+  const runNbsCheck = async () => {
+    setNbsChecking(true)
+    setNbsMessage(null)
+    try {
+      const updated = await checkBackstageNbsEurHufRate()
+      onChange(updated)
+      if (updated.eurToHufReferenceLastError) {
+        setNbsMessage(`Помилка: ${updated.eurToHufReferenceLastError}`)
+      } else if (updated.eurToHufReferenceRate != null) {
+        const diff =
+          market.eurToHufRate > 0
+            ? (
+                ((market.eurToHufRate - updated.eurToHufReferenceRate) / updated.eurToHufReferenceRate) *
+                100
+              ).toFixed(2)
+            : '—'
+        setNbsMessage(
+          `NBS/ECB: 1 EUR = ${updated.eurToHufReferenceRate} HUF` +
+            (updated.eurToHufReferenceRateDate
+              ? ` (дата ${updated.eurToHufReferenceRateDate})`
+              : '') +
+            `. Різниця з ручним курсом: ${diff}%. Ручний курс не змінено.`,
+        )
+      }
+    } catch (err) {
+      setNbsMessage(err instanceof Error ? err.message : 'NBS check failed')
+    } finally {
+      setNbsChecking(false)
+    }
   }
 
   const toggleCountryLocale = (code: CountrySiteProfile['code'], locale: AppLocale, checked: boolean) => {
@@ -474,22 +532,40 @@ export function MarketSettingsForm({
                     </div>
                     <div className="space-y-2">
                       <Label>Валюта домену</Label>
-                      <Select
-                        value={site.currency}
-                        onValueChange={(value) =>
-                          patchCountrySite(site.code, {
-                            currency: value as CountrySiteProfile['currency'],
-                          })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="HUF">HUF</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {site.code === 'sk' || site.code === 'at' ? (
+                        <>
+                          <Input value="EUR" disabled readOnly />
+                          <p className="text-xs text-muted-foreground">
+                            SK/AT завжди EUR — HUF недоступний.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <Select
+                            value={site.currency}
+                            onValueChange={(value) =>
+                              setHuCurrency(value as CountrySiteProfile['currency'])
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="EUR">EUR</SelectItem>
+                              <SelectItem
+                                value="HUF"
+                                disabled={!market.huHufPaymentsEnabled}
+                              >
+                                HUF
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            Змінює каталог, PDP, кошик, checkout, Stripe і Google Merchant feed.
+                            Застосовується лише після Save. Без дужок EUR у HUF mode.
+                          </p>
+                        </>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label>Email підтримки (домен)</Label>
@@ -560,8 +636,8 @@ export function MarketSettingsForm({
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Курс EUR → HUF (домен .hu)</Label>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Курс EUR → HUF (комерційний, ручний)</Label>
                 <Input
                   type="number"
                   min={0.0001}
@@ -570,8 +646,75 @@ export function MarketSettingsForm({
                   onChange={(e) => patch({ eurToHufRate: Number(e.target.value) || 400 })}
                 />
                 <p className="text-xs text-muted-foreground">
-                  1 EUR = {market.eurToHufRate || 0} HUF
+                  1 EUR = {market.eurToHufRate || 0} HUF. Використовується для HUF presentment /
+                  Stripe. Не оновлюється з NBS автоматично.
                 </p>
+              </div>
+              <div className="flex items-center justify-between gap-4 rounded-lg border border-border/60 px-4 py-3 sm:col-span-2">
+                <div>
+                  <p className="text-sm font-medium">Дозволити HUF payments (HU)</p>
+                  <p className="text-xs text-muted-foreground">
+                    Production safety gate. Поки вимкнено — HU currency примусово EUR навіть якщо
+                    в профілі обрано HUF. Увімкніть лише після Stripe HUF тестів.
+                  </p>
+                </div>
+                <Switch
+                  checked={market.huHufPaymentsEnabled}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      const ok = window.confirm(
+                        'Увімкнути HUF payments? Після Save можна буде активувати HUF на домені .hu (каталог + Stripe + feed).',
+                      )
+                      if (!ok) return
+                    }
+                    patch({ huHufPaymentsEnabled: checked })
+                  }}
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2 rounded-lg border border-border/60 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">Довідковий курс NBS/ECB</p>
+                    <p className="text-xs text-muted-foreground">
+                      Інформаційно. Не змінює ручний комерційний курс і не впливає на ціни.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={nbsChecking}
+                    onClick={() => void runNbsCheck()}
+                  >
+                    {nbsChecking ? 'Checking…' : 'Check NBS/ECB rate'}
+                  </Button>
+                </div>
+                {market.eurToHufReferenceRate != null ? (
+                  <p className="text-xs text-muted-foreground">
+                    Останнє успішне: 1 EUR = {market.eurToHufReferenceRate} HUF
+                    {market.eurToHufReferenceRateDate
+                      ? ` · дата ${market.eurToHufReferenceRateDate}`
+                      : ''}
+                    {market.eurToHufReferenceCheckedAt
+                      ? ` · перевірено ${market.eurToHufReferenceCheckedAt}`
+                      : ''}
+                    {market.eurToHufRate > 0
+                      ? ` · Δ vs manual ${(
+                          ((market.eurToHufRate - market.eurToHufReferenceRate) /
+                            market.eurToHufReferenceRate) *
+                          100
+                        ).toFixed(2)}%`
+                      : ''}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Ще не перевіряли.</p>
+                )}
+                {market.eurToHufReferenceLastError ? (
+                  <p className="text-xs text-destructive">
+                    Остання помилка: {market.eurToHufReferenceLastError}
+                  </p>
+                ) : null}
+                {nbsMessage ? <p className="text-xs text-foreground">{nbsMessage}</p> : null}
               </div>
               <div className="space-y-2">
                 <Label>Fallback ПДВ продавця (SK), %</Label>
